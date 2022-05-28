@@ -13,8 +13,8 @@ namespace MangaWebScrape.Websites
 {
     class RobertsAnimeCornerStore
     {
-        public static List<string> RobertsAnimeCornerStoreLinks = new List<String>();
-        private static List<string[]> dataList = new List<string[]>();
+        public static List<string> robertsAnimeCornerStoreLinks = new List<String>();
+        private static List<string[]> robertsAnimeCornerStoreDataList = new List<string[]>();
         
         private static string GetUrl(string bookTitle, bool pageExists){
             Dictionary<string, Regex> urlMapDict = new Dictionary<string, Regex>()
@@ -36,14 +36,14 @@ namespace MangaWebScrape.Websites
                 {
                     if (link.Value.Match(bookTitle).Success){
                         url = "https://www.animecornerstore.com/" + link.Key + ".html";
-                        RobertsAnimeCornerStoreLinks.Add(url);
+                        robertsAnimeCornerStoreLinks.Add(url);
                         state.Stop();
                     }
                 });
             }
             else{ //Gets the actual page that houses the data that will be scraped from
                 url = "https://www.animecornerstore.com/" + bookTitle;
-                RobertsAnimeCornerStoreLinks.Add(url);
+                robertsAnimeCornerStoreLinks.Add(url);
             }
             return url;
         }
@@ -54,7 +54,7 @@ namespace MangaWebScrape.Websites
             Thread.Sleep(2000);
             doc.LoadHtml(edgeDriver.PageSource);
 
-            HtmlNodeCollection seriesTitle = doc.DocumentNode.SelectNodes("//a[contains(@href,'.html')]");
+            HtmlNodeCollection seriesTitle = doc.DocumentNode.SelectNodes("//a[Contains(@href,'.html')]");
             try{
                 bookTitle = bookTitle.ToLower();
                 Parallel.ForEach(seriesTitle, (title, state) =>
@@ -82,7 +82,7 @@ namespace MangaWebScrape.Websites
 
         public static List<string[]> GetRobertsAnimeCornerStoreData(string bookTitle, char bookType){
             EdgeOptions edgeOptions = new EdgeOptions();
-            edgeOptions.UseChromium = true;
+            //edgeOptions.UseChromium = true;
             edgeOptions.PageLoadStrategy = PageLoadStrategy.Eager;
             edgeOptions.AddArgument("headless");
             edgeOptions.AddArgument("disable-gpu");
@@ -114,39 +114,52 @@ namespace MangaWebScrape.Websites
                     List<HtmlNode> titleData = doc.DocumentNode.SelectNodes("//font[@face='dom bold, arial, helvetica']//b").Where(title => title.InnerText.ToLower().IndexOf(bookTitle.ToLower()) != -1).ToList();
                     List<HtmlNode> priceData = doc.DocumentNode.SelectNodes("//font[@color='#ffcc33']").Where(price => price.InnerText.IndexOf("$") != -1).ToList();
 
+                    edgeDriver.Quit();
                     string currTitle;
-                    Regex pattern = new Regex(@"#[\d]+( )");
+                    //Regex pattern = new Regex(@"#[\d]+( )");
                     for (int x = 0; x < titleData.Count; x++){
-                        currTitle = titleData[x].InnerText.Replace(",", "");
-                        currTitle = currTitle.Substring(0, pattern.Match(currTitle).Groups[1].Index);
+                        //currTitle = titleData[x].InnerText.Replace(",", "");
+                        //currTitle = currTitle.Substring(0, pattern.Match(currTitle).Groups[1].Index);
+
+                        currTitle = Regex.Replace(Regex.Replace(titleData[x].InnerText, @",|#|Graphic Novel| :|\(.*?\)", ""), @"[ ]{2,}", " ").Trim();
+                        if (currTitle.Contains("Omnibus")){
+                            if (currTitle.Contains("One Piece") && currTitle.Contains("Vol 10-12")){ // Fix naming issue with one piece
+                                currTitle = currTitle.Substring(0, currTitle.IndexOf(" Vol")) + " 4";
+                            }
+                            else{
+                                currTitle = currTitle.Substring(0, currTitle.IndexOf(" Vol"));
+                            }
+                            currTitle = currTitle.Substring(0, currTitle.IndexOf("Omnibus ") + "Omnibus ".Length) + "Vol " + currTitle.Substring(currTitle.IndexOf("Omnibus ") + "Omnibus ".Length);
+                        }
                         
-                        dataList.Add(new string[]{currTitle, priceData[x].InnerText.Trim(), currTitle.IndexOf("Pre Order") != -1 ? "PO" : "IS", "RobertsAnimeCornerStore"});
+                        robertsAnimeCornerStoreDataList.Add(new string[]{currTitle, priceData[x].InnerText.Trim(), currTitle.IndexOf("Pre Order") != -1 ? "PO" : "IS", "RobertsAnimeCornerStore"});
                     }
 
-                    foreach (string link in RobertsAnimeCornerStoreLinks){
+                    //edgeDriver.Quit();
+
+                    foreach (string link in robertsAnimeCornerStoreLinks){
                         Console.WriteLine(link);
                     }
 
-                    edgeDriver.Quit();
+                    using (StreamWriter outputFile = new StreamWriter(@"Data\RobertsAnimeCornerStoreData.txt"))
+                    {
+                        if (robertsAnimeCornerStoreDataList.Count != 0){
+                            foreach (string[] data in robertsAnimeCornerStoreDataList){
+                                outputFile.WriteLine("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]");
+                            }
+                        }
+                        else{
+                            outputFile.WriteLine(bookTitle + " Does Not Exist at RobertsAnimeCornerStore");
+                        }
+                    } 
                 }
                 catch(NullReferenceException ex){
+                    edgeDriver.Quit();
                     Console.Error.WriteLine(bookTitle + " Does Not Exist at RobertsAnimeCornerStore\n" + ex);
                 }
             }
-
-            using (StreamWriter outputFile = new StreamWriter(@"C:\TsundeOku\Data\RobertsAnimeCornerStoreData.txt"))
-            {
-                if (dataList.Count != 0){
-                    foreach (string[] data in dataList){
-                        outputFile.WriteLine(data[0] + " " + data[1] + " " + data[2] + " " + data[3]);
-                    }
-                }
-                else{
-                    outputFile.WriteLine(bookTitle + " Does Not Exist at RobertsAnimeCornerStore");
-                }
-            } 
             
-            return dataList;
+            return robertsAnimeCornerStoreDataList;
         }
     }
 }

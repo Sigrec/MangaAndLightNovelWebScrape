@@ -1,22 +1,23 @@
-World Trigger Manga Volume 22 $7.12 IS RightStufAnime
-World Trigger Manga Volume 21 $7.12 IS RightStufAnime
-World Trigger Manga Volume 20 $7.12 OOS RightStufAnime
-World Trigger Manga Volume 19 $7.12 IS RightStufAnime
-World Trigger Manga Volume 18 $7.12 IS RightStufAnime
-World Trigger Manga Volume 17 $7.12 IS RightStufAnime
-World Trigger Manga Volume 16 $7.12 IS RightStufAnime
-World Trigger Manga Volume 15 $7.12 IS RightStufAnime
-World Trigger Manga Volume 14 $7.12 IS RightStufAnime
-World Trigger Manga Volume 13 $7.12 IS RightStufAnime
-World Trigger Manga Volume 12 $7.12 IS RightStufAnime
-World Trigger Manga Volume 11 $7.12 IS RightStufAnime
-World Trigger Manga Volume 10 $7.12 OOS RightStufAnime
-World Trigger Manga Volume 9 $7.12 IS RightStufAnime
-World Trigger Manga Volume 8 $7.12 IS RightStufAnime
-World Trigger Manga Volume 7 $7.12 OOS RightStufAnime
-World Trigger Manga Volume 6 $7.12 IS RightStufAnime
-World Trigger Manga Volume 5 $7.12 OOS RightStufAnime
-World Trigger Manga Volume 4 $7.12 IS RightStufAnime
-World Trigger Manga Volume 3 $7.12 OOS RightStufAnime
-World Trigger Manga Volume 2 $7.12 OOS RightStufAnime
-World Trigger Manga Volume 1 $7.12 OOS RightStufAnime
+[World Trigger Vol 1, $7.59, OOS, RightStufAnime]
+[World Trigger Vol 2, $7.59, OOS, RightStufAnime]
+[World Trigger Vol 3, $7.59, OOS, RightStufAnime]
+[World Trigger Vol 4, $7.59, OOS, RightStufAnime]
+[World Trigger Vol 5, $7.59, OOS, RightStufAnime]
+[World Trigger Vol 6, $7.59, IS, RightStufAnime]
+[World Trigger Vol 7, $7.59, OOS, RightStufAnime]
+[World Trigger Vol 8, $7.59, IS, RightStufAnime]
+[World Trigger Vol 9, $7.59, IS, RightStufAnime]
+[World Trigger Vol 10, $7.59, IS, RightStufAnime]
+[World Trigger Vol 11, $7.59, IS, RightStufAnime]
+[World Trigger Vol 12, $7.59, IS, RightStufAnime]
+[World Trigger Vol 13, $7.59, IS, RightStufAnime]
+[World Trigger Vol 14, $7.59, IS, RightStufAnime]
+[World Trigger Vol 15, $7.59, IS, RightStufAnime]
+[World Trigger Vol 16, $7.59, IS, RightStufAnime]
+[World Trigger Vol 17, $7.59, IS, RightStufAnime]
+[World Trigger Vol 18, $7.59, IS, RightStufAnime]
+[World Trigger Vol 19, $7.59, IS, RightStufAnime]
+[World Trigger Vol 20, $7.59, IS, RightStufAnime]
+[World Trigger Vol 21, $7.59, IS, RightStufAnime]
+[World Trigger Vol 22, $7.59, IS, RightStufAnime]
+[World Trigger Vol 23, $7.59, IS, RightStufAnime]

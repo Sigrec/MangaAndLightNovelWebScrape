@@ -9,10 +9,29 @@ using System.IO;
 
 namespace MangaWebScrape.Websites
 {
+    public class VolumeSort : IComparer<string[]>
+    {
+        string bookTitle;
+
+        public VolumeSort(string bookTitle){
+            this.bookTitle = bookTitle;
+        }
+
+        public int Compare(string[] vol1, string[] vol2) {
+            if (string.Equals(Regex.Replace(vol1[0], @" \d+$", ""), Regex.Replace(vol2[0], @" \d+$", ""), StringComparison.OrdinalIgnoreCase)) {
+                return ExtractInt(vol1[0]) - ExtractInt(vol2[0]);
+            }
+            return vol1[0].CompareTo(vol2[0]);
+        }
+
+        int ExtractInt(String s) {
+            return Int32.Parse(Regex.Replace(s.Substring(bookTitle.Length), @".*( \d+)$", "$1").TrimStart());
+        }
+    }
     class RightStufAnime
     {
-        public static List<string> RightStufAnimeLinks = new List<string>();
-        private static List<string[]> dataList = new List<string[]>();
+        public static List<string> rightStufAnimeLinks = new List<string>();
+        private static List<string[]> rightStufAnimeDataList = new List<string[]>();
 
         private static string FilterBookTitle(string bookTitle){
             char[] trimedChars = {' ', '\'', '!', '-'};
@@ -25,7 +44,7 @@ namespace MangaWebScrape.Websites
         private static string GetUrl(char bookType, byte currPageNum, string bookTitle){
             string url = "https://www.rightstufanime.com/category/" + (bookType == 'M' ? "Manga" : "Novel") + "?page=" + currPageNum + "&show=96&keywords=" + FilterBookTitle(bookTitle);
             Console.WriteLine(url);
-            RightStufAnimeLinks.Add(url);
+            rightStufAnimeLinks.Add(url);
             return url;
         }
 
@@ -35,16 +54,21 @@ namespace MangaWebScrape.Websites
             HtmlDocument doc = new HtmlDocument();
 
             EdgeOptions edgeOptions = new EdgeOptions();
-            edgeOptions.UseChromium = true;
             edgeOptions.PageLoadStrategy = PageLoadStrategy.Eager;
-            edgeOptions.AddArgument("headless");
-            edgeOptions.AddArgument("disable-gpu");
-            edgeOptions.AddArgument("disable-extensions");
-            edgeOptions.AddArgument("inprivate");
+            edgeOptions.AddArguments("headless");
+		    edgeOptions.AddArguments("enable-automation");
+		    edgeOptions.AddArguments("no-sandbox");
+		    edgeOptions.AddArguments("disable-infobars");
+		    edgeOptions.AddArguments("disable-dev-shm-usage");
+		    edgeOptions.AddArguments("disable-browser-side-navigation");
+		    edgeOptions.AddArguments("disable-gpu");
+		    edgeOptions.AddArguments("disable-extensions");
+		    edgeOptions.AddArguments("inprivate");
+
             EdgeDriver edgeDriver = new EdgeDriver(edgeOptions);
 
             // string url = "https://www.rightstufanime.com/category/" + (bookType == 'M' ? "Manga" : "Novel") + "?page=" + currPageNum + "&show=96&keywords=" + FilterBookTitle(bookTitle);
-            // RightStufAnimeLinks.Add(url);
+            // rightStufAnimeLinks.Add(url);
 
             edgeDriver.Navigate().GoToUrl(GetUrl(bookType, currPageNum, bookTitle));
             Thread.Sleep(3500);
@@ -56,6 +80,7 @@ namespace MangaWebScrape.Websites
             HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes("//div[@class='product-line-stock-container '] | //span[@class='product-line-stock-msg-out-text']");
             HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode("//li[@class='global-views-pagination-next']");
 
+            edgeDriver.Quit();
             try{
                 double GotAnimeDiscount = 0.05;
                 decimal priceVal;
@@ -82,7 +107,7 @@ namespace MangaWebScrape.Websites
                             stockStatus = "OOP";
                         }
 
-                        dataList.Add(new string[]{currTitle, priceTxt.Trim(), stockStatus, "RightStufAnime"});
+                        rightStufAnimeDataList.Add(new string[]{Regex.Replace(currTitle.Replace("Volume", "Vol"), @" Manga| Edition", ""), priceTxt.Trim(), stockStatus, "RightStufAnime"});
                     }
                 }
 
@@ -91,30 +116,31 @@ namespace MangaWebScrape.Websites
                     GetRightStufAnimeData(bookTitle, bookType, memberStatus, currPageNum);
                 }
                 else{
-                    edgeDriver.Quit();
-
-                    foreach (string link in RightStufAnimeLinks){
+                    // edgeDriver.Quit();
+                    rightStufAnimeDataList.Sort(new VolumeSort(bookTitle));
+                    foreach (string link in rightStufAnimeLinks){
                         Console.WriteLine(link);
                     }
+
+                    using (StreamWriter outputFile = new StreamWriter(@"Data\RightStufAnimeData.txt"))
+                    {
+                        if (rightStufAnimeDataList.Count != 0){
+                            foreach (string[] data in rightStufAnimeDataList){
+                                outputFile.WriteLine("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]");
+                            }
+                        }
+                        else{
+                            outputFile.WriteLine(bookTitle + " Does Not Exist at RightStufAnime");
+                        }
+                    }  
                 }
             }
             catch (NullReferenceException ex){
                 Console.Error.WriteLine(bookTitle + " Does Not Exist at RightStufAnime\n" + ex);
+                edgeDriver.Quit();
             }
 
-            using (StreamWriter outputFile = new StreamWriter(@"C:\TsundeOku\Data\RightStufAnimeData.txt"))
-            {
-                if (dataList.Count != 0){
-                    foreach (string[] data in dataList){
-                        outputFile.WriteLine(data[0] + " " + data[1] + " " + data[2] + " " + data[3]);
-                    }
-                }
-                else{
-                    outputFile.WriteLine(bookTitle + " Does Not Exist at RightStufAnime");
-                }
-            }  
-
-            return dataList;
+            return rightStufAnimeDataList;
         }
     }
 }
