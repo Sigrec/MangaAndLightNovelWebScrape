@@ -22,18 +22,10 @@ namespace MangaWebScrape.Websites
             return url;
         }
 
-        public static List<string[]> GetInStockTradesData(string bookTitle, byte currPageNum)
+        public static List<string[]> GetInStockTradesData(string bookTitle, byte currPageNum, EdgeOptions edgeOptions)
         {
             // Initialize the html doc for crawling
             HtmlDocument doc = new HtmlDocument();
-
-            EdgeOptions edgeOptions = new EdgeOptions();
-            //edgeOptions.UseChromium = true;
-            edgeOptions.PageLoadStrategy = PageLoadStrategy.Eager;
-            edgeOptions.AddArgument("headless");
-            edgeOptions.AddArgument("disable-gpu");
-            edgeOptions.AddArgument("disable-extensions");
-            edgeOptions.AddArgument("inprivate");
             EdgeDriver edgeDriver = new EdgeDriver(edgeOptions);
 
             edgeDriver.Navigate().GoToUrl(GetUrl(currPageNum, bookTitle));
@@ -59,7 +51,9 @@ namespace MangaWebScrape.Websites
 
                 if (pageCheck != null){
                     currPageNum++;
-                    GetInStockTradesData(bookTitle, currPageNum);
+                    GetInStockTradesData(bookTitle, currPageNum, edgeOptions
+                    
+                    );
                 }
                 else{
                     //edgeDriver.Quit();
