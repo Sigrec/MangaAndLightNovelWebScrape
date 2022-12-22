@@ -1,24 +1,26 @@
 using System.Threading;
-using System.Text.RegularExpressions;
 using System;
-using OpenQA.Selenium;
 using OpenQA.Selenium.Edge;
 using HtmlAgilityPack;
 using System.Collections.Generic;
 using System.IO;
+using System.Diagnostics;
 
-namespace MangaWebScrape.Websites
+namespace MangaLightNovelWebScrape.Websites
 {
     public class InStockTrades
     {
         public static List<string> inStockTradesLinks = new List<string>(); //List of links used to get data from InStockTrades
         private static List<string[]> inStockTradesDataList = new List<string[]>(); //List of all the series data from InStockTrades
 
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
+
         //https://www.instocktrades.com/search?term=world+trigger
         //https://www.instocktrades.com/search?pg=1&title=World+Trigger&publisher=&writer=&artist=&cover=&ps=true
         private static string GetUrl(byte currPageNum, string bookTitle){
             string url = "https://www.instocktrades.com/search?pg=" + currPageNum +"&title=" + bookTitle.Replace(' ', '+') + "&publisher=&writer=&artist=&cover=&ps=true";
             inStockTradesLinks.Add(url);
+            Logger.Debug(url);
             return url;
         }
 
@@ -38,27 +40,27 @@ namespace MangaWebScrape.Websites
             HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode("//a[@class='btn hotaction']");
 
             edgeDriver.Quit();
-            try{
+            
+            if (titleData != null)
+            {
                 string currTitle;
                 int volNumIndex;
                 for (int x = 0; x < titleData.Count; x++)
                 {
-                    currTitle = titleData[x].InnerText.Trim();
+                    currTitle = titleData[x].InnerText.Trim().Replace("GN ", "");
                     volNumIndex = currTitle.IndexOf("Vol") + 4;
                     inStockTradesDataList.Add(new string[]{!currTitle[volNumIndex].Equals('0') ? currTitle : currTitle.Remove(volNumIndex, 1), priceData[x].InnerText.Trim(), "IS", "InStockTrades"});
-                    //Console.WriteLine(volNumIndex != 0 ? currTitle : currTitle.Remove(volNumIndex, 1) + " " + priceData[x].InnerText.Trim() + " " + "InStockTrades");
+                    //Logger.Debug(volNumIndex != 0 ? currTitle : currTitle.Remove(volNumIndex, 1) + " " + priceData[x].InnerText.Trim() + " " + "InStockTrades");
                 }
 
                 if (pageCheck != null){
                     currPageNum++;
-                    GetInStockTradesData(bookTitle, currPageNum, edgeOptions
-                    
-                    );
+                    GetInStockTradesData(bookTitle, currPageNum, edgeOptions);
                 }
                 else{
-                    //edgeDriver.Quit();
+                    inStockTradesDataList.Sort(new VolumeSort(bookTitle));
                     foreach (string link in inStockTradesLinks){
-                        Console.WriteLine(link);
+                        Logger.Debug(link);
                     }
                 }
 
@@ -67,7 +69,7 @@ namespace MangaWebScrape.Websites
                 {
                     if (inStockTradesDataList.Count != 0){
                         foreach (string[] data in inStockTradesDataList){
-                            outputFile.WriteLine(data[0] + " " + data[1] + " " + data[2] + " " + data[3]);
+                            outputFile.WriteLine("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]");
                         }
                     }
                     else{
@@ -75,10 +77,10 @@ namespace MangaWebScrape.Websites
                     }
                 } 
             }
-            catch(NullReferenceException ex){
-                Console.Error.WriteLine(bookTitle + " Does Not Exist at InStockTrades\n" + ex);
-                edgeDriver.Quit();
-            } 
+            else
+            {
+                Logger.Debug(bookTitle + " Does Not Exist at InStockTrades");
+            }
 
             return inStockTradesDataList;
         }

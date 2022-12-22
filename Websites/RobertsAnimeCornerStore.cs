@@ -1,21 +1,21 @@
+using System.Diagnostics;
 using System.Threading;
 using System;
-using OpenQA.Selenium;
 using OpenQA.Selenium.Edge;
 using HtmlAgilityPack;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using System.Linq;
 using System.Threading.Tasks;
 using System.IO;
 
-namespace MangaWebScrape.Websites
+namespace MangaLightNovelWebScrape.Websites
 {
     class RobertsAnimeCornerStore
     {
         public static List<string> robertsAnimeCornerStoreLinks = new List<String>();
         private static List<string[]> robertsAnimeCornerStoreDataList = new List<string[]>();
         private static bool doubleCheck = false;
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
         
         private static string GetUrl(string htmlString, bool pageExists)
         {
@@ -50,7 +50,7 @@ namespace MangaWebScrape.Websites
                 url = "https://www.animecornerstore.com/" + htmlString;
                 robertsAnimeCornerStoreLinks.Add(url);
             }
-            Console.WriteLine(url);
+            Logger.Debug(url);
             return url;
         }
 
@@ -65,38 +65,24 @@ namespace MangaWebScrape.Websites
             Thread.Sleep(2000);
             doc.LoadHtml(edgeDriver.PageSource);
 
-            Console.WriteLine($"//b//a[1][contains(text()[1], '{bookTitle}')][{typeCheck}]");
-            HtmlNode seriesTitle = doc.DocumentNode.SelectSingleNode($"//b//a[1][contains(text()[1], '{bookTitle}')][{typeCheck}]");
+            HtmlNodeCollection seriesTitle = doc.DocumentNode.SelectNodes($"//b//a[1]");
             try
             {
-                if (seriesTitle == null)
+                foreach (HtmlNode series in seriesTitle)
                 {
-                    if (doubleCheck == false)
+                    //Logger.Debug(Regex.Replace(series.InnerText.ToLower(), @"\s+", ""));
+                    if (Regex.Replace(series.InnerText.ToLower(), @"\s+", "").Contains(bookTitle))
                     {
-                        doubleCheck = true;
-                        if (bookType == 'N')
-                        {
-                            Console.WriteLine($"Couldn't Find Novel Page for {bookTitle} -> Looking in the Manga Page if Available");
-                            return GetPageData(edgeDriver, bookTitle, 'M', doc);
-                        }
-                        else if (bookType == 'M')
-                        {
-                            Console.WriteLine($"Couldn't Find Manga Page for {bookTitle} -> Looking in the Novel Page if Available");
-                            return GetPageData(edgeDriver, bookTitle, 'N', doc);
-                        }
-                    }
-                    else
-                    {
-                        return "DNE";
+                        link = GetUrl(series.Attributes["href"].Value, true);
+                        return link;
                     }
                 }
-                link = GetUrl(seriesTitle.Attributes["href"].Value, true);
             }
             catch(NullReferenceException ex)
             {
-                Console.Error.WriteLine(ex);
+                Logger.Error(ex);
             }
-            return link;
+            return "DNE";
         }
 
         public static List<string[]> GetRobertsAnimeCornerStoreData(string bookTitle, char bookType, EdgeOptions edgeOptions)
@@ -106,19 +92,19 @@ namespace MangaWebScrape.Websites
             // Initialize the html doc for crawling
             HtmlDocument doc = new HtmlDocument();
 
-            string linkPage = GetPageData(edgeDriver, bookTitle, bookType, doc);
+            string linkPage = GetPageData(edgeDriver, Regex.Replace(bookTitle, @"-|\s+", ""), bookType, doc);
             string errorMessage;
             if (string.IsNullOrEmpty(linkPage))
             {
                 errorMessage = "Error! Invalid Series Title";
-                Console.WriteLine(errorMessage);
+                Logger.Error(errorMessage);
                 edgeDriver.Quit();
             }
             else
             {
                 try
                 {
-                    Console.WriteLine(linkPage);
+                    Logger.Debug(linkPage);
                     // Start scraping the URL where the data is found
                     edgeDriver.Navigate().GoToUrl(linkPage);
                     Thread.Sleep(2000);
@@ -169,7 +155,7 @@ namespace MangaWebScrape.Websites
 
                     foreach (string link in robertsAnimeCornerStoreLinks)
                     {
-                        Console.WriteLine(link);
+                        Logger.Debug(link);
                     }
 
                     robertsAnimeCornerStoreDataList.Sort(new VolumeSort(bookTitle));
@@ -191,7 +177,7 @@ namespace MangaWebScrape.Websites
                 }
                 catch(NullReferenceException ex)
                 {
-                    Console.Error.WriteLine(bookTitle + " Does Not Exist at RobertsAnimeCornerStore\n" + ex);
+                    Logger.Error(bookTitle + " Does Not Exist at RobertsAnimeCornerStore\n" + ex);
                 }
             }
             

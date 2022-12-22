@@ -1,37 +1,37 @@
 using System;
-using MangaWebScrape.Websites;
+using MangaLightNovelWebScrape.Websites;
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 using System.IO;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Edge;
 
-namespace MangaWebScrape
+namespace MangaLightNovelWebScrape
 {
     class MasterScrape
     { 
         private static List<List<string[]>> MasterList = new List<List<string[]>>();
         private static List<Thread> WebThreads = new List<Thread>();
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
         private static string bookTitle;
         private static char bookType;
 
-        private static bool Similar(string titleOne, string titleTwo)
+        public static bool Similar(string titleOne, string titleTwo)
         {
             int count = 0; // The amount of times that the characters and there "alignment" don't match
             int titleOnePointer = 0, titleTwoPointer = 0; // Pointers for the characters in both strings
 
             while (titleOnePointer < titleOne.Length && titleTwoPointer < titleTwo.Length) // Keep traversing until u reach the end of titleOne's string
             {
-                //Console.WriteLine(titleOnePointer + "(" + titleOne[titleOnePointer] + ")" + "\t" + titleTwoPointer + "(" + titleTwo[titleTwoPointer] + ")");
+                //Logger.Debug(titleOnePointer + "(" + titleOne[titleOnePointer] + ")" + "\t" + titleTwoPointer + "(" + titleTwo[titleTwoPointer] + ")");
                 if (titleOne[titleOnePointer] != titleTwo[titleTwoPointer]) // Checks to see if the characters match
                 {
                     int cache = titleOne.IndexOf(titleOne[titleOnePointer]) + 1;
                     for (int z = cache; z < titleOne.Length; z++) // Start at the index of where the characters were not the same, then traverse the other string to see if it matches
                     {
-                        //Console.WriteLine(z + "(" + titleOne[z] + ")" + "\t" + titleTwoPointer + "(" + titleTwo[titleTwoPointer] + ")");
+                        //Logger.Debug(z + "(" + titleOne[z] + ")" + "\t" + titleTwoPointer + "(" + titleTwo[titleTwoPointer] + ")");
                         titleOnePointer++;
                         if (titleOne[z] == titleTwo[titleTwoPointer] && titleOne[z - 1] == titleTwo[titleTwoPointer - 1]) // Checks to see if the character is present in the other string and is in a similar position
                         {
@@ -40,7 +40,7 @@ namespace MangaWebScrape
                     }
                     count++; // There is 1 additional character difference
                     titleOnePointer = cache;
-                    //Console.WriteLine("Count = " + count);
+                    //Logger.Debug("Count = " + count);
                 } 
                 else // Characters do match so just move to the next set of characters to compare in the strings
                 {
@@ -49,8 +49,8 @@ namespace MangaWebScrape
                 titleTwoPointer++;
             }
 
-            // Console.WriteLine("Count = " + count);
-            // Console.WriteLine(count <= (titleOne.Length > titleTwo.Length ? titleTwo.Length / 4 : titleOne.Length / 4));
+            // Logger.Debug("Count = " + count);
+            // Logger.Debug(count <= (titleOne.Length > titleTwo.Length ? titleTwo.Length / 4 : titleOne.Length / 4));
             return count <= (titleOne.Length > titleTwo.Length ? titleTwo.Length / 4 : titleOne.Length / 4); // Determine if they are similar enough by a threshold of 1/4 the size of longest title
         }
 
@@ -59,7 +59,7 @@ namespace MangaWebScrape
         }
 
         /**
-        * Modified On: 02 December 2021
+        * Modified On: 21 December 2022
         *  by: Sean Njenga
         * Description: Compares the prices of all the volumes that the two websites both have, and outputs the resulting list containing
         *              the lowest prices for each available volume between the websites. If one website does not have a volume that the other
@@ -73,9 +73,8 @@ namespace MangaWebScrape
         {
             List<string[]> finalData = new List<string[]>();   // The final list of data containing all available volumes for the series from the website with the lowest price
             bool sameVolumeCheck;                           // Determines whether a match has been found where the 2 volumes are the same to compare prices for
-            int pos = 0;                                       // The position of the next volume and then proceeding volumes to check if there is a volume to compare
-            int getListOneVolNum;                              // The current vol number from the website with the bigger list of volumes that is being checked
-            string[] smallerListData;                          // The current volume data set that is being compared against from the smaller data list
+            int nextVolPos = 0;                                       // The position of the next volume and then proceeding volumes to check if there is a volume to compare
+            int biggerListCurrentVolNum;                              // The current vol number from the website with the bigger list of volumes that is being checked
 
             foreach (string[] biggerListData in biggerList){
                 sameVolumeCheck = false; // Reset the check to determine if two volumes with the same number has been found to false
@@ -85,33 +84,45 @@ namespace MangaWebScrape
                 }
                 else if (biggerListData[0].Contains("Box Set"))
                 {
-                    getListOneVolNum = GetCurrentVolumeNum(biggerListData[0], "Box Set");
+                    biggerListCurrentVolNum = GetCurrentVolumeNum(biggerListData[0], "Box Set");
                 } 
                 else
                 {
-                    getListOneVolNum = GetCurrentVolumeNum(biggerListData[0], "Vol");
+                    biggerListCurrentVolNum = GetCurrentVolumeNum(biggerListData[0], "Vol");
                 }
 
-                if (pos != smallerList.Count) // Only need to check for a comparison if there are still volumes to compare in the "smallerList"
-                { 
-                    for (int y = pos; y < smallerList.Count; y++) // Check every volume in the smaller list, skipping over volumes that have already been checked
+                if (nextVolPos != smallerList.Count) // Only need to check for a comparison if there are still volumes to compare in the "smallerList"
+                {
+                    for (int y = nextVolPos; y < smallerList.Count; y++) // Check every volume in the smaller list, skipping over volumes that have already been checked
                     { 
-                        smallerListData = smallerList[y];
-
-                        // Check to see if the titles are the same and if not, if they are similar enough, if they aren't similar enough then go to the next volume and whether the volume is new
-                        if ((!smallerListData[0].Equals(biggerListData[0]) && !Similar(smallerListData[0], biggerListData[0])) || smallerListData[0].Contains("Imperfect"))
+                        // Check to see if the titles are not the same and they are not similar enough, or it is not new then go to the next volume
+                        if ((!smallerList[y][0].Equals(biggerListData[0]) && !Similar(smallerList[y][0], biggerListData[0])) || smallerList[y][0].Contains("Imperfect"))
                         {
+                            //Logger.Debug($"Not The Same {smallerList[y][0]} | {biggerListData[0]} | {!smallerList[y][0].Equals(biggerListData[0])} | {!Similar(smallerList[y][0], biggerListData[0])} | {smallerList[y][0].Contains("Imperfect")}");
                             continue;
                         }
-
                         // If the vol numbers are the same and the titles are similar or the same from the if check above, add the lowest price volume to the list
-                        if (getListOneVolNum == (biggerListData[0].Contains("Box Set") ? GetCurrentVolumeNum(smallerListData[0], "Box Set") : GetCurrentVolumeNum(smallerListData[0], "Vol")))
+                        
+                        // Logger.Debug($"MATCH? ({biggerListCurrentVolNum}, {(biggerListData[0].Contains("Box Set") ? GetCurrentVolumeNum(smallerList[y][0], "Box Set") : GetCurrentVolumeNum(smallerList[y][0], "Vol"))})> {biggerListCurrentVolNum == (biggerListData[0].Contains("Box Set") ? GetCurrentVolumeNum(smallerList[y][0], "Box Set") : GetCurrentVolumeNum(smallerList[y][0], "Vol"))}");
+                        if (biggerListCurrentVolNum == (biggerListData[0].Contains("Box Set") ? GetCurrentVolumeNum(smallerList[y][0], "Box Set") : GetCurrentVolumeNum(smallerList[y][0], "Vol")))
                         {
-                            //Console.WriteLine("Found Match for BoxSet/Vol " + getListOneVolNum);
+                            //Logger.Debug("Found Match for BoxSet/Vol " + biggerListCurrentVolNum);
+                            //Logger.Debug($"PRICE COMPARISON ({float.Parse(biggerListData[1].Substring(1))}, {float.Parse(smallerList[y][1].Substring(1))}) -> {float.Parse(biggerListData[1].Substring(1)) > float.Parse(smallerList[y][1].Substring(1))}");
                             // Get the lowest price between the two then add the lowest dataset
-                            finalData.Add(float.Parse(biggerListData[1].Substring(1)) > float.Parse(smallerListData[1].Substring(1)) ? smallerListData : biggerListData);
+                            if (float.Parse(biggerListData[1].Substring(1)) > float.Parse(smallerList[y][1].Substring(1)))
+                            {
+                                finalData.Add(smallerList[y]);
+                                //Logger.Debug($"Add Match [{smallerList[y][0]}, {smallerList[y][1]}, {smallerList[y][2]}, {smallerList[y][3]}]");
+                            }
+                            else
+                            {
+                                finalData.Add(biggerListData);
+                                //Logger.Debug($"Add Match [{biggerListData[0]}, {biggerListData[1]}, {biggerListData[2]}, {biggerListData[3]}]");
+                            }
+                            smallerList.RemoveAt(y);
+                            // Logger.Debug($"Add [{biggerListData[0]}, {biggerListData[1]}, {biggerListData[2]}, {biggerListData[3]}]");
 
-                            pos = y + 1; // Increment the position in which the next volumes to compare from the smaller list starts essentially "shrinking" the number of comparisons needed whenever a valid comparison is found by 1
+                            nextVolPos = y; // Shift the position in which the next volumes to compare from the smaller list starts essentially "shrinking" the number of comparisons needed whenever a valid comparison is found by 1
 
                             sameVolumeCheck = true;
                             break;
@@ -121,16 +132,19 @@ namespace MangaWebScrape
 
                 if (!sameVolumeCheck) // If the current volume number in the bigger list has no match in the smaller list (same volume number and name) then add it
                 {
+                    //Logger.Debug($"Add No Match [{biggerListData[0]}, {biggerListData[1]}, {biggerListData[2]}, {biggerListData[3]}]");
                     finalData.Add(biggerListData);
                 }
             }
 
-            if (pos != smallerList.Count) // Smaller list has volumes that are not present in the bigger list and are volumes that have a volume # greater than the greatest volume # in the bigger list
-            {
-                for (int x = pos; x < smallerList.Count; x++){
-                    finalData.Add(smallerList[x]);
-                }
+            Logger.Debug(smallerList.Count);
+            // Smaller list has volumes that are not present in the bigger list and are volumes that have a volume # greater than the greatest volume # in the bigger lis
+            for (int x = 0; x < smallerList.Count; x++){
+                //Logger.Debug($"Add SmallerList Leftovers [{smallerList[x][0]}, {smallerList[x][1]}, {smallerList[x][2]}, {smallerList[x][3]}]");
+                finalData.Add(smallerList[x]);
             }
+            finalData.Sort(new ScrapedVolumeSort(bookTitle));
+            //finalData.ForEach(data => Logger.Info("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]"));
             return finalData;
         }
 
@@ -152,76 +166,95 @@ namespace MangaWebScrape
         static void Main(string[] args)
         {
             System.Environment.SetEnvironmentVariable("webdriver.edge.driver", @"DriverExecutables/msedgedriver.exe");
-            Console.Write("What is the Manga/Light Novel Title: ");
-            bookTitle = Console.ReadLine();
+            // Console.Write("What is the Manga/Light Novel Title: ");
+            // bookTitle = Console.ReadLine();
             
-            Console.Write("Are u searching for a Manga (M) or Light Novel (N): ");
-            bookType = char.Parse(Console.ReadLine());
+            // Console.Write("Are u searching for a Manga (M) or Light Novel (N): ");
+            // bookType = char.Parse(Console.ReadLine());
+
+            bookTitle = "one piece";
+            bookType = 'M';
 
             Stopwatch watch = new Stopwatch();
             watch.Start();
 
             EdgeOptions edgeOptions = new EdgeOptions();
             edgeOptions.PageLoadStrategy = PageLoadStrategy.Eager;
-            edgeOptions.AddArguments("headless");
-		    edgeOptions.AddArguments("enable-automation");
-		    edgeOptions.AddArguments("no-sandbox");
-		    edgeOptions.AddArguments("disable-infobars");
-		    edgeOptions.AddArguments("disable-dev-shm-usage");
-		    edgeOptions.AddArguments("disable-browser-side-navigation");
-		    edgeOptions.AddArguments("disable-gpu");
-		    edgeOptions.AddArguments("disable-extensions");
-		    edgeOptions.AddArguments("inprivate");
+            edgeOptions.AddArgument("headless");
+		    edgeOptions.AddArgument("enable-automation");
+		    edgeOptions.AddArgument("no-sandbox");
+		    edgeOptions.AddArgument("disable-infobars");
+		    edgeOptions.AddArgument("disable-dev-shm-usage");
+		    edgeOptions.AddArgument("disable-browser-side-navigation");
+		    edgeOptions.AddArgument("disable-gpu");
+		    edgeOptions.AddArgument("disable-extensions");
+		    edgeOptions.AddArgument("inprivate");
+
 
             WebThreads.Add(CreateRightStufAnimeThread(edgeOptions));
             WebThreads.Add(CreateRobertsAnimeCornerStoreThread(edgeOptions));
-            //WebThreads.Add(CreateInStockTradesThread(edgeOptions));
-            foreach(Thread t in WebThreads){
-                t.Start();
-            }
-            foreach(Thread t in WebThreads)
-            {
-                t.Join();
-            }
+            WebThreads.Add(CreateInStockTradesThread(edgeOptions));
+            
+            WebThreads.ForEach(web => web.Start());
+            WebThreads.ForEach(web => web.Join());
+            MasterList.RemoveAll(x => x.Count == 0); // Clear all lists from websites that didn't have any data
             WebThreads.Clear();
-            MasterList.Sort((dataSet1, dataSet2) => dataSet1.Count.CompareTo(dataSet2.Count));
 
             int pos = 0; // The position of the new lists of data after comparing
-            int threadCount = MasterList.Count % 2 == 0 ? MasterList.Count : MasterList.Count - 1; // Tracks the "status" of the data lists that need to be compared, essentially tracks needed thread count
+            int checkTask;
+            int threadCount = MasterList.Count / 2; // Tracks the "status" of the data lists that need to be compared, essentially tracks needed thread count
             Thread[] threadList; // Holds the comparison threads for execution
-            while (threadCount > 1) // While there is still 2 or more lists of data to compare prices
+            while (MasterList.Count > 1) // While there is still 2 or more lists of data to compare prices
             {
-                threadList = new Thread[threadCount / 2];
-                for (int curTask = 0; curTask <= threadList.Length; curTask+=2) // Create all of the Threads for compare processing
+                MasterList.Sort((dataSet1, dataSet2) => dataSet1.Count.CompareTo(dataSet2.Count));
+                //MasterList[0].ForEach(data => Logger.Info("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]"));
+                threadList = new Thread[threadCount];
+                //Logger.Debug("THREAD LENGTH = " + threadList.Length);
+                for (int curTask = 0; curTask <= threadList.Length; curTask += 2) // Create all of the Threads for compare processing
                 {
-                    int curPos = pos;
-                    int checkTask = curTask;
-                    threadList[curPos] = new Thread(() => MasterList[curPos] = PriceComparison(MasterList[checkTask], MasterList[checkTask + 1], bookTitle)); // Compare (SmallerList, BiggerList) where the longerlist has more elements than the smaller list
-                    threadList[curPos].Start();
+                    checkTask = curTask;
+                    //Logger.Debug("POSITION = " + pos);
+                    threadList[pos] = new Thread(() => MasterList[pos] = PriceComparison(MasterList[checkTask], MasterList[checkTask + 1], bookTitle)); // Compare (SmallerList, BiggerList) where the longerlist has more elements than the smaller list
+                    threadList[pos].Start();
+                    threadList[pos].Join();
+                    pos++;
+                }
+                //MasterList[0].ForEach(data => Logger.Info("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]"));
+
+                // Wait until all of the price comparisons are finished before doing another set of comparisons
+                // foreach(Thread compareThread in threadList)
+                // {
+                //     compareThread.Join();
+                // }
+
+                // If there are an odd number of threads left then after calculations the dangling thread/website that didn't get compared moves forward for easier comparison later
+                if (MasterList.Count == 2)
+                {
+                    // MasterList[0].ForEach(data => Logger.Info("List 0 [" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]"));
+
+                    // MasterList[MasterList.Count - 1].ForEach(data => Logger.Info("List 1 [" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]"));
+                    MasterList.RemoveAt(MasterList.Count - 1);
+                }
+                else if (threadCount % 2 != 0)
+                {
+                    MasterList[pos] = MasterList[MasterList.Count - 1];
                     pos++;
                 }
 
-                // Wait until all of the price comparisons are finished before doing another set of comparisons
-                foreach(Thread compareThread in threadList)
-                {
-                    compareThread.Join();
-                }
-
-                // If there are an odd number of threads left then after calculations the dangling thread/website that didn't get compared moves forward for easier comparison later
-                if (threadCount % 2 != 0)
-                {
-                    MasterList[pos] = MasterList[MasterList.Count - 1];
-                }
-
                 // Shrink List
-                MasterList.RemoveRange(++pos, MasterList.Count - pos);
-                // Check if list is odd
-                threadCount = threadCount % 2 == 0 ? threadCount /= 2 : threadCount -= 1;
+                MasterList.RemoveRange(pos, MasterList.Count - pos);
+                //Logger.Debug(MasterList.Count);
+                // Check if the master data list MasterList[0] is the only list left -> comparison is done 
+                if (MasterList.Count != 1)
+                {
+                    threadCount = MasterList.Count / 2;
+                }
                 pos = 0;
+                //MasterList[0].ForEach(data => Logger.Info("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]"));
             }
 
             watch.Stop();
-            Console.WriteLine($"Time in Seconds: {(long)watch.ElapsedMilliseconds / 1000}s");
+            Logger.Info($"Time in Seconds: {(long)watch.ElapsedMilliseconds / 1000}s");
 
             using (StreamWriter outputFile = new StreamWriter(@"Data\MasterData.txt"))
             {
@@ -242,6 +275,25 @@ namespace MangaWebScrape
 
         public int Compare(string[] vol1, string[] vol2) {
             if (string.Equals(Regex.Replace(vol1[0], @" \d+$", ""), Regex.Replace(vol2[0], @" \d+$", ""), StringComparison.OrdinalIgnoreCase)) {
+                return ExtractInt(vol1[0]) - ExtractInt(vol2[0]);
+            }
+            return vol1[0].CompareTo(vol2[0]);
+        }
+
+        int ExtractInt(String s) {
+            return Int32.Parse(Regex.Replace(s.Substring(bookTitle.Length), @".*( \d+)$", "$1").TrimStart());
+        }
+    }
+    public class ScrapedVolumeSort : IComparer<string[]>
+    {
+        string bookTitle;
+
+        public ScrapedVolumeSort(string bookTitle){
+            this.bookTitle = bookTitle;
+        }
+
+        public int Compare(string[] vol1, string[] vol2) {
+            if (MasterScrape.Similar(vol1[0], vol2[0])) {
                 return ExtractInt(vol1[0]) - ExtractInt(vol2[0]);
             }
             return vol1[0].CompareTo(vol2[0]);

@@ -6,13 +6,15 @@ using OpenQA.Selenium.Edge;
 using HtmlAgilityPack;
 using System.Collections.Generic;
 using System.IO;
+using System.Diagnostics;
 
-namespace MangaWebScrape.Websites
+namespace MangaLightNovelWebScrape.Websites
 {
     class RightStufAnime
     {
         public static List<string> rightStufAnimeLinks = new List<string>();
         private static List<string[]> rightStufAnimeDataList = new List<string[]>();
+        private static readonly NLog.Logger Logger = NLog.LogManager.GetCurrentClassLogger();
 
         private static string FilterBookTitle(string bookTitle){
             char[] trimedChars = {' ', '\'', '!', '-'};
@@ -24,7 +26,7 @@ namespace MangaWebScrape.Websites
 
         private static string GetUrl(char bookType, byte currPageNum, string bookTitle){
             string url = "https://www.rightstufanime.com/category/" + (bookType == 'M' ? "Manga" : "Novels") + "?page=" + currPageNum + "&show=96&keywords=" + FilterBookTitle(bookTitle);
-            Console.WriteLine(url);
+            Logger.Debug(url);
             rightStufAnimeLinks.Add(url);
             return url;
         }
@@ -87,7 +89,7 @@ namespace MangaWebScrape.Websites
                     rightStufAnimeDataList.Sort(new VolumeSort(bookTitle));
                     foreach (string link in rightStufAnimeLinks)
                     {
-                        Console.WriteLine(link);
+                        Logger.Debug(link);
                     }
 
                     using (StreamWriter outputFile = new StreamWriter(@"Data\RightStufAnimeData.txt"))
@@ -107,7 +109,7 @@ namespace MangaWebScrape.Websites
                 }
             }
             catch (NullReferenceException ex){
-                Console.Error.WriteLine("No Data Found for the Input" + ex);
+                Logger.Error("No Data Found for the Input" + ex);
             }
 
             return rightStufAnimeDataList;
