@@ -7,7 +7,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/MangaAndLightNovelWebScrape.csproj",
+                "${workspaceFolder}/Src/MangaAndLightNovelWebScrape.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -19,7 +19,7 @@
             "type": "process",
             "args": [
                 "publish",
-                "${workspaceFolder}/MangaAndLightNovelWebScrape.csproj",
+                "${workspaceFolder}/Src/MangaAndLightNovelWebScrape.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -33,7 +33,7 @@
                 "watch",
                 "run",
                 "--project",
-                "${workspaceFolder}/MangaAndLightNovelWebScrape.csproj"
+                "${workspaceFolder}/Src/MangaAndLightNovelWebScrape.csproj"
             ],
             "problemMatcher": "$msCompile"
         }

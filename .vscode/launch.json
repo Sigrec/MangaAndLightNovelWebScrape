@@ -9,11 +9,11 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/bin/Debug/net6.0/MangaAndLightNovelWebScrape.dll",
+            "program": "${workspaceFolder}/Src/bin/Debug/net6.0/MangaAndLightNovelWebScrape.dll",
             "args": [],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",
-            "stopAtEntry": false
+            "stopAtEntry": false,
         },
         {
             "name": ".NET Core Attach",
