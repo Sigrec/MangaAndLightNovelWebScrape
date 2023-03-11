@@ -1,4 +1,4 @@
-using MangaLightNovelWebScrape.Websites;
+using MangaLightNovelWebScrape.Src.Websites;
 using System.Diagnostics;
 
 namespace MangaLightNovelWebScrape
@@ -111,7 +111,7 @@ namespace MangaLightNovelWebScrape
 
             // Logger.Debug("Count = " + count);
             // Logger.Debug(count <= (titleOne.Length > titleTwo.Length ? titleTwo.Length / 4 : titleOne.Length / 4));
-            return count <= (titleOne.Length > titleTwo.Length ? titleTwo.Length / 4 : titleOne.Length / 4); // Determine if they are similar enough by a threshold of 1/4 the size of longest title
+            return count <= (titleOne.Length > titleTwo.Length ? titleTwo.Length / 5 : titleOne.Length / 5); // Determine if they are similar enough by a threshold of 1/4 the size of longest title
         }
 
         /********************************************************************************************************************************************
@@ -200,12 +200,12 @@ namespace MangaLightNovelWebScrape
 
                 if (!sameVolumeCheck) // If the current volume number in the bigger list has no match in the smaller list (same volume number and name) then add it
                 {
-                    Logger.Debug($"Add No Match [{biggerListData[0]}, {biggerListData[1]}, {biggerListData[2]}, {biggerListData[3]}]");
+                    //Logger.Debug($"Add No Match [{biggerListData[0]}, {biggerListData[1]}, {biggerListData[2]}, {biggerListData[3]}]");
                     finalData.Add(biggerListData);
                 }
             }
 
-            Logger.Debug("SmallerList Size = " + smallerList.Count);
+            // Logger.Debug("SmallerList Size = " + smallerList.Count);
             // Smaller list has volumes that are not present in the bigger list and are volumes that have a volume # greater than the greatest volume # in the bigger lis
             for (int x = 0; x < smallerList.Count; x++){
                 //Logger.Debug($"Add SmallerList Leftovers [{smallerList[x][0]}, {smallerList[x][1]}, {smallerList[x][2]}, {smallerList[x][3]}]");
@@ -215,11 +215,11 @@ namespace MangaLightNovelWebScrape
             //finalData.ForEach(data => Logger.Info("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]"));
             return finalData;
         }
-
+        
         private static Thread CreateRightStufAnimeThread(EdgeOptions edgeOptions)
         {
             Logger.Debug("RightStufAnime Going");
-            return new Thread(() => MasterList.Add(RightStufAnime.GetRightStufAnimeData(bookTitle, bookType, true, 1, edgeOptions)));
+            return new Thread(() => MasterList.Add(RightStufAnime.GetRightStufAnimeData(bookTitle, bookType, false, 1, edgeOptions)));
         }
 
         private static Thread CreateRobertsAnimeCornerStoreThread(EdgeOptions edgeOptions)
@@ -246,6 +246,18 @@ namespace MangaLightNovelWebScrape
             return new Thread(() => MasterList.Add(BarnesAndNoble.GetBarnesAndNobleData(bookTitle, bookType, false, 1, edgeOptions)));
         }
 
+        private static Thread CreateBooksAMillionThread(EdgeOptions edgeOptions)
+        {
+            Logger.Debug("Books-A-Million Going");
+            return new Thread(() => MasterList.Add(BooksAMillion.GetBooksAMillionData(bookTitle, bookType, true, 1, edgeOptions)));
+        }
+
+        private static Thread CreateAmazonUSAThread(EdgeOptions edgeOptions)
+        {
+            Logger.Debug("AmazonUSA Going");
+            return new Thread(() => MasterList.Add(AmazonUSA.GetAmazonUSAData(bookTitle, bookType, 1, edgeOptions)));
+        }
+
         static void Main(string[] args)
         {
             // Console.Write("What is the Manga/Light Novel Title: ");
@@ -253,33 +265,35 @@ namespace MangaLightNovelWebScrape
             
             // Console.Write("Are u searching for a Manga (M) or Light Novel (N): ");
             // bookType = char.Parse(Console.ReadLine());
+
+            // Logger.Debug(Similar("One Piece Omnibus Vol 3", "One Piece Vol 3") + " | " + "One Piece Omnibus Vol 3".CompareTo("One Piece Vol 3"));
         
-            bookTitle = "Re:ZERO -Starting Life in Another World-";
-            bookType = 'N';
+            bookTitle = "one piece";
+            bookType = 'M';
 
             Stopwatch watch = new Stopwatch();
             watch.Start();
 
             EdgeOptions edgeOptions = new EdgeOptions();
             edgeOptions.PageLoadStrategy = PageLoadStrategy.Eager;
-            edgeOptions.AddArgument("headless");
-		    edgeOptions.AddArgument("enable-automation");
-		    edgeOptions.AddArgument("no-sandbox");
-		    edgeOptions.AddArgument("disable-infobars");
-		    edgeOptions.AddArgument("disable-dev-shm-usage");
-		    edgeOptions.AddArgument("disable-browser-side-navigation");
-		    edgeOptions.AddArgument("disable-gpu");
-		    edgeOptions.AddArgument("disable-extensions");
-		    edgeOptions.AddArgument("inprivate");
+            // edgeOptions.AddArgument("headless");
+            edgeOptions.AddArgument("enable-automation");
+            edgeOptions.AddArgument("no-sandbox");
+            edgeOptions.AddArgument("disable-infobars");
+            edgeOptions.AddArgument("disable-dev-shm-usage");
+            edgeOptions.AddArgument("disable-browser-side-navigation");
+            edgeOptions.AddArgument("disable-gpu");
+            edgeOptions.AddArgument("disable-extensions");
+            edgeOptions.AddArgument("inprivate");
             edgeOptions.AddArgument("incognito");
 
             // WebThreads.Add(CreateRightStufAnimeThread(edgeOptions));
             // WebThreads.Add(CreateRobertsAnimeCornerStoreThread(edgeOptions));
             // WebThreads.Add(CreateInStockTradesThread(edgeOptions));
-            WebThreads.Add(CreateKinokuniyaUSAThread(edgeOptions));
-
-            // Doesn't work with headless, unsure why
+            // WebThreads.Add(CreateKinokuniyaUSAThread(edgeOptions));
             // WebThreads.Add(CreateBarnesAndNobleThread(edgeOptions));
+            // WebThreads.Add(CreateBooksAMillionThread(edgeOptions));
+            WebThreads.Add(CreateAmazonUSAThread(edgeOptions));
             
             WebThreads.ForEach(web => web.Start());
             WebThreads.ForEach(web => web.Join());
@@ -289,44 +303,37 @@ namespace MangaLightNovelWebScrape
             int pos = 0; // The position of the new lists of data after comparing
             int checkTask;
             int threadCount = MasterList.Count / 2; // Tracks the "status" of the data lists that need to be compared, essentially tracks needed thread count
-            Thread[] threadList; // Holds the comparison threads for execution
+            Thread[] threadList = new Thread[threadCount];; // Holds the comparison threads for execution
             while (MasterList.Count > 1) // While there is still 2 or more lists of data to compare prices continue
             {
                 MasterList.Sort((dataSet1, dataSet2) => dataSet1.Count.CompareTo(dataSet2.Count));
-                //MasterList[0].ForEach(data => Logger.Info("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]"));
-                threadList = new Thread[threadCount];
-                //Logger.Debug("THREAD LENGTH = " + threadList.Length);
-                for (int curTask = 0; curTask <= threadList.Length; curTask += 2) // Create all of the Threads for compare processing
+                for (int curTask = 0; curTask < MasterList.Count - 1; curTask += 2) // Create all of the Threads for compare processing
                 {
                     checkTask = curTask;
-                    Logger.Debug("POSITION = " + pos);
                     threadList[pos] = new Thread(() => MasterList[pos] = PriceComparison(MasterList[checkTask], MasterList[checkTask + 1], bookTitle)); // Compare (SmallerList, BiggerList)
                     threadList[pos].Start();
                     threadList[pos].Join();
+                    // Logger.Debug("POSITION = " + pos);
                     pos++;
                 }
-                //MasterList[0].ForEach(data => Logger.Info("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]"));
+                
 
-                // If there are an odd number of threads left then after calculations the dangling thread/website that didn't get compared moves forward for easier comparison later
-                if (MasterList.Count == 2)
-                {
-                    // MasterList[0].ForEach(data => Logger.Info("List 0 [" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]"));
-                    // MasterList[MasterList.Count - 1].ForEach(data => Logger.Info("List 1 [" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]"));
-                    MasterList.RemoveAt(MasterList.Count - 1);
-                }
-                else if (threadCount % 2 != 0)
+                if (MasterList.Count % 2 != 0)
                 {
                     Logger.Debug("Odd Thread Check");
                     MasterList[pos] = MasterList[MasterList.Count - 1];
                     pos++;
                 }
 
-                Logger.Debug("Current Pos = " + pos);
+                // MasterList[MasterList.Count - 1].ForEach(data => Logger.Info("List 1 [" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]"));
+                // MasterList[0].ForEach(data => Logger.Info("List 0 [" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]"));
+                // Logger.Debug("Current Pos = " + pos);
                 MasterList.RemoveRange(pos, MasterList.Count - pos); // Shrink List
                 // Check if the master data list MasterList[0] is the only list left -> comparison is done 
-                if (MasterList.Count != 1)
+                if (MasterList.Count != 1 && threadCount != MasterList.Count / 2)
                 {
                     threadCount = MasterList.Count / 2;
+                    threadList = new Thread[threadCount];
                 }
                 pos = 0;
             }
@@ -334,12 +341,20 @@ namespace MangaLightNovelWebScrape
             watch.Stop();
             Logger.Info($"Time in Seconds: {(long)watch.ElapsedMilliseconds / 1000}s");
 
+
             using (StreamWriter outputFile = new StreamWriter(@"Data\MasterData.txt"))
             {
-                foreach (string[] data in MasterList[0])
+                if (MasterList.Count > 0)
                 {
-                    //Logger.Debug("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]");
-                    outputFile.WriteLine("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]");
+                    foreach (string[] data in MasterList[0])
+                    {
+                        //Logger.Debug("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]");
+                        outputFile.WriteLine("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]");
+                    }
+                }
+                else
+                {
+                    outputFile.WriteLine("No MasterData Available");
                 }
             }
         }
@@ -349,38 +364,36 @@ namespace MangaLightNovelWebScrape
     {
         string bookTitle;
 
-        public VolumeSort(string bookTitle){
+        public VolumeSort(string bookTitle)
+        {
             this.bookTitle = bookTitle;
         }
 
-        public int Compare(string[] vol1, string[] vol2) {
-            if (string.Equals(Regex.Replace(vol1[0], @" \d+$", ""), Regex.Replace(vol2[0], @" \d+$", ""))) {
-                return ExtractInt(vol1[0]) - ExtractInt(vol2[0]);
+        public int Compare(string[] vol1, string[] vol2)
+        {
+            int val1 = ExtractInt(vol1[0]);
+            int val2 = ExtractInt(vol2[0]);
+            if (string.Equals(Regex.Replace(vol1[0], @" Vol \d+$", ""), Regex.Replace(vol2[0], @" Vol \d+$", "")) || MasterScrape.Similar(vol1[0], vol2[0]))
+            {
+                if (val1 > val2)
+                {
+                    return 1;
+                }
+                else if (val1 < val2)
+                {
+                    return -1;
+                }
+                else
+                {
+                    return 0;
+                }
             }
             return vol1[0].CompareTo(vol2[0]);
         }
 
-        int ExtractInt(String s) {
-            return Int32.Parse(Regex.Replace(s.Substring(bookTitle.Length), @".*( \d+)$", "$1"));
+        int ExtractInt(String s)
+        {
+            return Int32.Parse(Regex.Replace(s.Substring(bookTitle.Length), @".*( \d+)$", "$1").TrimStart());
         }
     }
-    // public class ScrapedVolumeSort : IComparer<string[]>
-    // {
-    //     string bookTitle;
-
-    //     public ScrapedVolumeSort(string bookTitle){
-    //         this.bookTitle = bookTitle;
-    //     }
-
-    //     public int Compare(string[] vol1, string[] vol2) {
-    //         if (MasterScrape.Similar(vol1[0], vol2[0])) {
-    //             return ExtractInt(vol1[0]) - ExtractInt(vol2[0]);
-    //         }
-    //         return vol1[0].CompareTo(vol2[0]);
-    //     }
-
-    //     int ExtractInt(String s) {
-    //         return Int32.Parse(Regex.Replace(s.Substring(bookTitle.Length), @".*( \d+)$", "$1").TrimStart());
-    //     }
-    // }
 }

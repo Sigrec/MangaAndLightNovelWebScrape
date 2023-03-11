@@ -1,6 +1,6 @@
 using System.Threading.Tasks;
 
-namespace MangaLightNovelWebScrape.Websites
+namespace MangaLightNovelWebScrape.Src.Websites
 {
     class RobertsAnimeCornerStore
     {
@@ -54,7 +54,6 @@ namespace MangaLightNovelWebScrape.Websites
             // string typeCheck = bookType == 'N' ? "not(contains(text()[2], ' Graphic'))" : "contains(text()[2], ' Graphic')";
             edgeDriver.Navigate().GoToUrl(GetUrl(bookTitle, false));
             wait.Until(e => e.FindElement(By.XPath($"//b//a[1]")));
-
             doc.LoadHtml(edgeDriver.PageSource);
 
             HtmlNodeCollection seriesTitle = doc.DocumentNode.SelectNodes($"//b//a[1]");
@@ -63,7 +62,7 @@ namespace MangaLightNovelWebScrape.Websites
                 foreach (HtmlNode series in seriesTitle)
                 {
                     //Logger.Debug(Regex.Replace(series.InnerText.ToLower(), @"\s+", ""));
-                    if (Regex.Replace(series.InnerText.ToLower(), @"\s+", "").Contains(bookTitle))
+                    if (Regex.Replace(series.InnerText.ToLower(), @"\s+", "").Contains(bookTitle, StringComparison.OrdinalIgnoreCase))
                     {
                         link = GetUrl(series.Attributes["href"].Value, true);
                         return link;
@@ -80,7 +79,7 @@ namespace MangaLightNovelWebScrape.Websites
         public static List<string[]> GetRobertsAnimeCornerStoreData(string bookTitle, char bookType, EdgeOptions edgeOptions)
         {
             EdgeDriver edgeDriver = new EdgeDriver(Path.GetFullPath(@"DriverExecutables/Edge"), edgeOptions);
-            WebDriverWait wait = new WebDriverWait(edgeDriver, TimeSpan.FromSeconds(5));
+            WebDriverWait wait = new WebDriverWait(edgeDriver, TimeSpan.FromSeconds(30));
 
             // Initialize the html doc for crawling
             HtmlDocument doc = new HtmlDocument();
@@ -142,11 +141,12 @@ namespace MangaLightNovelWebScrape.Websites
                             currTitle = currTitle.Substring(0, currTitle.IndexOf("Omnibus ") + "Omnibus ".Length) + "Vol " + currTitle.Substring(currTitle.IndexOf("Omnibus ") + "Omnibus ".Length).Trim();
                         }
                         
-                        if (currTitle.Contains("20"))
+                        if (currTitle.Contains("0"))
                         {
-                            robertsAnimeCornerStoreDataList.Add(new string[]{currTitle, "$5.00", stockStatus.Trim(), "RobertsAnimeCornerStore"});
+                            robertsAnimeCornerStoreDataList.Add(new string[]{currTitle, "$3.00", stockStatus.Trim(), "RobertsAnimeCornerStore"});
                             continue;
                         }
+
                         robertsAnimeCornerStoreDataList.Add(new string[]{currTitle, priceData[x].InnerText.Trim(), stockStatus.Trim(), "RobertsAnimeCornerStore"});
                     }
 

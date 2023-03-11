@@ -1,4 +1,4 @@
-namespace MangaLightNovelWebScrape.Websites
+namespace MangaLightNovelWebScrape.Src.Websites
 {
     class RightStufAnime
     {
@@ -24,65 +24,73 @@ namespace MangaLightNovelWebScrape.Websites
         public static List<string[]> GetRightStufAnimeData(string bookTitle, char bookType, bool memberStatus, byte currPageNum, EdgeOptions edgeOptions)
         {
             EdgeDriver edgeDriver = new EdgeDriver(Path.GetFullPath(@"DriverExecutables/Edge"), edgeOptions);
-            WebDriverWait wait = new WebDriverWait(edgeDriver, TimeSpan.FromSeconds(5));
+            WebDriverWait wait = new WebDriverWait(edgeDriver, TimeSpan.FromSeconds(30));
 
             double GotAnimeDiscount = 0.05;
             decimal priceVal;
             string priceTxt, stockStatus, currTitle;
-            Regex removeWords = new Regex(@"[^a-z']");
+            Regex removeWords = new Regex(@"[^\w+]");
 
-            while (true)
+            try
             {
-                edgeDriver.Navigate().GoToUrl(GetUrl(bookType, currPageNum, bookTitle));
-                wait.Until(e => e.FindElement(By.XPath("//span[@itemprop='name']")));
-
-                // Initialize the html doc for crawling
-                HtmlDocument doc = new HtmlDocument();
-                doc.LoadHtml(edgeDriver.PageSource);
-
-                // Get the page data from the HTML doc
-                HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes("//span[@itemprop='name']");
-                HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes("//span[@itemprop='price']");
-                HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes("//div[@class='product-line-stock-container '] | //span[@class='product-line-stock-msg-out-text']");
-                HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode("//li[@class='global-views-pagination-next']");
-
-                for (int x = 0; x < titleData.Count; x++)
+                while (true)
                 {
-                    currTitle = Regex.Replace(titleData[x].InnerText, @"\(.*?\)", "").Trim();                  
-                    if(!titleData[x].InnerText.Contains("Imperfect") && removeWords.Replace(currTitle.ToLower(), "").Contains(removeWords.Replace(bookTitle.ToLower(), ""))){
-                        priceVal = System.Convert.ToDecimal(priceData[x].InnerText.Substring(1));
-                        priceTxt = memberStatus ? "$" + (priceVal - (priceVal * (decimal)GotAnimeDiscount)).ToString("0.00") : priceData[x].InnerText;
+                    edgeDriver.Navigate().GoToUrl(GetUrl(bookType, currPageNum, bookTitle));
+                    wait.Until(e => e.FindElement(By.XPath("//span[@itemprop='name']")));
 
-                        stockStatus = stockStatusData[x].InnerText;
-                        if (stockStatus.IndexOf("In Stock") != -1)
-                        {
-                            stockStatus = "IS";
-                        }
-                        else if (stockStatus.IndexOf("Out of Stock") != -1)
-                        {
-                            stockStatus = "OOS";
-                        }
-                        else if (stockStatus.IndexOf("Pre-Order") != -1)
-                        {
-                            stockStatus = "PO";
-                        }
-                        else{
-                            stockStatus = "OOP";
-                        }
+                    // Initialize the html doc for crawling
+                    HtmlDocument doc = new HtmlDocument();
+                    doc.LoadHtml(edgeDriver.PageSource);
 
-                        rightStufAnimeDataList.Add(new string[]{Regex.Replace(currTitle.Replace("Volume", "Vol"), @" Manga| Edition", "").Trim(), priceTxt.Trim(), stockStatus.Trim(), "RightStufAnime"});
+                    // Get the page data from the HTML doc
+                    HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes("//span[@itemprop='name']");
+                    HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes("//span[@itemprop='price']");
+                    HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes("//div[@class='product-line-stock-container '] | //span[@class='product-line-stock-msg-out-text']");
+                    HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode("//li[@class='global-views-pagination-next']");
+
+                    for (int x = 0; x < titleData.Count; x++)
+                    {
+                        currTitle = Regex.Replace(titleData[x].InnerText, @"\(.*?\)", "").Trim();                  
+                        if(!titleData[x].InnerText.Contains("Imperfect") && removeWords.Replace(currTitle, "").Contains(removeWords.Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase))
+                        {
+                            priceVal = System.Convert.ToDecimal(priceData[x].InnerText.Substring(1));
+                            priceTxt = memberStatus ? "$" + (priceVal - (priceVal * (decimal)GotAnimeDiscount)).ToString("0.00") : priceData[x].InnerText;
+
+                            stockStatus = stockStatusData[x].InnerText;
+                            if (stockStatus.IndexOf("In Stock") != -1)
+                            {
+                                stockStatus = "IS";
+                            }
+                            else if (stockStatus.IndexOf("Out of Stock") != -1)
+                            {
+                                stockStatus = "OOS";
+                            }
+                            else if (stockStatus.IndexOf("Pre-Order") != -1)
+                            {
+                                stockStatus = "PO";
+                            }
+                            else{
+                                stockStatus = "OOP";
+                            }
+
+                            rightStufAnimeDataList.Add(new string[]{Regex.Replace(currTitle.Replace("Volume", "Vol"), @" Manga| Edition", "").Trim(), priceTxt.Trim(), stockStatus.Trim(), "RightStufAnime"});
+                        }
+                    }
+
+                    if (pageCheck != null)
+                    {
+                        currPageNum++;
+                    }
+                    else
+                    {
+                        edgeDriver.Quit();
+                        break;
                     }
                 }
-
-                if (pageCheck != null)
-                {
-                    currPageNum++;
-                }
-                else
-                {
-                    edgeDriver.Quit();
-                    break;
-                }
+            }
+            catch (Exception ex) when (ex is WebDriverTimeoutException || ex is NoSuchElementException)
+            {
+                Logger.Error($"{bookTitle} Does Not Exist @ BooksAMillion\n{ex}");
             }
 
             rightStufAnimeDataList.Sort(new VolumeSort(bookTitle));

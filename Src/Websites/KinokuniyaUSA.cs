@@ -1,8 +1,4 @@
-using System.Runtime.Intrinsics.X86;
-using System;
-using System.Web;
-
-namespace MangaLightNovelWebScrape.Websites
+namespace MangaLightNovelWebScrape.Src.Websites
 {
     public class KinokuniyaUSA
     {
@@ -26,41 +22,54 @@ namespace MangaLightNovelWebScrape.Websites
 
         public static string TitleParse(string bookTitle, char bookType, string inputTitle)
         {
-            string parsedTitle = Regex.Replace(bookTitle, @"(?<=\d{1,3})[^\d{1,3}]+.*|,| \([^()]*\)|LIGHT NOVEL |NOVEL", "");
-
-            if (parsedTitle[parsedTitle.Length - 1])
-            if (parsedTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase))
+            string parsedTitle;
+            if (!inputTitle.Any(Char.IsDigit))
             {
-                parsedTitle = Regex.Replace(parsedTitle, "MANGA|Manga", "");
-            }
-            else if (parsedTitle.Contains("Novel"), StringComparison.OrdinalIgnoreCase)
-            {
-                parsedTitle = Regex.Replace(parsedTitle, "NOVEL|novel", "");
-            }
-            
-
-            if (!parsedTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase))
-            {
-                parsedTitle = parsedTitle.Insert(Regex.Match(parsedTitle, @"\d{1,3}").Index, "Vol ");
-                // Logger.Debug("Parsed Title = " + parsedTitle);
+                parsedTitle = Regex.Replace(bookTitle.Replace("(Omnibus Edition)", "Omnibus"), @"(?<=\d{1,3})[^\d{1,3}]+.*|,| \([^()]*\)|LIGHT NOVEL ", "");
             }
             else
             {
+                parsedTitle = Regex.Replace(bookTitle.Replace("(Omnibus Edition)", "Omnibus"), @"(?<=\d{1,3}.$)[^\d{1,3}]+.*|,| \([^()]*\)|LIGHT NOVEL ", "");
+            }
+
+            // Check to see if after parsing, the volume number is still there if not then fix/add it back
+            if (!MasterScrape.Similar(parsedTitle, inputTitle))
+            {
+                parsedTitle = Regex.Replace(new Regex(@"\((.*?)\)").Match(bookTitle).Groups[0].ToString(), @"\(|\)", "");
+                if (!Char.IsDigit(parsedTitle, parsedTitle.Length - 1))
+                {
+                    parsedTitle += $" {new Regex(@"(\d+)").Match(bookTitle).Groups[0].ToString()}";
+                }
+                // Console.WriteLine("Fixed Title 1 = " + parsedTitle);
+            }
+
+            if (parsedTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase))
+            {
+                parsedTitle = Regex.Replace(parsedTitle, "MANGA", "", RegexOptions.IgnoreCase);
+            }
+            else if (parsedTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase))
+            {
+                parsedTitle = Regex.Replace(parsedTitle, "NOVEL", "", RegexOptions.IgnoreCase);
+                // Console.WriteLine("Fixed Title 2 = " + parsedTitle);
+            }
+            
+
+            if (!parsedTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !parsedTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
+            {
+                parsedTitle = parsedTitle.Insert(Regex.Match(parsedTitle, @"\d{1,3}").Index, "Vol ");
+                // Console.WriteLine("Fixed Title 3 = " + parsedTitle);
+            }
+            else if (!parsedTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
+            {
                 parsedTitle = parsedTitle.Replace("Vol.", "Vol");
+                // Console.WriteLine("Fixed Title 3 = " + parsedTitle);
             }
 
             if (bookType == 'N')
             {
                 parsedTitle = parsedTitle.Insert(parsedTitle.IndexOf("Vol"), "Novel ");
-                Logger.Debug("Adding Novel = " + parsedTitle + " Index = " + (parsedTitle.IndexOf("Novel") - 1) + " Substring Title = " + parsedTitle.Substring(0, parsedTitle.IndexOf("Novel") - 1));
-                if (!MasterScrape.Similar(parsedTitle.Substring(0, parsedTitle.IndexOf("Novel") - 1), inputTitle))
-                {
-                    // Logger.Debug("Not SImilar");
-                    parsedTitle = parsedTitle.Remove(0, parsedTitle.IndexOf("Novel")).Insert(0, char.ToUpper(inputTitle[0]) + inputTitle.ToLower().Substring(1) + " ");
-                    // Logger.Debug("Fixed Title = " + parsedTitle);
-                }
             }
-            else if (bookType == 'M' && !MasterScrape.Similar(parsedTitle.Substring(0, parsedTitle.IndexOf("Vol") - 1), inputTitle))
+            else if (bookType == 'M' && !parsedTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) && !MasterScrape.Similar(parsedTitle.Substring(0, parsedTitle.IndexOf("Vol") - 1), inputTitle))
             {
                 parsedTitle = parsedTitle.Remove(0, parsedTitle.IndexOf("Vol")).Insert(0, char.ToUpper(inputTitle[0]) + inputTitle.ToLower().Substring(1) + " ");
             }
@@ -75,116 +84,130 @@ namespace MangaLightNovelWebScrape.Websites
             dummyDriver.Quit();
 
             EdgeDriver edgeDriver = new EdgeDriver(@"DriverExecutables/Edge", edgeOptions);
-            WebDriverWait wait = new WebDriverWait(edgeDriver, TimeSpan.FromSeconds(10));
-            edgeDriver.Navigate().GoToUrl(GetUrl(bookType, currPageNum, bookTitle.Replace("-", "")));
+            WebDriverWait wait = new WebDriverWait(edgeDriver, TimeSpan.FromSeconds(30));
 
-            if (bookType == 'M')
+            try
             {
-                // Click the Manga button so it only shows manga and wait for DOM to fully load
-                wait.Until(driver => driver.FindElement(By.XPath("//div[@id='loading' and @style='display: none;']")));
-                edgeDriver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("//p[contains(text(), 'English Books')]/following-sibling::ul//a[contains(text(), 'Manga')]"))));
-            }
-            wait.Until(driver => driver.FindElement(By.XPath("//div[@id='loading' and @style='display: none;']")));
-            wait.Until(driver => driver.FindElement(By.XPath("//ul[@class='sortMenu']//li//a[contains(text(), 'List')]"))).Click();
-            wait.Until(driver => driver.FindElement(By.XPath("//div[@id='loading' and @style='display: none;']")));
-
-             // Initialize the html doc for crawling
-            HtmlDocument doc = new HtmlDocument();
-            doc.LoadHtml(edgeDriver.PageSource);
-            edgeDriver.Quit();
-
-            // Get the page data from the HTML doc
-            HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes("//span[@class='underline']");
-            HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes("//li[@class='price']/span");
-            HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes("//li[@class='status']");
-
-            // Remove all of the novels from the list if user is searching for manga
-            if (titleData != null)
-            {
-                for(int x = 0; x < titleData.Count; x++)
+                while(true)
                 {
-                    if (titleData[x].InnerText.Contains("Novel", StringComparison.OrdinalIgnoreCase) && bookType == 'M')
+                    edgeDriver.Navigate().GoToUrl(GetUrl(bookType, currPageNum, bookTitle));
+                    if (bookType == 'M')
                     {
-                        //Logger.Debug($"Removed Novel {titleData[x].InnerText}");
-                        titleData.RemoveAt(x);
-                        stockStatusData.RemoveAt(x);
-                        priceData.RemoveAt(x);
-                        priceData.RemoveAt(x + 1);
-                        x--;
+                        // Click the Manga button so it only shows manga and wait for DOM to fully load
+                        wait.Until(driver => driver.FindElement(By.XPath("//div[@id='loading' and @style='display: none;']")));
+                        edgeDriver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("//p[contains(text(), 'English Books')]/following-sibling::ul//a[contains(text(), 'Manga')]"))));
                     }
-                }
-            }
-            else
-            {
-                Logger.Warn($"{bookTitle} Does Not Exist at KinokuniyaUSA");
-            }
+                    wait.Until(driver => driver.FindElement(By.XPath("//div[@id='loading' and @style='display: none;']")));
+                    wait.Until(driver => driver.FindElement(By.XPath("//ul[@class='sortMenu']//li//a[contains(text(), 'List')]"))).Click();
+                    wait.Until(driver => driver.FindElement(By.XPath("//div[@id='loading' and @style='display: none;']")));
 
-            HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode("//p[@class='pagerArrowR']");
+                    // Initialize the html doc for crawling
+                    HtmlDocument doc = new HtmlDocument();
+                    doc.LoadHtml(edgeDriver.PageSource);
 
-            if (titleData.Count == 0)
-            {
-                Logger.Warn($"{bookTitle} Does not Exist at KinokuniyaUSA");
-            }
-
-            string stockStatus = "";
-            if (memberStatus) // If the user is a member only take the discounted prices (10%)
-            {
-                for (int x = 1; x < priceData.Count; x+=2)
-                {
-                    if (stockStatusData[x / 2].InnerText.Contains("Out of stock"))
-                    {
-                        stockStatus = "OOS";
-                    }
-                    else if (stockStatusData[x / 2].InnerText.Contains("Pre Order"))
-                    {
-                        stockStatus = "PO";
-                    }
-                    else if (stockStatusData[x / 2].InnerText.Contains("In stock"))
-                    {
-                        stockStatus = "IS";
-                    }
-                    KinokuniyaUSADataList.Add(new string[]{TitleParse(titleData[x / 2].InnerText, bookType, bookTitle), priceData[x].InnerText.Trim(), stockStatus, "KinokuniyaUSA"});
-
-                    Logger.Debug("[" + KinokuniyaUSADataList[x / 2][0] + ", " + KinokuniyaUSADataList[x / 2][1] + ", " + KinokuniyaUSADataList[x / 2][2] + ", " + KinokuniyaUSADataList[x / 2][3] + "]");
-                }
-            }
-            else
-            {
-                for (int x = 0; x < priceData.Count; x+=2)
-                {
-                    if (stockStatusData[x / 2].InnerText.Contains("Out of stock"))
-                    {
-                        stockStatus = "OOS";
-                    }
-                    else if (stockStatusData[x / 2].InnerText.Contains("Pre Order"))
-                    {
-                        stockStatus = "PO";
-                    }
-                    else if (stockStatusData[x / 2].InnerText.Contains("In stock"))
-                    {
-                        stockStatus = "IS";
-                    }
+                    // Get the page data from the HTML doc
+                    HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes("//span[@class='underline']");
+                    HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes("//li[@class='price']/span");
+                    HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes("//li[@class='status']");
+                    HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode("//p[@class='pagerArrowR']");
                     
-                    // if (titleData[x / 2].InnerText.Contains("23"))
+                    // for (int x = 1; x < priceData.Count; x+=2)
                     // {
-                    //     KinokuniyaUSADataList.Add(new string[]{TitleParse(titleData[x / 2].InnerText, bookType), "$4.00", stockStatus, "KinokuniyaUSA"});
-                    //     continue;
+                    //     Logger.Debug($"[{titleData[x / 2].InnerText}, {priceData[x - 1].InnerText.Trim()}, {priceData[x ].InnerText.Trim()}, {stockStatusData[x / 2].InnerText}, KinokuniyaUSA");
                     // }
-                    KinokuniyaUSADataList.Add(new string[]{TitleParse(titleData[x / 2].InnerText, bookType, bookTitle), priceData[x].InnerText.Trim(), stockStatus, "KinokuniyaUSA"});
 
-                    Logger.Debug("[" + KinokuniyaUSADataList[x / 2][0] + ", " + KinokuniyaUSADataList[x / 2][1] + ", " + KinokuniyaUSADataList[x / 2][2] + ", " + KinokuniyaUSADataList[x / 2][3] + "]");
+                    // Remove all of the novels from the list if user is searching for manga
+                    if (titleData != null)
+                    {
+                        for (int x = 1; x < priceData.Count; x+=2)
+                        {
+                            if (titleData[x / 2].InnerText.Contains("Novel", StringComparison.OrdinalIgnoreCase) && bookType == 'M' || !titleData[x / 2].InnerText.Any(Char.IsDigit) || titleData[x / 2].InnerText.Contains("Volume", StringComparison.OrdinalIgnoreCase))
+                            {
+                                titleData.RemoveAt(x / 2);
+                                stockStatusData.RemoveAt(x / 2);
+                                priceData.RemoveAt(x);
+                                priceData.RemoveAt(x - 1);
+                                x-=2;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Logger.Warn($"{bookTitle} Does Not Exist at KinokuniyaUSA");
+                    }
+
+                    string stockStatus = "";
+                    if (memberStatus) // If the user is a member only take the discounted prices (10%)
+                    {
+                        for (int x = 1; x < priceData.Count; x+=2)
+                        {
+                            if (stockStatusData[x / 2].InnerText.Contains("Out of stock"))
+                            {
+                                stockStatus = "OOS";
+                            }
+                            else if (stockStatusData[x / 2].InnerText.Contains("Pre Order"))
+                            {
+                                stockStatus = "PO";
+                            }
+                            else if (stockStatusData[x / 2].InnerText.Contains("In stock"))
+                            {
+                                stockStatus = "IS";
+                            }
+
+                            if (titleData[x / 2].InnerText.Contains("3"))
+                            {
+                                Logger.Debug("Check" + TitleParse(titleData[x / 2].InnerText, bookType, bookTitle));
+                                KinokuniyaUSADataList.Add(new string[]{TitleParse(titleData[x / 2].InnerText, bookType, bookTitle), "$4.00", stockStatus, "KinokuniyaUSA"});
+                                continue;
+                            }
+
+                            KinokuniyaUSADataList.Add(new string[]{TitleParse(titleData[x / 2].InnerText, bookType, bookTitle), priceData[x].InnerText.Trim(), stockStatus, "KinokuniyaUSA"});
+                        }
+                    }
+                    else
+                    {
+                        for (int x = 0; x < priceData.Count; x+=2)
+                        {
+                            if (stockStatusData[x / 2].InnerText.Contains("Out of stock"))
+                            {
+                                stockStatus = "OOS";
+                            }
+                            else if (stockStatusData[x / 2].InnerText.Contains("Pre Order"))
+                            {
+                                stockStatus = "PO";
+                            }
+                            else if (stockStatusData[x / 2].InnerText.Contains("In stock"))
+                            {
+                                stockStatus = "IS";
+                            }
+                            
+                            if (titleData[x / 2].InnerText.Contains("3"))
+                            {
+                               Logger.Debug("Check" + TitleParse(titleData[x / 2].InnerText, bookType, bookTitle));
+                                KinokuniyaUSADataList.Add(new string[]{TitleParse(titleData[x / 2].InnerText, bookType, bookTitle), "$4.00", stockStatus, "KinokuniyaUSA"});
+                                continue;
+                            }
+
+                            KinokuniyaUSADataList.Add(new string[]{TitleParse(titleData[x / 2].InnerText, bookType, bookTitle), priceData[x].InnerText.Trim(), stockStatus, "KinokuniyaUSA"});
+                        }
+                    }
+
+                    if (pageCheck != null)
+                    {
+                        currPageNum++;
+                    }
+                    else
+                    {
+                        edgeDriver.Quit();
+                        KinokuniyaUSADataList.Sort(new VolumeSort(bookTitle));
+                        break;
+                    }
                 }
             }
-
-            // if (pageCheck != null)
-            // {
-            //     //edgeDriver.FindElement(By.XPath("//p[@class='pagerArrowR']")).Click();
-            //     //GetKinokuniyaUSAData(bookTitle, bookType, memberStatus, currPageNum, edgeOptions);
-            // }
-            //edgeDriver.Quit();
-
-            KinokuniyaUSADataList.Sort(new VolumeSort(bookTitle));
-            Logger.Debug("Finished Sorting");
+            catch (Exception e) when (e is WebDriverTimeoutException || e is NoSuchElementException)
+            {
+                Logger.Error($"{bookTitle} Does Not Exist @ KinokuniyaUSA\n{e}");
+            }
 
             //Print data to a txt file
             using (StreamWriter outputFile = new StreamWriter(@"Data\KinokuniyaUSAData.txt"))
@@ -194,6 +217,7 @@ namespace MangaLightNovelWebScrape.Websites
                     foreach (string[] data in KinokuniyaUSADataList)
                     {
                         outputFile.WriteLine("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]");
+                        Logger.Debug("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]");
                     }
                 }
                 else{
