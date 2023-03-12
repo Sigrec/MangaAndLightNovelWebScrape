@@ -69,7 +69,8 @@ namespace MangaLightNovelWebScrape.Src.Websites
                             {
                                 stockStatus = "PO";
                             }
-                            else{
+                            else
+                            {
                                 stockStatus = "OOP";
                             }
 

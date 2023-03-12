@@ -42,6 +42,11 @@ namespace MangaLightNovelWebScrape.Src.Websites
                 parsedTitle = Regex.Replace(currTitle.Replace("(Omnibus Edition)", "Omnibus"), @"(?<=Vol \d{1,3})[^\d{1,3}.]+.*|\,|:| \([^()]*\)", "");
             }
 
+            if (!parsedTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !parsedTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
+            {
+                parsedTitle = parsedTitle.Insert(Regex.Match(parsedTitle, @"\d{1,3}").Index, "Vol ");
+            }
+
             return parsedTitle.Trim();
         }
 
@@ -58,7 +63,7 @@ namespace MangaLightNovelWebScrape.Src.Websites
             };
             wait.IgnoreExceptionTypes(typeof(NoSuchElementException));
 
-            Regex removeWords = new Regex(@"[^a-z']");
+            Regex removeWords = new Regex(@"[^\w+]");
 
             restart:
             try
@@ -92,18 +97,19 @@ namespace MangaLightNovelWebScrape.Src.Websites
 
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        currTitle = titleData[x].GetAttributeValue("title", "Title Error");
-                        if (removeWords.Replace(currTitle.ToLower(), "").Contains(removeWords.Replace(bookTitle.ToLower(), "")))
+                        // currTitle = titleData[x].GetAttributeValue("title", "Title Error");
+                        currTitle = TitleParse(titleData[x].GetAttributeValue("title", "Title Error"), bookType, bookTitle);
+                        if (removeWords.Replace(currTitle.ToLower(), "").Contains(removeWords.Replace(bookTitle.ToLower(), "")) && (bookType == 'M' && currTitle.Any(Char.IsDigit)))
                         {
-                            if (TitleParse(currTitle, bookType, bookTitle).Contains("7"))
-                            {
-                                BarnesAndNobleDataList.Add(new string[]{TitleParse(currTitle, bookType, bookTitle), "$2.00", stockStatusData[x].InnerText.Contains("Pre-order") ? "PO" : "IS", "BarnesAndNoble"});
-                                continue;
-                            }
+                            // if (TitleParse(currTitle, bookType, bookTitle).Contains("7"))
+                            // {
+                            //     BarnesAndNobleDataList.Add(new string[]{TitleParse(currTitle, bookType, bookTitle), "$2.00", stockStatusData[x].InnerText.Contains("Pre-order") ? "PO" : "IS", "BarnesAndNoble"});
+                            //     continue;
+                            // }
 
-                            BarnesAndNobleDataList.Add(new string[]{TitleParse(currTitle, bookType, bookTitle), priceData[x].InnerText.Trim(), stockStatusData[x].InnerText.Contains("Pre-order") ? "PO" : "IS", "BarnesAndNoble"});
+                            BarnesAndNobleDataList.Add(new string[]{currTitle, priceData[x].InnerText.Trim(), stockStatusData[x].InnerText.Contains("Pre-order") ? "PO" : "IS", "BarnesAndNoble"});
 
-                            Logger.Debug("[" + BarnesAndNobleDataList[x][0] + ", " + BarnesAndNobleDataList[x][1] + ", " + BarnesAndNobleDataList[x][2] + ", " + BarnesAndNobleDataList[x][3] + "]");
+                            //Logger.Debug("[" + BarnesAndNobleDataList[x][0] + ", " + BarnesAndNobleDataList[x][1] + ", " + BarnesAndNobleDataList[x][2] + ", " + BarnesAndNobleDataList[x][3] + "]");
                         }
                     }
 
@@ -134,7 +140,6 @@ namespace MangaLightNovelWebScrape.Src.Websites
             {
                 if (BarnesAndNobleDataList.Count != 0)
                 {
-                    Logger.Debug("Sorted");
                     foreach (string[] data in BarnesAndNobleDataList)
                     {
                         Logger.Debug("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]");

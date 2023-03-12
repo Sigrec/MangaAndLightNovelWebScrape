@@ -39,7 +39,7 @@ namespace MangaLightNovelWebScrape.Src.Websites
 
         public static string TitleParse(string bookTitle, char bookType, string inputTitle)
         {
-            string filterRegex;
+            string filterRegex, parsedTitle;
             if (!inputTitle.Any(Char.IsDigit))
             {
                 filterRegex = @"(?<=\d{1,3})[^\d{1,3}.]+.*";
@@ -48,7 +48,15 @@ namespace MangaLightNovelWebScrape.Src.Websites
             {
                 filterRegex = @"(?<=\d{1,3}.$)[^\d{1,3}]+.*";
             }
-            return Regex.Replace(Regex.Replace(bookTitle.Replace(",", "").Replace("(Omnibus Edition)", "Omnibus"), @"Vol\.|Volume", "Vol"), filterRegex, "").Trim();
+
+            parsedTitle = Regex.Replace(Regex.Replace(bookTitle.Replace(",", "").Replace("(Omnibus Edition)", "Omnibus"), @"Vol\.|Volume", "Vol"), filterRegex, "");
+
+            if (!parsedTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !parsedTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
+            {
+                parsedTitle = parsedTitle.Insert(Regex.Match(parsedTitle, @"\d{1,3}").Index, "Vol ");
+            }
+
+            return parsedTitle.Trim();
         }
 
         public static List<string[]> GetBooksAMillionData(string bookTitle, char bookType, bool memberStatus, byte currPageNum, EdgeOptions edgeOptions)
@@ -95,7 +103,7 @@ namespace MangaLightNovelWebScrape.Src.Websites
                             continue;
                         }
                         
-                        if (removeWords.Replace(currTitle, "").Contains(removeWords.Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase) && currTitle.Any(Char.IsDigit))
+                        if (removeWords.Replace(currTitle, "").Contains(removeWords.Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase) && !currTitle.Contains("Guide") && currTitle.Any(Char.IsDigit))
                         {
                             stockStatus = stockStatusData[x].InnerText;
                             if (stockStatus.Contains("In Stock"))
@@ -111,11 +119,11 @@ namespace MangaLightNovelWebScrape.Src.Websites
                                 stockStatus = "OOS";
                             }
 
-                            if (currTitle.Contains("4"))
-                            {
-                                BooksAMillionDataList.Add(new string[]{currTitle, "$1.00", stockStatus, "BooksAMillion"});
-                                continue;
-                            }
+                            // if (currTitle.Contains("4"))
+                            // {
+                            //     BooksAMillionDataList.Add(new string[]{currTitle, "$1.00", stockStatus, "BooksAMillion"});
+                            //     continue;
+                            // }
 
                             priceVal = System.Convert.ToDecimal(priceData[x].InnerText.Trim().Substring(1));
                             priceTxt = memberStatus ? "$" + (priceVal - (priceVal * discount)).ToString("0.00") : priceData[x].InnerText;

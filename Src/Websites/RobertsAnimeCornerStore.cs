@@ -141,11 +141,11 @@ namespace MangaLightNovelWebScrape.Src.Websites
                             currTitle = currTitle.Substring(0, currTitle.IndexOf("Omnibus ") + "Omnibus ".Length) + "Vol " + currTitle.Substring(currTitle.IndexOf("Omnibus ") + "Omnibus ".Length).Trim();
                         }
                         
-                        if (currTitle.Contains("0"))
-                        {
-                            robertsAnimeCornerStoreDataList.Add(new string[]{currTitle, "$3.00", stockStatus.Trim(), "RobertsAnimeCornerStore"});
-                            continue;
-                        }
+                        // if (currTitle.Contains("0"))
+                        // {
+                        //     robertsAnimeCornerStoreDataList.Add(new string[]{currTitle, "$3.00", stockStatus.Trim(), "RobertsAnimeCornerStore"});
+                        //     continue;
+                        // }
 
                         robertsAnimeCornerStoreDataList.Add(new string[]{currTitle, priceData[x].InnerText.Trim(), stockStatus.Trim(), "RobertsAnimeCornerStore"});
                     }

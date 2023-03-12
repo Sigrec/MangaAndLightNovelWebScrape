@@ -154,12 +154,12 @@ namespace MangaLightNovelWebScrape.Src.Websites
                                 stockStatus = "IS";
                             }
 
-                            if (titleData[x / 2].InnerText.Contains("3"))
-                            {
-                                Logger.Debug("Check" + TitleParse(titleData[x / 2].InnerText, bookType, bookTitle));
-                                KinokuniyaUSADataList.Add(new string[]{TitleParse(titleData[x / 2].InnerText, bookType, bookTitle), "$4.00", stockStatus, "KinokuniyaUSA"});
-                                continue;
-                            }
+                            // if (titleData[x / 2].InnerText.Contains("3"))
+                            // {
+                            //     Logger.Debug("Check" + TitleParse(titleData[x / 2].InnerText, bookType, bookTitle));
+                            //     KinokuniyaUSADataList.Add(new string[]{TitleParse(titleData[x / 2].InnerText, bookType, bookTitle), "$4.00", stockStatus, "KinokuniyaUSA"});
+                            //     continue;
+                            // }
 
                             KinokuniyaUSADataList.Add(new string[]{TitleParse(titleData[x / 2].InnerText, bookType, bookTitle), priceData[x].InnerText.Trim(), stockStatus, "KinokuniyaUSA"});
                         }
@@ -181,12 +181,12 @@ namespace MangaLightNovelWebScrape.Src.Websites
                                 stockStatus = "IS";
                             }
                             
-                            if (titleData[x / 2].InnerText.Contains("3"))
-                            {
-                               Logger.Debug("Check" + TitleParse(titleData[x / 2].InnerText, bookType, bookTitle));
-                                KinokuniyaUSADataList.Add(new string[]{TitleParse(titleData[x / 2].InnerText, bookType, bookTitle), "$4.00", stockStatus, "KinokuniyaUSA"});
-                                continue;
-                            }
+                            // if (titleData[x / 2].InnerText.Contains("3"))
+                            // {
+                            //    Logger.Debug("Check" + TitleParse(titleData[x / 2].InnerText, bookType, bookTitle));
+                            //     KinokuniyaUSADataList.Add(new string[]{TitleParse(titleData[x / 2].InnerText, bookType, bookTitle), "$4.00", stockStatus, "KinokuniyaUSA"});
+                            //     continue;
+                            // }
 
                             KinokuniyaUSADataList.Add(new string[]{TitleParse(titleData[x / 2].InnerText, bookType, bookTitle), priceData[x].InnerText.Trim(), stockStatus, "KinokuniyaUSA"});
                         }

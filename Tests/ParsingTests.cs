@@ -27,6 +27,7 @@ namespace Tests
                 Assert.That(AmazonUSA.TitleParse("The Seven Deadly Sins Omnibus 1 (Vol. 1-3)", 'M', "the seven deadly sins"), Is.EqualTo("The Seven Deadly Sins Omnibus Vol 1"));
                 Assert.That(AmazonUSA.TitleParse("The Seven Deadly Sins 3 (Seven Deadly Sins, The)", 'M', "the seven deadly sins"), Is.EqualTo("The Seven Deadly Sins Vol 3"));
                 Assert.That(AmazonUSA.TitleParse("One Piece (Omnibus Edition), Vol. 33: Includes vols. 97, 98 & 99 (33)", 'M', "one piece"), Is.EqualTo("One Piece Omnibus Vol 33"));
+                Assert.That(AmazonUSA.TitleParse("07-GHOST, Vol. 17", 'M', "07-ghost"), Is.EqualTo("07-Ghost Vol 17").IgnoreCase);
             });
         }
 
@@ -39,6 +40,7 @@ namespace Tests
                 Assert.That(BooksAMillion.TitleParse("One Piece Box Set 4 : Dressrosa to Reverie: Volumes 71-90 with Premium", 'M', "one piece"), Is.EqualTo("One Piece Box Set 4"));
                 Assert.That(BooksAMillion.TitleParse("One Piece (Omnibus Edition), Vol. 33 : Includes Vols. 97, 98 & 99", 'M', "one piece"), Is.EqualTo("One Piece Omnibus Vol 33"));
                 Assert.That(BooksAMillion.TitleParse("One Piece, Vol. 11 : Volume 11", 'M', "one piece"), Is.EqualTo("One Piece Vol 11"));
+                Assert.That(BooksAMillion.TitleParse("Jujutsu Kaisen 0", 'M', "jujutsu kaisen"), Is.EqualTo("Jujutsu Kaisen Vol 0"));
             });
         }
 
@@ -53,6 +55,7 @@ namespace Tests
                Assert.That(BarnesAndNoble.TitleParse("Classroom of the Elite: Year 2 (Light Novel) Vol. 4.5", 'N', "classroom of the elite"), Is.EqualTo("Classroom of the Elite Year 2 Vol 4.5"));
                Assert.That(BarnesAndNoble.TitleParse("Overlord, Vol. 6 (light novel): The Men of the Kingdom Part II", 'N', "overlord"), Is.EqualTo("Overlord Vol 6"));
                Assert.That(BarnesAndNoble.TitleParse("One Piece, Vol. 2: Buggy the Clown", 'M', "one piece"), Is.EqualTo("One Piece Vol 2")); 
+               Assert.That(BarnesAndNoble.TitleParse("Jujutsu Kaisen 0", 'M', "jujutsu kaisen"), Is.EqualTo("Jujutsu Kaisen Vol 0"));
             });
         }
 

@@ -44,15 +44,15 @@ namespace MangaLightNovelWebScrape.Src.Websites
                         List<int> entiresToRemove = new List<int>();
                         for (int x = 0; x < titleData.Count; x++)
                         {
-                            if (titleData[x].InnerText.Equals("Damaged")) // Remove damaged volume entries
+                            currTitle = Regex.Replace(titleData[x].InnerText.Replace("3In1", "Omnibus").Trim(), @"GN |TP |(?<=\d+.).*", "");
+                            if (titleData[x].InnerText.Equals("Damaged") || !currTitle.Any(Char.IsDigit)) // Remove damaged volume entries
                             {
-                                //Logger.Debug("Found Damaged ^");
+                                // Logger.Debug("Found Damaged ^ or Novel when Manga Search");
                                 titleData.RemoveAt(x);
                                 x--;
-                                entiresToRemove.Add(x);
                                 continue;
                             }
-                            currTitle = Regex.Replace(titleData[x].InnerText.Replace("3In1", "Omnibus").Trim(), @"GN |TP |(?<=\d+.).*", "");
+                            
                             if (currTitle.Contains("Box Set")) 
                             { 
                                 currTitle = Regex.Replace(currTitle, "Vol ", "");
@@ -67,15 +67,16 @@ namespace MangaLightNovelWebScrape.Src.Websites
 
                             inStockTradesDataList.Add(new string[]{!currTitle[volNumIndex].Equals('0') ? currTitle : currTitle.Remove(volNumIndex, 1), priceData[x].InnerText.Trim(), "IS", "InStockTrades"});
                             
-                            // Logger.Debug("[" + inStockTradesDataList[x][0] + ", " + inStockTradesDataList[x][1] + ", " + inStockTradesDataList[x][2] + ", " + inStockTradesDataList[x][3] + "]");
+                            Logger.Debug("[" + inStockTradesDataList[x][0] + ", " + inStockTradesDataList[x][1] + ", " + inStockTradesDataList[x][2] + ", " + inStockTradesDataList[x][3] + "]");
                         }
 
-                        if (pageCheck != null){
+                        if (pageCheck != null)
+                        {
                             currPageNum++;
                         }
-                        else{
+                        else
+                        {
                             edgeDriver.Quit();
-                            entiresToRemove.ForEach(index => inStockTradesDataList.RemoveAt(index));
                             inStockTradesDataList.Sort(new VolumeSort(bookTitle));
                             break;
                         }
@@ -102,7 +103,8 @@ namespace MangaLightNovelWebScrape.Src.Websites
                         outputFile.WriteLine("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]");
                     }
                 }
-                else{
+                else
+                {
                     outputFile.WriteLine(bookTitle + " Does Not Exist @ InStockTrades");
                 }
             } 

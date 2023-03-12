@@ -268,7 +268,7 @@ namespace MangaLightNovelWebScrape
 
             // Logger.Debug(Similar("One Piece Omnibus Vol 3", "One Piece Vol 3") + " | " + "One Piece Omnibus Vol 3".CompareTo("One Piece Vol 3"));
         
-            bookTitle = "one piece";
+            bookTitle = "07-ghost";
             bookType = 'M';
 
             Stopwatch watch = new Stopwatch();
@@ -276,7 +276,7 @@ namespace MangaLightNovelWebScrape
 
             EdgeOptions edgeOptions = new EdgeOptions();
             edgeOptions.PageLoadStrategy = PageLoadStrategy.Eager;
-            // edgeOptions.AddArgument("headless");
+            edgeOptions.AddArgument("headless");
             edgeOptions.AddArgument("enable-automation");
             edgeOptions.AddArgument("no-sandbox");
             edgeOptions.AddArgument("disable-infobars");
@@ -287,12 +287,12 @@ namespace MangaLightNovelWebScrape
             edgeOptions.AddArgument("inprivate");
             edgeOptions.AddArgument("incognito");
 
-            // WebThreads.Add(CreateRightStufAnimeThread(edgeOptions));
-            // WebThreads.Add(CreateRobertsAnimeCornerStoreThread(edgeOptions));
-            // WebThreads.Add(CreateInStockTradesThread(edgeOptions));
-            // WebThreads.Add(CreateKinokuniyaUSAThread(edgeOptions));
-            // WebThreads.Add(CreateBarnesAndNobleThread(edgeOptions));
-            // WebThreads.Add(CreateBooksAMillionThread(edgeOptions));
+            WebThreads.Add(CreateRightStufAnimeThread(edgeOptions));
+            WebThreads.Add(CreateRobertsAnimeCornerStoreThread(edgeOptions));
+            WebThreads.Add(CreateInStockTradesThread(edgeOptions));
+            WebThreads.Add(CreateKinokuniyaUSAThread(edgeOptions));
+            WebThreads.Add(CreateBarnesAndNobleThread(edgeOptions));
+            WebThreads.Add(CreateBooksAMillionThread(edgeOptions));
             WebThreads.Add(CreateAmazonUSAThread(edgeOptions));
             
             WebThreads.ForEach(web => web.Start());
