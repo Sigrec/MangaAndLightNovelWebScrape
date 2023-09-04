@@ -9,7 +9,7 @@
             "type": "coreclr",
             "request": "launch",
             "preLaunchTask": "build",
-            "program": "${workspaceFolder}/Src/bin/Debug/net6.0/MangaAndLightNovelWebScrape.dll",
+            "program": "${workspaceFolder}/Src/bin/Debug/net7.0/MangaAndLightNovelWebScrape.dll",
             "args": [],
             "cwd": "${workspaceFolder}",
             "console": "internalConsole",

@@ -1,12 +1,15 @@
-namespace MangaLightNovelWebScrape.Src.Websites
+namespace MangaLightNovelWebScrape.Websites
 {
-    public class BarnesAndNoble
+    public partial class BarnesAndNoble
     {
-        public static List<string> BarnesAndNobleLinks = new List<string>(); //List of links used to get data from BarnesAndNoble
-        private static List<string[]> BarnesAndNobleDataList = new List<string[]>(); //List of all the series data from BarnesAndNoble
+        public static List<string> BarnesAndNobleLinks = new(); //List of links used to get data from BarnesAndNoble
+        private static List<EntryModel> BarnesAndNobleDataList = new(); //List of all the series data from BarnesAndNoble
         private static bool secondWebsiteCheck = false;
-
         private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("BarnesAndNobleLogs");
+
+        [GeneratedRegex("(?<=\\d{1,3})[^\\d{1,3}.]+.*|\\,|:| \\([^()]*\\)")] private static partial Regex ParseBoxSetTitleRegex();
+        [GeneratedRegex("Vol\\.|Volume")] private static partial Regex VolTitleFixRegex(); 
+        [GeneratedRegex("(?<=Vol \\d{1,3})[^\\d{1,3}.]+.*|\\,|:| \\([^()]*\\)")]  private static partial Regex ParseTitleRegex();
 
         // https://www.barnesandnoble.com/s/Classroom+of+the+Elite/_/N-1z141tjZ8q8Z1gvk
         //light novel
@@ -31,39 +34,37 @@ namespace MangaLightNovelWebScrape.Src.Websites
 
         public static string TitleParse(string currTitle, char bookType, string inputTitle){
             string parsedTitle = "";
-            currTitle = currTitle.Replace("Vol.", "Vol");
+            currTitle = VolTitleFixRegex().Replace(currTitle, "Vol");
 
             if (currTitle.Contains("Box Set"))
             {
-                parsedTitle = Regex.Replace(currTitle.Replace("(Omnibus Edition)", "Omnibus"), @"(?<=\d{1,3})[^\d{1,3}.]+.*|\,|:| \([^()]*\)", "");
+                parsedTitle = ParseBoxSetTitleRegex().Replace(currTitle.Replace("(Omnibus Edition)", "Omnibus"), "");
             }
             else
             {
-                parsedTitle = Regex.Replace(currTitle.Replace("(Omnibus Edition)", "Omnibus"), @"(?<=Vol \d{1,3})[^\d{1,3}.]+.*|\,|:| \([^()]*\)", "");
+                parsedTitle = ParseTitleRegex().Replace(currTitle.Replace("(Omnibus Edition)", "Omnibus"), "");
             }
 
             if (!parsedTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !parsedTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
             {
-                parsedTitle = parsedTitle.Insert(Regex.Match(parsedTitle, @"\d{1,3}").Index, "Vol ");
+                parsedTitle = parsedTitle.Insert(MasterScrape.FindVolNumRegex().Match(parsedTitle).Index, "Vol ");
             }
 
             return parsedTitle.Trim();
         }
 
-        public static List<string[]> GetBarnesAndNobleData(string bookTitle, char bookType, bool memberStatus, byte currPageNum, EdgeOptions edgeOptions)
+        public static List<EntryModel> GetBarnesAndNobleData(string bookTitle, char bookType, bool memberStatus, byte currPageNum, EdgeOptions edgeOptions)
         {
-            WebDriver dummyDriver = new EdgeDriver(@"DriverExecutables/Edge", edgeOptions);
+            WebDriver dummyDriver = new EdgeDriver(edgeOptions);
             edgeOptions.AddArgument("user-agent=" + dummyDriver.ExecuteScript("return navigator.userAgent").ToString().Replace("Headless", ""));
             dummyDriver.Quit();
             
-            EdgeDriver edgeDriver = new EdgeDriver(Path.GetFullPath(@"DriverExecutables/Edge"), edgeOptions);
-            WebDriverWait wait = new WebDriverWait(edgeDriver, TimeSpan.FromSeconds(30))
+            EdgeDriver edgeDriver = new(edgeOptions);
+            WebDriverWait wait = new(edgeDriver, TimeSpan.FromSeconds(30))
             {
                 PollingInterval = TimeSpan.FromMilliseconds(200),
             };
             wait.IgnoreExceptionTypes(typeof(NoSuchElementException));
-
-            Regex removeWords = new Regex(@"[^\w+]");
 
             restart:
             try
@@ -87,7 +88,7 @@ namespace MangaLightNovelWebScrape.Src.Websites
                     }
 
                     // Initialize the html doc for crawling
-                    HtmlDocument doc = new HtmlDocument();
+                    HtmlDocument doc = new();
                     doc.LoadHtml(edgeDriver.PageSource);
 
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes("//div[@class='product-shelf-title product-info-title pt-xs']/a");
@@ -99,15 +100,15 @@ namespace MangaLightNovelWebScrape.Src.Websites
                     {
                         // currTitle = titleData[x].GetAttributeValue("title", "Title Error");
                         currTitle = TitleParse(titleData[x].GetAttributeValue("title", "Title Error"), bookType, bookTitle);
-                        if (removeWords.Replace(currTitle.ToLower(), "").Contains(removeWords.Replace(bookTitle.ToLower(), "")) && (bookType == 'M' && currTitle.Any(Char.IsDigit)))
+                        if (MasterScrape.RemoveNonWordsRegex().Replace(currTitle.ToLower(), "").Contains(MasterScrape.RemoveNonWordsRegex().Replace(bookTitle.ToLower(), "")) && bookType == 'M' && currTitle.Any(char.IsDigit))
                         {
                             // if (TitleParse(currTitle, bookType, bookTitle).Contains("7"))
                             // {
-                            //     BarnesAndNobleDataList.Add(new string[]{TitleParse(currTitle, bookType, bookTitle), "$2.00", stockStatusData[x].InnerText.Contains("Pre-order") ? "PO" : "IS", "BarnesAndNoble"});
+                            //     BarnesAndNobleDataList.Add(new EntryModel{TitleParse(currTitle, bookType, bookTitle), "$2.00", stockStatusData[x].InnerText.Contains("Pre-order") ? "PO" : "IS", "BarnesAndNoble"});
                             //     continue;
                             // }
 
-                            BarnesAndNobleDataList.Add(new string[]{currTitle, priceData[x].InnerText.Trim(), stockStatusData[x].InnerText.Contains("Pre-order") ? "PO" : "IS", "BarnesAndNoble"});
+                            BarnesAndNobleDataList.Add(new EntryModel(currTitle, priceData[x].InnerText.Trim(), stockStatusData[x].InnerText.Contains("Pre-order") ? "PO" : "IS", "BarnesAndNoble"));
 
                             //Logger.Debug("[" + BarnesAndNobleDataList[x][0] + ", " + BarnesAndNobleDataList[x][1] + ", " + BarnesAndNobleDataList[x][2] + ", " + BarnesAndNobleDataList[x][3] + "]");
                         }
@@ -136,19 +137,22 @@ namespace MangaLightNovelWebScrape.Src.Websites
 
             BarnesAndNobleDataList.Sort(new VolumeSort(bookTitle));
 
-            using (StreamWriter outputFile = new StreamWriter(@"Data\BarnesAndNobleData.txt"))
+            if (MasterScrape.IsDebugEnabled)
             {
-                if (BarnesAndNobleDataList.Count != 0)
+                using (StreamWriter outputFile = new(@"Data\BarnesAndNobleData.txt"))
                 {
-                    foreach (string[] data in BarnesAndNobleDataList)
+                    if (BarnesAndNobleDataList.Count != 0)
                     {
-                        Logger.Debug("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]");
-                        outputFile.WriteLine("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]");
+                        foreach (EntryModel data in BarnesAndNobleDataList)
+                        {
+                            Logger.Debug(data.ToString());
+                            outputFile.WriteLine(data.ToString());
+                        }
                     }
-                }
-                else
-                {
-                    outputFile.WriteLine(bookTitle + " Does Not Exist at BarnesAndNoble");
+                    else
+                    {
+                        outputFile.WriteLine(bookTitle + " Does Not Exist at BarnesAndNoble");
+                    }
                 }
             }  
 

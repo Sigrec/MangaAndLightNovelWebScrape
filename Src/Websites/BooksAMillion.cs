@@ -1,11 +1,14 @@
-namespace MangaLightNovelWebScrape.Src.Websites
+namespace MangaLightNovelWebScrape.Websites
 {
-    public class BooksAMillion
+    public partial class BooksAMillion
     {
-        public static List<string> BooksAMillionLinks = new List<string>();
-        private static List<string[]> BooksAMillionDataList = new List<string[]>();
+        public static List<string> BooksAMillionLinks = new();
+        private static List<EntryModel> BooksAMillionDataList = new();
         private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("BooksAMillionLogs");
         private static bool boxsetCheck = false, boxsetValidation = false;
+
+        [GeneratedRegex("Vol\\.|Volume")] private static partial Regex ParseTitleVolRegex();
+        
         private static string FilterBookTitle(string bookTitle){
             char[] trimedChars = {' ', '\'', '!', '-'};
             foreach (char var in trimedChars){
@@ -40,7 +43,7 @@ namespace MangaLightNovelWebScrape.Src.Websites
         public static string TitleParse(string bookTitle, char bookType, string inputTitle)
         {
             string filterRegex, parsedTitle;
-            if (!inputTitle.Any(Char.IsDigit))
+            if (!inputTitle.Any(char.IsDigit))
             {
                 filterRegex = @"(?<=\d{1,3})[^\d{1,3}.]+.*";
             }
@@ -49,30 +52,29 @@ namespace MangaLightNovelWebScrape.Src.Websites
                 filterRegex = @"(?<=\d{1,3}.$)[^\d{1,3}]+.*";
             }
 
-            parsedTitle = Regex.Replace(Regex.Replace(bookTitle.Replace(",", "").Replace("(Omnibus Edition)", "Omnibus"), @"Vol\.|Volume", "Vol"), filterRegex, "");
+            parsedTitle = Regex.Replace(ParseTitleVolRegex().Replace(bookTitle.Replace(",", "").Replace("(Omnibus Edition)", "Omnibus"), "Vol"), filterRegex, "");
 
             if (!parsedTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !parsedTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
             {
-                parsedTitle = parsedTitle.Insert(Regex.Match(parsedTitle, @"\d{1,3}").Index, "Vol ");
+                parsedTitle = parsedTitle.Insert(MasterScrape.FindVolNumRegex().Match(parsedTitle).Index, "Vol ");
             }
 
             return parsedTitle.Trim();
         }
 
-        public static List<string[]> GetBooksAMillionData(string bookTitle, char bookType, bool memberStatus, byte currPageNum, EdgeOptions edgeOptions)
+        public static List<EntryModel> GetBooksAMillionData(string bookTitle, char bookType, bool memberStatus, byte currPageNum, EdgeOptions edgeOptions)
         {
-            WebDriver dummyDriver = new EdgeDriver(@"DriverExecutables/Edge", edgeOptions);
+            WebDriver dummyDriver = new EdgeDriver(edgeOptions);
             edgeOptions.AddArgument("user-agent=" + dummyDriver.ExecuteScript("return navigator.userAgent").ToString().Replace("Headless", ""));
             dummyDriver.Quit();
 
-            EdgeDriver edgeDriver = new EdgeDriver(Path.GetFullPath(@"DriverExecutables/Edge"), edgeOptions);
-            WebDriverWait wait = new WebDriverWait(edgeDriver, TimeSpan.FromSeconds(5));
+            EdgeDriver edgeDriver = new(edgeOptions);
+            WebDriverWait wait = new(edgeDriver, TimeSpan.FromSeconds(5));
 
             string stockStatus, priceTxt, currTitle;
             decimal priceVal, discount = 0.1M;
             HtmlDocument doc;
             HtmlNodeCollection titleData, priceData, stockStatusData;
-            Regex removeWords = new Regex(@"[^\w+]");
 
             try
             {
@@ -95,7 +97,7 @@ namespace MangaLightNovelWebScrape.Src.Websites
                     for(int x = 0; x < titleData.Count; x++)
                     {
                         currTitle = TitleParse(titleData[x].InnerText, bookType, bookTitle);
-                        // Logger.Debug(removeWords.Replace(currTitle, "") + " | " + removeWords.Replace(bookTitle, "") + " | " + (removeWords.Replace(currTitle, "").Contains(removeWords.Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase) && currTitle.Any(Char.IsDigit)));
+                        // Logger.Debug(MasterScrape.RemoveNonWordsRegex().Replace(currTitle, "") + " | " + MasterScrape.RemoveNonWordsRegex().Replace(bookTitle, "") + " | " + (MasterScrape.RemoveNonWordsRegex().Replace(currTitle, "").Contains(MasterScrape.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase) && currTitle.Any(Char.IsDigit)));
                         if (currTitle.Contains("Box Set") && !boxsetValidation)
                         {
                             boxsetValidation = true;
@@ -103,7 +105,7 @@ namespace MangaLightNovelWebScrape.Src.Websites
                             continue;
                         }
                         
-                        if (removeWords.Replace(currTitle, "").Contains(removeWords.Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase) && !currTitle.Contains("Guide") && currTitle.Any(Char.IsDigit))
+                        if (MasterScrape.RemoveNonWordsRegex().Replace(currTitle, "").Contains(MasterScrape.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase) && !currTitle.Contains("Guide") && currTitle.Any(char.IsDigit))
                         {
                             stockStatus = stockStatusData[x].InnerText;
                             if (stockStatus.Contains("In Stock"))
@@ -121,14 +123,14 @@ namespace MangaLightNovelWebScrape.Src.Websites
 
                             // if (currTitle.Contains("4"))
                             // {
-                            //     BooksAMillionDataList.Add(new string[]{currTitle, "$1.00", stockStatus, "BooksAMillion"});
+                            //     BooksAMillionDataList.Add(new EntryModel(currTitle, "$1.00", stockStatus, "BooksAMillion"));
                             //     continue;
                             // }
 
-                            priceVal = System.Convert.ToDecimal(priceData[x].InnerText.Trim().Substring(1));
-                            priceTxt = memberStatus ? "$" + (priceVal - (priceVal * discount)).ToString("0.00") : priceData[x].InnerText;
+                            priceVal = Convert.ToDecimal(priceData[x].InnerText.Trim()[1..]);
+                            priceTxt = memberStatus ? "$" + (priceVal - priceVal * discount).ToString("0.00") : priceData[x].InnerText;
 
-                            BooksAMillionDataList.Add(new string[]{currTitle, priceTxt.Trim(), stockStatus, "BooksAMillion"});
+                            BooksAMillionDataList.Add(new EntryModel(currTitle, priceTxt.Trim(), stockStatus, "BooksAMillion"));
                         }
                     }
 
@@ -158,21 +160,24 @@ namespace MangaLightNovelWebScrape.Src.Websites
 
             BooksAMillionDataList.Sort(new VolumeSort(bookTitle));
 
-            using (StreamWriter outputFile = new StreamWriter(@"Data\BooksAMillionData.txt"))
+            if (MasterScrape.IsDebugEnabled)
             {
-                if (BooksAMillionDataList.Count != 0)
+                using (StreamWriter outputFile = new(@"Data\BooksAMillionData.txt"))
                 {
-                    foreach (string[] data in BooksAMillionDataList)
+                    if (BooksAMillionDataList.Count != 0)
                     {
-                        Logger.Debug("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]");
-                        outputFile.WriteLine("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]");
+                        foreach (EntryModel data in BooksAMillionDataList)
+                        {
+                            Logger.Debug(data.ToString());
+                            outputFile.WriteLine(data.ToString());
+                        }
+                    }
+                    else
+                    {
+                        outputFile.WriteLine(bookTitle + " Does Not Exist at BooksAMillion");
                     }
                 }
-                else
-                {
-                    outputFile.WriteLine(bookTitle + " Does Not Exist at BooksAMillion");
-                }
-            } 
+            }
 
             return BooksAMillionDataList;
         }

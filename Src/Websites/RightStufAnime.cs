@@ -1,10 +1,12 @@
-namespace MangaLightNovelWebScrape.Src.Websites
+namespace MangaLightNovelWebScrape.Websites
 {
-    class RightStufAnime
+    partial class RightStufAnime
     {
-        public static List<string> rightStufAnimeLinks = new List<string>();
-        private static List<string[]> rightStufAnimeDataList = new List<string[]>();
+        public static List<string> rightStufAnimeLinks = new();
+        private static List<EntryModel> rightStufAnimeDataList = new();
         private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("RightStufAnimeLogs");
+        [GeneratedRegex("\\(.*?\\)")] private static partial Regex TitleParseRegex();
+        [GeneratedRegex(" Manga| Edition")] private static partial Regex FormatRemovalRegex();
 
         private static string FilterBookTitle(string bookTitle){
             char[] trimedChars = {' ', '\'', '!', '-'};
@@ -21,15 +23,14 @@ namespace MangaLightNovelWebScrape.Src.Websites
             return url;
         }
 
-        public static List<string[]> GetRightStufAnimeData(string bookTitle, char bookType, bool memberStatus, byte currPageNum, EdgeOptions edgeOptions)
+        public static List<EntryModel> GetRightStufAnimeData(string bookTitle, char bookType, bool memberStatus, byte currPageNum, EdgeOptions edgeOptions)
         {
-            EdgeDriver edgeDriver = new EdgeDriver(Path.GetFullPath(@"DriverExecutables/Edge"), edgeOptions);
-            WebDriverWait wait = new WebDriverWait(edgeDriver, TimeSpan.FromSeconds(30));
+            WebDriver edgeDriver = new EdgeDriver(edgeOptions);
+            WebDriverWait wait = new(edgeDriver, TimeSpan.FromSeconds(30));
 
             double GotAnimeDiscount = 0.05;
             decimal priceVal;
             string priceTxt, stockStatus, currTitle;
-            Regex removeWords = new Regex(@"[^\w+]");
 
             try
             {
@@ -39,7 +40,7 @@ namespace MangaLightNovelWebScrape.Src.Websites
                     wait.Until(e => e.FindElement(By.XPath("//span[@itemprop='name']")));
 
                     // Initialize the html doc for crawling
-                    HtmlDocument doc = new HtmlDocument();
+                    HtmlDocument doc = new();
                     doc.LoadHtml(edgeDriver.PageSource);
 
                     // Get the page data from the HTML doc
@@ -50,11 +51,11 @@ namespace MangaLightNovelWebScrape.Src.Websites
 
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        currTitle = Regex.Replace(titleData[x].InnerText, @"\(.*?\)", "").Trim();                  
-                        if(!titleData[x].InnerText.Contains("Imperfect") && removeWords.Replace(currTitle, "").Contains(removeWords.Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase))
+                        currTitle = TitleParseRegex().Replace(titleData[x].InnerText, "").Trim();                  
+                        if(!titleData[x].InnerText.Contains("Imperfect") && MasterScrape.RemoveNonWordsRegex().Replace(currTitle, "").Contains(MasterScrape.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase))
                         {
-                            priceVal = System.Convert.ToDecimal(priceData[x].InnerText.Substring(1));
-                            priceTxt = memberStatus ? "$" + (priceVal - (priceVal * (decimal)GotAnimeDiscount)).ToString("0.00") : priceData[x].InnerText;
+                            priceVal = Convert.ToDecimal(priceData[x].InnerText[1..]);
+                            priceTxt = "$" + (memberStatus ? (priceVal - priceVal * (decimal)GotAnimeDiscount).ToString("0.00") : priceData[x].InnerText);
 
                             stockStatus = stockStatusData[x].InnerText;
                             if (stockStatus.IndexOf("In Stock") != -1)
@@ -74,7 +75,7 @@ namespace MangaLightNovelWebScrape.Src.Websites
                                 stockStatus = "OOP";
                             }
 
-                            rightStufAnimeDataList.Add(new string[]{Regex.Replace(currTitle.Replace("Volume", "Vol"), @" Manga| Edition", "").Trim(), priceTxt.Trim(), stockStatus.Trim(), "RightStufAnime"});
+                            rightStufAnimeDataList.Add(new EntryModel(FormatRemovalRegex().Replace(currTitle.Replace("Volume", "Vol"), "").Replace("Deluxe Omnibus", "Deluxe").Trim(), priceTxt.Trim(), stockStatus.Trim(), "RightStufAnime"));
                         }
                     }
 
@@ -91,25 +92,28 @@ namespace MangaLightNovelWebScrape.Src.Websites
             }
             catch (Exception ex) when (ex is WebDriverTimeoutException || ex is NoSuchElementException)
             {
-                Logger.Error($"{bookTitle} Does Not Exist @ BooksAMillion\n{ex}");
+                Logger.Error($"{bookTitle} Does Not Exist @ RightStufAnime\n{ex}");
             }
 
             rightStufAnimeDataList.Sort(new VolumeSort(bookTitle));
 
-            using (StreamWriter outputFile = new StreamWriter(@"Data\RightStufAnimeData.txt"))
+            if (MasterScrape.IsDebugEnabled)
             {
-                if (rightStufAnimeDataList.Count != 0)
+                using (StreamWriter outputFile = new(@"Data\RightStufAnimeData.txt"))
                 {
-                    foreach (string[] data in rightStufAnimeDataList)
+                    if (rightStufAnimeDataList.Count != 0)
                     {
-                        outputFile.WriteLine("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]");
+                        foreach (EntryModel data in rightStufAnimeDataList)
+                        {
+                            outputFile.WriteLine(data.ToString());
+                        }
                     }
-                }
-                else
-                {
-                    outputFile.WriteLine(bookTitle + " Does Not Exist at RightStufAnime");
-                }
-            } 
+                    else
+                    {
+                        outputFile.WriteLine(bookTitle + " Does Not Exist at RightStufAnime");
+                    }
+                } 
+            }
 
             return rightStufAnimeDataList;
         }

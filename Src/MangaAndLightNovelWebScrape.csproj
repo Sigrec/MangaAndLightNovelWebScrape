@@ -1,11 +1,16 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <PublishReadyToRun>true</PublishReadyToRun>
     <Optimize>true</Optimize>
+    <GenerateRuntimeConfigDevFile>true</GenerateRuntimeConfigDevFile>
     <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <Version>1.0.0</Version>
+	  <FileVersion>1.0.0.0</FileVersion>
+    <Authors>Prem</Authors>
+	  <!--  <GeneratePackageOnBuild>True</GeneratePackageOnBuild> -->
   </PropertyGroup>
 
   <ItemGroup>
@@ -15,10 +20,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="HtmlAgilityPack" Version="1.11.46" />
-    <PackageReference Include="Selenium.WebDriver" Version="4.8.1" />
-    <PackageReference Include="Selenium.Support" Version="4.8.1" />
-    <PackageReference Include="NLog" Version="5.1.0" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.51" />
+    <PackageReference Include="Selenium.WebDriver" Version="4.11.0" />
+    <!-- <PackageReference Include="Selenium.Support" Version="4.9.1" /> -->
+    <PackageReference Include="NLog" Version="5.2.2" />
     <PackageReference Include="WebDriverManager" Version="2.16.2" />
   </ItemGroup>
 </Project>

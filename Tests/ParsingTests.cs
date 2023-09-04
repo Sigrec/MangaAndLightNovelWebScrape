@@ -1,3 +1,4 @@
+// Hellsing, One Piece
 [assembly: Description("Validation for Various Data Parses")]
 namespace Tests
 {
@@ -23,6 +24,7 @@ namespace Tests
                 Assert.That(AmazonUSA.TitleParse("One Piece Box Set 3: Thriller Bark to New World: Volumes 47-70 with Premium (3) (One Piece Box Sets)", 'M', "one piece"), Is.EqualTo("One Piece Box Set 3"));
                 Assert.That(AmazonUSA.TitleParse("One Piece, Vol. 2: Buggy the Clown (One Piece Graphic Novel)", 'M', "one piece"), Is.EqualTo("One Piece Vol 2"));
                 Assert.That(AmazonUSA.TitleParse("One Piece: Skypeia 25-26-27", 'M', "one piece"), Is.EqualTo("One Piece Omnibus Vol 9"));
+                Assert.That(AmazonUSA.TitleParse("One Piece: East Blue 1-2-3", 'M', "one piece"), Is.EqualTo("One Piece Omnibus Vol 1"));
                 Assert.That(AmazonUSA.TitleParse("The Seven Deadly Sins Manga Box Set 3", 'M', "the seven deadly sins"), Is.EqualTo("The Seven Deadly Sins Box Set 3"));
                 Assert.That(AmazonUSA.TitleParse("The Seven Deadly Sins Omnibus 1 (Vol. 1-3)", 'M', "the seven deadly sins"), Is.EqualTo("The Seven Deadly Sins Omnibus Vol 1"));
                 Assert.That(AmazonUSA.TitleParse("The Seven Deadly Sins 3 (Seven Deadly Sins, The)", 'M', "the seven deadly sins"), Is.EqualTo("The Seven Deadly Sins Vol 3"));
@@ -43,7 +45,7 @@ namespace Tests
                 Assert.That(BooksAMillion.TitleParse("Jujutsu Kaisen 0", 'M', "jujutsu kaisen"), Is.EqualTo("Jujutsu Kaisen Vol 0"));
             });
         }
-
+        
         [Test]
         public void BarnesAndNoble_TitleParse_Test()
         {
@@ -78,6 +80,7 @@ namespace Tests
                 Assert.That(KinokuniyaUSA.TitleParse("One Piece (Omnibus Edition), Vol. 32 : Includes vols. 94, 95 & 96 (One Piece (Omnibus Edition))", 'M', "one piece"), Is.EqualTo("One Piece Omnibus Vol 32").IgnoreCase);
                 Assert.That(KinokuniyaUSA.TitleParse("One Piece Box Set 4: Dressrosa to Reverie : Volumes 71-90 with Premium (One Piece Box Sets)", 'M', "one piece"), Is.EqualTo("One Piece Box Set 4").IgnoreCase);
                 Assert.That(KinokuniyaUSA.TitleParse("07-GHOST, Vol. 1 (07-ghost)", 'M', "07-ghost"), Is.EqualTo("07-GHOST Vol 1").IgnoreCase);
+                Assert.That(KinokuniyaUSA.TitleParse("Hellsing Deluxe Volume 1", 'M', "hellsing"), Is.EqualTo("Hellsing Deluxe Vol 1").IgnoreCase);
             });
         }
     }

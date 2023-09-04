@@ -1,7 +1,7 @@
 global using System.Threading;
 global using OpenQA.Selenium.Edge;
+global using OpenQA.Selenium.Chrome;
 global using OpenQA.Selenium;
-global using OpenQA.Selenium.Firefox;
 global using OpenQA.Selenium.Support.UI;
 global using HtmlAgilityPack;
 global using System.Collections.Generic;

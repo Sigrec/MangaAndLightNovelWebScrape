@@ -1,26 +1,31 @@
 using System.Threading.Tasks;
 
-namespace MangaLightNovelWebScrape.Src.Websites
+namespace MangaLightNovelWebScrape.Websites
 {
-    class RobertsAnimeCornerStore
+    partial class RobertsAnimeCornerStore
     {
-        public static List<string> robertsAnimeCornerStoreLinks = new List<String>();
-        private static List<string[]> robertsAnimeCornerStoreDataList = new List<string[]>();
+        public static List<string> robertsAnimeCornerStoreLinks = new();
+        private static List<EntryModel> robertsAnimeCornerStoreDataList = new();
         private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("RobertsAnimeCornerStoreLogs");
+
+        [GeneratedRegex("-|\\s+")] private static partial Regex FilterBookTitleRegex();
+        [GeneratedRegex(",|#|Graphic Novel| :|\\(.*?\\)|\\[Novel\\]")] private static partial Regex TitleFilterRegex();
+        [GeneratedRegex("[ ]{2,}")] private static partial Regex TitleFilterNumRegex();
+        [GeneratedRegex("\\s+")] private static partial Regex GetWhiteSpaceRegex();
         
         private static string GetUrl(string htmlString, bool pageExists)
         {
-            Dictionary<string, Regex> urlMapDict = new Dictionary<string, Regex>()
+            Dictionary<string, string> urlMapDict = new()
             {
-                {"mangrapnovag", new Regex(@"^[a-bA-B\d]")},
-                {"mangrapnovhp", new Regex(@"^[c-dC-D]")},
-                {"mangrapnovqz", new Regex(@"^[e-gE-G]")},
-                {"magrnomo", new Regex(@"^[h-kH-K]")},
-                {"magrnops", new Regex(@"^[l-nL-N]")},
-                {"magrnotz", new Regex(@"^[o-qO-Q]")},
-                {"magrnors", new Regex(@"^[r-sR-S]")},
-                {"magrnotv", new Regex(@"^[t-vT-V]")},
-                {"magrnowz", new Regex(@"^[w-zW-Z]")}
+                {"mangrapnovag", @"^[a-bA-B\d]"},
+                {"mangrapnovhp", @"^[c-dC-D]"},
+                {"mangrapnovqz", @"^[e-gE-G]"},
+                {"magrnomo", @"^[h-kH-K]"},
+                {"magrnops", @"^[l-nL-N]"},
+                {"magrnotz", @"^[o-qO-Q]"},
+                {"magrnors", @"^[r-sR-S]"},
+                {"magrnotv", @"^[t-vT-V]"},
+                {"magrnowz", @"^[w-zW-Z]"}
             };
 
             string url = "";
@@ -28,7 +33,7 @@ namespace MangaLightNovelWebScrape.Src.Websites
             {
                 Parallel.ForEach(urlMapDict, (link, state) =>
                 {
-                    if (link.Value.Match(htmlString).Success)
+                    if (new Regex(link.Value).Match(htmlString).Success)
                     {
                         url = "https://www.animecornerstore.com/" + link.Key + ".html";
                         robertsAnimeCornerStoreLinks.Add(url);
@@ -62,7 +67,7 @@ namespace MangaLightNovelWebScrape.Src.Websites
                 foreach (HtmlNode series in seriesTitle)
                 {
                     //Logger.Debug(Regex.Replace(series.InnerText.ToLower(), @"\s+", ""));
-                    if (Regex.Replace(series.InnerText.ToLower(), @"\s+", "").Contains(bookTitle, StringComparison.OrdinalIgnoreCase))
+                    if (GetWhiteSpaceRegex().Replace(series.InnerText.ToLower(), "").Contains(bookTitle, StringComparison.OrdinalIgnoreCase))
                     {
                         link = GetUrl(series.Attributes["href"].Value, true);
                         return link;
@@ -76,15 +81,15 @@ namespace MangaLightNovelWebScrape.Src.Websites
             return "DNE";
         }
 
-        public static List<string[]> GetRobertsAnimeCornerStoreData(string bookTitle, char bookType, EdgeOptions edgeOptions)
+        public static List<EntryModel> GetRobertsAnimeCornerStoreData(string bookTitle, char bookType, EdgeOptions edgeOptions)
         {
-            EdgeDriver edgeDriver = new EdgeDriver(Path.GetFullPath(@"DriverExecutables/Edge"), edgeOptions);
-            WebDriverWait wait = new WebDriverWait(edgeDriver, TimeSpan.FromSeconds(30));
+            EdgeDriver edgeDriver = new(edgeOptions);
+            WebDriverWait wait = new(edgeDriver, TimeSpan.FromSeconds(30));
 
             // Initialize the html doc for crawling
-            HtmlDocument doc = new HtmlDocument();
+            HtmlDocument doc = new();
 
-            string linkPage = GetPageData(edgeDriver, Regex.Replace(bookTitle, @"-|\s+", ""), bookType, doc, wait);
+            string linkPage = GetPageData(edgeDriver, FilterBookTitleRegex().Replace(bookTitle, ""), bookType, doc, wait);
             string errorMessage;
             if (string.IsNullOrEmpty(linkPage))
             {
@@ -120,52 +125,55 @@ namespace MangaLightNovelWebScrape.Src.Websites
                     string currTitle, stockStatus;
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        if ((titleData[x].InnerText.Contains("[Novel]") && bookType == 'M') || (titleData[x].InnerText.Contains("Graphic") && bookType == 'N')) // If the user is looking for manga and the page returned a novel data set and vice versa skip that data set
+                        if (titleData[x].InnerText.Contains("[Novel]") && bookType == 'M' || titleData[x].InnerText.Contains("Graphic") && bookType == 'N') // If the user is looking for manga and the page returned a novel data set and vice versa skip that data set
                         {
                             continue;
                         }
 
                         stockStatus = (titleData[x].InnerText.IndexOf("Pre Order") | titleData[x].InnerText.IndexOf("Backorder")) != -1 ? "PO" : "IS";
-                        currTitle = Regex.Replace(Regex.Replace(titleData[x].InnerText, @",|#|Graphic Novel| :|\(.*?\)|\[Novel\]", ""), @"[ ]{2,}", " ").Trim();
+                        currTitle = TitleFilterNumRegex().Replace(TitleFilterRegex().Replace(titleData[x].InnerText, ""), " ").Replace("Edition", "Vol").Trim();
 
                         if (currTitle.Contains("Omnibus") && currTitle.Contains("Vol"))
                         {
                             if (currTitle.Contains("One Piece") && currTitle.Contains("Vol 10-12")) // Fix naming issue with one piece
                             {
-                                currTitle = currTitle.Substring(0, currTitle.IndexOf(" Vol")) + " 4";
+                                currTitle = currTitle[..currTitle.IndexOf(" Vol")] + " 4";
                             }
                             else
                             {
-                                currTitle = currTitle.Substring(0, currTitle.IndexOf("Vol"));
+                                currTitle = currTitle[..currTitle.IndexOf("Vol")];
                             }
-                            currTitle = currTitle.Substring(0, currTitle.IndexOf("Omnibus ") + "Omnibus ".Length) + "Vol " + currTitle.Substring(currTitle.IndexOf("Omnibus ") + "Omnibus ".Length).Trim();
+                            currTitle = currTitle[..(currTitle.IndexOf("Omnibus ") + "Omnibus ".Length)] + "Vol " + currTitle[(currTitle.IndexOf("Omnibus ") + "Omnibus ".Length)..].Trim();
                         }
                         
                         // if (currTitle.Contains("0"))
                         // {
-                        //     robertsAnimeCornerStoreDataList.Add(new string[]{currTitle, "$3.00", stockStatus.Trim(), "RobertsAnimeCornerStore"});
+                        //     robertsAnimeCornerStoreDataList.Add(new EntryModel(currTitle, "$3.00", stockStatus.Trim(), "RobertsAnimeCornerStore"));
                         //     continue;
                         // }
 
-                        robertsAnimeCornerStoreDataList.Add(new string[]{currTitle, priceData[x].InnerText.Trim(), stockStatus.Trim(), "RobertsAnimeCornerStore"});
+                        robertsAnimeCornerStoreDataList.Add(new EntryModel(currTitle, priceData[x].InnerText.Trim(), stockStatus.Trim(), "RobertsAnimeCornerStore"));
                     }
 
                     robertsAnimeCornerStoreDataList.Sort(new VolumeSort(bookTitle));
-                    using (StreamWriter outputFile = new StreamWriter(@"Data\RobertsAnimeCornerStoreData.txt"))
+                    if (MasterScrape.IsDebugEnabled)
                     {
-                        if (robertsAnimeCornerStoreDataList.Count != 0)
+                        using (StreamWriter outputFile = new(@"Data\RobertsAnimeCornerStoreData.txt"))
                         {
-                            foreach (string[] data in robertsAnimeCornerStoreDataList)
+                            if (robertsAnimeCornerStoreDataList.Count != 0)
                             {
-                                outputFile.WriteLine("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]");
+                                foreach (EntryModel data in robertsAnimeCornerStoreDataList)
+                                {
+                                    outputFile.WriteLine(data.ToString());
+                                }
                             }
-                        }
-                        else
-                        {
-                            errorMessage = bookTitle + " Does Not Exist at RobertsAnimeCornerStore";
-                            outputFile.WriteLine(errorMessage);
-                        }
-                    } 
+                            else
+                            {
+                                errorMessage = bookTitle + " Does Not Exist at RobertsAnimeCornerStore";
+                                outputFile.WriteLine(errorMessage);
+                            }
+                        } 
+                    }
                 }
                 catch(NullReferenceException ex)
                 {
