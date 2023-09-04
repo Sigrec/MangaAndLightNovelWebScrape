@@ -194,7 +194,7 @@ namespace MangaLightNovelWebScrape
             watch.Start();
             MasterScrape test = new MasterScrape();
             EnableDebugMode();
-            test.InitializeScrape("Jujutsu Kaisen", 'M', new List<Website>() { Website.RightStufAnime, Website.BarnesAndNoble, Website.RobertsAnimeCornerStore, Website.InStockTrades }, "Edge");
+            test.InitializeScrape("Dark Gathering", 'M', new List<Website>() { Website.RightStufAnime, Website.BarnesAndNoble, Website.RobertsAnimeCornerStore, Website.InStockTrades }, "Edge");
             watch.Stop();
             Logger.Info($"Time in Seconds: {watch.ElapsedMilliseconds / 1000}s");
         }
