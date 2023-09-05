@@ -7,6 +7,18 @@ namespace MangaLightNovelWebScrape.Websites
         public static List<string> robertsAnimeCornerStoreLinks = new();
         private static List<EntryModel> robertsAnimeCornerStoreDataList = new();
         private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("RobertsAnimeCornerStoreLogs");
+        private static readonly Dictionary<string, string> URL_MAP_DICT = new()
+        { 
+            {"mangrapnovag", @"^[a-bA-B\d]"},
+            {"mangrapnovhp", @"^[c-dC-D]"},
+            {"mangrapnovqz", @"^[e-gE-G]"},
+            {"magrnomo", @"^[h-kH-K]"},
+            {"magrnops", @"^[l-nL-N]"},
+            {"magrnotz", @"^[o-qO-Q]"},
+            {"magrnors", @"^[r-sR-S]"},
+            {"magrnotv", @"^[t-vT-V]"},
+            {"magrnowz", @"^[w-zW-Z]"}
+        };
 
         [GeneratedRegex("-|\\s+")] private static partial Regex FilterBookTitleRegex();
         [GeneratedRegex(",|#|Graphic Novel| :|\\(.*?\\)|\\[Novel\\]")] private static partial Regex TitleFilterRegex();
@@ -15,27 +27,14 @@ namespace MangaLightNovelWebScrape.Websites
         
         private static string GetUrl(string htmlString, bool pageExists)
         {
-            Dictionary<string, string> urlMapDict = new()
-            {
-                {"mangrapnovag", @"^[a-bA-B\d]"},
-                {"mangrapnovhp", @"^[c-dC-D]"},
-                {"mangrapnovqz", @"^[e-gE-G]"},
-                {"magrnomo", @"^[h-kH-K]"},
-                {"magrnops", @"^[l-nL-N]"},
-                {"magrnotz", @"^[o-qO-Q]"},
-                {"magrnors", @"^[r-sR-S]"},
-                {"magrnotv", @"^[t-vT-V]"},
-                {"magrnowz", @"^[w-zW-Z]"}
-            };
-
             string url = "";
             if (!pageExists) // Gets the starting page based on first letter and checks if we are looking for the 1st webpage (false) or 2nd webpage containing the actual item data (true)
             {
-                Parallel.ForEach(urlMapDict, (link, state) =>
+                Parallel.ForEach(URL_MAP_DICT, (link, state) =>
                 {
                     if (new Regex(link.Value).Match(htmlString).Success)
                     {
-                        url = "https://www.animecornerstore.com/" + link.Key + ".html";
+                        url = $"https://www.animecornerstore.com/{link.Key}.html";
                         robertsAnimeCornerStoreLinks.Add(url);
                         state.Stop();
                     }
@@ -130,20 +129,25 @@ namespace MangaLightNovelWebScrape.Websites
                             continue;
                         }
 
-                        stockStatus = (titleData[x].InnerText.IndexOf("Pre Order") | titleData[x].InnerText.IndexOf("Backorder")) != -1 ? "PO" : "IS";
+                        stockStatus = titleData[x].InnerText switch
+                        {
+                            string curTitle when curTitle.Contains("Pre Order") => "PO",
+                             string curTitle when curTitle.Contains("Backorder") => "OOS",
+                             _ => "IS"
+                        };
                         currTitle = TitleFilterNumRegex().Replace(TitleFilterRegex().Replace(titleData[x].InnerText, ""), " ").Replace("Edition", "Vol").Trim();
 
                         if (currTitle.Contains("Omnibus") && currTitle.Contains("Vol"))
                         {
                             if (currTitle.Contains("One Piece") && currTitle.Contains("Vol 10-12")) // Fix naming issue with one piece
                             {
-                                currTitle = currTitle[..currTitle.IndexOf(" Vol")] + " 4";
+                                currTitle = $"{currTitle[..currTitle.IndexOf(" Vol")]}4";
                             }
                             else
                             {
                                 currTitle = currTitle[..currTitle.IndexOf("Vol")];
                             }
-                            currTitle = currTitle[..(currTitle.IndexOf("Omnibus ") + "Omnibus ".Length)] + "Vol " + currTitle[(currTitle.IndexOf("Omnibus ") + "Omnibus ".Length)..].Trim();
+                            currTitle = $"{currTitle[..$"{currTitle.IndexOf("Omnibus ")}Omnibus ".Length]}Vol {currTitle[(currTitle.IndexOf("Omnibus ") + "Omnibus ".Length)..]}".Trim();
                         }
                         
                         // if (currTitle.Contains("0"))
@@ -164,6 +168,7 @@ namespace MangaLightNovelWebScrape.Websites
                             {
                                 foreach (EntryModel data in robertsAnimeCornerStoreDataList)
                                 {
+                                    Logger.Debug(data.ToString());
                                     outputFile.WriteLine(data.ToString());
                                 }
                             }

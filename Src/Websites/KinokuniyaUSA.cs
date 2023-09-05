@@ -5,7 +5,6 @@ namespace MangaLightNovelWebScrape.Websites
         public static List<string> KinokuniyaUSALinks = new(); //List of links used to get data from KinokuniyaUSA
         private static List<EntryModel> KinokuniyaUSADataList = new(); //List of all the series data from KinokuniyaUSA
         private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("KinokuniyaUSALogs");
-
         [GeneratedRegex("(?<=\\d{1,3})[^\\d{1,3}]+.*|,| \\([^()]*\\)|LIGHT NOVEL ")] private static partial Regex ParseTitleNoNumsRegex();
         [GeneratedRegex("(?<=\\d{1,3}.$)[^\\d{1,3}]+.*|,| \\([^()]*\\)|LIGHT NOVEL ")] private static partial Regex ParseTitleWithNumsRegex();
         [GeneratedRegex("MANGA", RegexOptions.IgnoreCase, "en-US")] private static partial Regex RemoveMangaFromTitleRegex();
@@ -85,11 +84,11 @@ namespace MangaLightNovelWebScrape.Websites
         public static List<EntryModel> GetKinokuniyaUSAData(string bookTitle, char bookType, bool memberStatus, byte currPageNum, EdgeOptions edgeOptions)
         {
             WebDriver dummyDriver = new EdgeDriver(edgeOptions);
-            edgeOptions.AddArgument("user-agent=" + dummyDriver.ExecuteScript("return navigator.userAgent").ToString().Replace("Headless", ""));
+            edgeOptions.AddArgument($"user-agent={dummyDriver.ExecuteScript("return navigator.userAgent").ToString().Replace("Headless", "")}");
             dummyDriver.Quit();
 
             EdgeDriver edgeDriver = new(edgeOptions);
-            WebDriverWait wait = new(edgeDriver, TimeSpan.FromSeconds(30));
+            WebDriverWait wait = new(edgeDriver, TimeSpan.FromSeconds(60));
 
             try
             {
@@ -146,23 +145,17 @@ namespace MangaLightNovelWebScrape.Websites
                     }
 
                     string stockStatus = "";
-                    int pos = memberStatus ? 1 : 0; // Position to start in array
-                    for (int x = pos; x < priceData.Count; x+=2)
+                    for (int x = memberStatus ? 1 : 0; x < priceData.Count; x+=2)
                     {
                         if (MasterScrape.RemoveNonWordsRegex().Replace(titleData[x / 2].InnerText, "").Contains(MasterScrape.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase))
                         {
-                            if (stockStatusData[x / 2].InnerText.Contains("Out of stock"))
+                            stockStatus = stockStatusData[x / 2].InnerText switch
                             {
-                                stockStatus = "OOS";
-                            }
-                            else if (stockStatusData[x / 2].InnerText.Contains("Pre Order"))
-                            {
-                                stockStatus = "PO";
-                            }
-                            else if (stockStatusData[x / 2].InnerText.Contains("In stock"))
-                            {
-                                stockStatus = "IS";
-                            }
+                                string curStatus when curStatus.Contains("In stock") => "IS",
+                                string curStatus when curStatus.Contains("Out of stock") => "OOS",
+                                string curStatus when curStatus.Contains("Pre Order") => "PO",
+                                _ => "OOP"
+                            };
 
                             // if (titleData[x / 2].InnerText.Contains("3"))
                             // {

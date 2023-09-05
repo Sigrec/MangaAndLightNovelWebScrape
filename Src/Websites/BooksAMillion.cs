@@ -6,6 +6,7 @@ namespace MangaLightNovelWebScrape.Websites
         private static List<EntryModel> BooksAMillionDataList = new();
         private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("BooksAMillionLogs");
         private static bool boxsetCheck = false, boxsetValidation = false;
+        private const decimal MEMBERSHIP_DISCOUNT = 0.1M;
 
         [GeneratedRegex("Vol\\.|Volume")] private static partial Regex ParseTitleVolRegex();
         
@@ -71,8 +72,8 @@ namespace MangaLightNovelWebScrape.Websites
             EdgeDriver edgeDriver = new(edgeOptions);
             WebDriverWait wait = new(edgeDriver, TimeSpan.FromSeconds(5));
 
-            string stockStatus, priceTxt, currTitle;
-            decimal priceVal, discount = 0.1M;
+            string stockStatus, currTitle;
+            decimal priceVal;
             HtmlDocument doc;
             HtmlNodeCollection titleData, priceData, stockStatusData;
 
@@ -128,9 +129,7 @@ namespace MangaLightNovelWebScrape.Websites
                             // }
 
                             priceVal = Convert.ToDecimal(priceData[x].InnerText.Trim()[1..]);
-                            priceTxt = memberStatus ? "$" + (priceVal - priceVal * discount).ToString("0.00") : priceData[x].InnerText;
-
-                            BooksAMillionDataList.Add(new EntryModel(currTitle, priceTxt.Trim(), stockStatus, "BooksAMillion"));
+                            BooksAMillionDataList.Add(new EntryModel(currTitle, $"${(memberStatus ? EntryModel.ApplyDiscount(priceVal, MEMBERSHIP_DISCOUNT) : priceData[x].InnerText)}".Trim(), stockStatus, "BooksAMillion"));
                         }
                     }
 

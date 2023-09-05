@@ -1,3 +1,5 @@
+using OpenQA.Selenium.DevTools.V113.CSS;
+
 namespace MangaLightNovelWebScrape
 {
     public class EntryModel
@@ -7,6 +9,13 @@ namespace MangaLightNovelWebScrape
         public string StockStatus { get; set; }
         public string  Website { get; set; }
 
+        /// <summary>
+        /// Model for a series's book entry
+        /// </summary>
+        /// <param name="entry">The title and vol # of a series entry</param>
+        /// <param name="price">The price of the entry</param>
+        /// <param name="stockStatus">The stockstatus of an entry, either IS, PO, OOS, OOP</param>
+        /// <param name="website">The website in which the entry is found at</param>
         public EntryModel (string entry, string price, string stockStatus, string website)
         {
             Entry = entry;
@@ -15,22 +24,32 @@ namespace MangaLightNovelWebScrape
             Website = website;
         }
 
+        /// <summary>
+        /// Applies discount to a entry's price
+        /// </summary>
+        /// <param name="initialPrice">The initial price of the entry</param>
+        /// <param name="discount">THe discount to apply to the initial price</param>
+        /// <returns>Returns the discounted price</returns>
+        public static string ApplyDiscount(decimal initialPrice, decimal discount)
+        {
+            return decimal.Subtract(initialPrice, decimal.Multiply(initialPrice, discount)).ToString("0.00");
+        }
+
         public override string ToString()
         {
             return $"[{Entry}, {Price}, {StockStatus}, {Website}]";
         }
 
-        /********************************************************************************************************************************************
-        * Last Modified On: 03 MArch, 2023
-        *  by: Sigrec (Sean. N)
-        * Description: Gets the current volume num for a series unit entry givin its type (box set, omnibux, single, etc)
-        * Parameters:
-        *      title | string | the full title of the entry to get the volume number
-        *      type | string | the type of entry it is either box set, omnibus, or single
-        ********************************************************************************************************************************************/
-        public static int GetCurrentVolumeNum(String title, String type)
+        /// <summary>
+        /// Last Modified On: 03 MArch, 2023 by: Prem/Sigrec (Sean. N)
+        /// Gets the current volume num for a series unit entry givin its type (box set, omnibux, single, etc)
+        /// </summary>
+        /// <param name="title">The full title of the entry to get the volume number</param>
+        /// <param name="type">The type of entry it is either box set, omnibus, or single</param>
+        /// <returns></returns>
+        public static int GetCurrentVolumeNum(string title, string type)
         {
-            return Int32.Parse(new Regex(@".*?(\d+).*").Replace(title.Substring(title.IndexOf(" "+ type) + type.Length + 1), "$1", 1));
+            return int.Parse(new Regex(@".*?(\d+).*").Replace(title.Substring(title.IndexOf(" "+ type) + type.Length + 1), "$1", 1));
         }
 
         /// <summary>
@@ -259,7 +278,7 @@ namespace MangaLightNovelWebScrape
             return entry1.Entry.CompareTo(entry2.Entry);
         }
 
-        int ExtractInt(String s)
+        int ExtractInt(string s)
         {
             return Int32.Parse(Regex.Replace(s.Substring(bookTitle.Length), @".*( \d+)$", "$1").TrimStart());
         }

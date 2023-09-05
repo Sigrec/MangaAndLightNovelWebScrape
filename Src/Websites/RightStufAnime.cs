@@ -4,6 +4,7 @@ namespace MangaLightNovelWebScrape.Websites
     {
         public static List<string> rightStufAnimeLinks = new();
         private static List<EntryModel> rightStufAnimeDataList = new();
+        private const decimal GOT_ANIME_DISCOUNT = 0.1M;
         private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("RightStufAnimeLogs");
         [GeneratedRegex("\\(.*?\\)")] private static partial Regex TitleParseRegex();
         [GeneratedRegex(" Manga| Edition")] private static partial Regex FormatRemovalRegex();
@@ -17,7 +18,7 @@ namespace MangaLightNovelWebScrape.Websites
         }
 
         private static string GetUrl(char bookType, byte currPageNum, string bookTitle){
-            string url = "https://www.rightstufanime.com/category/" + (bookType == 'M' ? "Manga" : "Novels") + "?page=" + currPageNum + "&show=96&keywords=" + FilterBookTitle(bookTitle);
+            string url = $"https://www.rightstufanime.com/category/{(bookType == 'M' ? "Manga" : "Novels")}?page={currPageNum}&show=96&keywords={FilterBookTitle(bookTitle)}";
             Logger.Debug(url);
             rightStufAnimeLinks.Add(url);
             return url;
@@ -28,7 +29,6 @@ namespace MangaLightNovelWebScrape.Websites
             WebDriver edgeDriver = new EdgeDriver(edgeOptions);
             WebDriverWait wait = new(edgeDriver, TimeSpan.FromSeconds(30));
 
-            double GotAnimeDiscount = 0.05;
             decimal priceVal;
             string priceTxt, stockStatus, currTitle;
 
@@ -54,26 +54,16 @@ namespace MangaLightNovelWebScrape.Websites
                         currTitle = TitleParseRegex().Replace(titleData[x].InnerText, "").Trim();                  
                         if(!titleData[x].InnerText.Contains("Imperfect") && MasterScrape.RemoveNonWordsRegex().Replace(currTitle, "").Contains(MasterScrape.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase))
                         {
-                            priceVal = Convert.ToDecimal(priceData[x].InnerText[1..]);
-                            priceTxt = "$" + (memberStatus ? (priceVal - priceVal * (decimal)GotAnimeDiscount).ToString("0.00") : priceData[x].InnerText);
+                            priceVal = Convert.ToDecimal(priceData[x].InnerText);
+                            priceTxt = $"${(memberStatus ? EntryModel.ApplyDiscount(priceVal, GOT_ANIME_DISCOUNT) : priceVal)}";
 
-                            stockStatus = stockStatusData[x].InnerText;
-                            if (stockStatus.IndexOf("In Stock") != -1)
+                            stockStatus = stockStatusData[x].InnerText switch
                             {
-                                stockStatus = "IS";
-                            }
-                            else if (stockStatus.IndexOf("Out of Stock") != -1)
-                            {
-                                stockStatus = "OOS";
-                            }
-                            else if (stockStatus.IndexOf("Pre-Order") != -1)
-                            {
-                                stockStatus = "PO";
-                            }
-                            else
-                            {
-                                stockStatus = "OOP";
-                            }
+                                string curStatus when curStatus.Contains("In Stock") => "IS",
+                                string curStatus when curStatus.Contains("Out of Stock") => "OOS",
+                                string curStatus when curStatus.Contains("Pre-Order") => "PO",
+                                _ => "OOP"
+                            };
 
                             rightStufAnimeDataList.Add(new EntryModel(FormatRemovalRegex().Replace(currTitle.Replace("Volume", "Vol"), "").Replace("Deluxe Omnibus", "Deluxe").Trim(), priceTxt.Trim(), stockStatus.Trim(), "RightStufAnime"));
                         }
@@ -105,11 +95,13 @@ namespace MangaLightNovelWebScrape.Websites
                     {
                         foreach (EntryModel data in rightStufAnimeDataList)
                         {
+                            Logger.Debug(data.ToString());
                             outputFile.WriteLine(data.ToString());
                         }
                     }
                     else
                     {
+                        Logger.Debug(bookTitle + " Does Not Exist at RightStufAnime");
                         outputFile.WriteLine(bookTitle + " Does Not Exist at RightStufAnime");
                     }
                 } 

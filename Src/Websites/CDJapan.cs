@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace MangaLightNovelWebScrape.Websites
 {
-    public class WorldOfBooks
+    public class CDJapan
     {
         
     }

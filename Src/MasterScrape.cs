@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices.ComTypes;
 using MangaLightNovelWebScrape.Websites;
 using System.Diagnostics;
 
@@ -8,67 +9,89 @@ namespace MangaLightNovelWebScrape
         private static List<List<EntryModel>> MasterList = new();
         private static List<Thread> WebThreads = new();
         private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("MasterScrapeLogs");
-        public static bool IsDebugEnabled;
+        /// <summary>
+        /// Determines whether debug mode is enabled (Diabled by default)
+        /// </summary>
+        public static bool IsDebugEnabled { get; set; }
+        /// <summary>
+        /// The browser arguments used for each scrape
+        /// </summary>
+        private static readonly string[] BROWSER_ARGUMENTS = { "--headless=new", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-popup-blocking", "--disable-extensions", "--inprivate", "--incognito" };
         [GeneratedRegex("[^\\w+]")] public static partial Regex RemoveNonWordsRegex();
         [GeneratedRegex("\\d{1,3}")] public static partial Regex FindVolNumRegex();
-        
-        private Thread CreateRightStufAnimeThread(EdgeOptions edgeOptions, string bookTitle, char bookType)
+
+        public enum Website
         {
-            Logger.Debug("RightStufAnime Going");
-            return new Thread(() => MasterList.Add(RightStufAnime.GetRightStufAnimeData(bookTitle, bookType, false, 1, edgeOptions)));
+            AmazonJapan,
+            AmazonUSA,
+            BarnesAndNoble,
+            BooksAMillion,
+            CDJapan,
+            InStockTrades,
+            KinokuniyaUSA,
+            RightStufAnime,
+            RobertsAnimeCornerStore
+        }
+
+        public MasterScrape(bool IsDebugEnabled = false)
+        {
+        }
+
+        private Thread CreateRightStufAnimeThread(EdgeOptions edgeOptions, string bookTitle, char bookType, bool isMember)
+        {
+            return new Thread(() => MasterList.Add(RightStufAnime.GetRightStufAnimeData(bookTitle, bookType, isMember, 1, edgeOptions)));
         }
 
         private Thread CreateRobertsAnimeCornerStoreThread(EdgeOptions edgeOptions, string bookTitle, char bookType)
         {
-            Logger.Debug("RobertsAnimeCornerSTore Going");
             return new Thread(() => MasterList.Add(RobertsAnimeCornerStore.GetRobertsAnimeCornerStoreData(bookTitle, bookType, edgeOptions)));
         }
         
         private Thread CreateInStockTradesThread(EdgeOptions edgeOptions, string bookTitle, char bookType)
         {
-            Logger.Debug("InStockTrades Going");
             return new Thread(() => MasterList.Add(InStockTrades.GetInStockTradesData(bookTitle, 1, bookType, edgeOptions)));
         }
 
-        private Thread CreateKinokuniyaUSAThread(EdgeOptions edgeOptions, string bookTitle, char bookType)
+        private Thread CreateKinokuniyaUSAThread(EdgeOptions edgeOptions, string bookTitle, char bookType, bool isMember)
         {
-            Logger.Debug("KinokuniyaUSA Going");
-            return new Thread(() => MasterList.Add(KinokuniyaUSA.GetKinokuniyaUSAData(bookTitle, bookType, true, 1, edgeOptions)));
+            return new Thread(() => MasterList.Add(KinokuniyaUSA.GetKinokuniyaUSAData(bookTitle, bookType, isMember, 1, edgeOptions)));
         }
 
-        private Thread CreateBarnesAndNobleThread(EdgeOptions edgeOptions, string bookTitle, char bookType)
+        private Thread CreateBarnesAndNobleThread(EdgeOptions edgeOptions, string bookTitle, char bookType, bool isMember)
         {
-            Logger.Debug("Barnes & Noble Going");
-            return new Thread(() => MasterList.Add(BarnesAndNoble.GetBarnesAndNobleData(bookTitle, bookType, false, 1, edgeOptions)));
+            return new Thread(() => MasterList.Add(BarnesAndNoble.GetBarnesAndNobleData(bookTitle, bookType, isMember, 1, edgeOptions)));
         }
 
-        private Thread CreateBooksAMillionThread(EdgeOptions edgeOptions, string bookTitle, char bookType)
+        private Thread CreateBooksAMillionThread(EdgeOptions edgeOptions, string bookTitle, char bookType, bool isMember)
         {
-            Logger.Debug("Books-A-Million Going");
-            return new Thread(() => MasterList.Add(BooksAMillion.GetBooksAMillionData(bookTitle, bookType, true, 1, edgeOptions)));
+            return new Thread(() => MasterList.Add(BooksAMillion.GetBooksAMillionData(bookTitle, bookType, isMember, 1, edgeOptions)));
         }
 
         private Thread CreateAmazonUSAThread(EdgeOptions edgeOptions, string bookTitle, char bookType)
         {
-            Logger.Debug("AmazonUSA Going");
             return new Thread(() => MasterList.Add(AmazonUSA.GetAmazonUSAData(bookTitle, bookType, 1, edgeOptions)));
         }
 
-        public static List<EntryModel> GetFinalList()
-        {
-            return MasterList[0];
-        }
-
+        /// <summary>
+        /// Disables debug mode
+        /// </summary>
         public static void DisableDebugMode()
         {
             IsDebugEnabled = false;
         }
 
+        /// <summary>
+        /// Enables debug mode aka printing txt files to Data folder
+        /// </summary>
         public static void EnableDebugMode()
         {
             IsDebugEnabled = true;
         }
 
+        /// <summary>
+        /// Gets the results of a scrape
+        /// </summary>
+        /// <returns></returns>
         public List<EntryModel> GetResults()
         {
             return MasterList[0];
@@ -80,47 +103,50 @@ namespace MangaLightNovelWebScrape
         /// <param name="bookTitle">The title of the series to search for</param>
         /// <param name="bookType">The book type of the series either Manga (M) or Novel (N)</param>
         /// <param name="webScrapeList">The list of websites you want to search at</param>
-        public void InitializeScrape(string bookTitle, char bookType, List<Website> webScrapeList, string browser = "Error")
+        /// <param name="browser">The browser either Edge, Chrome,l or FireFox the user wants to use</param>
+        /// <param name="isRightStufMember">Whether the user is a RightStuf Member</param>
+        /// <param name="isBarnesAndNobleMember">Whether the user is a Barnes&Noble Member</param>
+        /// <param name="isBooksAMillionMember">Whether the user is a BooksAMillion Member</param>
+        public void InitializeScrape(string bookTitle, char bookType, List<Website> webScrapeList, string browser = "Error", bool isRightStufMember = false, bool isBarnesAndNobleMember = false, bool isBooksAMillionMember = false, bool isKinokuniyaUSAMember = false)
         {
+            MasterList.Clear(); // Clear the masterlist everytime there is a new run
             EdgeOptions edgeOptions = new()
             {
-                PageLoadStrategy = PageLoadStrategy.Normal
+                PageLoadStrategy = PageLoadStrategy.Eager,
             };
-            edgeOptions.AddArgument("--headless=new");
-            edgeOptions.AddArgument("--enable-automation");
-            edgeOptions.AddArgument("--no-sandbox");
-            edgeOptions.AddArgument("--disable-infobars");
-            edgeOptions.AddArgument("--disable-dev-shm-usage");
-            edgeOptions.AddArgument("--disable-browser-side-navigation");
-            edgeOptions.AddArgument("--disable-gpu");
-            edgeOptions.AddArgument("--disable-extensions");
-            edgeOptions.AddArgument("--inprivate");
-            edgeOptions.AddArgument("--incognito");
+            edgeOptions.AddArguments(BROWSER_ARGUMENTS);
             
             foreach (Website site in webScrapeList)
             {
                 switch (site)
                 {
                     case Website.RightStufAnime:
-                        WebThreads.Add(CreateRightStufAnimeThread(edgeOptions, bookTitle, bookType));
+                        WebThreads.Add(CreateRightStufAnimeThread(edgeOptions, bookTitle, bookType, isRightStufMember));
+                        Logger.Debug("RightStufAnime Going");
                         break;
                     case Website.RobertsAnimeCornerStore:
                         WebThreads.Add(CreateRobertsAnimeCornerStoreThread(edgeOptions, bookTitle, bookType));
+                        Logger.Debug("RobertsAnimeCornerStore Going");
                         break;
                     case Website.InStockTrades:
                         WebThreads.Add(CreateInStockTradesThread(edgeOptions, bookTitle, bookType));
-                        break;
-                    case Website.KinokuniyaUSA:
-                        WebThreads.Add(CreateKinokuniyaUSAThread(edgeOptions, bookTitle, bookType));
+                        Logger.Debug("InStockTrades Going");
                         break;
                     case Website.BarnesAndNoble:
-                        WebThreads.Add(CreateBarnesAndNobleThread(edgeOptions, bookTitle, bookType));
+                        WebThreads.Add(CreateBarnesAndNobleThread(edgeOptions, bookTitle, bookType, isBarnesAndNobleMember));
+                        Logger.Debug("BarnesAndNoble Going");
+                        break;
+                    case Website.KinokuniyaUSA:
+                        WebThreads.Add(CreateKinokuniyaUSAThread(edgeOptions, bookTitle, bookType, isKinokuniyaUSAMember));
+                        Logger.Debug("KinokuniyaUSA Going");
                         break;
                     case Website.BooksAMillion:
-                        WebThreads.Add(CreateBooksAMillionThread(edgeOptions, bookTitle, bookType));
+                        WebThreads.Add(CreateBooksAMillionThread(edgeOptions, bookTitle, bookType, isBooksAMillionMember));
+                        Logger.Debug("BooksAMillion Going");
                         break;
                     case Website.AmazonUSA:
                         WebThreads.Add(CreateAmazonUSAThread(edgeOptions, bookTitle, bookType));
+                        Logger.Debug("AmazonUSA Going");
                         break;
                 }
             }
@@ -176,13 +202,13 @@ namespace MangaLightNovelWebScrape
                     {
                         foreach (EntryModel data in MasterList[0])
                         {
-                            //Logger.Debug("[" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]");
+                            Logger.Debug(data.ToString());
                             outputFile.WriteLine(data.ToString());
                         }
                     }
                     else
                     {
-                        outputFile.WriteLine("No MasterData Available");
+                        Logger.Info("No MasterData Available");
                     }
                 }
             }
@@ -194,7 +220,7 @@ namespace MangaLightNovelWebScrape
             watch.Start();
             MasterScrape test = new MasterScrape();
             EnableDebugMode();
-            test.InitializeScrape("Dark Gathering", 'M', new List<Website>() { Website.RightStufAnime, Website.BarnesAndNoble, Website.RobertsAnimeCornerStore, Website.InStockTrades }, "Edge");
+            test.InitializeScrape("Dark Gathering", 'M', new List<Website>() { Website.KinokuniyaUSA }, "Edge", false, true, true, true);
             watch.Stop();
             Logger.Info($"Time in Seconds: {watch.ElapsedMilliseconds / 1000}s");
         }
