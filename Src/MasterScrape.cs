@@ -1,3 +1,4 @@
+using Microsoft.VisualBasic;
 using MangaLightNovelWebScrape.Websites;
 using OpenQA.Selenium.Chromium;
 using OpenQA.Selenium.Firefox;
@@ -14,7 +15,17 @@ namespace MangaLightNovelWebScrape
         private ConcurrentBag<List<EntryModel>> ResultsList = new();
         private List<Task> WebTasks = new();
         private Task[] ComparisonTaskList; // Holds the comparison tasks for execution
-        private Dictionary<string, string> MasterUrls;
+        private Dictionary<string, string> MasterUrls = new Dictionary<string, string>
+        {
+            { RightStufAnime.WEBSITE_TITLE, "" },
+            { BarnesAndNoble.WEBSITE_TITLE , "" },
+            { BooksAMillion.WEBSITE_TITLE , "" },
+            { AmazonUSA.WEBSITE_TITLE , "" },
+            { KinokuniyaUSA.WEBSITE_TITLE , "" },
+            { InStockTrades.WEBSITE_TITLE , "" },
+            { RobertsAnimeCornerStore.WEBSITE_TITLE , "" }
+        };
+
         private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("MasterScrapeLogs");
         /// <summary>
         /// Determines whether debug mode is enabled (Diabled by default)
@@ -43,16 +54,7 @@ namespace MangaLightNovelWebScrape
 
         public MasterScrape(bool IsDebugEnabled = false)
         {
-            MasterUrls = new Dictionary<string, string>
-            {
-                { RightStufAnime.WEBSITE_TITLE, "" },
-                { BarnesAndNoble.WEBSITE_TITLE , "" },
-                { BooksAMillion.WEBSITE_TITLE , "" },
-                { AmazonUSA.WEBSITE_TITLE , "" },
-                { KinokuniyaUSA.WEBSITE_TITLE , "" },
-                { InStockTrades.WEBSITE_TITLE , "" },
-                { RobertsAnimeCornerStore.WEBSITE_TITLE , "" }
-            };
+
         }
 
         private async Task CreateRightStufAnimeTask(string bookTitle, char bookType, bool isMember)
@@ -134,6 +136,11 @@ namespace MangaLightNovelWebScrape
         public List<EntryModel> GetResults()
         {
             return MasterList.ElementAt(0);
+        }
+
+        public Dictionary<string, string> GetResultUrls()
+        {
+            return MasterUrls;
         }
 
         /// <summary>
@@ -239,9 +246,6 @@ namespace MangaLightNovelWebScrape
             finalData.Sort(new VolumeSort(bookTitle));
             return finalData;
         }
-
-        // TODO Logic for when the prices are the same
-        // TODO Figure out how to clear data within this method
     
         public static WebDriver SetupBrowserDriver(bool needsUserAgent)
         {
@@ -287,6 +291,10 @@ namespace MangaLightNovelWebScrape
                     return new ChromeDriver(chromeOptions);
             }
         }
+
+        // TODO Logic for when the prices are the same
+        // TODO Figure out how to clear data within this method
+        // TODO 
 
         /// <summary>
         /// Starts the web scrape
@@ -379,10 +387,6 @@ namespace MangaLightNovelWebScrape
                     initialMasterListCount = MasterList.Count;
                     taskCount = MasterList.Count / 2;
                     MasterList.Sort((dataSet1, dataSet2) => dataSet1.Count.CompareTo(dataSet2.Count));
-                    // foreach (var x in MasterList)
-                    // {
-                    //     Logger.Debug(x[0]);
-                    // }
                     for (int curTask = 0; curTask < MasterList.Count - 1; curTask += 2) // Create all of the tasks for compare processing
                     {
                         List<EntryModel> smallerList = MasterList[curTask];
@@ -402,12 +406,6 @@ namespace MangaLightNovelWebScrape
                     // MasterList[MasterList.Count - 1].ForEach(data => Logger.Info($"List 1 {data.ToString()}"));
                     // MasterList[0].ForEach(data => Logger.Debug($"List 0 {data}"));
                     // Logger.Debug("Current Pos = " + pos);
-
-                    // Check if the master data list MasterList[0] is the only list left if so comparison is done otherwise resize array for next batch of comparisons
-                    // if (MasterList.Count > 1 && TaskList.Length != MasterList.Count / 2)
-                    // {
-                    //     Array.Resize(ref TaskList, MasterList.Count / 2);
-                    // }
                     pos = 0;
                 }
 
@@ -418,25 +416,25 @@ namespace MangaLightNovelWebScrape
                     {
                         switch (entry.Website)
                         {
-                            case "RightStufAnime":
+                            case RightStufAnime.WEBSITE_TITLE:
                                 MasterUrls[entry.Website] = RightStufAnime.RightStufAnimeLinks[0];
                                 break;
-                            case "RobertsAnimeCornerStore":
+                            case RobertsAnimeCornerStore.WEBSITE_TITLE:
                                 MasterUrls[entry.Website] = RobertsAnimeCornerStore.RobertsAnimeCornerStoreLinks.Last();
                                 break;
-                            case "InStockTrades":
+                            case InStockTrades.WEBSITE_TITLE:
                                 MasterUrls[entry.Website] = InStockTrades.InStockTradesLinks[0];
                                 break;
-                            case "Barnes & Noble":
+                            case BarnesAndNoble.WEBSITE_TITLE:
                                 MasterUrls[entry.Website] = BarnesAndNoble.BarnesAndNobleLinks[0];
                                 break;
-                            case "Kinokuniya USA":
+                            case KinokuniyaUSA.WEBSITE_TITLE:
                                 MasterUrls[entry.Website] = KinokuniyaUSA.KinokuniyaUSALinks[0];
                                 break;
-                            case "Books-A-Million":
+                            case BooksAMillion.WEBSITE_TITLE:
                                 MasterUrls[entry.Website] = BooksAMillion.BooksAMillionLinks[0];
                                 break;
-                            case "Amazon USA":
+                            case AmazonUSA.WEBSITE_TITLE:
                                 MasterUrls[entry.Website] = AmazonUSA.AmazonUSALinks[0];
                                 break;
                         }
@@ -480,9 +478,14 @@ namespace MangaLightNovelWebScrape
             MasterScrape test = new MasterScrape();
             EnableDebugMode();
             // { Website.RightStufAnime, Website.BarnesAndNoble, Website.InStockTrades, Website.RobertsAnimeCornerStore, Website.KinokuniyaUSA, Website.BooksAMillion }
-            await test.InitializeScrapeAsync("World Trigger", 'M', new string[] { "OOS", "PO" }, new List<Website>() { Website.BarnesAndNoble }, "Chrome", true, true, true, true);
+            await test.InitializeScrapeAsync("dark gathering", 'M', new string[] {  }, new List<Website>() { Website.InStockTrades }, "Chrome", true, true, true, true);
             watch.Stop();
             Logger.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
+
+        // public static void Main(string[] args)
+        // {
+            
+        // }
     }
 }

@@ -194,9 +194,6 @@ namespace MangaLightNovelWebScrape.Websites
                     Logger.Error(bookTitle + " Does Not Exist at RobertsAnimeCornerStore\n" + ex);
                 }
             }
-
-            driver.Close();
-            driver.Quit();
             
             return RobertsAnimeCornerStoreData;
         }
