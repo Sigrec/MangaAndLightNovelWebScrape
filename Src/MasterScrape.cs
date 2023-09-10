@@ -1,13 +1,20 @@
-using System.Runtime.InteropServices.ComTypes;
 using MangaLightNovelWebScrape.Websites;
+using OpenQA.Selenium.Chromium;
+using OpenQA.Selenium.Firefox;
+using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Threading.Tasks;
 
 namespace MangaLightNovelWebScrape
 {
     public partial class MasterScrape
     { 
-        private static List<List<EntryModel>> MasterList = new();
-        private static List<Thread> WebThreads = new();
+        private List<List<EntryModel>> MasterList = new();
+        private static string browser { get; set; }
+        private ConcurrentBag<List<EntryModel>> ResultsList = new();
+        private List<Task> WebTasks = new();
+        private Task[] ComparisonTaskList; // Holds the comparison tasks for execution
+        private Dictionary<string, string> MasterUrls;
         private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("MasterScrapeLogs");
         /// <summary>
         /// Determines whether debug mode is enabled (Diabled by default)
@@ -16,7 +23,8 @@ namespace MangaLightNovelWebScrape
         /// <summary>
         /// The browser arguments used for each scrape
         /// </summary>
-        private static readonly string[] BROWSER_ARGUMENTS = { "--headless=new", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-popup-blocking", "--disable-extensions", "--inprivate", "--incognito" };
+        private static string[] ChromeBrowserArguments = { "--headless=new", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-geolocation" };
+        private static string[] FireFoxBrowserArguments = { "-headless", "-new-instance", "-private", "-incognito" };
         [GeneratedRegex("[^\\w+]")] public static partial Regex RemoveNonWordsRegex();
         [GeneratedRegex("\\d{1,3}")] public static partial Regex FindVolNumRegex();
 
@@ -35,41 +43,72 @@ namespace MangaLightNovelWebScrape
 
         public MasterScrape(bool IsDebugEnabled = false)
         {
+            MasterUrls = new Dictionary<string, string>
+            {
+                { RightStufAnime.WEBSITE_TITLE, "" },
+                { BarnesAndNoble.WEBSITE_TITLE , "" },
+                { BooksAMillion.WEBSITE_TITLE , "" },
+                { AmazonUSA.WEBSITE_TITLE , "" },
+                { KinokuniyaUSA.WEBSITE_TITLE , "" },
+                { InStockTrades.WEBSITE_TITLE , "" },
+                { RobertsAnimeCornerStore.WEBSITE_TITLE , "" }
+            };
         }
 
-        private Thread CreateRightStufAnimeThread(EdgeOptions edgeOptions, string bookTitle, char bookType, bool isMember)
+        private async Task CreateRightStufAnimeTask(string bookTitle, char bookType, bool isMember)
         {
-            return new Thread(() => MasterList.Add(RightStufAnime.GetRightStufAnimeData(bookTitle, bookType, isMember, 1, edgeOptions)));
+            await Task.Run(() =>
+            {
+                MasterList.Add(RightStufAnime.GetRightStufAnimeData(bookTitle, bookType, isMember, 1));
+            });
         }
 
-        private Thread CreateRobertsAnimeCornerStoreThread(EdgeOptions edgeOptions, string bookTitle, char bookType)
+        private async Task CreateRobertsAnimeCornerStoreTask(string bookTitle, char bookType)
         {
-            return new Thread(() => MasterList.Add(RobertsAnimeCornerStore.GetRobertsAnimeCornerStoreData(bookTitle, bookType, edgeOptions)));
+            await Task.Run(() =>
+            {
+                MasterList.Add(RobertsAnimeCornerStore.GetRobertsAnimeCornerStoreData(bookTitle, bookType));
+            });
         }
         
-        private Thread CreateInStockTradesThread(EdgeOptions edgeOptions, string bookTitle, char bookType)
+        private async Task CreateInStockTradesTask(string bookTitle, char bookType)
         {
-            return new Thread(() => MasterList.Add(InStockTrades.GetInStockTradesData(bookTitle, 1, bookType, edgeOptions)));
+            await Task.Run(() => 
+            {
+                MasterList.Add(InStockTrades.GetInStockTradesData(bookTitle, 1, bookType));
+            });
         }
 
-        private Thread CreateKinokuniyaUSAThread(EdgeOptions edgeOptions, string bookTitle, char bookType, bool isMember)
+        private async Task CreateKinokuniyaUSATask(string bookTitle, char bookType, bool isMember)
         {
-            return new Thread(() => MasterList.Add(KinokuniyaUSA.GetKinokuniyaUSAData(bookTitle, bookType, isMember, 1, edgeOptions)));
+            await Task.Run(() => 
+            {
+                MasterList.Add(KinokuniyaUSA.GetKinokuniyaUSAData(bookTitle, bookType, isMember, 1));
+            });
         }
 
-        private Thread CreateBarnesAndNobleThread(EdgeOptions edgeOptions, string bookTitle, char bookType, bool isMember)
+        private async Task CreateBarnesAndNobleTask(string bookTitle, char bookType, bool isMember)
         {
-            return new Thread(() => MasterList.Add(BarnesAndNoble.GetBarnesAndNobleData(bookTitle, bookType, isMember, 1, edgeOptions)));
+            await Task.Run(() => 
+            {
+                MasterList.Add(BarnesAndNoble.GetBarnesAndNobleData(bookTitle, bookType, isMember, 1));
+            });
         }
 
-        private Thread CreateBooksAMillionThread(EdgeOptions edgeOptions, string bookTitle, char bookType, bool isMember)
+        private async Task CreateBooksAMillionTask(string bookTitle, char bookType, bool isMember)
         {
-            return new Thread(() => MasterList.Add(BooksAMillion.GetBooksAMillionData(bookTitle, bookType, isMember, 1, edgeOptions)));
+            await Task.Run(() => 
+            {
+                MasterList.Add(BooksAMillion.GetBooksAMillionData(bookTitle, bookType, isMember, 1));
+            });
         }
 
-        private Thread CreateAmazonUSAThread(EdgeOptions edgeOptions, string bookTitle, char bookType)
+        private async Task CreateAmazonUSATask(string bookTitle, char bookType)
         {
-            return new Thread(() => MasterList.Add(AmazonUSA.GetAmazonUSAData(bookTitle, bookType, 1, edgeOptions)));
+            await Task.Run(() => 
+            {
+                MasterList.Add(AmazonUSA.GetAmazonUSAData(bookTitle, bookType, 1));
+            });
         }
 
         /// <summary>
@@ -94,7 +133,159 @@ namespace MangaLightNovelWebScrape
         /// <returns></returns>
         public List<EntryModel> GetResults()
         {
-            return MasterList[0];
+            return MasterList.ElementAt(0);
+        }
+
+        /// <summary>
+        /// Clears all entry and url data for every website
+        /// </summary>
+        public static void ClearAllWebsiteData()
+        {
+            RightStufAnime.ClearData();
+            RobertsAnimeCornerStore.ClearData();
+            InStockTrades.ClearData();
+            KinokuniyaUSA.ClearData();
+            BarnesAndNoble.ClearData();
+            BooksAMillion.ClearData();
+            AmazonUSA.ClearData();
+        }
+
+        /// <summary>
+       /// Compares the prices of all the volumes that the two websites both have, and outputs the resulting list containing 
+       /// the lowest prices for each available volume between the websites. If one website does not have a volume that the other
+       /// does then that volumes data set defaults to the "smallest" and is added to the list.
+       /// </summary>
+       /// <param name="smallerList">The smaller list of data sets between the two websites</param>
+       /// <param name="biggerList">The bigger list of data sets between the two websites</param>
+       /// <param name="bookTitle">The initial title inputted by the user used to determine if the titles in the lists "match"</param>
+       /// <returns>The final list of data containing all available lowest price volumes between the two websites</returns>
+       /// TODO Need to figure out what to do if the prices are the same, most likely at the end the site with the most entries is favored?
+        private static List<EntryModel> PriceComparison(List<EntryModel> smallerList, List<EntryModel> biggerList, string bookTitle)
+        {
+            List<EntryModel> finalData = new List<EntryModel>(); // The final list of data containing all available volumes for the series from the website with the lowest price
+            bool sameVolumeCheck; // Determines whether a match has been found where the 2 volumes are the same to compare prices for
+            int nextVolPos = 0; // The position of the next volume and then proceeding volumes to check if there is a volume to compare
+            int biggerListCurrentVolNum; // The current vol number from the website with the bigger list of volumes that is being checked
+            // Logger.Debug($"Smaller -> {smallerList[0].Website} | Bigger -> {biggerList[0].Website}");
+
+            foreach (EntryModel biggerListData in biggerList){
+                sameVolumeCheck = false; // Reset the check to determine if two volumes with the same number has been found to false
+                if (biggerListData.Entry.Contains("Imperfect")) // Skip comparing price data for a volumes that are not new
+                {
+                    continue;
+                }
+                else if (biggerListData.Entry.Contains("Box Set"))
+                {
+                    biggerListCurrentVolNum = EntryModel.GetCurrentVolumeNum(biggerListData.Entry, "Box Set");
+                } 
+                else
+                {
+                    biggerListCurrentVolNum = EntryModel.GetCurrentVolumeNum(biggerListData.Entry, "Vol");
+                }
+
+                if (nextVolPos != smallerList.Count) // Only need to check for a comparison if there are still volumes to compare in the "smallerList"
+                {
+                    for (int y = nextVolPos; y < smallerList.Count; y++) // Check every volume in the smaller list, skipping over volumes that have already been checked
+                    { 
+                        // Check to see if the titles are not the same and they are not similar enough, or it is not new then go to the next volume
+                        if (smallerList[y].Entry.Contains("Imperfect") || (!smallerList[y].Entry.Equals(biggerListData.Entry) && !EntryModel.Similar(smallerList[y].Entry, biggerListData.Entry)))
+                        {
+                            // Logger.Debug($"Not The Same {smallerList[y].Entry} | {biggerListData.Entry} | {!smallerList[y].Entry.Equals(biggerListData.Entry)} | {!EntryModel.Similar(smallerList[y].Entry, biggerListData.Entry)} | {smallerList[y].Entry.Contains("Imperfect")}");
+                            continue;
+                        }
+                        // If the vol numbers are the same and the titles are similar or the same from the if check above, add the lowest price volume to the list
+                        
+                        // Logger.Debug($"MATCH? ({biggerListCurrentVolNum}, {(biggerListData.Entry.Contains("Box Set") ? EntryModel.GetCurrentVolumeNum(smallerList[y].Entry, "Box Set") : EntryModel.GetCurrentVolumeNum(smallerList[y].Entry, "Vol"))}) = {biggerListCurrentVolNum == (biggerListData.Entry.Contains("Box Set") ? EntryModel.GetCurrentVolumeNum(smallerList[y].Entry, "Box Set") : EntryModel.GetCurrentVolumeNum(smallerList[y].Entry, "Vol"))}");
+                        if (biggerListCurrentVolNum == (biggerListData.Entry.Contains("Box Set") ? EntryModel.GetCurrentVolumeNum(smallerList[y].Entry, "Box Set") : EntryModel.GetCurrentVolumeNum(smallerList[y].Entry, "Vol")))
+                        {
+                            // Logger.Debug($"Found Match for {biggerListData.Entry} {biggerListCurrentVolNum}");
+                            //Logger.Debug($"PRICE COMPARISON ({float.Parse(biggerListData.Price.Substring(1))}, {float.Parse(smallerList[y].Price.Substring(1))}) -> {float.Parse(biggerListData.Price.Substring(1)) > float.Parse(smallerList[y].Price.Substring(1))}");
+                            // Get the lowest price between the two then add the lowest dataset
+                            if (float.Parse(biggerListData.Price.Substring(1)) > float.Parse(smallerList[y].Price.Substring(1)))
+                            {
+                                finalData.Add(smallerList[y]);
+                                // Logger.Debug($"Add Match {smallerList[y]}");
+                            }
+                            else
+                            {
+                                finalData.Add(biggerListData);
+                                // Logger.Debug($"Add Match {biggerListData}");
+                            }
+                            smallerList.RemoveAt(y);
+
+                            nextVolPos = y; // Shift the position in which the next volumes to compare from the smaller list starts essentially "shrinking" the number of comparisons needed whenever a valid comparison is found by 1
+
+                            sameVolumeCheck = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (!sameVolumeCheck) // If the current volume number in the bigger list has no match in the smaller list (same volume number and name) then add it
+                {
+                    // Logger.Debug($"Add No Match {biggerListData}");
+                    finalData.Add(biggerListData);
+                }
+            }
+
+            // Logger.Debug("SmallerList Size = " + smallerList.Count);
+            // Smaller list has volumes that are not present in the bigger list and are volumes that have a volume # greater than the greatest volume # in the bigger lis
+            for (int x = 0; x < smallerList.Count; x++)
+            {
+                // Logger.Debug($"Add SmallerList Leftovers {smallerList[x]}");
+                finalData.Add(smallerList[x]);
+            }
+            // finalData.ForEach(data => Logger.Info($"Final -> {data}"));
+            finalData.Sort(new VolumeSort(bookTitle));
+            return finalData;
+        }
+
+        // TODO Logic for when the prices are the same
+        // TODO Figure out how to clear data within this method
+    
+        public static WebDriver SetupBrowserDriver(bool needsUserAgent)
+        {
+            switch (browser)
+            {
+                case "Edge":
+                    EdgeOptions edgeOptions = new()
+                    {
+                        PageLoadStrategy = PageLoadStrategy.Eager,
+                    };
+                    edgeOptions.AddArguments(ChromeBrowserArguments);
+                    edgeOptions.AddUserProfilePreference("profile.default_content_settings.geolocation", 2);
+                    if (needsUserAgent)
+                    {
+                        WebDriver dummyDriver = new EdgeDriver(edgeOptions);
+                        edgeOptions.AddArgument("user-agent=" + dummyDriver.ExecuteScript("return navigator.userAgent").ToString().Replace("Headless", ""));
+                        dummyDriver.Quit();
+                    }
+                    return new EdgeDriver(edgeOptions);
+                case "FireFox":
+                    FirefoxOptions firefoxOptions = new()
+                    {
+                        PageLoadStrategy = PageLoadStrategy.Eager,
+                        AcceptInsecureCertificates = true
+                    };
+                    firefoxOptions.AddArguments(FireFoxBrowserArguments);
+                    firefoxOptions.SetPreference("profile.default_content_settings.geolocation", 2); 
+                    return new FirefoxDriver(firefoxOptions);
+                case "Chrome":
+                default:
+                    ChromeOptions chromeOptions = new()
+                    {
+                        PageLoadStrategy = PageLoadStrategy.Eager,
+                    };
+                    chromeOptions.AddArguments(ChromeBrowserArguments);
+                    chromeOptions.AddUserProfilePreference("profile.default_content_settings.geolocation", 2);
+                    if (needsUserAgent)
+                    {
+                        WebDriver dummyDriver = new ChromeDriver(chromeOptions);
+                        chromeOptions.AddArgument("user-agent=" + dummyDriver.ExecuteScript("return navigator.userAgent").ToString().Replace("Headless", ""));
+                        dummyDriver.Quit();
+                    }
+                    return new ChromeDriver(chromeOptions);
+            }
         }
 
         /// <summary>
@@ -104,125 +295,194 @@ namespace MangaLightNovelWebScrape
         /// <param name="bookType">The book type of the series either Manga (M) or Novel (N)</param>
         /// <param name="webScrapeList">The list of websites you want to search at</param>
         /// <param name="browser">The browser either Edge, Chrome,l or FireFox the user wants to use</param>
-        /// <param name="isRightStufMember">Whether the user is a RightStuf Member</param>
-        /// <param name="isBarnesAndNobleMember">Whether the user is a Barnes&Noble Member</param>
-        /// <param name="isBooksAMillionMember">Whether the user is a BooksAMillion Member</param>
-        public void InitializeScrape(string bookTitle, char bookType, List<Website> webScrapeList, string browser = "Error", bool isRightStufMember = false, bool isBarnesAndNobleMember = false, bool isBooksAMillionMember = false, bool isKinokuniyaUSAMember = false)
+        /// <param name="isRightStufMember">Whether the user is a RightStufAnime Member</param>
+        /// <param name="isBarnesAndNobleMember">Whether the user is a Barnes & Noble Member</param>
+        /// <param name="isBooksAMillionMember">Whether the user is a Books-A-Million Member</param>
+        /// <param name="isKinokuniyaUSAMember">Whether the user is a Kinokuniya USA member</param>
+        /// <returns></returns>
+        public async Task InitializeScrapeAsync(string bookTitle, char bookType, string[] stockFilter, List<Website> webScrapeList, string curBrowser = "Error", bool isRightStufMember = false, bool isBarnesAndNobleMember = false, bool isBooksAMillionMember = false, bool isKinokuniyaUSAMember = false)
         {
-            MasterList.Clear(); // Clear the masterlist everytime there is a new run
-            EdgeOptions edgeOptions = new()
+            browser = curBrowser;
+            Logger.Debug($"Running on {browser} Browser");
+            await Task.Run(async () =>
             {
-                PageLoadStrategy = PageLoadStrategy.Eager,
-            };
-            edgeOptions.AddArguments(BROWSER_ARGUMENTS);
-            
-            foreach (Website site in webScrapeList)
-            {
-                switch (site)
+                MasterList.Clear(); // Clear the masterlist everytime there is a new run
+                foreach (string website in MasterUrls.Keys) // Clear urls
                 {
-                    case Website.RightStufAnime:
-                        WebThreads.Add(CreateRightStufAnimeThread(edgeOptions, bookTitle, bookType, isRightStufMember));
-                        Logger.Debug("RightStufAnime Going");
-                        break;
-                    case Website.RobertsAnimeCornerStore:
-                        WebThreads.Add(CreateRobertsAnimeCornerStoreThread(edgeOptions, bookTitle, bookType));
-                        Logger.Debug("RobertsAnimeCornerStore Going");
-                        break;
-                    case Website.InStockTrades:
-                        WebThreads.Add(CreateInStockTradesThread(edgeOptions, bookTitle, bookType));
-                        Logger.Debug("InStockTrades Going");
-                        break;
-                    case Website.BarnesAndNoble:
-                        WebThreads.Add(CreateBarnesAndNobleThread(edgeOptions, bookTitle, bookType, isBarnesAndNobleMember));
-                        Logger.Debug("BarnesAndNoble Going");
-                        break;
-                    case Website.KinokuniyaUSA:
-                        WebThreads.Add(CreateKinokuniyaUSAThread(edgeOptions, bookTitle, bookType, isKinokuniyaUSAMember));
-                        Logger.Debug("KinokuniyaUSA Going");
-                        break;
-                    case Website.BooksAMillion:
-                        WebThreads.Add(CreateBooksAMillionThread(edgeOptions, bookTitle, bookType, isBooksAMillionMember));
-                        Logger.Debug("BooksAMillion Going");
-                        break;
-                    case Website.AmazonUSA:
-                        WebThreads.Add(CreateAmazonUSAThread(edgeOptions, bookTitle, bookType));
-                        Logger.Debug("AmazonUSA Going");
-                        break;
-                }
-            }
-
-            WebThreads.ForEach(web => web.Start());
-            WebThreads.ForEach(web => web.Join());
-            MasterList.RemoveAll(x => x.Count == 0); // Clear all lists from websites that didn't have any data
-            WebThreads.Clear();
-
-            int pos = 0; // The position of the new lists of data after comparing
-            int checkTask;
-            int threadCount = MasterList.Count / 2; // Tracks the "status" of the data lists that need to be compared, essentially tracks needed thread count
-            Thread[] threadList = new Thread[threadCount];; // Holds the comparison threads for execution
-            while (MasterList.Count > 1) // While there is still 2 or more lists of data to compare prices continue
-            {
-                MasterList.Sort((dataSet1, dataSet2) => dataSet1.Count.CompareTo(dataSet2.Count));
-                for (int curTask = 0; curTask < MasterList.Count - 1; curTask += 2) // Create all of the Threads for compare processing
-                {
-                    checkTask = curTask;
-                    threadList[pos] = new Thread(() => MasterList[pos] = EntryModel.PriceComparison(MasterList[checkTask], MasterList[checkTask + 1], bookTitle)); // Compare (SmallerList, BiggerList)
-                    threadList[pos].Start();
-                    threadList[pos].Join();
-                    // Logger.Debug("POSITION = " + pos);
-                    pos++;
+                    MasterUrls[website] = string.Empty;
                 }
                 
-
-                if (MasterList.Count % 2 != 0)
+                // Generate List of Tasks to 
+                foreach (Website site in webScrapeList)
                 {
-                    Logger.Debug("Odd Thread Check");
-                    MasterList[pos] = MasterList[^1];
-                    pos++;
-                }
-
-                // MasterList[MasterList.Count - 1].ForEach(data => Logger.Info("List 1 [" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]"));
-                // MasterList[0].ForEach(data => Logger.Info("List 0 [" + data[0] + ", " + data[1] + ", " + data[2] + ", " + data[3] + "]"));
-                // Logger.Debug("Current Pos = " + pos);
-                MasterList.RemoveRange(pos, MasterList.Count - pos); // Shrink List
-                // Check if the master data list MasterList[0] is the only list left -> comparison is done 
-                if (MasterList.Count != 1 && threadCount != MasterList.Count / 2)
-                {
-                    threadCount = MasterList.Count / 2;
-                    threadList = new Thread[threadCount];
-                }
-                pos = 0;
-            }
-
-            if (IsDebugEnabled)
-            {
-                using (StreamWriter outputFile = new(@"Data\MasterData.txt"))
-                {
-                    if (MasterList.Count > 0)
+                    switch (site)
                     {
-                        foreach (EntryModel data in MasterList[0])
+                        case Website.RightStufAnime:
+                            WebTasks.Add(CreateRightStufAnimeTask(bookTitle, bookType, isRightStufMember));
+                            Logger.Debug("RightStufAnime Going");
+                            break;
+                        case Website.RobertsAnimeCornerStore:
+                            WebTasks.Add(CreateRobertsAnimeCornerStoreTask(bookTitle, bookType));
+                            Logger.Debug("RobertsAnimeCornerStore Going");
+                            break;
+                        case Website.InStockTrades:
+                            WebTasks.Add(CreateInStockTradesTask(bookTitle, bookType));
+                            Logger.Debug("InStockTrades Going");
+                            break;
+                        case Website.BarnesAndNoble:
+                            WebTasks.Add(CreateBarnesAndNobleTask(bookTitle, bookType, isBarnesAndNobleMember));
+                            Logger.Debug("Barnes & Noble Going");
+                            break;
+                        case Website.KinokuniyaUSA:
+                            WebTasks.Add(CreateKinokuniyaUSATask(bookTitle, bookType, isKinokuniyaUSAMember));
+                            Logger.Debug("Kinokuniya USA Going");
+                            break;
+                        case Website.BooksAMillion:
+                            WebTasks.Add(CreateBooksAMillionTask(bookTitle, bookType, isBooksAMillionMember));
+                            Logger.Debug("Books-A-Million Going");
+                            break;
+                        case Website.AmazonUSA:
+                            WebTasks.Add(CreateAmazonUSATask(bookTitle, bookType));
+                            Logger.Debug("Amazon USA Going");
+                            break;
+                    }
+                }
+
+                await Task.WhenAll(WebTasks);
+                MasterList.RemoveAll(x => x.Count == 0); // Clear all lists from websites that didn't have any data
+                WebTasks.Clear();
+
+                // Apply Stock Status Filter
+                Logger.Debug("Applying Stock Filters");
+                if (stockFilter.Length != 0)
+                {
+                    foreach (List<EntryModel> website in MasterList)
+                    {
+                        for (int x = 0; x < website.Count; x++)
                         {
-                            Logger.Debug(data.ToString());
-                            outputFile.WriteLine(data.ToString());
+                            if (stockFilter.Contains(website[x].StockStatus))
+                            {
+                                Logger.Debug($"Removed {website[x].Entry} for {website[x].StockStatus} from {website[x].Website}");
+                                website.RemoveAt(x--);
+                            }
                         }
                     }
-                    else
+                }
+
+                int pos = 0; // The position of the new lists of data after comparing
+                int taskCount;
+                int initialMasterListCount;
+                Array.Resize(ref ComparisonTaskList, MasterList.Count / 2); // Holds the comparison tasks for execution
+                Logger.Debug("Starting Price Comparison");
+                while (MasterList.Count > 1) // While there is still 2 or more lists of data to compare prices continue
+                {
+                    initialMasterListCount = MasterList.Count;
+                    taskCount = MasterList.Count / 2;
+                    MasterList.Sort((dataSet1, dataSet2) => dataSet1.Count.CompareTo(dataSet2.Count));
+                    // foreach (var x in MasterList)
+                    // {
+                    //     Logger.Debug(x[0]);
+                    // }
+                    for (int curTask = 0; curTask < MasterList.Count - 1; curTask += 2) // Create all of the tasks for compare processing
                     {
-                        Logger.Info("No MasterData Available");
+                        List<EntryModel> smallerList = MasterList[curTask];
+                        List<EntryModel> biggerList = MasterList[curTask + 1];
+                        ComparisonTaskList[pos] = Task.Run(() => 
+                        {
+                            ResultsList.Add(PriceComparison(smallerList, biggerList, bookTitle));
+                        }); // Compare (SmallerList, BiggerList)
+                        pos++;
+                    }
+                    await Task.WhenAll(ComparisonTaskList);
+                    MasterList.AddRange(ResultsList); // Add all of the compared lists to the MasterList
+                    ResultsList.Clear();
+
+                    MasterList.RemoveRange(0, initialMasterListCount % 2 == 0 ? initialMasterListCount : initialMasterListCount - 1); // Shrink List
+
+                    // MasterList[MasterList.Count - 1].ForEach(data => Logger.Info($"List 1 {data.ToString()}"));
+                    // MasterList[0].ForEach(data => Logger.Debug($"List 0 {data}"));
+                    // Logger.Debug("Current Pos = " + pos);
+
+                    // Check if the master data list MasterList[0] is the only list left if so comparison is done otherwise resize array for next batch of comparisons
+                    // if (MasterList.Count > 1 && TaskList.Length != MasterList.Count / 2)
+                    // {
+                    //     Array.Resize(ref TaskList, MasterList.Count / 2);
+                    // }
+                    pos = 0;
+                }
+
+                // Add the links to the MasterUrl list and clear data lists
+                foreach (EntryModel entry in MasterList[0])
+                {
+                    if (string.IsNullOrWhiteSpace(MasterUrls[entry.Website]))
+                    {
+                        switch (entry.Website)
+                        {
+                            case "RightStufAnime":
+                                MasterUrls[entry.Website] = RightStufAnime.RightStufAnimeLinks[0];
+                                break;
+                            case "RobertsAnimeCornerStore":
+                                MasterUrls[entry.Website] = RobertsAnimeCornerStore.RobertsAnimeCornerStoreLinks.Last();
+                                break;
+                            case "InStockTrades":
+                                MasterUrls[entry.Website] = InStockTrades.InStockTradesLinks[0];
+                                break;
+                            case "Barnes & Noble":
+                                MasterUrls[entry.Website] = BarnesAndNoble.BarnesAndNobleLinks[0];
+                                break;
+                            case "Kinokuniya USA":
+                                MasterUrls[entry.Website] = KinokuniyaUSA.KinokuniyaUSALinks[0];
+                                break;
+                            case "Books-A-Million":
+                                MasterUrls[entry.Website] = BooksAMillion.BooksAMillionLinks[0];
+                                break;
+                            case "Amazon USA":
+                                MasterUrls[entry.Website] = AmazonUSA.AmazonUSALinks[0];
+                                break;
+                        }
                     }
                 }
-            }
+
+                if (IsDebugEnabled)
+                {
+                    using (StreamWriter outputFile = new(@"Data\MasterData.txt"))
+                    {
+                        if (MasterList.Count > 0)
+                        {
+                            foreach (EntryModel data in MasterList[0])
+                            {
+                                Logger.Debug(data.ToString());
+                                outputFile.WriteLine(data.ToString());
+                            }
+
+                            foreach (string website in MasterUrls.Keys)
+                            {
+                                if (!string.IsNullOrWhiteSpace(MasterUrls[website]))
+                                {
+                                    Logger.Debug($"{website} -> {MasterUrls[website]}");
+                                    outputFile.WriteLine($"{website} -> {MasterUrls[website]}");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Logger.Info("No MasterData Available");
+                        }
+                    }
+                }
+            });
         }
 
-        private static void Main(string[] args)
+        private static async Task Main(string[] args)
         {
             Stopwatch watch = new Stopwatch();
             watch.Start();
             MasterScrape test = new MasterScrape();
             EnableDebugMode();
-            test.InitializeScrape("Dark Gathering", 'M', new List<Website>() { Website.KinokuniyaUSA }, "Edge", false, true, true, true);
+            // { Website.RightStufAnime, Website.BarnesAndNoble, Website.InStockTrades, Website.RobertsAnimeCornerStore, Website.KinokuniyaUSA, Website.BooksAMillion }
+            await test.InitializeScrapeAsync("World Trigger", 'M', new string[] { "OOS", "PO" }, new List<Website>() { Website.BarnesAndNoble }, "Chrome", true, true, true, true);
             watch.Stop();
-            Logger.Info($"Time in Seconds: {watch.ElapsedMilliseconds / 1000}s");
+            Logger.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
     }
 }

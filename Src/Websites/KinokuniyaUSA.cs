@@ -2,9 +2,11 @@ namespace MangaLightNovelWebScrape.Websites
 {
     public partial class KinokuniyaUSA
     {
-        public static List<string> KinokuniyaUSALinks = new(); //List of links used to get data from KinokuniyaUSA
-        private static List<EntryModel> KinokuniyaUSADataList = new(); //List of all the series data from KinokuniyaUSA
+        public static List<string> KinokuniyaUSALinks = new();
+        public static List<EntryModel> KinokuniyaUSAData = new();
+        public const string WEBSITE_TITLE = "Kinokuniya USA";
         private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("KinokuniyaUSALogs");
+        private static readonly int STATUS_START_INDEX = "Availability Status : ".Length;
         [GeneratedRegex("(?<=\\d{1,3})[^\\d{1,3}]+.*|,| \\([^()]*\\)|LIGHT NOVEL ")] private static partial Regex ParseTitleNoNumsRegex();
         [GeneratedRegex("(?<=\\d{1,3}.$)[^\\d{1,3}]+.*|,| \\([^()]*\\)|LIGHT NOVEL ")] private static partial Regex ParseTitleWithNumsRegex();
         [GeneratedRegex("MANGA", RegexOptions.IgnoreCase, "en-US")] private static partial Regex RemoveMangaFromTitleRegex();
@@ -23,8 +25,14 @@ namespace MangaLightNovelWebScrape.Websites
             KinokuniyaUSALinks.Add(url);
             return url;
         }
+        
+        public static void ClearData()
+        {
+            KinokuniyaUSALinks.Clear();
+            KinokuniyaUSAData.Clear();
+        }
 
-        public static string TitleParse(string bookTitle, char bookType, string inputTitle)
+        private static string TitleParse(string bookTitle, char bookType, string inputTitle)
         {
             string parsedTitle;
             if (!inputTitle.Any(char.IsDigit))
@@ -80,26 +88,22 @@ namespace MangaLightNovelWebScrape.Websites
 
             return parsedTitle.Trim();
         }
-
-        public static List<EntryModel> GetKinokuniyaUSAData(string bookTitle, char bookType, bool memberStatus, byte currPageNum, EdgeOptions edgeOptions)
+        
+        public static List<EntryModel> GetKinokuniyaUSAData(string bookTitle, char bookType, bool memberStatus, byte currPageNum)
         {
-            WebDriver dummyDriver = new EdgeDriver(edgeOptions);
-            edgeOptions.AddArgument($"user-agent={dummyDriver.ExecuteScript("return navigator.userAgent").ToString().Replace("Headless", "")}");
-            dummyDriver.Quit();
-
-            EdgeDriver edgeDriver = new(edgeOptions);
-            WebDriverWait wait = new(edgeDriver, TimeSpan.FromSeconds(60));
+            WebDriver driver = MasterScrape.SetupBrowserDriver(true);
 
             try
             {
+                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
                 while(true)
                 {
-                    edgeDriver.Navigate().GoToUrl(GetUrl(bookType, currPageNum, bookTitle));
+                    driver.Navigate().GoToUrl(GetUrl(bookType, currPageNum, bookTitle));
                     if (bookType == 'M')
                     {
                         // Click the Manga button so it only shows manga and wait for DOM to fully load
                         wait.Until(driver => driver.FindElement(By.XPath("//div[@id='loading' and @style='display: none;']")));
-                        edgeDriver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("//p[contains(text(), 'English Books')]/following-sibling::ul//a[contains(text(), 'Manga')]"))));
+                        driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("//p[contains(text(), 'English Books')]/following-sibling::ul//a[contains(text(), 'Manga')]"))));
                         Logger.Debug("Clicked Manga Button");
                     }
                     wait.Until(driver => driver.FindElement(By.XPath("//div[@id='loading' and @style='display: none;']")));
@@ -108,9 +112,10 @@ namespace MangaLightNovelWebScrape.Websites
 
                     // Initialize the html doc for crawling
                     HtmlDocument doc = new();
-                    doc.LoadHtml(edgeDriver.PageSource);
+                    doc.LoadHtml(driver.PageSource);
+                    //Logger.Debug(doc.ParsedText);
 
-                    // Get the page data from the HTML doc
+                    // Get the page dakta from the HTML doc
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes("//span[@class='underline']");
                     HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes("//li[@class='price']/span");
                     HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes("//li[@class='status']");
@@ -125,7 +130,7 @@ namespace MangaLightNovelWebScrape.Websites
                     // }
 
                     // Remove all of the novels from the list if user is searching for manga
-                    if (titleData != null)
+                    if (bookType == 'M' && titleData != null)
                     {
                         for (int x = 1; x < priceData.Count; x+=2)
                         {
@@ -144,27 +149,32 @@ namespace MangaLightNovelWebScrape.Websites
                         Logger.Warn($"{bookTitle} Does Not Exist at KinokuniyaUSA");
                     }
 
-                    string stockStatus = "";
                     for (int x = memberStatus ? 1 : 0; x < priceData.Count; x+=2)
                     {
                         if (MasterScrape.RemoveNonWordsRegex().Replace(titleData[x / 2].InnerText, "").Contains(MasterScrape.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase))
                         {
-                            stockStatus = stockStatusData[x / 2].InnerText switch
-                            {
-                                string curStatus when curStatus.Contains("In stock") => "IS",
-                                string curStatus when curStatus.Contains("Out of stock") => "OOS",
-                                string curStatus when curStatus.Contains("Pre Order") => "PO",
-                                _ => "OOP"
-                            };
 
-                            // if (titleData[x / 2].InnerText.Contains("3"))
+                            // if (titleData[x / 2].InnerText.Contains('3'))
                             // {
                             //     Logger.Debug("Check" + TitleParse(titleData[x / 2].InnerText, bookType, bookTitle));
-                            //     KinokuniyaUSADataList.Add(new EntryModel(TitleParse(titleData[x / 2].InnerText, bookType, bookTitle), "$4.00", stockStatus, "KinokuniyaUSA"));
+                            //     KinokuniyaUSAData.Add(new EntryModel(TitleParse(titleData[x / 2].InnerText, bookType, bookTitle), "$1.00", "IS", WEBSITE_TITLE));
                             //     continue;
                             // }
 
-                            KinokuniyaUSADataList.Add(new EntryModel(TitleParse(titleData[x / 2].InnerText, bookType, bookTitle), priceData[x].InnerText.Trim(), stockStatus, "KinokuniyaUSA"));
+                            KinokuniyaUSAData.Add(
+                                new EntryModel(
+                                    TitleParse(titleData[x / 2].InnerText, bookType, bookTitle), 
+                                    priceData[x].InnerText.Trim(), 
+                                    stockStatusData[x / 2].InnerText.Trim().AsSpan(STATUS_START_INDEX) switch
+                                    {
+                                        "In stock at the Fulfilment Center." or "Available for order from suppliers." => "IS",
+                                        "Available for Pre Order" => "PO",
+                                        "Out of stock." => "OOS",
+                                        _ => "Error"
+                                    },
+                                    WEBSITE_TITLE
+                                )
+                            );
                         }
                     }
 
@@ -174,15 +184,18 @@ namespace MangaLightNovelWebScrape.Websites
                     }
                     else
                     {
-                        edgeDriver.Quit();
-                        KinokuniyaUSADataList.Sort(new VolumeSort(bookTitle));
+                        driver.Close();
+                        driver.Quit();
+                        KinokuniyaUSAData.Sort(new VolumeSort(bookTitle));
                         break;
                     }
                 }
             }
-            catch (Exception e) when (e is WebDriverTimeoutException || e is NoSuchElementException)
+            catch (Exception e)
             {
-                Logger.Error($"{bookTitle} Does Not Exist @ KinokuniyaUSA\n{e}");
+                driver.Close();
+                driver.Quit();
+                Logger.Error($"{bookTitle} Does Not Exist @ Kinokuniya USA -> {e}");
             }
 
             //Print data to a txt file
@@ -190,20 +203,22 @@ namespace MangaLightNovelWebScrape.Websites
             {
                 using (StreamWriter outputFile = new(@"Data\KinokuniyaUSAData.txt"))
                 {
-                    if (KinokuniyaUSADataList.Count != 0)
+                    if (KinokuniyaUSAData.Count != 0)
                     {
-                        foreach (EntryModel data in KinokuniyaUSADataList)
+                        foreach (EntryModel data in KinokuniyaUSAData)
                         {
                             outputFile.WriteLine(data.ToString());
                             Logger.Debug(data.ToString());
                         }
                     }
-                    else{
-                        outputFile.WriteLine(bookTitle + " Does Not Exist at KinokuniyaUSA");
+                    else
+                    {
+                        Logger.Error($"{bookTitle} Does Not Exist @ Kinokuniya USA");
+                        outputFile.WriteLine(bookTitle + " Does Not Exist at Kinokuniya USA");
                     }
                 } 
             }
-            return KinokuniyaUSADataList;
+            return KinokuniyaUSAData;
         }
     }
 }

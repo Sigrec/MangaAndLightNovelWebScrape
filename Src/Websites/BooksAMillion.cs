@@ -3,19 +3,25 @@ namespace MangaLightNovelWebScrape.Websites
     public partial class BooksAMillion
     {
         public static List<string> BooksAMillionLinks = new();
-        private static List<EntryModel> BooksAMillionDataList = new();
+        public static List<EntryModel> BooksAMillionData = new();
+        public const string WEBSITE_TITLE = "Books-A-Million";
         private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("BooksAMillionLogs");
         private static bool boxsetCheck = false, boxsetValidation = false;
         private const decimal MEMBERSHIP_DISCOUNT = 0.1M;
-
         [GeneratedRegex("Vol\\.|Volume")] private static partial Regex ParseTitleVolRegex();
         
         private static string FilterBookTitle(string bookTitle){
             char[] trimedChars = {' ', '\'', '!', '-'};
             foreach (char var in trimedChars){
-                bookTitle = bookTitle.Replace(var.ToString(), "%" + Convert.ToByte(var).ToString("x2").ToString());
+                bookTitle = bookTitle.Replace(var.ToString(), $"%{Convert.ToByte(var).ToString("x2")}");
             }
             return bookTitle;
+        }
+
+        public static void ClearData()
+        {
+            BooksAMillionLinks.Clear();
+            BooksAMillionData.Clear();
         }
 
         //Manga
@@ -63,31 +69,26 @@ namespace MangaLightNovelWebScrape.Websites
             return parsedTitle.Trim();
         }
 
-        public static List<EntryModel> GetBooksAMillionData(string bookTitle, char bookType, bool memberStatus, byte currPageNum, EdgeOptions edgeOptions)
+        public static List<EntryModel> GetBooksAMillionData(string bookTitle, char bookType, bool memberStatus, byte currPageNum)
         {
-            WebDriver dummyDriver = new EdgeDriver(edgeOptions);
-            edgeOptions.AddArgument("user-agent=" + dummyDriver.ExecuteScript("return navigator.userAgent").ToString().Replace("Headless", ""));
-            dummyDriver.Quit();
-
-            EdgeDriver edgeDriver = new(edgeOptions);
-            WebDriverWait wait = new(edgeDriver, TimeSpan.FromSeconds(5));
-
-            string stockStatus, currTitle;
-            decimal priceVal;
-            HtmlDocument doc;
-            HtmlNodeCollection titleData, priceData, stockStatusData;
+            WebDriver driver = MasterScrape.SetupBrowserDriver(true);
 
             try
             {
-                // edgeDriver.Navigate().GoToUrl(GetUrl(bookType, currPageNum, bookTitle));
+                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(30));
+
+                string currTitle;
+                decimal priceVal;
+                HtmlDocument doc;
+                HtmlNodeCollection titleData, priceData, stockStatusData;
                 while(true)
                 {
-                    edgeDriver.Navigate().GoToUrl(GetUrl(bookType, currPageNum, bookTitle));
+                    driver.Navigate().GoToUrl(GetUrl(bookType, currPageNum, bookTitle));
                     wait.Until(e => e.FindElement(By.XPath("//div[@class='search-item-title']//a")));
 
                     // Initialize the html doc for crawling
                     doc = new HtmlDocument();
-                    doc.LoadHtml(edgeDriver.PageSource);
+                    doc.LoadHtml(driver.PageSource);
 
                     // Get the page data from the HTML doc
                     titleData = doc.DocumentNode.SelectNodes("//div[@class='search-item-title']//a");
@@ -105,31 +106,30 @@ namespace MangaLightNovelWebScrape.Websites
                             Logger.Debug("Found Boxset");
                             continue;
                         }
-                        
+                               
                         if (MasterScrape.RemoveNonWordsRegex().Replace(currTitle, "").Contains(MasterScrape.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase) && !currTitle.Contains("Guide") && currTitle.Any(char.IsDigit))
                         {
-                            stockStatus = stockStatusData[x].InnerText;
-                            if (stockStatus.Contains("In Stock"))
-                            {
-                                stockStatus = "IS";
-                            }
-                            else if (stockStatus.Contains("Preorder"))
-                            {
-                                stockStatus ="PO";
-                            }
-                            else
-                            {
-                                stockStatus = "OOS";
-                            }
-
-                            // if (currTitle.Contains("4"))
+                            // if (currTitle.Contains('8'))
                             // {
-                            //     BooksAMillionDataList.Add(new EntryModel(currTitle, "$1.00", stockStatus, "BooksAMillion"));
+                            //     BooksAMillionData.Add(new EntryModel(currTitle, "$1.00", "IS", WEBSITE_TITLE));
                             //     continue;
                             // }
 
                             priceVal = Convert.ToDecimal(priceData[x].InnerText.Trim()[1..]);
-                            BooksAMillionDataList.Add(new EntryModel(currTitle, $"${(memberStatus ? EntryModel.ApplyDiscount(priceVal, MEMBERSHIP_DISCOUNT) : priceData[x].InnerText)}".Trim(), stockStatus, "BooksAMillion"));
+                            BooksAMillionData.Add(
+                                new EntryModel
+                                (
+                                    currTitle,
+                                    $"${(memberStatus ? EntryModel.ApplyDiscount(priceVal, MEMBERSHIP_DISCOUNT) : priceData[x].InnerText)}".Trim(),
+                                    stockStatusData[x].InnerText switch
+                                    {
+                                        string curStatus when curStatus.Contains("In Stock") => "IS",
+                                        string curStatus when curStatus.Contains("Preorder") => "PO",
+                                        _ => "OOS",
+                                    },
+                                    WEBSITE_TITLE
+                                )
+                            );
                         }
                     }
 
@@ -140,7 +140,8 @@ namespace MangaLightNovelWebScrape.Websites
                     }
                     else
                     {
-                        //edgeDriver.Quit();
+                        driver.Close();//
+                        driver.Quit();
                         if (boxsetValidation && !boxsetCheck)
                         {
                             boxsetCheck = true;
@@ -152,20 +153,22 @@ namespace MangaLightNovelWebScrape.Websites
                     }
                 }
             }
-            catch (Exception ex) when (ex is WebDriverTimeoutException || ex is NoSuchElementException)
+            catch (Exception ex)
             {
+                driver.Close();
+                driver.Quit();
                 Logger.Error($"{bookTitle} Does Not Exist @ BooksAMillion\n{ex}");
             }
 
-            BooksAMillionDataList.Sort(new VolumeSort(bookTitle));
+            BooksAMillionData.Sort(new VolumeSort(bookTitle));
 
             if (MasterScrape.IsDebugEnabled)
             {
                 using (StreamWriter outputFile = new(@"Data\BooksAMillionData.txt"))
                 {
-                    if (BooksAMillionDataList.Count != 0)
+                    if (BooksAMillionData.Count != 0)
                     {
-                        foreach (EntryModel data in BooksAMillionDataList)
+                        foreach (EntryModel data in BooksAMillionData)
                         {
                             Logger.Debug(data.ToString());
                             outputFile.WriteLine(data.ToString());
@@ -178,7 +181,7 @@ namespace MangaLightNovelWebScrape.Websites
                 }
             }
 
-            return BooksAMillionDataList;
+            return BooksAMillionData;
         }
     }
 }

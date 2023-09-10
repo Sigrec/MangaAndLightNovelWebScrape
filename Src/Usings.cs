@@ -1,4 +1,3 @@
-global using System.Threading;
 global using OpenQA.Selenium.Edge;
 global using OpenQA.Selenium.Chrome;
 global using OpenQA.Selenium;

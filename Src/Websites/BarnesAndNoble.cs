@@ -2,8 +2,9 @@ namespace MangaLightNovelWebScrape.Websites
 {
     public partial class BarnesAndNoble
     {
-        public static List<string> BarnesAndNobleLinks = new(); //List of links used to get data from BarnesAndNoble
-        private static List<EntryModel> BarnesAndNobleDataList = new(); //List of all the series data from BarnesAndNoble
+        public static List<string> BarnesAndNobleLinks = new();
+        public static List<EntryModel> BarnesAndNobleData = new();
+        public const string WEBSITE_TITLE = "Barnes & Noble";
         private static bool secondWebsiteCheck = false;
         private const decimal MEMBERSHIP_DISCOUNT = 0.1M;
         private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("BarnesAndNobleLogs");
@@ -33,6 +34,12 @@ namespace MangaLightNovelWebScrape.Websites
             return url;
         }
 
+        public static void ClearData()
+        {
+            BarnesAndNobleLinks.Clear();
+            BarnesAndNobleData.Clear();
+        }
+
         public static string TitleParse(string currTitle, char bookType, string inputTitle)
         {
             currTitle = VolTitleFixRegex().Replace(currTitle, "Vol");
@@ -55,14 +62,10 @@ namespace MangaLightNovelWebScrape.Websites
             return parsedTitle.Trim();
         }
 
-        public static List<EntryModel> GetBarnesAndNobleData(string bookTitle, char bookType, bool memberStatus, byte currPageNum, EdgeOptions edgeOptions)
+        public static List<EntryModel> GetBarnesAndNobleData(string bookTitle, char bookType, bool memberStatus, byte currPageNum)
         {
-            WebDriver dummyDriver = new EdgeDriver(edgeOptions);
-            edgeOptions.AddArgument($"user-agent={dummyDriver.ExecuteScript("return navigator.userAgent").ToString().Replace("Headless", "")}");
-            dummyDriver.Quit();
-            
-            EdgeDriver edgeDriver = new(edgeOptions);
-            WebDriverWait wait = new(edgeDriver, TimeSpan.FromSeconds(30))
+            WebDriver driver = MasterScrape.SetupBrowserDriver(true);
+            WebDriverWait wait = new(driver, TimeSpan.FromSeconds(30))
             {
                 PollingInterval = TimeSpan.FromMilliseconds(200),
             };
@@ -74,12 +77,12 @@ namespace MangaLightNovelWebScrape.Websites
                 string currTitle = "";
                 while(true)
                 {
-                    edgeDriver.Navigate().GoToUrl(GetUrl(bookType, currPageNum, bookTitle));
+                    driver.Navigate().GoToUrl(GetUrl(bookType, currPageNum, bookTitle));
                     wait.Until(e => e.FindElement(By.XPath("//div[@class='product-shelf-title product-info-title pt-xs']/a")));
                     
                     if (bookType == 'N')
                     {
-                        IWebElement novelCheck = edgeDriver.FindElement(By.XPath("//div[@class='product-shelf-title product-info-title pt-xs']//a[contains(@title, 'Novel')]"));
+                        IWebElement novelCheck = driver.FindElement(By.XPath("//div[@class='product-shelf-title product-info-title pt-xs']//a[contains(@title, 'Novel')]"));
                         Logger.Debug("Check #3");
                         if (novelCheck != null && !secondWebsiteCheck)
                         {
@@ -91,7 +94,7 @@ namespace MangaLightNovelWebScrape.Websites
 
                     // Initialize the html doc for crawling
                     HtmlDocument doc = new();
-                    doc.LoadHtml(edgeDriver.PageSource);
+                    doc.LoadHtml(driver.PageSource);
 
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes("//div[@class='product-shelf-title product-info-title pt-xs']/a");
                     HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes("//div[@class='product-shelf-pricing mt-xs']//div//a//span[2]");
@@ -106,11 +109,18 @@ namespace MangaLightNovelWebScrape.Websites
                         {
                             // if (TitleParse(currTitle, bookType, bookTitle).Contains("7"))
                             // {
-                            //     BarnesAndNobleDataList.Add(new EntryModel{TitleParse(currTitle, bookType, bookTitle), "$2.00", stockStatusData[x].InnerText.Contains("Pre-order") ? "PO" : "IS", "BarnesAndNoble"});
+                            //     BarnesAndNobleData.Add(new EntryModel{TitleParse(currTitle, bookType, bookTitle), "$2.00", "IS", WEBSITE_TITLE});
                             //     continue;
                             // }
                             price = decimal.Parse(priceData[x].InnerText.Trim()[1..]);
-                            BarnesAndNobleDataList.Add(new EntryModel(currTitle, $"${(memberStatus ? EntryModel.ApplyDiscount(price, MEMBERSHIP_DISCOUNT) : price.ToString())}", stockStatusData[x].InnerText.Contains("Pre-order") ? "PO" : "IS", "BarnesAndNoble"));
+                            BarnesAndNobleData.Add(
+                                new EntryModel
+                                (
+                                    currTitle,
+                                    $"${(memberStatus ? EntryModel.ApplyDiscount(price, MEMBERSHIP_DISCOUNT) : price.ToString())}",
+                                    stockStatusData[x].InnerText.Contains("Pre-order") ? "PO" : "IS", WEBSITE_TITLE
+                                )
+                            );
                         }
                     }
 
@@ -120,12 +130,13 @@ namespace MangaLightNovelWebScrape.Websites
                     }
                     else
                     {
-                        edgeDriver.Quit();
+                        driver.Close();
+                        driver.Quit();
                         break;
                     }
                 }
             }
-            catch (Exception ex) when (ex is WebDriverTimeoutException || ex is NoSuchElementException)
+            catch (Exception ex)
             {
                 if (!secondWebsiteCheck)
                 {
@@ -133,17 +144,19 @@ namespace MangaLightNovelWebScrape.Websites
                     secondWebsiteCheck = true;
                     goto restart; 
                 }
+                driver.Close();
+                driver.Quit();
             }
 
-            BarnesAndNobleDataList.Sort(new VolumeSort(bookTitle));
+            BarnesAndNobleData.Sort(new VolumeSort(bookTitle));
 
             if (MasterScrape.IsDebugEnabled)
             {
                 using (StreamWriter outputFile = new(@"Data\BarnesAndNobleData.txt"))
                 {
-                    if (BarnesAndNobleDataList.Count != 0)
+                    if (BarnesAndNobleData.Count != 0)
                     {
-                        foreach (EntryModel data in BarnesAndNobleDataList)
+                        foreach (EntryModel data in BarnesAndNobleData)
                         {
                             Logger.Debug(data.ToString());
                             outputFile.WriteLine(data.ToString());
@@ -157,7 +170,7 @@ namespace MangaLightNovelWebScrape.Websites
                 }
             }  
 
-            return BarnesAndNobleDataList;
+            return BarnesAndNobleData;
         }
     }
 }

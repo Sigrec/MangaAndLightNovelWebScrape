@@ -1,23 +1,32 @@
 using System;
+using OpenQA.Selenium.Firefox;
 namespace MangaLightNovelWebScrape.Websites
 {
     public partial class AmazonUSA
     {
         public static List<string> AmazonUSALinks = new List<string>();
-        private static List<EntryModel> AmazonUSADataList = new List<EntryModel>();
+        public static List<EntryModel> AmazonUSAData = new List<EntryModel>();
+        public const string WEBSITE_TITLE = "Amazon USA";
         private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("AmazonUSALogs");
         private static readonly List<string> SeriesBypass = new List<string>(){ "Jujutsu Kaisen" };
+        [GeneratedRegex("\\d+-\\d+-(\\d+)")] private static partial Regex OmnibusFixRegex();
 
         // Manga
         //https://www.amazon.com/s?k=world+trigger&i=stripbooks&rh=n%3A4367%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page=1&qid=1685551243&rnid=1294421011&ref=sr_pg_1
         //https://www.amazon.com/s?k=one+piece&i=stripbooks&rh=n%3A4367%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page=1&qid=1685551243&rnid=1294421011&ref=sr_pg_1
         //https://www.amazon.com/s?k=fruits+basket&i=stripbooks&rh=n%3A4366%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page=2&qid=1685551123&rnid=1294421011&ref=sr_pg_2
-        private static string GetUrl(char bookType, byte currPageNum, string bookTitle){
+        internal static string GetUrl(char bookType, byte currPageNum, string bookTitle){
             // string url = $"https://www.amazon.com/s?k={bookTitle.Replace(" ", "+")}&i=stripbooks&rh=n%3A7421474011%2Cp_n_condition-type%3A1294423011%2Cp_n_feature_nine_browse-bin%3A3291437011&s=date-desc-rank&dc&page={currPageNum}&qid=1678483439&rnid=3291435011&ref=sr_pg_{currPageNum}";
             string url = $"https://www.amazon.com/s?k={bookTitle.Replace(" ", "+")}&i=stripbooks&rh=n%3A4367%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page={currPageNum}&qid=1685551243&rnid=1294421011&ref=sr_pg_{currPageNum}";
             Logger.Debug(url);
             AmazonUSALinks.Add(url);
             return url;
+        }
+        
+        public static void ClearData()
+        {
+            AmazonUSALinks.Clear();
+            AmazonUSAData.Clear();
         }
 
         public static string TitleParse(string bookTitle, char bookType, string inputTitle)
@@ -52,16 +61,16 @@ namespace MangaLightNovelWebScrape.Websites
             return parsedTitle.Trim();
         }
 
-        public static List<EntryModel> GetAmazonUSAData(string bookTitle, char bookType, byte currPageNum, EdgeOptions edgeOptions)
+        public static List<EntryModel> GetAmazonUSAData(string bookTitle, char bookType, byte currPageNum)
         {
-            WebDriver driver = new EdgeDriver(edgeOptions);
-            WebDriverWait wait = new(driver, TimeSpan.FromSeconds(30));
-
-            string currTitle;
-            bool foundPaperback = false, foundHardcover = false;
-
+            WebDriver driver = MasterScrape.SetupBrowserDriver(false);
             try
             {
+                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(30));
+
+                string currTitle;
+                bool foundPaperback = false, foundHardcover = false;
+                
                 driver.Navigate().GoToUrl(GetUrl(bookType, currPageNum, bookTitle));
                 while (true)
                 {
@@ -126,8 +135,7 @@ namespace MangaLightNovelWebScrape.Websites
                             currTitle = TitleParse(titleData[x].InnerText.Trim(), bookType, bookTitle);
                             if(MasterScrape.RemoveNonWordsRegex().Replace(currTitle, "").Contains(MasterScrape.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase))
                             {
-                                // Logger.Debug($"[{currTitle}, {priceData[x].InnerText.Trim()}, {stockStatus}, AmazonUSA");
-                                AmazonUSADataList.Add(new EntryModel(currTitle, priceData[x].InnerText.Trim(), stockStatusData[x].InnerText.Contains("Pre-order") ? "PO" : "IS", "AmazonUSA"));
+                                AmazonUSAData.Add(new EntryModel(currTitle, priceData[x].InnerText.Trim(), stockStatusData[x].InnerText.Contains("Pre-order") ? "PO" : "IS", WEBSITE_TITLE));
                             }
                         }
                     }
@@ -151,25 +159,28 @@ namespace MangaLightNovelWebScrape.Websites
                             foundHardcover = true;
                             goto HardcoverRestart;
                         } 
+                        driver.Close();
                         driver.Quit();
                         break;
                     }
                 }
             }
-            catch (Exception ex) when (ex is WebDriverTimeoutException || ex is NoSuchElementException)
+            catch (Exception ex)
             {
-                Logger.Error($"{bookTitle} Does Not Exist @ AmazonUSA\n{ex}");
+                driver.Close();
+                driver.Quit();
+                Logger.Error($"{bookTitle} Does Not Exist @ AmazonUSA {ex}");
             }
 
-            AmazonUSADataList.Sort(new VolumeSort(bookTitle));
+            AmazonUSAData.Sort(new VolumeSort(bookTitle));
 
             if (MasterScrape.IsDebugEnabled)
             {
                 using (StreamWriter outputFile = new(@"Data\AmazonUSAData.txt"))
                 {
-                    if (AmazonUSADataList.Count != 0)
+                    if (AmazonUSAData.Count != 0)
                     {
-                        foreach (EntryModel data in AmazonUSADataList)
+                        foreach (EntryModel data in AmazonUSAData)
                         {
                             Logger.Debug(data.ToString());
                             outputFile.WriteLine(data.ToString());
@@ -183,9 +194,7 @@ namespace MangaLightNovelWebScrape.Websites
                 } 
             }
 
-            return AmazonUSADataList;
+            return AmazonUSAData;
         }
-
-        [GeneratedRegex("\\d+-\\d+-(\\d+)")] private static partial Regex OmnibusFixRegex();
     }
 }

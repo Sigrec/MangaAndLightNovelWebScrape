@@ -2,8 +2,9 @@ namespace MangaLightNovelWebScrape.Websites
 {
     public partial class InStockTrades
     {
-        public static List<string> inStockTradesLinks = new(); //List of links used to get data from InStockTrades
-        private static List<EntryModel> inStockTradesDataList = new(); //List of all the series data from InStockTrades
+        public static List<string> InStockTradesLinks = new();
+        public static List<EntryModel> InStockTradesData = new();
+        public const string WEBSITE_TITLE = "InStockTrades";
         private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("InStockTradesLogs");
 
         [GeneratedRegex("GN |TP |(?<=\\d+.).*")]  private static partial Regex TitleRegex();
@@ -12,27 +13,33 @@ namespace MangaLightNovelWebScrape.Websites
         //https://www.instocktrades.com/search?term=world+trigger
         //https://www.instocktrades.com/search?pg=1&title=World+Trigger&publisher=&writer=&artist=&cover=&ps=true
         private static string GetUrl(byte currPageNum, string bookTitle){
-            string url = "https://www.instocktrades.com/search?pg=" + currPageNum +"&title=" + bookTitle.Replace(' ', '+') + "&publisher=&writer=&artist=&cover=&ps=true";
-            inStockTradesLinks.Add(url);
+            string url = $"https://www.instocktrades.com/search?pg={currPageNum}&title={bookTitle.Replace(' ', '+')}&publisher=&writer=&artist=&cover=&ps=true";
+            InStockTradesLinks.Add(url);
             Logger.Debug(url);
             return url;
         }
 
-        public static List<EntryModel> GetInStockTradesData(string bookTitle, byte currPageNum, char bookType, EdgeOptions edgeOptions)
+        public static void ClearData()
         {
-            EdgeDriver edgeDriver = new(edgeOptions);
-            WebDriverWait wait = new(edgeDriver, TimeSpan.FromSeconds(30));
+            InStockTradesLinks.Clear();
+            InStockTradesData.Clear();
+        }
+
+        public static List<EntryModel> GetInStockTradesData(string bookTitle, byte currPageNum, char bookType)
+        {
+            WebDriver driver = MasterScrape.SetupBrowserDriver(false);
 
             try
             {
+                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(30));
                 while (true)
                 {
-                    edgeDriver.Navigate().GoToUrl(GetUrl(currPageNum, bookTitle));
+                    driver.Navigate().GoToUrl(GetUrl(currPageNum, bookTitle));
                     wait.Until(e => e.FindElement(By.XPath("//div[@class='title']/a")));
 
                     // Initialize the html doc for crawling
                     HtmlDocument doc = new();
-                    doc.LoadHtml(edgeDriver.PageSource);
+                    doc.LoadHtml(driver.PageSource);
 
                     // Get the page data from the HTML doc
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes("//div[@class='title']/a | //div[@class='damage']");
@@ -54,22 +61,17 @@ namespace MangaLightNovelWebScrape.Websites
                                 x--;
                                 continue;
                             }
-                            
-                            if (currTitle.Contains("Box Set")) 
+                            else if (bookType == 'M' && currTitle.Contains("Novel"))
+                            {
+                                continue;
+                            }
+                            else if (currTitle.Contains("Box Set")) 
                             { 
                                 currTitle = BoxSetTitleRegex().Replace(currTitle, "");
                             }
 
-                            if (bookType == 'M' && currTitle.Contains("Novel"))
-                            {
-                                continue;
-                            }
-
                             volNumIndex = currTitle.IndexOf("Vol") != -1 ? currTitle.IndexOf("Vol") + 4 : currTitle.IndexOf("Set") + 4;
-
-                            inStockTradesDataList.Add(new EntryModel(!currTitle[volNumIndex].Equals('0') ? currTitle : currTitle.Remove(volNumIndex, 1), priceData[x].InnerText.Trim(), "IS", "InStockTrades"));
-                            
-                            Logger.Debug(inStockTradesDataList[x].ToString());
+                            InStockTradesData.Add(new EntryModel(!currTitle[volNumIndex].Equals('0') ? currTitle : currTitle.Remove(volNumIndex, 1), priceData[x].InnerText.Trim(), "IS", WEBSITE_TITLE));
                         }
 
                         if (pageCheck != null)
@@ -78,8 +80,9 @@ namespace MangaLightNovelWebScrape.Websites
                         }
                         else
                         {
-                            edgeDriver.Quit();
-                            inStockTradesDataList.Sort(new VolumeSort(bookTitle));
+                            driver.Close();
+                            driver.Quit();
+                            InStockTradesData.Sort(new VolumeSort(bookTitle));
                             break;
                         }
                     }
@@ -90,9 +93,11 @@ namespace MangaLightNovelWebScrape.Websites
                     }
                 }
             }
-            catch (Exception e) when (e is WebDriverTimeoutException || e is NoSuchElementException)
+            catch (Exception e)
             {
-                Logger.Debug($"{bookTitle} Does Not Exist @ InStockTrades");
+                driver.Close();
+                driver.Quit();
+                Logger.Debug($"{bookTitle} Does Not Exist @ InStockTrades -> {e}");
             }
 
             //Print data to a txt file
@@ -100,10 +105,11 @@ namespace MangaLightNovelWebScrape.Websites
             {
                 using (StreamWriter outputFile = new(@"Data\InStockTradesData.txt"))
                 {
-                    if (inStockTradesDataList.Count != 0)
+                    if (InStockTradesData.Count != 0)
                     {
-                        foreach (EntryModel data in inStockTradesDataList)
+                        foreach (EntryModel data in InStockTradesData)
                         {
+                            Logger.Debug(data);
                             outputFile.WriteLine(data.ToString());
                         }
                     }
@@ -114,7 +120,7 @@ namespace MangaLightNovelWebScrape.Websites
                 }
             }
 
-            return inStockTradesDataList;
+            return InStockTradesData;
         }
     }
 }
