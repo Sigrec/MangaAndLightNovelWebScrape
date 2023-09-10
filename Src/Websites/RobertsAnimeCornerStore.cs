@@ -169,29 +169,32 @@ namespace MangaLightNovelWebScrape.Websites
                     }
 
                     RobertsAnimeCornerStoreData.Sort(new VolumeSort(bookTitle));
-                    if (MasterScrape.IsDebugEnabled)
-                    {
-                        using (StreamWriter outputFile = new(@"Data\RobertsAnimeCornerStoreData.txt"))
-                        {
-                            if (RobertsAnimeCornerStoreData.Count != 0)
-                            {
-                                foreach (EntryModel data in RobertsAnimeCornerStoreData)
-                                {
-                                    Logger.Debug(data.ToString());
-                                    outputFile.WriteLine(data.ToString());
-                                }
-                            }
-                            else
-                            {
-                                errorMessage = bookTitle + " Does Not Exist at RobertsAnimeCornerStore";
-                                outputFile.WriteLine(errorMessage);
-                            }
-                        } 
-                    }
                 }
-                catch(NullReferenceException ex)
+                catch(Exception ex)
                 {
+                    driver.Close();
+                    driver.Quit();
                     Logger.Error(bookTitle + " Does Not Exist at RobertsAnimeCornerStore\n" + ex);
+                }
+
+                if (MasterScrape.IsDebugEnabled)
+                {
+                    using (StreamWriter outputFile = new(@"Data\RobertsAnimeCornerStoreData.txt"))
+                    {
+                        if (RobertsAnimeCornerStoreData.Count != 0)
+                        {
+                            foreach (EntryModel data in RobertsAnimeCornerStoreData)
+                            {
+                                Logger.Debug(data.ToString());
+                                outputFile.WriteLine(data.ToString());
+                            }
+                        }
+                        else
+                        {
+                            errorMessage = bookTitle + " Does Not Exist at RobertsAnimeCornerStore";
+                            outputFile.WriteLine(errorMessage);
+                        }
+                    } 
                 }
             }
             

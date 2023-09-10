@@ -9,6 +9,8 @@ namespace MangaLightNovelWebScrape.Websites
         private static bool boxsetCheck = false, boxsetValidation = false;
         private const decimal MEMBERSHIP_DISCOUNT = 0.1M;
         [GeneratedRegex("Vol\\.|Volume")] private static partial Regex ParseTitleVolRegex();
+        [GeneratedRegex("(?<=\\d{1,3})[^\\d{1,3}.]+.*")] private static partial Regex FilterNoDigitRegex();
+        [GeneratedRegex("(?<=\\d{1,3}.$)[^\\d{1,3}]+.*")] private static partial Regex FilterWithDigitRegex();
         
         private static string FilterBookTitle(string bookTitle){
             char[] trimedChars = {' ', '\'', '!', '-'};
@@ -43,23 +45,20 @@ namespace MangaLightNovelWebScrape.Websites
             }
             Logger.Debug(url);
             BooksAMillionLinks.Add(url);
-           
             return url;
         }
 
         public static string TitleParse(string bookTitle, char bookType, string inputTitle)
         {
-            string filterRegex, parsedTitle;
+            string parsedTitle;
             if (!inputTitle.Any(char.IsDigit))
             {
-                filterRegex = @"(?<=\d{1,3})[^\d{1,3}.]+.*";
+                parsedTitle = FilterNoDigitRegex().Replace(ParseTitleVolRegex().Replace(bookTitle.Replace(",", "").Replace("(Omnibus Edition)", "Omnibus"), "Vol"), "");
             }
             else
             {
-                filterRegex = @"(?<=\d{1,3}.$)[^\d{1,3}]+.*";
+                parsedTitle = FilterWithDigitRegex().Replace(ParseTitleVolRegex().Replace(bookTitle.Replace(",", "").Replace("(Omnibus Edition)", "Omnibus"), "Vol"), "");
             }
-
-            parsedTitle = Regex.Replace(ParseTitleVolRegex().Replace(bookTitle.Replace(",", "").Replace("(Omnibus Edition)", "Omnibus"), "Vol"), filterRegex, "");
 
             if (!parsedTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !parsedTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
             {
@@ -72,7 +71,6 @@ namespace MangaLightNovelWebScrape.Websites
         public static List<EntryModel> GetBooksAMillionData(string bookTitle, char bookType, bool memberStatus, byte currPageNum)
         {
             WebDriver driver = MasterScrape.SetupBrowserDriver(true);
-
             try
             {
                 WebDriverWait wait = new(driver, TimeSpan.FromSeconds(30));
@@ -99,7 +97,6 @@ namespace MangaLightNovelWebScrape.Websites
                     for(int x = 0; x < titleData.Count; x++)
                     {
                         currTitle = TitleParse(titleData[x].InnerText, bookType, bookTitle);
-                        // Logger.Debug(MasterScrape.RemoveNonWordsRegex().Replace(currTitle, "") + " | " + MasterScrape.RemoveNonWordsRegex().Replace(bookTitle, "") + " | " + (MasterScrape.RemoveNonWordsRegex().Replace(currTitle, "").Contains(MasterScrape.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase) && currTitle.Any(Char.IsDigit)));
                         if (currTitle.Contains("Box Set") && !boxsetValidation)
                         {
                             boxsetValidation = true;
@@ -109,12 +106,6 @@ namespace MangaLightNovelWebScrape.Websites
                                
                         if (MasterScrape.RemoveNonWordsRegex().Replace(currTitle, "").Contains(MasterScrape.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase) && !currTitle.Contains("Guide") && currTitle.Any(char.IsDigit))
                         {
-                            // if (currTitle.Contains('8'))
-                            // {
-                            //     BooksAMillionData.Add(new EntryModel(currTitle, "$1.00", "IS", WEBSITE_TITLE));
-                            //     continue;
-                            // }
-
                             priceVal = Convert.ToDecimal(priceData[x].InnerText.Trim()[1..]);
                             BooksAMillionData.Add(
                                 new EntryModel
@@ -140,7 +131,7 @@ namespace MangaLightNovelWebScrape.Websites
                     }
                     else
                     {
-                        driver.Close();//
+                        driver.Close();
                         driver.Quit();
                         if (boxsetValidation && !boxsetCheck)
                         {

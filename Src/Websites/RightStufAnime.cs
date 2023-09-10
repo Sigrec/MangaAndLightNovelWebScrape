@@ -13,7 +13,7 @@ namespace MangaLightNovelWebScrape.Websites
         private static string FilterBookTitle(string bookTitle){
             char[] trimedChars = {' ', '\'', '!', '-'};
             foreach (char var in trimedChars){
-                bookTitle = bookTitle.Replace(var.ToString(), "%" + Convert.ToByte(var).ToString("x2").ToString());
+                bookTitle = bookTitle.Replace(var.ToString(), "%" + Convert.ToByte(var).ToString("x2"));
             }
             return bookTitle;
         }
@@ -61,7 +61,6 @@ namespace MangaLightNovelWebScrape.Websites
                         if(!titleData[x].InnerText.Contains("Imperfect") && MasterScrape.RemoveNonWordsRegex().Replace(currTitle, "").Contains(MasterScrape.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase))
                         {
                             priceVal = Convert.ToDecimal(priceData[x].InnerText.Trim());
-
                             RightStufAnimeData.Add(
                                 new EntryModel
                                 (
@@ -92,7 +91,7 @@ namespace MangaLightNovelWebScrape.Websites
                     }
                 }
             }
-            catch (Exception ex) when (ex is WebDriverTimeoutException || ex is NoSuchElementException)
+            catch (Exception ex)
             {
                 driver.Close();
                 driver.Quit();

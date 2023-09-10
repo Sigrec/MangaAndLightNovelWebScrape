@@ -1,6 +1,4 @@
-using Microsoft.VisualBasic;
 using MangaLightNovelWebScrape.Websites;
-using OpenQA.Selenium.Chromium;
 using OpenQA.Selenium.Firefox;
 using System.Collections.Concurrent;
 using System.Diagnostics;
@@ -23,7 +21,8 @@ namespace MangaLightNovelWebScrape
             { AmazonUSA.WEBSITE_TITLE , "" },
             { KinokuniyaUSA.WEBSITE_TITLE , "" },
             { InStockTrades.WEBSITE_TITLE , "" },
-            { RobertsAnimeCornerStore.WEBSITE_TITLE , "" }
+            { RobertsAnimeCornerStore.WEBSITE_TITLE , "" },
+            { Indigo.WEBSITE_TITLE, "" }
         };
 
         private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("MasterScrapeLogs");
@@ -34,10 +33,23 @@ namespace MangaLightNovelWebScrape
         /// <summary>
         /// The browser arguments used for each scrape
         /// </summary>
-        private static string[] ChromeBrowserArguments = { "--headless=new", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-geolocation" };
+        private static string[] ChromeBrowserArguments = { "--headless=new", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-geolocation", "--disable-logging", "--log-level=2" };
         private static string[] FireFoxBrowserArguments = { "-headless", "-new-instance", "-private", "-incognito" };
         [GeneratedRegex("[^\\w+]")] public static partial Regex RemoveNonWordsRegex();
         [GeneratedRegex("\\d{1,3}")] public static partial Regex FindVolNumRegex();
+
+        // In the UK there's 
+        // Wordery https://wordery.com/
+        // Books Etc https://www.booksetc.co.uk/
+        // Speedyhen https://www.speedyhen.com/
+        // Booksplease https://booksplea.se/index.php
+        // Hive https://www.hive.co.uk/WhatsHiveallabout
+        // Blackwells https://blackwells.co.uk/bookshop/home
+        // Travelling Man https://travellingman.com/
+        // Awesome Books https://www.awesomebooks.com/
+        // World of Books https://www.wob.com/en-gb
+        // Alibris https://m.alibris.co.uk/
+        // And, of course, SciFier https://scifier.com/
 
         public enum Website
         {
@@ -49,13 +61,11 @@ namespace MangaLightNovelWebScrape
             InStockTrades,
             KinokuniyaUSA,
             RightStufAnime,
-            RobertsAnimeCornerStore
+            RobertsAnimeCornerStore,
+            Indigo
         }
 
-        public MasterScrape(bool IsDebugEnabled = false)
-        {
-
-        }
+        public MasterScrape(bool IsDebugEnabled = false) {}
 
         private async Task CreateRightStufAnimeTask(string bookTitle, char bookType, bool isMember)
         {
@@ -113,6 +123,14 @@ namespace MangaLightNovelWebScrape
             });
         }
 
+        private async Task CreateIndigoTask(string bookTitle, char bookType, bool isMember)
+        {
+            await Task.Run(() => 
+            {
+                MasterList.Add(Indigo.GetIndigoData(bookTitle, bookType, isMember));
+            });
+        }
+
         /// <summary>
         /// Disables debug mode
         /// </summary>
@@ -127,6 +145,10 @@ namespace MangaLightNovelWebScrape
         public static void EnableDebugMode()
         {
             IsDebugEnabled = true;
+            if (!Directory.Exists(@"\Data"))
+            {
+                Directory.CreateDirectory(@"\Data");
+            }
         }
 
         /// <summary>
@@ -294,7 +316,9 @@ namespace MangaLightNovelWebScrape
 
         // TODO Logic for when the prices are the same
         // TODO Figure out how to clear data within this method
-        // TODO 
+        // TODO Create a Website Interface so websites can extend it
+        // TODO Improve performance Starting w/ RightStufAnime
+        // TODO Add ReadMe
 
         /// <summary>
         /// Starts the web scrape
@@ -308,7 +332,7 @@ namespace MangaLightNovelWebScrape
         /// <param name="isBooksAMillionMember">Whether the user is a Books-A-Million Member</param>
         /// <param name="isKinokuniyaUSAMember">Whether the user is a Kinokuniya USA member</param>
         /// <returns></returns>
-        public async Task InitializeScrapeAsync(string bookTitle, char bookType, string[] stockFilter, List<Website> webScrapeList, string curBrowser = "Error", bool isRightStufMember = false, bool isBarnesAndNobleMember = false, bool isBooksAMillionMember = false, bool isKinokuniyaUSAMember = false)
+        public async Task InitializeScrapeAsync(string bookTitle, char bookType, string[] stockFilter, List<Website> webScrapeList, string curBrowser = "Error", bool isRightStufMember = false, bool isBarnesAndNobleMember = false, bool isBooksAMillionMember = false, bool isKinokuniyaUSAMember = false, bool isIndigoMember = false)
         {
             browser = curBrowser;
             Logger.Debug($"Running on {browser} Browser");
@@ -329,6 +353,10 @@ namespace MangaLightNovelWebScrape
                             WebTasks.Add(CreateRightStufAnimeTask(bookTitle, bookType, isRightStufMember));
                             Logger.Debug("RightStufAnime Going");
                             break;
+                        case Website.BarnesAndNoble:
+                            WebTasks.Add(CreateBarnesAndNobleTask(bookTitle, bookType, isBarnesAndNobleMember));
+                            Logger.Debug("Barnes & Noble Going");
+                            break;
                         case Website.RobertsAnimeCornerStore:
                             WebTasks.Add(CreateRobertsAnimeCornerStoreTask(bookTitle, bookType));
                             Logger.Debug("RobertsAnimeCornerStore Going");
@@ -336,10 +364,6 @@ namespace MangaLightNovelWebScrape
                         case Website.InStockTrades:
                             WebTasks.Add(CreateInStockTradesTask(bookTitle, bookType));
                             Logger.Debug("InStockTrades Going");
-                            break;
-                        case Website.BarnesAndNoble:
-                            WebTasks.Add(CreateBarnesAndNobleTask(bookTitle, bookType, isBarnesAndNobleMember));
-                            Logger.Debug("Barnes & Noble Going");
                             break;
                         case Website.KinokuniyaUSA:
                             WebTasks.Add(CreateKinokuniyaUSATask(bookTitle, bookType, isKinokuniyaUSAMember));
@@ -352,6 +376,9 @@ namespace MangaLightNovelWebScrape
                         case Website.AmazonUSA:
                             WebTasks.Add(CreateAmazonUSATask(bookTitle, bookType));
                             Logger.Debug("Amazon USA Going");
+                            break;
+                        case Website.Indigo:
+                            WebTasks.Add(CreateIndigoTask(bookTitle, bookType, isIndigoMember));
                             break;
                     }
                 }
@@ -394,7 +421,7 @@ namespace MangaLightNovelWebScrape
                         ComparisonTaskList[pos] = Task.Run(() => 
                         {
                             ResultsList.Add(PriceComparison(smallerList, biggerList, bookTitle));
-                        }); // Compare (SmallerList, BiggerList)
+                        });
                         pos++;
                     }
                     await Task.WhenAll(ComparisonTaskList);
@@ -437,6 +464,9 @@ namespace MangaLightNovelWebScrape
                             case AmazonUSA.WEBSITE_TITLE:
                                 MasterUrls[entry.Website] = AmazonUSA.AmazonUSALinks[0];
                                 break;
+                            case Indigo.WEBSITE_TITLE:
+                                MasterUrls[entry.Website] = Indigo.IndigoLinks[0];
+                                break;
                         }
                     }
                 }
@@ -478,7 +508,7 @@ namespace MangaLightNovelWebScrape
             MasterScrape test = new MasterScrape();
             EnableDebugMode();
             // { Website.RightStufAnime, Website.BarnesAndNoble, Website.InStockTrades, Website.RobertsAnimeCornerStore, Website.KinokuniyaUSA, Website.BooksAMillion }
-            await test.InitializeScrapeAsync("dark gathering", 'M', new string[] {  }, new List<Website>() { Website.InStockTrades }, "Chrome", true, true, true, true);
+            await test.InitializeScrapeAsync("jujutsu kaisen", 'M', Array.Empty<string>(), new List<Website>() { Website.Indigo }, "Chrome", true, true, true, true, false);
             watch.Stop();
             Logger.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }

@@ -65,11 +65,7 @@ namespace MangaLightNovelWebScrape.Websites
         public static List<EntryModel> GetBarnesAndNobleData(string bookTitle, char bookType, bool memberStatus, byte currPageNum)
         {
             WebDriver driver = MasterScrape.SetupBrowserDriver(true);
-            WebDriverWait wait = new(driver, TimeSpan.FromSeconds(30))
-            {
-                PollingInterval = TimeSpan.FromMilliseconds(200),
-            };
-            wait.IgnoreExceptionTypes(typeof(NoSuchElementException));
+            WebDriverWait wait = new(driver, TimeSpan.FromSeconds(30));
 
             restart:
             try
@@ -83,7 +79,6 @@ namespace MangaLightNovelWebScrape.Websites
                     if (bookType == 'N')
                     {
                         IWebElement novelCheck = driver.FindElement(By.XPath("//div[@class='product-shelf-title product-info-title pt-xs']//a[contains(@title, 'Novel')]"));
-                        Logger.Debug("Check #3");
                         if (novelCheck != null && !secondWebsiteCheck)
                         {
                             Logger.Debug("Trying 2nd URL #1");
@@ -107,11 +102,6 @@ namespace MangaLightNovelWebScrape.Websites
                         currTitle = TitleParse(titleData[x].GetAttributeValue("title", "Title Error"), bookType, bookTitle);
                         if (MasterScrape.RemoveNonWordsRegex().Replace(currTitle.ToLower(), "").Contains(MasterScrape.RemoveNonWordsRegex().Replace(bookTitle.ToLower(), "")) && bookType == 'M' && currTitle.Any(char.IsDigit))
                         {
-                            // if (TitleParse(currTitle, bookType, bookTitle).Contains("7"))
-                            // {
-                            //     BarnesAndNobleData.Add(new EntryModel{TitleParse(currTitle, bookType, bookTitle), "$2.00", "IS", WEBSITE_TITLE});
-                            //     continue;
-                            // }
                             price = decimal.Parse(priceData[x].InnerText.Trim()[1..]);
                             BarnesAndNobleData.Add(
                                 new EntryModel

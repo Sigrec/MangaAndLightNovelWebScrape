@@ -50,13 +50,12 @@ namespace MangaLightNovelWebScrape.Websites
                     {
                         string currTitle;
                         int volNumIndex;
-                        List<int> entiresToRemove = new();
                         for (int x = 0; x < titleData.Count; x++)
                         {
                             currTitle = TitleRegex().Replace(titleData[x].InnerText.Replace("3In1", "Omnibus").Trim(), "");
                             if (titleData[x].InnerText.Equals("Damaged") || !currTitle.Any(char.IsDigit)) // Remove damaged volume entries
                             {
-                                // Logger.Debug("Found Damaged ^ or Novel when Manga Search");
+                                Logger.Debug("Found Damaged Manga or Novel when Searching for Manga");
                                 titleData.RemoveAt(x);
                                 x--;
                                 continue;

@@ -47,10 +47,10 @@ namespace MangaLightNovelWebScrape.Websites
             // Check to see if after parsing, the volume number is still there if not then fix/add it back
             if (!EntryModel.Similar(parsedTitle, inputTitle))
             {
-                parsedTitle = Regex.Replace(new Regex(@"\((.*?)\)").Match(bookTitle).Groups[0].ToString(), @"\(|\)", "");
+                parsedTitle = Regex.Replace(MissingVolNumFixRegex().Match(bookTitle).Groups[0].ToString(), @"\(|\)", "");
                 if (!char.IsDigit(parsedTitle, parsedTitle.Length - 1))
                 {
-                    parsedTitle += $" {new Regex(@"(\d+)").Match(bookTitle).Groups[0]}";
+                    parsedTitle += $" {AddVolNumRegex().Match(bookTitle).Groups[0]}";
                 }
                 // Console.WriteLine("Fixed Title 1 = " + parsedTitle);
             }
@@ -69,21 +69,20 @@ namespace MangaLightNovelWebScrape.Websites
             if (!parsedTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !parsedTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
             {
                 parsedTitle = parsedTitle.Insert(MasterScrape.FindVolNumRegex().Match(parsedTitle).Index, "Vol ");
-                // Console.WriteLine("Fixed Title 3 = " + parsedTitle);
             }
             else if (!parsedTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
             {
                 parsedTitle = parsedTitle.Replace("Vol.", "Vol");
-                // Console.WriteLine("Fixed Title 3 = " + parsedTitle);
             }
 
+            int volIndex = parsedTitle.IndexOf("Vol");
             if (bookType == 'N')
             {
-                parsedTitle = parsedTitle.Insert(parsedTitle.IndexOf("Vol"), "Novel ");
+                parsedTitle = parsedTitle.Insert(volIndex, "Novel ");
             }
-            else if (bookType == 'M' && !parsedTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) && !EntryModel.Similar(parsedTitle[..(parsedTitle.IndexOf("Vol") - 1)], inputTitle))
+            else if (bookType == 'M' && !parsedTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) && !EntryModel.Similar(parsedTitle[..(volIndex - 1)], inputTitle))
             {
-                parsedTitle = parsedTitle.Remove(0, parsedTitle.IndexOf("Vol")).Insert(0, char.ToUpper(inputTitle[0]) + inputTitle.ToLower()[1..] + " ");
+                parsedTitle = parsedTitle.Remove(0, volIndex).Insert(0, char.ToUpper(inputTitle[0]) + inputTitle.ToLower()[1..] + " ");
             }
 
             return parsedTitle.Trim();
@@ -120,14 +119,6 @@ namespace MangaLightNovelWebScrape.Websites
                     HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes("//li[@class='price']/span");
                     HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes("//li[@class='status']");
                     HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode("//p[@class='pagerArrowR']");
-                    
-                    // for (int x = 1; x < priceData.Count; x+=2)
-                    // {
-                    //     if(MasterScrape.RemoveNonWordsRegex().Replace(titleData[x / 2].InnerText, "").Contains(MasterScrape.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase))
-                    //     {
-                    //         Logger.Debug($"[{titleData[x / 2].InnerText}, {priceData[x - 1].InnerText.Trim()}, {priceData[x].InnerText.Trim()}, {stockStatusData[x / 2].InnerText}, KinokuniyaUSA");
-                    //     }
-                    // }
 
                     // Remove all of the novels from the list if user is searching for manga
                     if (bookType == 'M' && titleData != null)
@@ -153,14 +144,6 @@ namespace MangaLightNovelWebScrape.Websites
                     {
                         if (MasterScrape.RemoveNonWordsRegex().Replace(titleData[x / 2].InnerText, "").Contains(MasterScrape.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase))
                         {
-
-                            // if (titleData[x / 2].InnerText.Contains('3'))
-                            // {
-                            //     Logger.Debug("Check" + TitleParse(titleData[x / 2].InnerText, bookType, bookTitle));
-                            //     KinokuniyaUSAData.Add(new EntryModel(TitleParse(titleData[x / 2].InnerText, bookType, bookTitle), "$1.00", "IS", WEBSITE_TITLE));
-                            //     continue;
-                            // }
-
                             KinokuniyaUSAData.Add(
                                 new EntryModel(
                                     TitleParse(titleData[x / 2].InnerText, bookType, bookTitle), 
@@ -220,5 +203,10 @@ namespace MangaLightNovelWebScrape.Websites
             }
             return KinokuniyaUSAData;
         }
+
+        [GeneratedRegex("\\((.*?)\\)")]
+        private static partial Regex MissingVolNumFixRegex();
+        [GeneratedRegex("(\\d+)")]
+        private static partial Regex AddVolNumRegex();
     }
 }
