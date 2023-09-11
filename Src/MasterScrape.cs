@@ -33,6 +33,7 @@ namespace MangaLightNovelWebScrape
         /// <summary>
         /// The browser arguments used for each scrape
         /// </summary>
+        /// "--headless=new", 
         private static string[] ChromeBrowserArguments = { "--headless=new", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-geolocation", "--disable-logging", "--log-level=2" };
         private static string[] FireFoxBrowserArguments = { "-headless", "-new-instance", "-private", "-incognito" };
         [GeneratedRegex("[^\\w+]")] public static partial Regex RemoveNonWordsRegex();
@@ -501,21 +502,21 @@ namespace MangaLightNovelWebScrape
             });
         }
 
-        private static async Task Main(string[] args)
-        {
-            Stopwatch watch = new Stopwatch();
-            watch.Start();
-            MasterScrape test = new MasterScrape();
-            EnableDebugMode();
-            // { Website.RightStufAnime, Website.BarnesAndNoble, Website.InStockTrades, Website.RobertsAnimeCornerStore, Website.KinokuniyaUSA, Website.BooksAMillion }
-            await test.InitializeScrapeAsync("jujutsu kaisen", 'M', Array.Empty<string>(), new List<Website>() { Website.Indigo }, "Chrome", true, true, true, true, false);
-            watch.Stop();
-            Logger.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
-        }
-
-        // public static void Main(string[] args)
+        // private static async Task Main(string[] args)
         // {
-            
+        //     Stopwatch watch = new Stopwatch();
+        //     watch.Start();
+        //     MasterScrape test = new MasterScrape();
+        //     EnableDebugMode();
+        //     // { Website.RightStufAnime, Website.BarnesAndNoble, Website.InStockTrades, Website.RobertsAnimeCornerStore, Website.KinokuniyaUSA, Website.BooksAMillion }
+        //     await test.InitializeScrapeAsync("world trigger", 'M', Array.Empty<string>(), new List<Website>() { Website.RightStufAnime, Website.BarnesAndNoble, Website.InStockTrades, Website.RobertsAnimeCornerStore, Website.KinokuniyaUSA, Website.BooksAMillion }, "Chrome", true, true, true, true, false);
+        //     watch.Stop();
+        //     Logger.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         // }
+
+        public static void Main(string[] args)
+        {
+            
+        }
     }
 }

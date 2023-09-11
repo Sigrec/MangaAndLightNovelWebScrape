@@ -28,12 +28,13 @@ namespace MangaLightNovelWebScrape.Websites
             return url;
         }
 
-        private static bool RunClickEvent(WebDriverWait wait, ReadOnlyCollection<IWebElement> elements, string type)
+        private static bool RunClickEvent(string xPath, WebDriver driver, WebDriverWait wait, string type)
         {
+            var elements = driver.FindElements(By.XPath(xPath));
             if (elements.Count == 1)
             {
                 Logger.Debug(type);
-                wait.Until(driver => elements[0]).Click();
+                wait.Until(driver => driver.FindElements(By.XPath(xPath))[0]).Click();
                 return true;
             }
             return false;
@@ -57,7 +58,7 @@ namespace MangaLightNovelWebScrape.Websites
                 wait.Until(driver => driver.FindElement(By.XPath("/html[@style='position: relative;']")));
 
                 // Check formats to filter entries for Paperback & Hardcover
-                if(RunClickEvent(wait, driver.FindElements(By.XPath("//div[@id='refinement-heading']/span[@aria-label='Book Format']")), "Clicking Book Format Tab"))
+                if(RunClickEvent("//div[@id='refinement-heading']/span[@aria-label='Book Format']", driver, wait, "Clicking Book Format Tab"))
                 {
                     var formatBoxesElements = driver.FindElements(By.XPath("//*[@id='refinement-book-format']/ul/li/button/div/label/div[2]/span[1]"));
                     if (!formatBoxesElements.IsNullOrEmpty())
@@ -78,24 +79,24 @@ namespace MangaLightNovelWebScrape.Websites
                 }
 
                 // Ensure language is only English
-                if(RunClickEvent(wait, driver.FindElements(By.XPath("//div[@id='refinement-heading']/span[@aria-label='Language']")), "Clicking Language Tab"))
+                if(RunClickEvent("//div[@id='refinement-heading']/span[@aria-label='Language']", driver, wait, "Clicking Language Tab"))
                 {
-                    RunClickEvent(wait, wait.Until(driver => driver.FindElements(By.XPath("//*[@id='refinement-language']/ul/li/button/div/label/div[2]/span[1][contains(text(), 'English')]"))), "Clicking English Language");
+                    RunClickEvent("//*[@id='refinement-language']/ul/li/button/div/label/div[2]/span[1][contains(text(), 'English')]", driver, wait, "Clicking English Language");
                 }
 
                 // Sort entries based on Newest Arrivals
-                RunClickEvent(wait, driver.FindElements(By.XPath("//*[@id='product-search-results']/div[2]/div[1]/div/div[2]/div[2]/select/option[4]")), "Sort By Newest Arrivals");
+                RunClickEvent("//*[@id='product-search-results']/div[2]/div[1]/div/div[2]/div[2]/select/option[4]", driver, wait, "Sort By Newest Arrivals");
 
                 // Load all entries before getting the html page source
                 int index = 1;
                 var loadMoreElements = driver.FindElements(By.XPath("//button[@class='btn btn-tertiary more']"));
                 while (!loadMoreElements.IsNullOrEmpty())
                 {
-                    RunClickEvent(wait, loadMoreElements, $"Clicking Load More {index}");
-                    loadMoreElements = wait.Until(driver => driver.FindElements(By.XPath("//button[@class='btn btn-tertiary more']")));
-                    Logger.Debug($"Check{index}");
+                    // RunClickEvent("//button[@class='btn btn-tertiary more']", driver, wait, $"Clicking Load More {index}");
+                    Logger.Debug($"Clicking Load More {index}");
+                    wait.Until(driver => driver.FindElements(By.XPath("//button[@class='btn btn-tertiary more']"))[0]).Click();
+                    loadMoreElements = driver.FindElements(By.XPath("//button[@class='btn btn-tertiary more']"));
                     index++;
-                    //wait.Until(driver => driver.FindElement(By.XPath("/html[@style='position: relative;']")));
                 }
 
                 HtmlDocument doc = new();
