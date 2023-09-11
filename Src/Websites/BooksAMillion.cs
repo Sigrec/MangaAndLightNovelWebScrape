@@ -111,7 +111,7 @@ namespace MangaLightNovelWebScrape.Websites
                                 new EntryModel
                                 (
                                     currTitle,
-                                    $"${(memberStatus ? EntryModel.ApplyDiscount(priceVal, MEMBERSHIP_DISCOUNT) : priceData[x].InnerText)}".Trim(),
+                                    $"${(memberStatus ? EntryModel.ApplyDiscount(priceVal, MEMBERSHIP_DISCOUNT) : priceVal.ToString())}",
                                     stockStatusData[x].InnerText switch
                                     {
                                         string curStatus when curStatus.Contains("In Stock") => "IS",

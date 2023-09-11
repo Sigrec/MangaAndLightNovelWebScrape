@@ -158,12 +158,6 @@ namespace MangaLightNovelWebScrape.Websites
                             }
                             currTitle = $"{currTitle[..$"{currTitle.IndexOf("Omnibus ")}Omnibus ".Length]}Vol {currTitle[(currTitle.IndexOf("Omnibus ") + "Omnibus ".Length)..]}".Trim();
                         }
-                        
-                        // if (currTitle.Contains("24"))
-                        // {
-                        //     RobertsAnimeCornerStoreData.Add(new EntryModel(currTitle, "$3.00", "IS", WEBSITE_TITLE));
-                        //     continue;
-                        // }
 
                         RobertsAnimeCornerStoreData.Add(new EntryModel(currTitle, priceData[x].InnerText.Trim(), stockStatus.Trim(), WEBSITE_TITLE));
                     }

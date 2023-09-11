@@ -502,21 +502,21 @@ namespace MangaLightNovelWebScrape
             });
         }
 
-        // private static async Task Main(string[] args)
-        // {
-        //     Stopwatch watch = new Stopwatch();
-        //     watch.Start();
-        //     MasterScrape test = new MasterScrape();
-        //     EnableDebugMode();
-        //     // { Website.RightStufAnime, Website.BarnesAndNoble, Website.InStockTrades, Website.RobertsAnimeCornerStore, Website.KinokuniyaUSA, Website.BooksAMillion }
-        //     await test.InitializeScrapeAsync("world trigger", 'M', Array.Empty<string>(), new List<Website>() { Website.RightStufAnime, Website.BarnesAndNoble, Website.InStockTrades, Website.RobertsAnimeCornerStore, Website.KinokuniyaUSA, Website.BooksAMillion }, "Chrome", true, true, true, true, false);
-        //     watch.Stop();
-        //     Logger.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
-        // }
-
-        public static void Main(string[] args)
+        private static async Task Main(string[] args)
         {
-            
+            Stopwatch watch = new Stopwatch();
+            watch.Start();
+            MasterScrape test = new MasterScrape();
+            EnableDebugMode();
+            // { Website.RightStufAnime, Website.BarnesAndNoble, Website.InStockTrades, Website.RobertsAnimeCornerStore, Website.KinokuniyaUSA, Website.BooksAMillion }
+            await test.InitializeScrapeAsync("world trigger", 'M', Array.Empty<string>(), new List<Website>() { Website.RightStufAnime, Website.BarnesAndNoble, Website.InStockTrades, Website.RobertsAnimeCornerStore, Website.KinokuniyaUSA, Website.BooksAMillion }, "Chrome", false, false, false, false, false);
+            watch.Stop();
+            Logger.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
+
+        // public static void Main(string[] args)
+        // {
+            
+        // }
     }
 }
