@@ -37,10 +37,11 @@ namespace MangaLightNovelWebScrape.Websites
 
             try
             {
-                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(30));
+                WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
                 decimal priceVal;
                 string currTitle;
-                while (true)
+                bool anotherPage = true;
+                while (anotherPage)
                 {
                     driver.Navigate().GoToUrl(GetUrl(bookType, currPageNum, bookTitle));
                     wait.Until(e => e.FindElement(By.XPath("//span[@itemprop='name']")));
@@ -54,6 +55,17 @@ namespace MangaLightNovelWebScrape.Websites
                     HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes("//span[@itemprop='price']");
                     HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes("//div[@class='product-line-stock-container '] | //span[@class='product-line-stock-msg-out-text']");
                     HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode("//li[@class='global-views-pagination-next']");
+
+                    if (pageCheck != null)
+                    {
+                        currPageNum++;
+                    }
+                    else
+                    {
+                        driver.Close();
+                        driver.Quit();
+                        anotherPage = false;
+                    }
 
                     for (int x = 0; x < titleData.Count; x++)
                     {
@@ -77,17 +89,6 @@ namespace MangaLightNovelWebScrape.Websites
                                 )
                             );
                         }
-                    }
-
-                    if (pageCheck != null)
-                    {
-                        currPageNum++;
-                    }
-                    else
-                    {
-                        driver.Close();
-                        driver.Quit();
-                        break;
                     }
                 }
             }

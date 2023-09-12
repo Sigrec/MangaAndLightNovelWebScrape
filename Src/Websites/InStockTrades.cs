@@ -31,7 +31,7 @@ namespace MangaLightNovelWebScrape.Websites
 
             try
             {
-                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(30));
+                WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
                 while (true)
                 {
                     driver.Navigate().GoToUrl(GetUrl(currPageNum, bookTitle));

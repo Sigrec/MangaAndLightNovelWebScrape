@@ -79,7 +79,7 @@ namespace MangaLightNovelWebScrape.Websites
             WebDriver driver = MasterScrape.SetupBrowserDriver(false);
             try
             {
-                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(30));
+                WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
 
                 string currTitle;
                 bool foundPaperback = false, foundHardcover = false, foundBookSeries = false;

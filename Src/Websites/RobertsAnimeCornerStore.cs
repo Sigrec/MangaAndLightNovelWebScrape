@@ -43,7 +43,7 @@ namespace MangaLightNovelWebScrape.Websites
             }
             else
             { //Gets the actual page that houses the data the user is looking for
-                url = "https://www.animecornerstore.com/" + htmlString;
+                url = $"https://www.animecornerstore.com/{htmlString}";
                 RobertsAnimeCornerStoreLinks.Add(url);
             }
             Logger.Debug(url);
@@ -68,21 +68,13 @@ namespace MangaLightNovelWebScrape.Websites
             doc.LoadHtml(driver.PageSource);
 
             HtmlNodeCollection seriesTitle = doc.DocumentNode.SelectNodes($"//b//a[1]");
-            try
+            foreach (HtmlNode series in seriesTitle)
             {
-                foreach (HtmlNode series in seriesTitle)
+                if (GetWhiteSpaceRegex().Replace(series.InnerText.ToLower(), "").Contains(bookTitle, StringComparison.OrdinalIgnoreCase))
                 {
-                    //Logger.Debug(Regex.Replace(series.InnerText.ToLower(), @"\s+", ""));
-                    if (GetWhiteSpaceRegex().Replace(series.InnerText.ToLower(), "").Contains(bookTitle, StringComparison.OrdinalIgnoreCase))
-                    {
-                        link = GetUrl(series.Attributes["href"].Value, true);
-                        return link;
-                    }
+                    link = GetUrl(series.Attributes["href"].Value, true);
+                    return link;
                 }
-            }
-            catch(NullReferenceException ex)
-            {
-                Logger.Error(ex);
             }
             return "DNE";
         }
@@ -90,7 +82,7 @@ namespace MangaLightNovelWebScrape.Websites
         public static List<EntryModel> GetRobertsAnimeCornerStoreData(string bookTitle, char bookType)
         {
             WebDriver driver = MasterScrape.SetupBrowserDriver(false);
-            WebDriverWait wait = new(driver, TimeSpan.FromSeconds(30));
+            WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
 
             // Initialize the html doc for crawling
             HtmlDocument doc = new();
@@ -127,9 +119,9 @@ namespace MangaLightNovelWebScrape.Websites
                             priceData.RemoveAt(x);
                         }
                     }
-
                     driver.Close();
                     driver.Quit();
+
                     string currTitle, stockStatus;
                     for (int x = 0; x < titleData.Count; x++)
                     {

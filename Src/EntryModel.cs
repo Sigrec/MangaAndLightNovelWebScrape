@@ -1,11 +1,12 @@
 namespace MangaLightNovelWebScrape
 {
-    public class EntryModel
+    public partial class EntryModel
     {
         public string Entry { get; set; }
         public string Price { get; set; }
         public string StockStatus { get; set; }
         public string  Website { get; set; }
+        [GeneratedRegex(".*?(\\d+).*")]  private static partial Regex VolumeNumRegex();
 
         /// <summary>
         /// Model for a series's book entry
@@ -47,7 +48,7 @@ namespace MangaLightNovelWebScrape
         /// <returns></returns>
         public static int GetCurrentVolumeNum(string title, string type)
         {
-            return int.Parse(new Regex(@".*?(\d+).*").Replace(title.Substring(title.IndexOf(" "+ type) + type.Length + 1), "$1", 1));
+            return int.Parse(VolumeNumRegex().Replace(title[(title.IndexOf(" " + type) + type.Length + 1)..], "$1", 1));
         }
 
         /// <summary>
@@ -94,8 +95,8 @@ namespace MangaLightNovelWebScrape
             }
 
             // Logger.Debug("Count = " + count);
-            // Logger.Debug((count <= (titleOne.Length > titleTwo.Length ? titleTwo.Length / 5 : titleOne.Length / 5)) ? $"{titleOne} is Similar to {titleTwo}" : $"{titleOne} is Not Similar to {titleTwo}");
-            return count <= (titleOne.Length > titleTwo.Length ? titleTwo.Length / 5 : titleOne.Length / 5); // Determine if they are similar enough by a threshold of 1/5 the size of longest title
+            // Logger.Debug((count <= (titleOne.Length > titleTwo.Length ? titleTwo.Length / 6 : titleOne.Length / 6)) ? $"{titleOne} is Similar to {titleTwo}" : $"{titleOne} is Not Similar to {titleTwo}");
+            return count <= (titleOne.Length > titleTwo.Length ? titleTwo.Length / 6 : titleOne.Length / 6); // Determine if they are similar enough by a threshold of 1/6 the size of longest title
         }
 
         public static string RemoveInPlaceCharArray(string input)
@@ -145,9 +146,11 @@ namespace MangaLightNovelWebScrape
     /// <summary>
     /// Compares EntryModel's by volume number
     /// </summary>
-    public class VolumeSort : IComparer<EntryModel>
+    public partial class VolumeSort : IComparer<EntryModel>
     {
         string bookTitle;
+        [GeneratedRegex(".*( \\d+)$")] private static partial Regex ExtractIntRegex();
+        [GeneratedRegex(" Vol \\d+$")] private static partial Regex ExtractIntVolRegex();
 
         public VolumeSort(string bookTitle)
         {
@@ -167,7 +170,7 @@ namespace MangaLightNovelWebScrape
         {
             int val1 = ExtractInt(entry1.Entry);
             int val2 = ExtractInt(entry2.Entry);
-            if (string.Equals(Regex.Replace(entry1.Entry, @" Vol \d+$", ""), Regex.Replace(entry2.Entry, @" Vol \d+$", "")) || EntryModel.Similar(entry1.Entry, entry2.Entry))
+            if (string.Equals(ExtractIntVolRegex().Replace(entry1.Entry, ""), ExtractIntVolRegex().Replace(entry2.Entry, "")) || EntryModel.Similar(entry1.Entry, entry2.Entry))
             {
                 if (val1 > val2)
                 {
@@ -187,7 +190,7 @@ namespace MangaLightNovelWebScrape
 
         int ExtractInt(string s)
         {
-            return Int32.Parse(Regex.Replace(s.Substring(bookTitle.Length), @".*( \d+)$", "$1").TrimStart());
+            return int.Parse(ExtractIntRegex().Replace(s[bookTitle.Length..], "$1").TrimStart());
         }
     }
 }

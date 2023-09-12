@@ -53,7 +53,7 @@ namespace MangaLightNovelWebScrape.Websites
 
             try
             {
-                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
+                WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
                 driver.Navigate().GoToUrl(GetUrl(bookTitle, bookType));
                 wait.Until(driver => driver.FindElement(By.XPath("/html[@style='position: relative;']")));
 
