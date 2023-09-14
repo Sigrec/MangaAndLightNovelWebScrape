@@ -141,7 +141,7 @@ namespace MangaLightNovelWebScrape.Websites
                 driver.Quit();
             }
 
-            BarnesAndNobleData.Sort(new VolumeSort(bookTitle));
+            BarnesAndNobleData.Sort(new VolumeSort());
 
             if (MasterScrape.IsDebugEnabled)
             {

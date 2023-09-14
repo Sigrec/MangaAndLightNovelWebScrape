@@ -1,12 +1,14 @@
 namespace MangaLightNovelWebScrape
 {
-    public partial class EntryModel
+    public partial class EntryModel : IEquatable<EntryModel>
     {
         public string Entry { get; set; }
         public string Price { get; set; }
         public string StockStatus { get; set; }
         public string  Website { get; set; }
-        [GeneratedRegex(".*?(\\d+).*")]  private static partial Regex VolumeNumRegex();
+        private static readonly Logger Logger = LogManager.GetLogger("MasterScrapeLogs");
+        [GeneratedRegex("[Vol|Box Set].*?(\\d+).*")]  private static partial Regex VolumeNumRegex();
+        [GeneratedRegex(".*(?<int> \\d+)$|.*(?<double> \\d+\\.\\d+)$")] private static partial Regex ExtractIntRegex();
 
         /// <summary>
         /// Model for a series's book entry
@@ -40,24 +42,29 @@ namespace MangaLightNovelWebScrape
         }
 
         /// <summary>
-        /// Last Modified On: 03 MArch, 2023 by: Prem/Sigrec (Sean. N)
         /// Gets the current volume num for a series unit entry givin its type (box set, omnibux, single, etc)
         /// </summary>
         /// <param name="title">The full title of the entry to get the volume number</param>
-        /// <param name="type">The type of entry it is either box set, omnibus, or single</param>
         /// <returns></returns>
-        public static int GetCurrentVolumeNum(string title, string type)
+        public static double GetCurrentVolumeNum(string title)
         {
-            return int.Parse(VolumeNumRegex().Replace(title[(title.IndexOf(" " + type) + type.Length + 1)..], "$1", 1));
+            Match match = ExtractIntRegex().Match(title);
+            if (match.Groups["int"].Success)
+            {
+                return Convert.ToDouble(match.Groups["int"].Value);
+            }
+            else if (match.Groups["double"].Success)
+            {
+                return Convert.ToDouble(match.Groups["double"].Value);
+            }
+            Logger.Error($"Failed to Extract Entry # from {title}");
+            return -1;
         }
 
         /// <summary>
-        /// Last Modified: 06 March, 2023
-        /// Author: Sigrec (Sean. N)
-        /// Compares the titles of various entries for a series against each other to determine if they are similar enough to be cosnidered equal,
-        /// allowing comparisons of titles who are technically the same but there websites have slightly different formats.
-        /// It determine if they are similar enough by a threshold of 1/4 the size of longest title being the same, meaning based on the
-        /// number of characters that do not match if it's is less than 1/4 the size of the longest title string.
+        /// <br>Compares the titles of various entries for a series against each other to determine if they are similar enough to be cosnidered equal</br> 
+        /// <br>Allowing comparisons of titles who are technically the same but there websites have slightly different formats.</br> 
+        /// <br>By determining if they are similar enough by a threshold of 1/6 the size of longest title being the same</br> 
         /// </summary>
         /// <param name="titleOne">The first title in the comparison and is used for determining when to stop traversing</param>
         /// <param name="titleTwo">The 2nd title in the comparison</param>
@@ -142,24 +149,45 @@ namespace MangaLightNovelWebScrape
 			}
 			return new string(src, 0, dstIdx);
 		}
+
+        public override bool Equals(object obj)
+        {
+            return Equals(obj as EntryModel);
+        }
+
+        public bool Equals(EntryModel other)
+        {
+            return other is not null &&
+                   Entry == other.Entry &&
+                   Price == other.Price &&
+                   Website == other.Website;
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(Entry, Price, Website);
+        }
+
+        public static bool operator ==(EntryModel left, EntryModel right)
+        {
+            return EqualityComparer<EntryModel>.Default.Equals(left, right);
+        }
+
+        public static bool operator !=(EntryModel left, EntryModel right)
+        {
+            return !(left == right);
+        }
     }
     /// <summary>
-    /// Compares EntryModel's by volume number
+    /// Compares EntryModel's by entry title
     /// </summary>
     public partial class VolumeSort : IComparer<EntryModel>
     {
-        string bookTitle;
-        [GeneratedRegex(".*( \\d+)$")] private static partial Regex ExtractIntRegex();
-        [GeneratedRegex(" Vol \\d+$")] private static partial Regex ExtractIntVolRegex();
-
-        public VolumeSort(string bookTitle)
-        {
-            this.bookTitle = bookTitle;
-        }
+        private static readonly Logger Logger = LogManager.GetLogger("MasterScrapeLogs");
+        [GeneratedRegex(".*(?<int> \\d+)$|.*(?<double> \\d+\\.\\d+)$")] private static partial Regex ExtractIntRegex();
+        [GeneratedRegex(" Vol \\d+$| Box Set\\d+$| Vol \\d+\\.\\d+$| Box Set \\d+\\.\\d+$")] private static partial Regex ExtractVolNameRegex();
 
         /// <summary>
-        /// Last Modified: 03 March, 2023
-        /// Author: Sigrec (Sean. N)
         /// Extracts the entry's volume number and checks to see if they are equal or similar enough
         /// then compares there volumes numbers to sort in ascending order.
         /// </summary>
@@ -168,29 +196,27 @@ namespace MangaLightNovelWebScrape
         /// <returns></returns>
         public int Compare(EntryModel entry1, EntryModel entry2)
         {
-            int val1 = ExtractInt(entry1.Entry);
-            int val2 = ExtractInt(entry2.Entry);
-            if (string.Equals(ExtractIntVolRegex().Replace(entry1.Entry, ""), ExtractIntVolRegex().Replace(entry2.Entry, "")) || EntryModel.Similar(entry1.Entry, entry2.Entry))
+            if ((entry1.Entry.Contains("Vol") || entry1.Entry.Contains("Box Set")) && (entry2.Entry.Contains("Vol") || entry2.Entry.Contains("Box Set")))
             {
-                if (val1 > val2)
+                double val1 = EntryModel.GetCurrentVolumeNum(entry1.Entry);
+                double val2 = EntryModel.GetCurrentVolumeNum(entry2.Entry);
+                if (string.Equals(ExtractVolNameRegex().Replace(entry1.Entry, ""), ExtractVolNameRegex().Replace(entry2.Entry, "")) || EntryModel.Similar(entry1.Entry, entry2.Entry))
                 {
-                    return 1;
-                }
-                else if (val1 < val2)
-                {
-                    return -1;
-                }
-                else
-                {
-                    return 0;
+                    if (val1 > val2)
+                    {
+                        return 1;
+                    }
+                    else if (val1 < val2)
+                    {
+                        return -1;
+                    }
+                    else
+                    {
+                        return 0;
+                    }
                 }
             }
             return entry1.Entry.CompareTo(entry2.Entry);
-        }
-
-        int ExtractInt(string s)
-        {
-            return int.Parse(ExtractIntRegex().Replace(s[bookTitle.Length..], "$1").TrimStart());
         }
     }
 }

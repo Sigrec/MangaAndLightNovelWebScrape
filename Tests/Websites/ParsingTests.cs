@@ -1,10 +1,8 @@
 // Hellsing, One Piece
-[assembly: Description("Validation for Various Data Parses")]
-namespace Tests
+namespace Tests.Websites
 {
-    [Parallelizable(ParallelScope.All)]
     [TestFixture]
-    [Author("Sean (Alias -> Sigrec or Prem)")]
+    [Author("Sean (Alias -> Prem or Sigrec)")]
     [SetUICulture("en")]
     public class ParsingTests
     {

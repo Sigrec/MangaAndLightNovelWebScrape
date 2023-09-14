@@ -151,7 +151,7 @@ namespace MangaLightNovelWebScrape.Websites
                 Logger.Error($"{bookTitle} Does Not Exist @ BooksAMillion\n{ex}");
             }
 
-            BooksAMillionData.Sort(new VolumeSort(bookTitle));
+            BooksAMillionData.Sort(new VolumeSort());
 
             if (MasterScrape.IsDebugEnabled)
             {

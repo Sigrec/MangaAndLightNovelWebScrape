@@ -32,7 +32,7 @@ namespace MangaLightNovelWebScrape.Websites
             KinokuniyaUSAData.Clear();
         }
 
-        private static string TitleParse(string bookTitle, char bookType, string inputTitle)
+        public static string TitleParse(string bookTitle, char bookType, string inputTitle)
         {
             string parsedTitle;
             if (!inputTitle.Any(char.IsDigit))
@@ -169,7 +169,7 @@ namespace MangaLightNovelWebScrape.Websites
                     {
                         driver.Close();
                         driver.Quit();
-                        KinokuniyaUSAData.Sort(new VolumeSort(bookTitle));
+                        KinokuniyaUSAData.Sort(new VolumeSort());
                         break;
                     }
                 }

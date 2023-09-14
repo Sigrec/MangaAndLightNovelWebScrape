@@ -129,7 +129,7 @@ namespace MangaLightNovelWebScrape.Websites
                 Logger.Error($"{bookTitle} Does Not Exist @ Indigo {ex}");
             }
 
-            IndigoData.Sort(new VolumeSort(bookTitle));
+            IndigoData.Sort(new VolumeSort());
 
             if (MasterScrape.IsDebugEnabled)
             {

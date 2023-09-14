@@ -1,14 +1,17 @@
+using System.Text;
+
 namespace MangaLightNovelWebScrape.Websites
 {
-    partial class RightStufAnime
+    public partial class RightStufAnime
     {
-        public static List<string> RightStufAnimeLinks = new();
-        public static List<EntryModel> RightStufAnimeData = new();
+        private static List<string> RightStufAnimeLinks = new();
+        private static List<EntryModel> RightStufAnimeData = new();
         public const string WEBSITE_TITLE = "RightStufAnime";
         private const decimal GOT_ANIME_DISCOUNT = 0.1M;
-        private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("RightStufAnimeLogs");
+        private static readonly Logger Logger = LogManager.GetLogger("RightStufAnimeLogs");
         [GeneratedRegex("\\(.*?\\)")] private static partial Regex TitleParseRegex();
         [GeneratedRegex(" Manga| Edition")] private static partial Regex FormatRemovalRegex();
+        [GeneratedRegex("3 [iI]n 1|2 [iI]n 1")] private static partial Regex OmnibusRegex();
 
         private static string FilterBookTitle(string bookTitle){
             char[] trimedChars = {' ', '\'', '!', '-'};
@@ -22,6 +25,11 @@ namespace MangaLightNovelWebScrape.Websites
         {
             RightStufAnimeLinks.Clear();
             RightStufAnimeData.Clear();
+        }
+
+        public static List<string> GetUrlLinks()
+        {
+            return RightStufAnimeLinks;
         }
 
         private static string GetUrl(char bookType, byte currPageNum, string bookTitle){
@@ -39,7 +47,7 @@ namespace MangaLightNovelWebScrape.Websites
             {
                 WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
                 decimal priceVal;
-                string currTitle;
+                StringBuilder currTitle;
                 bool anotherPage = true;
                 while (anotherPage)
                 {
@@ -69,14 +77,14 @@ namespace MangaLightNovelWebScrape.Websites
 
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        currTitle = TitleParseRegex().Replace(titleData[x].InnerText, "").Trim();                  
-                        if(!titleData[x].InnerText.Contains("Imperfect") && MasterScrape.RemoveNonWordsRegex().Replace(currTitle, "").Contains(MasterScrape.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase))
+                        currTitle = new StringBuilder(TitleParseRegex().Replace(titleData[x].InnerText, "").Trim());                  
+                        if(!titleData[x].InnerText.Contains("Imperfect") && MasterScrape.RemoveNonWordsRegex().Replace(currTitle.ToString(), "").Contains(MasterScrape.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase))
                         {
                             priceVal = Convert.ToDecimal(priceData[x].InnerText.Trim());
                             RightStufAnimeData.Add(
                                 new EntryModel
                                 (
-                                    FormatRemovalRegex().Replace(currTitle.Replace("Volume", "Vol"), "").Replace("Deluxe Omnibus", "Deluxe").Trim(),
+                                    OmnibusRegex().Replace(FormatRemovalRegex().Replace(currTitle.Replace("Volume", "Vol").Replace("Deluxe Omnibus", "Deluxe").ToString(), ""), "Omnibus").Trim(),
                                     $"${(memberStatus ? EntryModel.ApplyDiscount(priceVal, GOT_ANIME_DISCOUNT) : priceVal)}",
                                     stockStatusData[x].InnerText switch
                                     {
@@ -91,6 +99,7 @@ namespace MangaLightNovelWebScrape.Websites
                         }
                     }
                 }
+                RightStufAnimeData.Sort(new VolumeSort());
             }
             catch (Exception ex)
             {
@@ -98,8 +107,6 @@ namespace MangaLightNovelWebScrape.Websites
                 driver.Quit();
                 Logger.Error($"{bookTitle} Does Not Exist @ RightStufAnime\n{ex}");
             }
-
-            RightStufAnimeData.Sort(new VolumeSort(bookTitle));
 
             if (MasterScrape.IsDebugEnabled)
             {

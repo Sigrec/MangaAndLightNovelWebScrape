@@ -81,7 +81,7 @@ namespace MangaLightNovelWebScrape.Websites
                         {
                             driver.Close();
                             driver.Quit();
-                            InStockTradesData.Sort(new VolumeSort(bookTitle));
+                            InStockTradesData.Sort(new VolumeSort());
                             break;
                         }
                     }

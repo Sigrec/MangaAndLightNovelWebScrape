@@ -185,7 +185,7 @@ namespace MangaLightNovelWebScrape.Websites
                 Logger.Error($"{bookTitle} Does Not Exist @ AmazonUSA {ex}");
             }
 
-            AmazonUSAData.Sort(new VolumeSort(bookTitle));
+            AmazonUSAData.Sort(new VolumeSort());
 
             if (MasterScrape.IsDebugEnabled)
             {
