@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using System.Threading.Tasks;
 
 namespace MangaLightNovelWebScrape.Websites
@@ -24,7 +25,7 @@ namespace MangaLightNovelWebScrape.Websites
 
         [GeneratedRegex("-|\\s+")] private static partial Regex FilterBookTitleRegex();
         [GeneratedRegex(",|#| Graphic Novel| :|\\(.*?\\)|\\[Novel\\]")] private static partial Regex TitleFilterRegex();
-        [GeneratedRegex(",| #\\d+|Graphic Novel| :|\\(.*?\\)|\\[Novel\\]")] private static partial Regex OmnibusTitleFilterRegex();
+        [GeneratedRegex(",| #\\d+-\\d+| #\\d+|Graphic Novel| :|\\(.*?\\)|\\[Novel\\]")] private static partial Regex OmnibusTitleFilterRegex();
         [GeneratedRegex("\\s{2,}")] private static partial Regex MultipleWhiteSpaceRegex();
         [GeneratedRegex("-(\\d+)")] private static partial Regex OmnibusVolNumberRegex();
         [GeneratedRegex("\\s+|[^a-zA-Z0-9]")] private static partial Regex FindTitleRegex();
@@ -88,34 +89,34 @@ namespace MangaLightNovelWebScrape.Websites
             return link;
         }
 
-        private static string ParseTitle(string curTitle, Book book)
+        private static string TitleParse(string titleText, Book book)
         {
-            if (curTitle.Contains("Omnibus"))
+            StringBuilder curTitle;
+            if (titleText.Contains("Omnibus"))
             {
-                ushort volNum = Convert.ToUInt16(OmnibusVolNumberRegex().Match(curTitle).Groups[1].Value);
-                curTitle = OmnibusTitleFilterRegex().Replace(curTitle, "").Replace("Omnibus Edition", "Omnibus").Trim();
-                if (curTitle.LastIndexOf("Vol") != -1)
+                uint volNum = Convert.ToUInt32(OmnibusVolNumberRegex().Match(titleText).Groups[1].Value);
+                curTitle = new StringBuilder(OmnibusTitleFilterRegex().Replace(titleText, "").Trim());
+                curTitle.Replace("Omnibus Edition", "Omnibus");
+                if (!curTitle.ToString().Contains(" Vol"))
                 {
-                    curTitle = $"{curTitle[..(curTitle.LastIndexOf("Vol") + 3)]} {volNum / 3}";
+                    curTitle.Append(' ');
+                    curTitle.Append("Vol");
                 }
-                else
-                {
-                    curTitle = $"{curTitle} Vol {volNum / 3}";
-                }
+                curTitle.Append(' ');
+                curTitle.Append(volNum / 3);
             }
             else
             {
-                curTitle = TitleFilterRegex().Replace(curTitle, "").Trim();
-                if (curTitle.Contains("Deluxe Edition"))
+                titleText = TitleFilterRegex().Replace(titleText, "").Trim();
+                curTitle = new StringBuilder(titleText);
+                curTitle.Replace("Deluxe Edition", "Deluxe Vol");
+                if (titleText.Contains("Box Set") && !titleText.Any(char.IsDigit))
                 {
-                    curTitle = curTitle.Replace("Edition", "Vol");
-                }
-                else if (curTitle.Contains("Box Set") && !curTitle.Any(char.IsAsciiDigit))
-                {
-                    curTitle = $"{curTitle} 1";
+                    curTitle.Append(' ');
+                    curTitle.Append('1');
                 }
             }
-            return book == Book.Manga ? MultipleWhiteSpaceRegex().Replace(curTitle, " ") : MultipleWhiteSpaceRegex().Replace(curTitle.Replace("Vol", "Novel Vol"), " ");
+            return book == Book.Manga ? MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ") : MultipleWhiteSpaceRegex().Replace(curTitle.Replace("Vol", "Novel Vol").ToString(), " ");
         }
         
         public static List<EntryModel> GetRobertsAnimeCornerStoreData(string bookTitle, Book book)
@@ -151,11 +152,13 @@ namespace MangaLightNovelWebScrape.Websites
                     HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes("//form[@method='POST'][contains(text()[2], '$')]//font[@color='#ffcc33'][2]"); // //form[@method='POST'][contains(text()[2], '$')]/text()[2] | //font[2][@color='#ffcc33']
                     driver.Close();
                     driver.Quit();
+                    string titleText;
 
                     // Remove All Empty Titles
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        if (string.IsNullOrWhiteSpace(titleData[x].InnerText))
+                        titleText = titleData[x].InnerText;
+                        if (string.IsNullOrWhiteSpace(titleText))
                         {
                             titleData.RemoveAt(x);
                         }
@@ -163,16 +166,17 @@ namespace MangaLightNovelWebScrape.Websites
 
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        if (string.IsNullOrWhiteSpace(titleData[x].InnerText) || titleData[x].InnerText.Contains("Poster") || (titleData[x].InnerText.Contains("[Novel]") && book == Book.Manga) || (titleData[x].InnerText.Contains("Graphic") && book == Book.LightNovel)) // If the user is looking for manga and the page returned a novel data set and vice versa skip that data set
+                        titleText = titleData[x].InnerText;
+                        if (string.IsNullOrWhiteSpace(titleText) || titleText.Contains("Poster") || (titleText.Contains("[Novel]") && book == Book.Manga) || (titleText.Contains("Graphic") && book == Book.LightNovel)) // If the user is looking for manga and the page returned a novel data set and vice versa skip that data set
                         {
                             continue;
                         }
 
                         RobertsAnimeCornerStoreData.Add(
                             new EntryModel(
-                                ParseTitle(titleData[x].InnerText, book),
+                                TitleParse(titleText, book),
                                 priceData[x].InnerText.Trim(),
-                                titleData[x].InnerText switch
+                                titleText switch
                                 {
                                     string curTitle when curTitle.Contains("Pre Order") => "PO",
                                     string curTitle when curTitle.Contains("Backorder") => "OOS",

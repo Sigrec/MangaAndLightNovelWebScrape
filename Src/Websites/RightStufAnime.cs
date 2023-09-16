@@ -33,39 +33,38 @@ namespace MangaLightNovelWebScrape.Websites
         }
 
         private static string GetUrl(Book book, byte currPageNum, string bookTitle){
-            string url = $"https://www.rightstufanime.com/category/{(book == Book.Manga ? "Manga" : "Novels")}?page={currPageNum}&show=96&keywords={FilterBookTitle(bookTitle)}";
-            Logger.Debug(url);
-            RightStufAnimeLinks.Add(url);
-            return url;
+            StringBuilder url = new StringBuilder("https://www.rightstufanime.com/category/");
+            url.Append(book == Book.Manga ? "Manga" : "Novels").Append("?page=").Append(currPageNum).Append("&show=96&keywords=").Append(FilterBookTitle(bookTitle));
+            Logger.Debug(url.ToString());
+            RightStufAnimeLinks.Add(url.ToString());
+            return url.ToString();
         }
 
-        private static string TitleParse(string curTitle, Book book)
+        private static string TitleParse(string titleText, Book book)
         {
-            curTitle = OmnibusRegex().Replace(FormatRemovalRegex().Replace(curTitle.Replace("Volume", "Vol"), ""), "Omnibus").Trim();
+            StringBuilder curTitle = new StringBuilder(OmnibusRegex().Replace(FormatRemovalRegex().Replace(titleText, ""), "Omnibus"));
+            curTitle.Replace("Volume", "Vol").ToString();
 
             if (book == Book.Manga)
             {
-                if (curTitle.Contains("Omnibus Edition"))
+                curTitle.Replace("Omnibus Edition", "Omnibus");
+                if (titleText.Contains("Deluxe"))
                 {
-                    curTitle = curTitle.Replace("Omnibus Edition", "Omnibus");
-                }
-                else if (curTitle.Contains("Deluxe"))
-                {
-                    curTitle = curTitle.Replace("Omnibus ", "").Replace("Deluxe Edition", "Deluxe");
+                    curTitle.Replace("Omnibus ", "").Replace("Deluxe Edition", "Deluxe");
                 }
             }
-            else if (book == Book.LightNovel && !curTitle.Contains("Novel"))
+            else if (book == Book.LightNovel && !titleText.Contains("Novel"))
             {
-                if (curTitle.IndexOf("Vol") != -1)
+                if (titleText.IndexOf("Vol") != -1)
                 {
-                    curTitle = curTitle.Insert(curTitle.IndexOf("Vol"), "Novel ");
+                    curTitle.Insert(titleText.IndexOf("Vol"), "Novel ");
                 }
                 else
                 {
-                    curTitle = curTitle.Insert(curTitle.Length, " Novel");
+                    curTitle.Insert(curTitle.Length, " Novel");
                 }
             }
-            return curTitle;
+            return curTitle.ToString().Trim();
         }
 
         public static List<EntryModel> GetRightStufAnimeData(string bookTitle, Book book, bool memberStatus, byte currPageNum)
@@ -76,12 +75,12 @@ namespace MangaLightNovelWebScrape.Websites
             {
                 WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
                 decimal priceVal;
-                string curTitle;
+                string titleText;
                 bool anotherPage = true;
                 while (anotherPage)
                 {
                     driver.Navigate().GoToUrl(GetUrl(book, currPageNum, bookTitle));
-                    wait.Until(e => e.FindElement(By.XPath("//span[@itemprop='name']")));
+                    wait.Until(e => e.FindElement(By.XPath("//div[@class='shopping-layout-content']")));
 
                     // Initialize the html doc for crawling
                     HtmlDocument doc = new();
@@ -106,14 +105,14 @@ namespace MangaLightNovelWebScrape.Websites
 
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        curTitle = TitleParseRegex().Replace(titleData[x].InnerText, "").Trim();           
-                        if(!curTitle.Contains("Imperfect") && MasterScrape.TitleContainsBookTitle(bookTitle, curTitle.ToString()) && !MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", curTitle.ToString(), "of Gluttony"))
+                        titleText = TitleParseRegex().Replace(titleData[x].InnerText, "").Trim();           
+                        if(!titleText.Contains("Imperfect") && MasterScrape.TitleContainsBookTitle(bookTitle, titleText.ToString()) && !MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", titleText.ToString(), "of Gluttony"))
                         {
                             priceVal = Convert.ToDecimal(priceData[x].InnerText.Trim());
                             RightStufAnimeData.Add(
                                 new EntryModel
                                 (
-                                    TitleParse(curTitle, book),
+                                    TitleParse(titleText, book),
                                     $"${(memberStatus ? EntryModel.ApplyDiscount(priceVal, GOT_ANIME_DISCOUNT) : priceVal)}",
                                     stockStatusData[x].InnerText switch
                                     {

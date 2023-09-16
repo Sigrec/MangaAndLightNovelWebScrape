@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Text;
 using Microsoft.IdentityModel.Tokens;
 
 namespace MangaLightNovelWebScrape.Websites
@@ -49,48 +50,50 @@ namespace MangaLightNovelWebScrape.Websites
             BarnesAndNobleData.Clear();
         }
 
-        private static string TitleParse(string curTitle, Book book, string inputTitle)
+        private static string TitleParse(string titleText, Book book, string inputTitle)
         {
-            curTitle = VolTitleFixRegex().Replace(curTitle, "Vol");
-            if (curTitle.Contains("Box Set"))
+            titleText = VolTitleFixRegex().Replace(titleText, "Vol");
+            if (titleText.Contains("Box Set"))
             {
-                curTitle = ParseBoxSetTitleRegex().Replace(curTitle, "");
+                titleText = ParseBoxSetTitleRegex().Replace(titleText, "");
             }
             else
             {
                 if (book == Book.LightNovel)
                 {
-                    curTitle = curTitle.Replace("(Light Novel)", "Novel", StringComparison.OrdinalIgnoreCase);
+                    titleText = titleText.Replace("(Light Novel)", "Novel");
                 }
-                else if (curTitle.Contains("Edition"))
+                else if (titleText.Contains("Edition"))
                 {
-                    curTitle = OmnibusTitleRegex().Replace(curTitle, "Omnibus");
+                    titleText = OmnibusTitleRegex().Replace(titleText, "Omnibus");
                 }
-                curTitle = ParseTitleRegex().Replace(curTitle, "");
+                titleText = ParseTitleRegex().Replace(titleText, "");
             }
 
-            if (curTitle.Contains("Toilet-bound Hanako-kun First Stall"))
+            StringBuilder curTitle = new StringBuilder(titleText);
+            if (titleText.Contains("Toilet-bound Hanako-kun First Stall"))
             {
-                curTitle += " Box Set";
+                curTitle.Append(" Box Set");
             }
+            titleText = curTitle.ToString();
 
-            if (book == Book.Manga && !curTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !curTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
+            if (book == Book.Manga && !titleText.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !titleText.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
             {
-                curTitle = curTitle.Insert(MasterScrape.FindVolNumRegex().Match(curTitle).Index, "Vol ");
+                curTitle.Insert(MasterScrape.FindVolNumRegex().Match(titleText).Index, "Vol ");
             }
-            else if (book == Book.LightNovel && !curTitle.Contains("Novel"))
+            else if (book == Book.LightNovel && !titleText.Contains("Novel"))
             {
-                if (curTitle.IndexOf("Vol") != -1)
+                if (titleText.IndexOf("Vol") != -1)
                 {
-                    curTitle = curTitle.Insert(curTitle.IndexOf("Vol"), "Novel ");
+                    curTitle.Insert(titleText.IndexOf("Vol"), "Novel ");
                 }
                 else
                 {
-                    curTitle = curTitle.Insert(curTitle.Length, " Novel");
+                    curTitle.Insert(titleText.Length, " Novel");
                 }
             }
 
-            return curTitle.Trim();
+            return curTitle.ToString().Trim();
         }
 
         private static bool RunClickEvent(string xPath, WebDriver driver, WebDriverWait wait, string type)
