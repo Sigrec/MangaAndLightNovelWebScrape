@@ -9,7 +9,7 @@ namespace MangaLightNovelWebScrape.Websites
         public static List<EntryModel> IndigoData = new();
         public const string WEBSITE_TITLE = "Indigo";
         private const decimal PLUM_DISCOUNT = 0.1M;
-        private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("IndigoLogs");
+        private static readonly Logger Logger = LogManager.GetLogger("IndigoLogs");
         [GeneratedRegex(",|\\.")] private static partial Regex TitleRegex();
 
         public static void ClearData()
@@ -20,7 +20,7 @@ namespace MangaLightNovelWebScrape.Websites
 
         // https://www.indigo.ca/en-ca/search?q=world+trigger&search-button=&lang=en_CA
         // https://www.indigo.ca/en-ca/search?q=jujutsu+kaisen&search-button=&lang=en_CA
-        private static string GetUrl(string bookTitle, char bookType)
+        private static string GetUrl(string bookTitle, Book book)
         {
             string url = $"https://www.indigo.ca/en-ca/search?q={bookTitle.Replace(' ', '+')}&search-button=&lang=en_CA";
             Logger.Debug(url);
@@ -31,12 +31,13 @@ namespace MangaLightNovelWebScrape.Websites
         private static bool RunClickEvent(string xPath, WebDriver driver, WebDriverWait wait, string type)
         {
             var elements = driver.FindElements(By.XPath(xPath));
-            if (elements.Count == 1)
+            if (!elements.IsNullOrEmpty())
             {
                 Logger.Debug(type);
                 wait.Until(driver => driver.FindElements(By.XPath(xPath))[0]).Click();
                 return true;
             }
+            Logger.Debug($"{type} Failed");
             return false;
         }
 
@@ -46,7 +47,7 @@ namespace MangaLightNovelWebScrape.Websites
             wait.Until(driver => element).Click();
         }
 
-        public static List<EntryModel> GetIndigoData(string bookTitle, char bookType, bool isMember)
+        public static List<EntryModel> GetIndigoData(string bookTitle, Book book, bool isMember)
         {
             Logger.Debug("Indigo Going");
             WebDriver driver = MasterScrape.SetupBrowserDriver(false);
@@ -54,7 +55,7 @@ namespace MangaLightNovelWebScrape.Websites
             try
             {
                 WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
-                driver.Navigate().GoToUrl(GetUrl(bookTitle, bookType));
+                driver.Navigate().GoToUrl(GetUrl(bookTitle, book));
                 wait.Until(driver => driver.FindElement(By.XPath("/html[@style='position: relative;']")));
 
                 // Check formats to filter entries for Paperback & Hardcover

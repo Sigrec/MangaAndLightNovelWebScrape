@@ -19,8 +19,8 @@ namespace MangaLightNovelWebScrape.Websites
         // Light Novel English Search
         //https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=overlord+novel&taxon=&x=33&y=8&per_page=100&form_taxon=109
         //https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=classroom+of+the+elite&taxon=&x=33&y=8&per_page=100&form_taxon=109
-        private static string GetUrl(char bookType, byte currPageNum, string bookTitle){
-            string url = $"https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords={bookTitle.Replace(" ", "+")}{(bookType == 'N' ? "+novel" : "")}&taxon=2&x=39&y=11&page={currPageNum}&per_page=100";
+        private static string GetUrl(Book book, byte currPageNum, string bookTitle){
+            string url = $"https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords={bookTitle.Replace(" ", "+")}{(book == Book.LightNovel ? "+novel" : "")}&taxon=2&x=39&y=11&page={currPageNum}&per_page=100";
             Logger.Debug(url);
             KinokuniyaUSALinks.Add(url);
             return url;
@@ -32,7 +32,7 @@ namespace MangaLightNovelWebScrape.Websites
             KinokuniyaUSAData.Clear();
         }
 
-        public static string TitleParse(string bookTitle, char bookType, string inputTitle)
+        public static string TitleParse(string bookTitle, Book book, string inputTitle)
         {
             string parsedTitle;
             if (!inputTitle.Any(char.IsDigit))
@@ -76,11 +76,11 @@ namespace MangaLightNovelWebScrape.Websites
             }
 
             int volIndex = parsedTitle.IndexOf("Vol");
-            if (bookType == 'N')
+            if (book == Book.LightNovel)
             {
                 parsedTitle = parsedTitle.Insert(volIndex, "Novel ");
             }
-            else if (bookType == 'M' && !parsedTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) && !EntryModel.Similar(parsedTitle[..(volIndex - 1)], inputTitle))
+            else if (book == Book.Manga && !parsedTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) && !EntryModel.Similar(parsedTitle[..(volIndex - 1)], inputTitle))
             {
                 parsedTitle = parsedTitle.Remove(0, volIndex).Insert(0, char.ToUpper(inputTitle[0]) + inputTitle.ToLower()[1..] + " ");
             }
@@ -88,7 +88,7 @@ namespace MangaLightNovelWebScrape.Websites
             return parsedTitle.Trim();
         }
         
-        public static List<EntryModel> GetKinokuniyaUSAData(string bookTitle, char bookType, bool memberStatus, byte currPageNum)
+        public static List<EntryModel> GetKinokuniyaUSAData(string bookTitle, Book book, bool memberStatus, byte currPageNum)
         {
             WebDriver driver = MasterScrape.SetupBrowserDriver(true);
 
@@ -97,8 +97,8 @@ namespace MangaLightNovelWebScrape.Websites
                 WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
                 while(true)
                 {
-                    driver.Navigate().GoToUrl(GetUrl(bookType, currPageNum, bookTitle));
-                    if (bookType == 'M')
+                    driver.Navigate().GoToUrl(GetUrl(book, currPageNum, bookTitle));
+                    if (book == Book.Manga)
                     {
                         // Click the Manga button so it only shows manga and wait for DOM to fully load
                         wait.Until(driver => driver.FindElement(By.XPath("//div[@id='loading' and @style='display: none;']")));
@@ -121,11 +121,11 @@ namespace MangaLightNovelWebScrape.Websites
                     HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode("//p[@class='pagerArrowR']");
 
                     // Remove all of the novels from the list if user is searching for manga
-                    if (bookType == 'M' && titleData != null)
+                    if (book == Book.Manga && titleData != null)
                     {
                         for (int x = 1; x < priceData.Count; x+=2)
                         {
-                            if (titleData[x / 2].InnerText.Contains("Novel", StringComparison.OrdinalIgnoreCase) && bookType == 'M' || !titleData[x / 2].InnerText.Any(char.IsDigit))
+                            if (titleData[x / 2].InnerText.Contains("Novel", StringComparison.OrdinalIgnoreCase) && book == Book.Manga || !titleData[x / 2].InnerText.Any(char.IsDigit))
                             {
                                 titleData.RemoveAt(x / 2);
                                 stockStatusData.RemoveAt(x / 2);
@@ -146,7 +146,7 @@ namespace MangaLightNovelWebScrape.Websites
                         {
                             KinokuniyaUSAData.Add(
                                 new EntryModel(
-                                    TitleParse(titleData[x / 2].InnerText, bookType, bookTitle), 
+                                    TitleParse(titleData[x / 2].InnerText, book, bookTitle), 
                                     priceData[x].InnerText.Trim(), 
                                     stockStatusData[x / 2].InnerText.Trim().AsSpan(STATUS_START_INDEX) switch
                                     {

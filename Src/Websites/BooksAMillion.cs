@@ -33,7 +33,7 @@ namespace MangaLightNovelWebScrape.Websites
         //https://booksamillion.com/search?query=07-Ghost&filter=product_type%3Abooks%7Cbook_categories%3ACGN&sort=date
         //https://booksamillion.com/search?query=07-Ghost&filter=product_type%3Abooks%7Cbook_categories%3ACGN%7Cseries%3A000379727&sort=date
         // https://booksamillion.com/search?query=one%20piece&filter=product_type%3Abooks%7Cseries%3A000277494%7Clanguage%3AENG
-        private static string GetUrl(char bookType, byte currPageNum, string bookTitle){
+        private static string GetUrl(Book book, byte currPageNum, string bookTitle){
             string url;
             if (!boxsetCheck)
             {
@@ -48,7 +48,7 @@ namespace MangaLightNovelWebScrape.Websites
             return url;
         }
 
-        public static string TitleParse(string bookTitle, char bookType, string inputTitle)
+        public static string TitleParse(string bookTitle, Book book, string inputTitle)
         {
             string parsedTitle;
             if (!inputTitle.Any(char.IsDigit))
@@ -68,7 +68,7 @@ namespace MangaLightNovelWebScrape.Websites
             return parsedTitle.Trim();
         }
 
-        public static List<EntryModel> GetBooksAMillionData(string bookTitle, char bookType, bool memberStatus, byte currPageNum)
+        public static List<EntryModel> GetBooksAMillionData(string bookTitle, Book book, bool memberStatus, byte currPageNum)
         {
             WebDriver driver = MasterScrape.SetupBrowserDriver(true);
             try
@@ -81,7 +81,7 @@ namespace MangaLightNovelWebScrape.Websites
                 HtmlNodeCollection titleData, priceData, stockStatusData;
                 while(true)
                 {
-                    driver.Navigate().GoToUrl(GetUrl(bookType, currPageNum, bookTitle));
+                    driver.Navigate().GoToUrl(GetUrl(book, currPageNum, bookTitle));
                     wait.Until(e => e.FindElement(By.XPath("//div[@class='search-item-title']//a")));
 
                     // Initialize the html doc for crawling
@@ -96,7 +96,7 @@ namespace MangaLightNovelWebScrape.Websites
 
                     for(int x = 0; x < titleData.Count; x++)
                     {
-                        currTitle = TitleParse(titleData[x].InnerText, bookType, bookTitle);
+                        currTitle = TitleParse(titleData[x].InnerText, book, bookTitle);
                         if (currTitle.Contains("Box Set") && !boxsetValidation)
                         {
                             boxsetValidation = true;

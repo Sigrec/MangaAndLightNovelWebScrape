@@ -9,3 +9,4 @@ global using System;
 global using System.Text.RegularExpressions;
 global using System.Linq;
 global using NLog;
+global using Src.Models;

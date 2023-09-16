@@ -8,7 +8,7 @@ namespace MangaLightNovelWebScrape
         public string  Website { get; set; }
         private static readonly Logger Logger = LogManager.GetLogger("MasterScrapeLogs");
         [GeneratedRegex("[Vol|Box Set].*?(\\d+).*")]  private static partial Regex VolumeNumRegex();
-        [GeneratedRegex(".*(?<int> \\d+)$|.*(?<double> \\d+\\.\\d+)$")] private static partial Regex ExtractIntRegex();
+        [GeneratedRegex(".*(?<int> \\d+)$|.*(?<double> \\d+\\.\\d+)$")] private static partial Regex ExtractDoubleRegex();
 
         /// <summary>
         /// Model for a series's book entry
@@ -48,7 +48,7 @@ namespace MangaLightNovelWebScrape
         /// <returns></returns>
         public static double GetCurrentVolumeNum(string title)
         {
-            Match match = ExtractIntRegex().Match(title);
+            Match match = ExtractDoubleRegex().Match(title);
             if (match.Groups["int"].Success)
             {
                 return Convert.ToDouble(match.Groups["int"].Value);
@@ -56,6 +56,10 @@ namespace MangaLightNovelWebScrape
             else if (match.Groups["double"].Success)
             {
                 return Convert.ToDouble(match.Groups["double"].Value);
+            }
+            else if (title.Contains("Box Set"))
+            {
+                return -1;
             }
             Logger.Error($"Failed to Extract Entry # from {title}");
             return -1;
@@ -160,12 +164,13 @@ namespace MangaLightNovelWebScrape
             return other is not null &&
                    Entry == other.Entry &&
                    Price == other.Price &&
+                   StockStatus == other.StockStatus &&
                    Website == other.Website;
         }
 
         public override int GetHashCode()
         {
-            return HashCode.Combine(Entry, Price, Website);
+            return HashCode.Combine(Entry, Price, StockStatus, Website);
         }
 
         public static bool operator ==(EntryModel left, EntryModel right)
@@ -196,11 +201,12 @@ namespace MangaLightNovelWebScrape
         /// <returns></returns>
         public int Compare(EntryModel entry1, EntryModel entry2)
         {
+            //Logger.Debug($"{entry1.Entry}|{entry2.Entry}");
             if ((entry1.Entry.Contains("Vol") || entry1.Entry.Contains("Box Set")) && (entry2.Entry.Contains("Vol") || entry2.Entry.Contains("Box Set")))
             {
                 double val1 = EntryModel.GetCurrentVolumeNum(entry1.Entry);
                 double val2 = EntryModel.GetCurrentVolumeNum(entry2.Entry);
-                if (string.Equals(ExtractVolNameRegex().Replace(entry1.Entry, ""), ExtractVolNameRegex().Replace(entry2.Entry, "")) || EntryModel.Similar(entry1.Entry, entry2.Entry))
+                if (val1 != -1 && val2 != -1 && string.Equals(ExtractVolNameRegex().Replace(entry1.Entry, ""), ExtractVolNameRegex().Replace(entry2.Entry, ""), StringComparison.OrdinalIgnoreCase))
                 {
                     if (val1 > val2)
                     {
@@ -210,7 +216,7 @@ namespace MangaLightNovelWebScrape
                     {
                         return -1;
                     }
-                    else
+                    else if (val1 == val2)
                     {
                         return 0;
                     }

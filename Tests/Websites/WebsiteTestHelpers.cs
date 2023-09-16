@@ -1,5 +1,3 @@
-using System.Runtime.InteropServices;
-
 namespace Tests.Websites
 {
     public partial class WebsiteTestHelpers
@@ -10,7 +8,7 @@ namespace Tests.Websites
         {
             List<EntryModel> dataList = new();
             string[] lineSplit;
-            foreach (string line in CollectionsMarshal.AsSpan(File.ReadLines(path).ToList()))
+            foreach (string line in File.ReadLines(path))
             {
                 if (!string.IsNullOrWhiteSpace(line))
                 {

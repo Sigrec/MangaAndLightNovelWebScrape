@@ -16,7 +16,7 @@ namespace MangaLightNovelWebScrape.Websites
         //https://www.amazon.com/s?k=world+trigger&i=stripbooks&rh=n%3A4367%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page=1&qid=1685551243&rnid=1294421011&ref=sr_pg_1
         //https://www.amazon.com/s?k=one+piece&i=stripbooks&rh=n%3A4367%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page=1&qid=1685551243&rnid=1294421011&ref=sr_pg_1
         //https://www.amazon.com/s?k=fruits+basket&i=stripbooks&rh=n%3A4366%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page=2&qid=1685551123&rnid=1294421011&ref=sr_pg_2
-        internal static string GetUrl(char bookType, byte currPageNum, string bookTitle){
+        internal static string GetUrl(Book book, byte currPageNum, string bookTitle){
             // string url = $"https://www.amazon.com/s?k={bookTitle.Replace(" ", "+")}&i=stripbooks&rh=n%3A7421474011%2Cp_n_condition-type%3A1294423011%2Cp_n_feature_nine_browse-bin%3A3291437011&s=date-desc-rank&dc&page={currPageNum}&qid=1678483439&rnid=3291435011&ref=sr_pg_{currPageNum}";
             string url = $"https://www.amazon.com/s?k={bookTitle.Replace(" ", "+")}&i=stripbooks&rh=n%3A4367%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page={currPageNum}&qid=1685551243&rnid=1294421011&ref=sr_pg_{currPageNum}";
             Logger.Debug(url);
@@ -30,7 +30,7 @@ namespace MangaLightNovelWebScrape.Websites
             AmazonUSAData.Clear();
         }
 
-        public static string TitleParse(string bookTitle, char bookType, string inputTitle)
+        public static string TitleParse(string bookTitle, Book book, string inputTitle)
         {
             if (inputTitle.Contains("one piece", StringComparison.OrdinalIgnoreCase) && bookTitle.Equals("One Piece Box Set: East Blue and Baroque Works, Volumes 1-23 (One Piece Box Sets)"))
             {
@@ -74,7 +74,7 @@ namespace MangaLightNovelWebScrape.Websites
             }
         }
 
-        public static List<EntryModel> GetAmazonUSAData(string bookTitle, char bookType, byte currPageNum)
+        public static List<EntryModel> GetAmazonUSAData(string bookTitle, Book book, byte currPageNum)
         {
             WebDriver driver = MasterScrape.SetupBrowserDriver(false);
             try
@@ -84,7 +84,7 @@ namespace MangaLightNovelWebScrape.Websites
                 string currTitle;
                 bool foundPaperback = false, foundHardcover = false, foundBookSeries = false;
                 
-                driver.Navigate().GoToUrl(GetUrl(bookType, currPageNum, bookTitle));
+                driver.Navigate().GoToUrl(GetUrl(book, currPageNum, bookTitle));
                 while (true)
                 {
                     HardcoverRestart:
@@ -145,7 +145,7 @@ namespace MangaLightNovelWebScrape.Websites
                     {
                         if (titleData[x].InnerText.Contains("Vol", StringComparison.OrdinalIgnoreCase) || titleData[x].InnerText.Contains("Volume", StringComparison.OrdinalIgnoreCase) || titleData[x].InnerText.Contains("Box Set", StringComparison.OrdinalIgnoreCase) || VolNumMatchRegex().Match(titleData[x].InnerText).Success || SeriesBypass.Any(titleData[x].InnerText.Contains))
                         {
-                            currTitle = TitleParse(titleData[x].InnerText.Trim(), bookType, bookTitle);
+                            currTitle = TitleParse(titleData[x].InnerText.Trim(), book, bookTitle);
                             if(MasterScrape.RemoveNonWordsRegex().Replace(currTitle, "").Contains(MasterScrape.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase))
                             {
                                 AmazonUSAData.Add(new EntryModel(currTitle, priceData[x].InnerText.Trim(), stockStatusData[x].InnerText.Contains("Pre-order") ? "PO" : "IS", WEBSITE_TITLE));

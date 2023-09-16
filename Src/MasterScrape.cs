@@ -71,67 +71,67 @@ namespace MangaLightNovelWebScrape
 
         public MasterScrape(bool IsDebugEnabled = false) {}
 
-        private async Task CreateRightStufAnimeTask(string bookTitle, char bookType, bool isMember)
+        private async Task CreateRightStufAnimeTask(string bookTitle, Book book, bool isMember)
         {
             await Task.Run(() =>
             {
-                MasterList.Add(RightStufAnime.GetRightStufAnimeData(bookTitle, bookType, isMember, 1));
+                MasterList.Add(RightStufAnime.GetRightStufAnimeData(bookTitle, book, isMember, 1));
             });
         }
 
-        private async Task CreateRobertsAnimeCornerStoreTask(string bookTitle, char bookType)
+        private async Task CreateRobertsAnimeCornerStoreTask(string bookTitle, Book book)
         {
             await Task.Run(() =>
             {
-                MasterList.Add(RobertsAnimeCornerStore.GetRobertsAnimeCornerStoreData(bookTitle, bookType));
+                MasterList.Add(RobertsAnimeCornerStore.GetRobertsAnimeCornerStoreData(bookTitle, book));
             });
         }
         
-        private async Task CreateInStockTradesTask(string bookTitle, char bookType)
+        private async Task CreateInStockTradesTask(string bookTitle, Book book)
         {
             await Task.Run(() => 
             {
-                MasterList.Add(InStockTrades.GetInStockTradesData(bookTitle, 1, bookType));
+                MasterList.Add(InStockTrades.GetInStockTradesData(bookTitle, 1, book));
             });
         }
 
-        private async Task CreateKinokuniyaUSATask(string bookTitle, char bookType, bool isMember)
+        private async Task CreateKinokuniyaUSATask(string bookTitle, Book book, bool isMember)
         {
             await Task.Run(() => 
             {
-                MasterList.Add(KinokuniyaUSA.GetKinokuniyaUSAData(bookTitle, bookType, isMember, 1));
+                MasterList.Add(KinokuniyaUSA.GetKinokuniyaUSAData(bookTitle, book, isMember, 1));
             });
         }
 
-        private async Task CreateBarnesAndNobleTask(string bookTitle, char bookType, bool isMember)
+        private async Task CreateBarnesAndNobleTask(string bookTitle, Book book, bool isMember)
         {
             await Task.Run(() => 
             {
-                MasterList.Add(BarnesAndNoble.GetBarnesAndNobleData(bookTitle, bookType, isMember, 1));
+                MasterList.Add(BarnesAndNoble.GetBarnesAndNobleData(bookTitle, book, isMember, 1));
             });
         }
 
-        private async Task CreateBooksAMillionTask(string bookTitle, char bookType, bool isMember)
+        private async Task CreateBooksAMillionTask(string bookTitle, Book book, bool isMember)
         {
             await Task.Run(() => 
             {
-                MasterList.Add(BooksAMillion.GetBooksAMillionData(bookTitle, bookType, isMember, 1));
+                MasterList.Add(BooksAMillion.GetBooksAMillionData(bookTitle, book, isMember, 1));
             });
         }
 
-        private async Task CreateAmazonUSATask(string bookTitle, char bookType)
+        private async Task CreateAmazonUSATask(string bookTitle, Book book)
         {
             await Task.Run(() => 
             {
-                MasterList.Add(AmazonUSA.GetAmazonUSAData(bookTitle, bookType, 1));
+                MasterList.Add(AmazonUSA.GetAmazonUSAData(bookTitle, book, 1));
             });
         }
 
-        private async Task CreateIndigoTask(string bookTitle, char bookType, bool isMember)
+        private async Task CreateIndigoTask(string bookTitle, Book book, bool isMember)
         {
             await Task.Run(() => 
             {
-                MasterList.Add(Indigo.GetIndigoData(bookTitle, bookType, isMember));
+                MasterList.Add(Indigo.GetIndigoData(bookTitle, book, isMember));
             });
         }
 
@@ -164,6 +164,20 @@ namespace MangaLightNovelWebScrape
             return MasterList.ElementAt(0);
         }
 
+        /// <summary>
+        /// Determines if the book title inputted by the user is contained within the current title scraped from the website
+        /// </summary>
+        /// <param name="bookTitle">The title inputed by the user to initialize the scrape</param>
+        /// <param name="curTitle">The current title scraped from the website</param>
+        public static bool TitleContainsBookTitle(string bookTitle, string curTitle)
+        {
+            return RemoveNonWordsRegex().Replace(curTitle, "").Contains(RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
+        /// Gets the dictionary containing the links to the websites that are used in the final results
+        /// </summary>
+        /// <returns></returns>
         public Dictionary<string, string> GetResultUrls()
         {
             return MasterUrls;
@@ -184,15 +198,15 @@ namespace MangaLightNovelWebScrape
         }
 
         /// <summary>
-       /// Compares the prices of all the volumes that the two websites both have, and outputs the resulting list containing 
-       /// the lowest prices for each available volume between the websites. If one website does not have a volume that the other
-       /// does then that volumes data set defaults to the "smallest" and is added to the list.
+       /// <br>Compares the prices of all the volumes that the two websites both have, and outputs the resulting list containing </br>
+       /// <br>the lowest prices for each available volume between the websites. If one website does not have a volume that the other</br>
+       /// <br>does then that volumes data set defaults to the "smallest" and is added to the list.</br>
        /// </summary>
        /// <param name="smallerList">The smaller list of data sets between the two websites</param>
        /// <param name="biggerList">The bigger list of data sets between the two websites</param>
        /// <param name="bookTitle">The initial title inputted by the user used to determine if the titles in the lists "match"</param>
        /// <returns>The final list of data containing all available lowest price volumes between the two websites</returns>
-       /// TODO Need to figure out what to do if the prices are the same, most likely at the end the site with the most entries is favored?
+       /// TODO Need to figure out what to do if the prices are the same, most likely at the end the site with the most entries is favored? Or can list multiple
         private static List<EntryModel> PriceComparison(List<EntryModel> smallerList, List<EntryModel> biggerList, string bookTitle)
         {
             List<EntryModel> finalData = new List<EntryModel>(); // The final list of data containing all available volumes for the series from the website with the lowest price
@@ -308,6 +322,11 @@ namespace MangaLightNovelWebScrape
             }
         }
 
+        public static bool RemoveUnintendedVolumes(string bookTitle, string searchTitle, string curTitle, string otherTitle)
+        {
+            return bookTitle.Equals(searchTitle, StringComparison.OrdinalIgnoreCase) && curTitle.Contains(otherTitle, StringComparison.OrdinalIgnoreCase);
+        }
+
         // TODO Logic for when the prices are the same
         // TODO Figure out how to clear data within this method
         // TODO Create a Website Interface so websites can extend it
@@ -318,7 +337,7 @@ namespace MangaLightNovelWebScrape
         /// Starts the web scrape
         /// </summary>
         /// <param name="bookTitle">The title of the series to search for</param>
-        /// <param name="bookType">The book type of the series either Manga (M) or Novel (N)</param>
+        /// <param name="book">The book type of the series either Manga (M) or Novel (N)</param>
         /// <param name="webScrapeList">The list of websites you want to search at</param>
         /// <param name="browser">The browser either Edge, Chrome,l or FireFox the user wants to use</param>
         /// <param name="isRightStufMember">Whether the user is a RightStufAnime Member</param>
@@ -326,7 +345,7 @@ namespace MangaLightNovelWebScrape
         /// <param name="isBooksAMillionMember">Whether the user is a Books-A-Million Member</param>
         /// <param name="isKinokuniyaUSAMember">Whether the user is a Kinokuniya USA member</param>
         /// <returns></returns>
-        public async Task InitializeScrapeAsync(string bookTitle, char bookType, string[] stockFilter, List<Website> webScrapeList, string curBrowser = "Error", bool isRightStufMember = false, bool isBarnesAndNobleMember = false, bool isBooksAMillionMember = false, bool isKinokuniyaUSAMember = false, bool isIndigoMember = false)
+        public async Task InitializeScrapeAsync(string bookTitle, Book book, string[] stockFilter, List<Website> webScrapeList, string curBrowser = "Error", bool isRightStufMember = false, bool isBarnesAndNobleMember = false, bool isBooksAMillionMember = false, bool isKinokuniyaUSAMember = false, bool isIndigoMember = false)
         {
             browser = curBrowser;
             Logger.Debug($"Running on {browser} Browser");
@@ -344,35 +363,35 @@ namespace MangaLightNovelWebScrape
                     switch (site)
                     {
                         case Website.RightStufAnime:
-                            WebTasks.Add(CreateRightStufAnimeTask(bookTitle, bookType, isRightStufMember));
+                            WebTasks.Add(CreateRightStufAnimeTask(bookTitle, book, isRightStufMember));
                             Logger.Debug("RightStufAnime Going");
                             break;
                         case Website.BarnesAndNoble:
-                            WebTasks.Add(CreateBarnesAndNobleTask(bookTitle, bookType, isBarnesAndNobleMember));
+                            WebTasks.Add(CreateBarnesAndNobleTask(bookTitle, book, isBarnesAndNobleMember));
                             Logger.Debug("Barnes & Noble Going");
                             break;
                         case Website.RobertsAnimeCornerStore:
-                            WebTasks.Add(CreateRobertsAnimeCornerStoreTask(bookTitle, bookType));
+                            WebTasks.Add(CreateRobertsAnimeCornerStoreTask(bookTitle, book));
                             Logger.Debug("RobertsAnimeCornerStore Going");
                             break;
                         case Website.InStockTrades:
-                            WebTasks.Add(CreateInStockTradesTask(bookTitle, bookType));
+                            WebTasks.Add(CreateInStockTradesTask(bookTitle, book));
                             Logger.Debug("InStockTrades Going");
                             break;
                         case Website.KinokuniyaUSA:
-                            WebTasks.Add(CreateKinokuniyaUSATask(bookTitle, bookType, isKinokuniyaUSAMember));
+                            WebTasks.Add(CreateKinokuniyaUSATask(bookTitle, book, isKinokuniyaUSAMember));
                             Logger.Debug("Kinokuniya USA Going");
                             break;
                         case Website.BooksAMillion:
-                            WebTasks.Add(CreateBooksAMillionTask(bookTitle, bookType, isBooksAMillionMember));
+                            WebTasks.Add(CreateBooksAMillionTask(bookTitle, book, isBooksAMillionMember));
                             Logger.Debug("Books-A-Million Going");
                             break;
                         case Website.AmazonUSA:
-                            WebTasks.Add(CreateAmazonUSATask(bookTitle, bookType));
+                            WebTasks.Add(CreateAmazonUSATask(bookTitle, book));
                             Logger.Debug("Amazon USA Going");
                             break;
                         case Website.Indigo:
-                            WebTasks.Add(CreateIndigoTask(bookTitle, bookType, isIndigoMember));
+                            WebTasks.Add(CreateIndigoTask(bookTitle, book, isIndigoMember));
                             break;
                     }
                 }
@@ -445,7 +464,7 @@ namespace MangaLightNovelWebScrape
                                 MasterUrls[entry.Website] = RightStufAnime.GetUrlLinks()[0];
                                 break;
                             case RobertsAnimeCornerStore.WEBSITE_TITLE:
-                                MasterUrls[entry.Website] = RobertsAnimeCornerStore.RobertsAnimeCornerStoreLinks.Last();
+                                MasterUrls[entry.Website] = RobertsAnimeCornerStore.GetUrls().Last();
                                 break;
                             case InStockTrades.WEBSITE_TITLE:
                                 MasterUrls[entry.Website] = InStockTrades.InStockTradesLinks[0];
@@ -469,6 +488,7 @@ namespace MangaLightNovelWebScrape
                     }
                 }
                 Skip:
+                ClearAllWebsiteData();
                 if (IsDebugEnabled)
                 {
                     using (StreamWriter outputFile = new(@"Data\MasterData.txt"))
@@ -498,8 +518,7 @@ namespace MangaLightNovelWebScrape
                 }
             });
         }
-
-        // TODO Figure out how to compare novels with no Vol #
+        
         private static async Task Main(string[] args)
         {
             Stopwatch watch = new();
@@ -507,7 +526,7 @@ namespace MangaLightNovelWebScrape
             MasterScrape test = new();
             EnableDebugMode();
             // { Website.RightStufAnime, Website.BarnesAndNoble, Website.InStockTrades, Website.RobertsAnimeCornerStore, Website.KinokuniyaUSA, Website.BooksAMillion }
-            await test.InitializeScrapeAsync("07-ghost", 'M', new string[] { }, new List<Website>() { Website.RobertsAnimeCornerStore }, "Chrome", false, false, false, false, false);
+            await test.InitializeScrapeAsync("Toilet-bound Hanako-kun", Book.Manga, new string[] { }, new List<Website>() { Website.BarnesAndNoble }, "Chrome", false, false, false, false, false);
             watch.Stop();
             Logger.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }

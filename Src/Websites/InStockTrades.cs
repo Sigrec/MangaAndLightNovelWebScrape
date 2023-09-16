@@ -25,7 +25,7 @@ namespace MangaLightNovelWebScrape.Websites
             InStockTradesData.Clear();
         }
 
-        public static List<EntryModel> GetInStockTradesData(string bookTitle, byte currPageNum, char bookType)
+        public static List<EntryModel> GetInStockTradesData(string bookTitle, byte currPageNum, Book book)
         {
             WebDriver driver = MasterScrape.SetupBrowserDriver(false);
 
@@ -60,7 +60,7 @@ namespace MangaLightNovelWebScrape.Websites
                                 x--;
                                 continue;
                             }
-                            else if (bookType == 'M' && currTitle.Contains("Novel"))
+                            else if (book == Book.Manga && currTitle.Contains("Novel"))
                             {
                                 continue;
                             }
