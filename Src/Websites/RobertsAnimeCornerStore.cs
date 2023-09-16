@@ -70,15 +70,16 @@ namespace MangaLightNovelWebScrape.Websites
         private static string GetPageData(WebDriver driver, string bookTitle, Book book, HtmlDocument doc, WebDriverWait wait)
         {
             string link = "";
-            // string typeCheck = book == Book.LighttNovel ? "not(contains(text()[2], ' Graphic'))" : "contains(text()[2], ' Graphic')";
             driver.Navigate().GoToUrl(GetUrl(bookTitle, false));
             wait.Until(e => e.FindElement(By.XPath($"//b//a[1]")));
             doc.LoadHtml(driver.PageSource);
 
             HtmlNodeCollection seriesTitle = doc.DocumentNode.SelectNodes($"//b//a[1]");
+            string seriesText;
             foreach (HtmlNode series in seriesTitle)
             {
-                if (FindTitleRegex().Replace(series.InnerText, "").Contains(FindTitleRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase))
+                seriesText = series.InnerText;
+                if (MasterScrape.TitleContainsBookTitle(bookTitle, seriesText))
                 {
                     link = GetUrl(series.Attributes["href"].Value, true);
                     break;
@@ -89,17 +90,27 @@ namespace MangaLightNovelWebScrape.Websites
 
         private static string ParseTitle(string curTitle, Book book)
         {
-            curTitle = curTitle.Replace("Edition", "Vol");
             if (curTitle.Contains("Omnibus"))
             {
                 ushort volNum = Convert.ToUInt16(OmnibusVolNumberRegex().Match(curTitle).Groups[1].Value);
-                curTitle = OmnibusTitleFilterRegex().Replace(curTitle, "").Trim();
-                curTitle = $"{curTitle[..(curTitle.LastIndexOf("Vol") + 3)]} {volNum / 3}";
+                curTitle = OmnibusTitleFilterRegex().Replace(curTitle, "").Replace("Omnibus Edition", "Omnibus").Trim();
+                if (curTitle.LastIndexOf("Vol") != -1)
+                {
+                    curTitle = $"{curTitle[..(curTitle.LastIndexOf("Vol") + 3)]} {volNum / 3}";
+                }
+                else
+                {
+                    curTitle = $"{curTitle} Vol {volNum / 3}";
+                }
             }
             else
             {
                 curTitle = TitleFilterRegex().Replace(curTitle, "").Trim();
-                if (curTitle.Contains("Box Set") && !curTitle.Any(char.IsAsciiDigit))
+                if (curTitle.Contains("Deluxe Edition"))
+                {
+                    curTitle = curTitle.Replace("Edition", "Vol");
+                }
+                else if (curTitle.Contains("Box Set") && !curTitle.Any(char.IsAsciiDigit))
                 {
                     curTitle = $"{curTitle} 1";
                 }

@@ -526,7 +526,7 @@ namespace MangaLightNovelWebScrape
             MasterScrape test = new();
             EnableDebugMode();
             // { Website.RightStufAnime, Website.BarnesAndNoble, Website.InStockTrades, Website.RobertsAnimeCornerStore, Website.KinokuniyaUSA, Website.BooksAMillion }
-            await test.InitializeScrapeAsync("Toilet-bound Hanako-kun", Book.Manga, new string[] { }, new List<Website>() { Website.BarnesAndNoble }, "Chrome", false, false, false, false, false);
+            await test.InitializeScrapeAsync("Toilet-bound Hanako-kun", Book.Manga, new string[] { }, new List<Website>() { Website.RobertsAnimeCornerStore }, "Chrome", false, false, false, false, false);
             watch.Stop();
             Logger.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }

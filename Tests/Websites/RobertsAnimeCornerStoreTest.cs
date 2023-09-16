@@ -41,7 +41,7 @@ namespace Tests.Websites
             Assert.That(RobertsAnimeCornerStore.GetRobertsAnimeCornerStoreData("classroom of the elite", Book.Manga), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\RobertsAnimeCornerStore\RobertsAnimeCornerStoreCOTEData.txt")));
         }
 
-        [Test, Description("Validates Series w/ Number")]
+        [Test, Description("Validates Series w/ Number & Non Letter Character")]
         public void RobertsAnimeCornerStore_DimensionalSeduction_Test()
         {
             Assert.That(RobertsAnimeCornerStore.GetRobertsAnimeCornerStoreData("2.5 Dimensional Seduction", Book.Manga), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\RobertsAnimeCornerStore\RobertsAnimeCornerStoreDimensionalSeductionData.txt")));
@@ -51,6 +51,18 @@ namespace Tests.Websites
         public void RobertsAnimeCornerStore_AkaneBanashi_Test()
         {
             Assert.That(RobertsAnimeCornerStore.GetRobertsAnimeCornerStoreData("Akane-Banashi", Book.Manga), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\RobertsAnimeCornerStore\RobertsAnimeCornerStoreAkaneBanashiData.txt")));
+        }
+
+        [Test, Description("Validates Manga Series w/ Special Edition & Paperback Volumes")]
+        public void RobertsAnimeCornerStore_FMAB_Test()
+        {
+            Assert.That(RobertsAnimeCornerStore.GetRobertsAnimeCornerStoreData("fullmetal alchemist", Book.Manga), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\RobertsAnimeCornerStore\RobertsAnimeCornerStoreFMABData.txt")));
+        }
+
+        [Test, Description("Validates Manga Series w/ Deluxe Hardcover & Paperback Volumes")]
+        public void RobertsAnimeCornerStore_Berserk_Test()
+        {
+            Assert.That(RobertsAnimeCornerStore.GetRobertsAnimeCornerStoreData("Berserk", Book.Manga), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\RobertsAnimeCornerStore\RobertsAnimeCornerStoreBerserkData.txt")));
         }
     }
 }

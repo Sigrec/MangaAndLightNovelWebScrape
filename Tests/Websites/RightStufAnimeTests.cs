@@ -18,9 +18,15 @@ namespace Tests.Websites
         }
 
         [Test]
-        public void RightStufAnime_Naruto_Test()
+        public void RightStufAnime_Naruto_Manga_Test()
         {
-            Assert.That(RightStufAnime.GetRightStufAnimeData("Naruto", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\RightStufAnime\RightStufAnimeNarutoData.txt")));
+            Assert.That(RightStufAnime.GetRightStufAnimeData("Naruto", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\RightStufAnime\RightStufAnimeNarutoMangaData.txt")));
+        }
+
+        [Test]
+        public void RightStufAnime_Naruto_Novel_Test()
+        {
+            Assert.That(RightStufAnime.GetRightStufAnimeData("Naruto", Book.LightNovel, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\RightStufAnime\RightStufAnimeNarutoNovelData.txt")));
         }
 
         [Test]
@@ -57,6 +63,18 @@ namespace Tests.Websites
         public void RightStufAnime_07Ghost_Test()
         {
             Assert.That(RightStufAnime.GetRightStufAnimeData("07-ghost", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\RightStufAnime\RightStufAnime07GhostData.txt")));
+        }
+
+        [Test, Description("Validates Manga Series w/ Deluxe Hardcover & Paperback Volumes")]
+        public void RightStufAnime_Berserk_Test()
+        {
+            Assert.That(RightStufAnime.GetRightStufAnimeData("Berserk", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\RightStufAnime\RightStufAnimeBerserkData.txt")));
+        }
+
+        [Test, Description("Validates Manga Series w/ Hardcover & Paperback Volumes & Imperfect Volume")]
+        public void RightStufAnime_FMAB_Test()
+        {
+            Assert.That(RightStufAnime.GetRightStufAnimeData("fullmetal alchemist", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\RightStufAnime\RightStufAnimeFMABData.txt")));
         }
     }
 }
