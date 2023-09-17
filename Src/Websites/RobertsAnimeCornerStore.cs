@@ -26,13 +26,12 @@ namespace MangaLightNovelWebScrape.Websites
         [GeneratedRegex("-|\\s+")] private static partial Regex FilterBookTitleRegex();
         [GeneratedRegex(",|#| Graphic Novel| :|\\(.*?\\)|\\[Novel\\]")] private static partial Regex TitleFilterRegex();
         [GeneratedRegex(",| #\\d+-\\d+| #\\d+|Graphic Novel| :|\\(.*?\\)|\\[Novel\\]")] private static partial Regex OmnibusTitleFilterRegex();
-        [GeneratedRegex("\\s{2,}")] private static partial Regex MultipleWhiteSpaceRegex();
         [GeneratedRegex("-(\\d+)")] private static partial Regex OmnibusVolNumberRegex();
         [GeneratedRegex("\\s+|[^a-zA-Z0-9]")] private static partial Regex FindTitleRegex();
 
-        public static List<string> GetUrls()
+        public static string GetUrl()
         {
-            return RobertsAnimeCornerStoreLinks;
+            return RobertsAnimeCornerStoreLinks[RobertsAnimeCornerStoreLinks.Count - 1];
         }
         
         private static string GetUrl(string htmlString, bool pageExists)
@@ -116,7 +115,7 @@ namespace MangaLightNovelWebScrape.Websites
                     curTitle.Append('1');
                 }
             }
-            return book == Book.Manga ? MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ") : MultipleWhiteSpaceRegex().Replace(curTitle.Replace("Vol", "Novel Vol").ToString(), " ");
+            return book == Book.Manga ? MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ") : MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.Replace("Vol", "Novel Vol").ToString(), " ");
         }
         
         public static List<EntryModel> GetRobertsAnimeCornerStoreData(string bookTitle, Book book)

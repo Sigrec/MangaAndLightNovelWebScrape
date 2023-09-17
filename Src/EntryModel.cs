@@ -1,3 +1,5 @@
+using NLog.Common;
+
 namespace MangaLightNovelWebScrape
 {
     public partial class EntryModel : IEquatable<EntryModel>
@@ -77,8 +79,8 @@ namespace MangaLightNovelWebScrape
         {
             int count = 0; // The amount of times that the characters and there "alignment" don't match
             int titleOnePointer = 0, titleTwoPointer = 0; // Pointers for the characters in both strings
-            titleOne = RemoveInPlaceCharArray(titleOne.ToLower());
-            titleTwo = RemoveInPlaceCharArray(titleTwo.ToLower());
+            titleOne = Helper.RemoveInPlaceCharArray(titleOne.ToLower());
+            titleTwo = Helper.RemoveInPlaceCharArray(titleTwo.ToLower());
 
             while (titleOnePointer < titleOne.Length && titleTwoPointer < titleTwo.Length) // Keep traversing until u reach the end of titleOne's string
             {
@@ -109,50 +111,6 @@ namespace MangaLightNovelWebScrape
             // Logger.Debug((count <= (titleOne.Length > titleTwo.Length ? titleTwo.Length / 6 : titleOne.Length / 6)) ? $"{titleOne} is Similar to {titleTwo}" : $"{titleOne} is Not Similar to {titleTwo}");
             return count <= (titleOne.Length > titleTwo.Length ? titleTwo.Length / 6 : titleOne.Length / 6); // Determine if they are similar enough by a threshold of 1/6 the size of longest title
         }
-
-        public static string RemoveInPlaceCharArray(string input)
-		{
-			var len = input.Length;
-			var src = input.ToCharArray();
-			int dstIdx = 0;
-			for (int i = 0; i < len; i++)
-			{
-				var ch = src[i];
-				switch (ch)
-				{
-					case '\u0020':
-					case '\u00A0':
-					case '\u1680':
-					case '\u2000':
-					case '\u2001':
-					case '\u2002':
-					case '\u2003':
-					case '\u2004':
-					case '\u2005':
-					case '\u2006':
-					case '\u2007':
-					case '\u2008':
-					case '\u2009':
-					case '\u200A':
-					case '\u202F':
-					case '\u205F':
-					case '\u3000':
-					case '\u2028':
-					case '\u2029':
-					case '\u0009':
-					case '\u000A':
-					case '\u000B':
-					case '\u000C':
-					case '\u000D':
-					case '\u0085':
-						continue;
-					default:
-						src[dstIdx++] = ch;
-						break;
-				}
-			}
-			return new string(src, 0, dstIdx);
-		}
 
         public override bool Equals(object obj)
         {

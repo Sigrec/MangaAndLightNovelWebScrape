@@ -27,9 +27,9 @@ namespace MangaLightNovelWebScrape.Websites
             RightStufAnimeData.Clear();
         }
 
-        public static List<string> GetUrlLinks()
+        public static string GetUrl()
         {
-            return RightStufAnimeLinks;
+            return RightStufAnimeLinks[0];
         }
 
         private static string GetUrl(Book book, byte currPageNum, string bookTitle){

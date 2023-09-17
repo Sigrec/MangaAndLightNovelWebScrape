@@ -24,6 +24,11 @@ namespace MangaLightNovelWebScrape.Websites
             return url;
         }
 
+        public static string GetUrl()
+        {
+            return InStockTradesLinks[0];
+        }
+
         public static void ClearData()
         {
             InStockTradesLinks.Clear();

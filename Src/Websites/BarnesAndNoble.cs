@@ -6,8 +6,8 @@ namespace MangaLightNovelWebScrape.Websites
 {
     public partial class BarnesAndNoble
     {
-        public static List<string> BarnesAndNobleLinks = new();
-        public static List<EntryModel> BarnesAndNobleData = new();
+        private static List<string> BarnesAndNobleLinks = new();
+        private static List<EntryModel> BarnesAndNobleData = new();
         public const string WEBSITE_TITLE = "Barnes & Noble";
         private const decimal MEMBERSHIP_DISCOUNT = 0.1M;
         private static readonly Logger Logger = LogManager.GetLogger("BarnesAndNobleLogs");
@@ -42,6 +42,11 @@ namespace MangaLightNovelWebScrape.Websites
             Logger.Debug(url);
             BarnesAndNobleLinks.Add(url);
             return url;
+        }
+
+        public static string GetUrl()
+        {
+            return BarnesAndNobleLinks[0];
         }
 
         public static void ClearData()

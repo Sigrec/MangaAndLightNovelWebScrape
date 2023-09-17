@@ -2,8 +2,8 @@ namespace MangaLightNovelWebScrape.Websites
 {
     public partial class KinokuniyaUSA
     {
-        public static List<string> KinokuniyaUSALinks = new();
-        public static List<EntryModel> KinokuniyaUSAData = new();
+        private static List<string> KinokuniyaUSALinks = new();
+        private static List<EntryModel> KinokuniyaUSAData = new();
         public const string WEBSITE_TITLE = "Kinokuniya USA";
         private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("KinokuniyaUSALogs");
         private static readonly int STATUS_START_INDEX = "Availability Status : ".Length;
@@ -24,6 +24,11 @@ namespace MangaLightNovelWebScrape.Websites
             Logger.Debug(url);
             KinokuniyaUSALinks.Add(url);
             return url;
+        }
+
+        public static string GetUrl()
+        {
+            return KinokuniyaUSALinks[0];
         }
         
         public static void ClearData()
