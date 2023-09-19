@@ -16,6 +16,7 @@ namespace MangaLightNovelWebScrape.Websites
         [GeneratedRegex("Vol\\.|Volume")] private static partial Regex VolTitleFixRegex(); 
         [GeneratedRegex("(?<=Vol \\d{1,3})[^\\d{1,3}.]+.*|\\,|:| \\([^()]*\\)")]  private static partial Regex ParseTitleRegex();
         [GeneratedRegex("\\(Omnibus Edition\\)|\\(3-in-1 Edition\\)|\\(2-in-1 Edition\\)")]  private static partial Regex OmnibusTitleRegex();
+        [GeneratedRegex(@"Official|Character Book|Guide|[^\w]Art of |Illustration|Artbook", RegexOptions.IgnoreCase)] private static partial Regex TitleRemovalRegex();
 
         private static string GetUrl(Book book, byte currPageNum, string bookTitle, bool check){
             string url = "Error";
@@ -191,22 +192,28 @@ namespace MangaLightNovelWebScrape.Websites
                     {
                         curTitle = titleData[x].GetAttributeValue("title", "Title Error");
                         if (
-                            !MasterScrape.TitleContainsBookTitle(bookTitle, curTitle) || 
-                            curTitle.Contains(" Art of ") || 
-                            curTitle.Contains("Artbook", StringComparison.OrdinalIgnoreCase) || 
-                            curTitle.Contains("Character Book") || 
-                            curTitle.Contains("Illustration") || 
-                            (book == Book.Manga && 
-                                (
-                                    (!(curTitle.AsParallel().Any(char.IsDigit) && !bookTitle.AsParallel().Any(char.IsDigit)) && !curTitle.Contains("Vol") && !curTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) && !curTitle.Contains("Toilet-bound Hanako-kun: First Stall")) ||
-                                    curTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) || 
-                                    (
-                                        bookTitle.Equals("Naruto", StringComparison.OrdinalIgnoreCase) && 
+                            TitleRemovalRegex().IsMatch(curTitle)
+                            || !MasterScrape.TitleContainsBookTitle(bookTitle, curTitle)
+                            || (
+                                book == Book.Manga
+                                && (
                                         (
-                                            curTitle.Contains("Boruto") || curTitle.Contains("Itachi's Story")
-                                        )
-                                    ) || 
-                                    MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", curTitle, "of Gluttony")
+                                            !curTitle.Contains("Vol") 
+                                            && !curTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) 
+                                            && !curTitle.Contains("Toilet-bound Hanako-kun: First Stall")
+                                            && !(
+                                                    curTitle.AsParallel().Any(char.IsDigit) 
+                                                    && !bookTitle.AsParallel().Any(char.IsDigit)
+                                                ) 
+                                        ) 
+                                        || curTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) || 
+                                        (
+                                            bookTitle.Equals("Naruto", StringComparison.OrdinalIgnoreCase) 
+                                            && (
+                                                    curTitle.Contains("Boruto") || curTitle.Contains("Itachi's Story")
+                                                )
+                                        ) 
+                                        || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", curTitle, "of Gluttony")
                                 )
                             )
                             )

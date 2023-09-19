@@ -15,15 +15,15 @@ namespace Tests.Websites
         }
 
         [Test, Description("Tests Manga book, Box Sets, Omnibus, & Manga w/ No Vol Number")]
-        public void BarnesAndNoble_OnePiece_Test()
+        public void BarnesAndNoble_OnePiece_Manga_Test()
         {
-            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("one piece", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleOnePieceData.txt")));
+            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("one piece", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleOnePieceMangaData.txt")));
         }
 
         [Test]
-        public void BarnesAndNoble_Naruto_Test()
+        public void BarnesAndNoble_Naruto_Manga_Test()
         {
-            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("Naruto", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleNarutoData.txt")));
+            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("Naruto", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleNarutoMangaData.txt")));
         }
 
         [Test]
@@ -33,9 +33,9 @@ namespace Tests.Websites
         }
 
         [Test]
-        public void BarnesAndNoble_Bleach_Test()
+        public void BarnesAndNoble_Bleach_Manga_Test()
         {
-            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("Bleach", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleBleachData.txt")));
+            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("Bleach", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleBleachMangaData.txt")));
         }
 
         [Test, Description("Validates Manga w/ Based on Series that is a Novel")]
@@ -60,49 +60,49 @@ namespace Tests.Websites
         [Test, Description("Validates Manga w/ Novel Entries & Has Paperback & Hardcover Initially")]
         public void BarnesAndNoble_Overlord_Manga_Test()
         {
-            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("overlord", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleOverlordData.txt")));
+            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("overlord", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleOverlordMangaData.txt")));
         }
 
         [Test, Description("Validates Series w/ Number")]
-        public void BarnesAndNoble_DimensionalSeduction_Test()
+        public void BarnesAndNoble_DimensionalSeduction_Manga_Test()
         {
-            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("2.5 Dimensional Seduction", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleDimensionalSeductionData.txt")));
+            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("2.5 Dimensional Seduction", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleDimensionalSeductionMangaData.txt")));
         }
 
         [Test, Description("Validates Series w/ Non Letter or Digit Char in Title")]
-        public void BarnesAndNoble_AkaneBanashi_Test()
+        public void BarnesAndNoble_AkaneBanashi_Manga_Test()
         {
-            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("Akane-Banashi", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleAkaneBanashiData.txt")));
+            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("Akane-Banashi", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleAkaneBanashiMangaData.txt")));
         }
 
         [Test, Description("Validates Series w/ Non Letter or Digit Char & Numbers in Title")]
-        public void BarnesAndNoble_07Ghost_Test()
+        public void BarnesAndNoble_07Ghost_Manga_Test()
         {
-            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("07-ghost", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNoble07GhostData.txt")));
+            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("07-ghost", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNoble07GhostMangaData.txt")));
         }
 
         [Test, Description("Validates Manga Series w/ Volumes that does not contain Vol type string but is valid")]
-        public void BarnesAndNoble_JujutsuKaisen_Test()
+        public void BarnesAndNoble_JujutsuKaisen_Manga_Test()
         {
-            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("jujutsu kaisen", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleJujutsuKaisenData.txt")));
+            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("jujutsu kaisen", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleJujutsuKaisenMangaData.txt")));
         }
 
         [Test, Description("Validates Manga Series w/ Hardcover & Paperback Volumes")]
-        public void BarnesAndNoble_FMAB_Test()
+        public void BarnesAndNoble_FMAB_Manga_Test()
         {
-            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("fullmetal alchemist", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleFMABData.txt")));
+            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("fullmetal alchemist", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleFMABMangaData.txt")));
         }
 
         [Test, Description("Validates Manga Series w/ Deluxe Hardcover & Paperback Volumes")]
-        public void BarnesAndNoble_Berserk_Test()
+        public void BarnesAndNoble_Berserk_Manga_Test()
         {
-            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("Berserk", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleBerserkData.txt")));
+            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("Berserk", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleBerserkMangaData.txt")));
         }
 
         [Test, Description("Validates Manga Series w/ Illustration Entries & Vol 0")]
-        public void BarnesAndNoble_Toilet_Test()
+        public void BarnesAndNoble_Toilet_Manga_Test()
         {
-            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("Toilet-bound Hanako-kun", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleToiletData.txt")));
+            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("Toilet-bound Hanako-kun", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleToiletMangaData.txt")));
         }
     }
 }

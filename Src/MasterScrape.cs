@@ -100,7 +100,7 @@ namespace MangaLightNovelWebScrape
         {
             await Task.Run(() => 
             {
-                MasterList.Add(KinokuniyaUSA.GetKinokuniyaUSAData(bookTitle, book, isMember, 1));
+                MasterList.Add(KinokuniyaUSA.GetKinokuniyaUSAData(bookTitle, book, isMember));
             });
         }
 
@@ -323,9 +323,17 @@ namespace MangaLightNovelWebScrape
             }
         }
 
-        public static bool RemoveUnintendedVolumes(string bookTitle, string searchTitle, string curTitle, string otherTitle)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="bookTitle"></param>
+        /// <param name="searchTitle"></param>
+        /// <param name="curTitle"></param>
+        /// <param name="removeText"></param>
+        /// <returns>True if the curTitle should be removed</returns>
+        public static bool RemoveUnintendedVolumes(string bookTitle, string searchTitle, string curTitle, string removeText)
         {
-            return bookTitle.Equals(searchTitle, StringComparison.OrdinalIgnoreCase) && curTitle.Contains(otherTitle, StringComparison.OrdinalIgnoreCase);
+            return bookTitle.Equals(searchTitle, StringComparison.OrdinalIgnoreCase) && curTitle.Contains(removeText, StringComparison.OrdinalIgnoreCase);
         }
 
         // TODO Add Logic for when the prices are the same
@@ -527,7 +535,7 @@ namespace MangaLightNovelWebScrape
             MasterScrape test = new();
             EnableDebugMode();
             // { Website.RightStufAnime, Website.BarnesAndNoble, Website.InStockTrades, Website.RobertsAnimeCornerStore, Website.KinokuniyaUSA, Website.BooksAMillion }
-            await test.InitializeScrapeAsync("fullmetal alchemist", Book.Manga, new string[] { }, new List<Website>() { Website.BooksAMillion }, "Chrome", false, false, false, false, false);
+            await test.InitializeScrapeAsync("Bleach", Book.Manga, new string[] { }, new List<Website>() { Website.BarnesAndNoble }, "Chrome", false, false, false, false, false);
             watch.Stop();
             Logger.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }

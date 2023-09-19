@@ -15,9 +15,9 @@ namespace Tests.Websites
         }
 
         [Test, Description("Tests Manga book, Box Sets, Omnibus, & Manga w/ No Vol Number")]
-        public void BooksAMillion_OnePiece_Test()
+        public void BooksAMillion_OnePiece_Manga_Test()
         {
-            Assert.That(BooksAMillion.GetBooksAMillionData("one piece", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionOnePieceData.txt")));
+            Assert.That(BooksAMillion.GetBooksAMillionData("one piece", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionOnePieceMangaData.txt")));
         }
 
         [Test]
@@ -33,9 +33,9 @@ namespace Tests.Websites
         // }
 
         [Test, Description("Manga w/ 2-in-1 Omni & Omni w/ Missing Info")]
-        public void BooksAMillion_Bleach_Test()
+        public void BooksAMillion_Bleach_Manga_Test()
         {
-            Assert.That(BooksAMillion.GetBooksAMillionData("Bleach", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionBleachData.txt")));
+            Assert.That(BooksAMillion.GetBooksAMillionData("Bleach", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionBleachMangaData.txt")));
         }
 
         [Test, Description("Validates Manga w/ Novel Entries")]
@@ -60,49 +60,49 @@ namespace Tests.Websites
         // [Test, Description("Validates Manga w/ Novel Entries & Has Paperback & Hardcover Initially")]
         // public void BooksAMillion_Overlord_Manga_Test()
         // {
-        //     Assert.That(BooksAMillion.GetBooksAMillionData("overlord", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionOverlordData.txt")));
+        //     Assert.That(BooksAMillion.GetBooksAMillionData("overlord", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionOverlordMangaData.txt")));
         // }
 
         [Test, Description("Validates Series w/ Number")]
-        public void BooksAMillion_DimensionalSeduction_Test()
+        public void BooksAMillion_DimensionalSeduction_Manga_Test()
         {
-            Assert.That(BooksAMillion.GetBooksAMillionData("2.5 Dimensional Seduction", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionDimensionalSeductionData.txt")));
+            Assert.That(BooksAMillion.GetBooksAMillionData("2.5 Dimensional Seduction", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionDimensionalSeductionMangaData.txt")));
         }
 
         [Test, Description("Validates Series w/ Non Letter or Digit Char in Title")]
-        public void BooksAMillion_AkaneBanashi_Test()
+        public void BooksAMillion_AkaneBanashi_Manga_Test()
         {
-            Assert.That(BooksAMillion.GetBooksAMillionData("Akane-Banashi", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionAkaneBanashiData.txt")));
+            Assert.That(BooksAMillion.GetBooksAMillionData("Akane-Banashi", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionAkaneBanashiMangaData.txt")));
         }
 
         // [Test, Description("Validates Series w/ Non Letter or Digit Char & Numbers in Title")]
-        // public void BooksAMillion_07Ghost_Test()
+        // public void BooksAMillion_07Ghost_Manga_Test()
         // {
-        //     Assert.That(BooksAMillion.GetBooksAMillionData("07-ghost", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillion07GhostData.txt")));
+        //     Assert.That(BooksAMillion.GetBooksAMillionData("07-ghost", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillion07GhostMangaData.txt")));
         // }
 
         [Test, Description("Validates Manga Series w/ Volumes that does not contain Vol type string but is valid")]
-        public void BooksAMillion_JujutsuKaisen_Test()
+        public void BooksAMillion_JujutsuKaisen_Manga_Test()
         {
-            Assert.That(BooksAMillion.GetBooksAMillionData("jujutsu kaisen", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionJujutsuKaisenData.txt")));
+            Assert.That(BooksAMillion.GetBooksAMillionData("jujutsu kaisen", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionJujutsuKaisenMangaData.txt")));
         }
 
         [Test, Description("Validates Manga Series w/ Hardcover & Paperback Volumes")]
-        public void BooksAMillion_FMAB_Test()
+        public void BooksAMillion_FMAB_Manga_Test()
         {
-            Assert.That(BooksAMillion.GetBooksAMillionData("fullmetal alchemist", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionFMABData.txt")));
+            Assert.That(BooksAMillion.GetBooksAMillionData("fullmetal alchemist", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionFMABMangaData.txt")));
         }
 
         [Test, Description("Validates Manga Series w/ Deluxe Hardcover & Paperback Volumes")]
-        public void BooksAMillion_Berserk_Test()
+        public void BooksAMillion_Berserk_Manga_Test()
         {
-            Assert.That(BooksAMillion.GetBooksAMillionData("Berserk", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionBerserkData.txt")));
+            Assert.That(BooksAMillion.GetBooksAMillionData("Berserk", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionBerserkMangaData.txt")));
         }
 
         // [Test, Description("Validates Manga Series w/ Illustration Entries & Vol 0")]
-        // public void BooksAMillion_Toilet_Test()
+        // public void BooksAMillion_Toilet_Manga_Test()
         // {
-        //     Assert.That(BooksAMillion.GetBooksAMillionData("Toilet-bound Hanako-kun", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionToiletData.txt")));
+        //     Assert.That(BooksAMillion.GetBooksAMillionData("Toilet-bound Hanako-kun", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionToiletMangaData.txt")));
         // }
     }
 }

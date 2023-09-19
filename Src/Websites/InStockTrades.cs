@@ -106,20 +106,34 @@ namespace MangaLightNovelWebScrape.Websites
                     for (int x = 0; x < titleData.Count; x++)
                     {
                         titleText = titleData[x].InnerText;
-                        // if (titleText.Contains("Damaged"))
-                        // {
-                        //     Logger.Debug("Found Damaged Entry");
-                        //     InStockTradesData.RemoveAt(InStockTradesData.Count - 1);
-                        //     titleData.RemoveAt(x);
-                        //     x--;
-                        // }
+                        Logger.Debug($"{titleText} -> {MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Boruto")}");
                         if (
-                            !titleText.Contains("Artbook") && 
-                            !titleText.Contains("Character Bk") &&
-                            ((book == Book.Manga && !titleText.Contains(" Novel", StringComparison.OrdinalIgnoreCase) && (titleText.Contains("Vol") || titleText.Contains("Box Set") || titleText.Contains("Manga"))) || 
-                            (book == Book.LightNovel && !titleText.Contains("Manga") && (titleText.Contains(" Novel", StringComparison.OrdinalIgnoreCase) || !titleText.Contains("Vol")))) && 
-                            !MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", titleText, "of Gluttony") && 
-                            !MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Boruto")
+                            !titleText.Contains("Artbook")
+                            && !titleText.Contains("Character Bk")
+                            && (   
+                                (
+                                    book == Book.Manga 
+                                    && ( // Ensure manga entry contains valid indentifier
+                                            titleText.Contains("Vol") 
+                                            || titleText.Contains("Box Set") 
+                                            || titleText.Contains("Manga")
+                                        )
+                                    && !titleText.Contains(" Novel", StringComparison.OrdinalIgnoreCase)
+                                    && !( // Remove unintended volumes from specific series
+                                            MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", titleText.ToString(), "of Gluttony")
+                                            || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText.ToString(), "Boruto")
+                                        )
+                                )
+                                || 
+                                ( // Ensure novel entry doesn't contain Manga & Contains Novel or doesn't contain "Vol" identifier
+                                    book == Book.LightNovel 
+                                    && !titleText.Contains("Manga") 
+                                    && (
+                                            titleText.Contains(" Novel", StringComparison.OrdinalIgnoreCase) 
+                                            || !titleText.Contains("Vol")
+                                        )
+                                )
+                            )
                         )
                         {
                             InStockTradesData.Add(

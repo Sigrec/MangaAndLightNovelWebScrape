@@ -40,6 +40,7 @@ namespace MangaLightNovelWebScrape.Websites
             string url;
             if (!boxsetCheck)
             {
+                // https://booksamillion.com/search?query=naruto;filter=product_type%3Abooks%7Cbook_categories%3ACGN;sort=date;page=1%7Clanguage%3AENG"
                 url = $"https://booksamillion.com/search?query={FilterBookTitle(bookTitle, book)};filter=product_type%3Abooks%7Cbook_categories%3ACGN;sort=date;page={currPageNum}%7Clanguage%3AENG";
             }
             else
@@ -132,10 +133,17 @@ namespace MangaLightNovelWebScrape.Websites
                         if (
                             !TitleRemovalRegex().IsMatch(curTitle) && 
                             MasterScrape.TitleContainsBookTitle(bookTitle, curTitle.ToString()) && 
-                            !(book == Book.Manga && (curTitle.Contains("(Light Novel") || !curTitle.Any(char.IsDigit))) && 
-                            !MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", curTitle.ToString(), "Boruto") && 
-                            !MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", curTitle.ToString(), "Itachi's Story") && 
-                            !MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", curTitle.ToString(), "of Gluttony")
+                            !(
+                                book == Book.Manga 
+                                && (
+                                        curTitle.Contains("(Light Novel") 
+                                        || !curTitle.Contains("Vol")
+                                        // || !curTitle.Any(char.IsDigit)
+                                    )
+                                || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", curTitle.ToString(), "Boruto") 
+                                || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", curTitle.ToString(), "Itachi's Story") 
+                                || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", curTitle.ToString(), "of Gluttony")
+                            )
                         )
                         {
                             priceVal = Convert.ToDecimal(priceData[x].InnerText.Trim()[1..]);

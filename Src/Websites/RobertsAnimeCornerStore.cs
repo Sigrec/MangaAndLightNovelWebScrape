@@ -166,7 +166,18 @@ namespace MangaLightNovelWebScrape.Websites
                     for (int x = 0; x < titleData.Count; x++)
                     {
                         titleText = titleData[x].InnerText;
-                        if (string.IsNullOrWhiteSpace(titleText) || titleText.Contains("Poster") || (titleText.Contains("[Novel]") && book == Book.Manga) || (titleText.Contains("Graphic") && book == Book.LightNovel)) // If the user is looking for manga and the page returned a novel data set and vice versa skip that data set
+                        if (
+                                string.IsNullOrWhiteSpace(titleText) 
+                                || titleText.Contains("Poster") 
+                                || (
+                                        titleText.Contains("[Novel]") 
+                                        && book == Book.Manga
+                                    ) 
+                                || (
+                                        titleText.Contains("Graphic") 
+                                        && book == Book.LightNovel
+                                    )
+                            ) // If the user is looking for manga and the page returned a novel data set and vice versa skip that data set
                         {
                             continue;
                         }

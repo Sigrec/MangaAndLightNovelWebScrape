@@ -106,7 +106,17 @@ namespace MangaLightNovelWebScrape.Websites
                     for (int x = 0; x < titleData.Count; x++)
                     {
                         titleText = TitleParseRegex().Replace(titleData[x].InnerText, "").Trim();           
-                        if(!titleText.Contains("Imperfect") && MasterScrape.TitleContainsBookTitle(bookTitle, titleText.ToString()) && !MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", titleText.ToString(), "of Gluttony"))
+                        if(
+                            !titleText.Contains("Imperfect")
+                            && MasterScrape.TitleContainsBookTitle(bookTitle, titleText.ToString()) 
+                            && !(
+                                    book == Book.Manga
+                                    && (
+                                            MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", titleText.ToString(), "of Gluttony")
+                                            || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText.ToString(), "Boruto")
+                                        )
+                                )
+                        )
                         {
                             priceVal = Convert.ToDecimal(priceData[x].InnerText.Trim());
                             RightStufAnimeData.Add(
