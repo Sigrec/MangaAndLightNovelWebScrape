@@ -64,5 +64,11 @@ namespace Tests.Websites
         {
             Assert.That(RobertsAnimeCornerStore.GetRobertsAnimeCornerStoreData("Berserk", Book.Manga), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\RobertsAnimeCornerStore\RobertsAnimeCornerStoreBerserkMangaData.txt")));
         }
+
+        [Test, Description("Validates One Shot Manga Series")]
+        public void RobertsAnimeCornerStore_GoodbyeEri_Manga_Test()
+        {
+            Assert.That(RobertsAnimeCornerStore.GetRobertsAnimeCornerStoreData("Goodbye, Eri", Book.Manga), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\RobertsAnimeCornerStore\RobertsAnimeCornerStoreGoodbyeEriMangaData.txt")));
+        }
     }
 }

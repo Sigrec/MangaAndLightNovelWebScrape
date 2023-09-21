@@ -13,14 +13,6 @@ namespace MangaLightNovelWebScrape.Websites
         [GeneratedRegex(" Manga|,|:")] private static partial Regex FormatRemovalRegex();
         [GeneratedRegex("3 [iI]n 1|2 [iI]n 1")] private static partial Regex OmnibusRegex();
 
-        private static string FilterBookTitle(string bookTitle){
-            char[] trimedChars = {' ', '\'', '!', '-'};
-            foreach (char var in trimedChars){
-                bookTitle = bookTitle.Replace(var.ToString(), "%" + Convert.ToByte(var).ToString("x2"));
-            }
-            return bookTitle;
-        }
-
         public static void ClearData()
         {
             RightStufAnimeLinks.Clear();
@@ -34,7 +26,7 @@ namespace MangaLightNovelWebScrape.Websites
 
         private static string GetUrl(Book book, byte currPageNum, string bookTitle){
             StringBuilder url = new StringBuilder("https://www.rightstufanime.com/category/");
-            url.Append(book == Book.Manga ? "Manga" : "Novels").Append("?page=").Append(currPageNum).Append("&show=96&keywords=").Append(FilterBookTitle(bookTitle));
+            url.Append(book == Book.Manga ? "Manga" : "Novels").Append("?page=").Append(currPageNum).Append("&show=96&keywords=").Append(MasterScrape.FilterBookTitle(bookTitle));
             Logger.Debug(url.ToString());
             RightStufAnimeLinks.Add(url.ToString());
             return url.ToString();

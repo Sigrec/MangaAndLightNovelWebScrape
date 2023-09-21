@@ -104,5 +104,11 @@ namespace Tests.Websites
         {
             Assert.That(BarnesAndNoble.GetBarnesAndNobleData("Toilet-bound Hanako-kun", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleToiletMangaData.txt")));
         }
+
+        [Test, Description("Validates One Shot Manga Series")]
+        public void BarnesAndNoble_Member_GoodbyeEri_Manga_Test()
+        {
+            Assert.That(BarnesAndNoble.GetBarnesAndNobleData("Goodbye, Eri", Book.Manga, true, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BarnesAndNoble\BarnesAndNobleGoodbyeEriMangaData.txt")));
+        }
     }
 }

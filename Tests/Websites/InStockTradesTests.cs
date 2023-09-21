@@ -11,7 +11,7 @@ namespace Tests.Websites
         [Test, Description("Tests Manga book, Box Sets, Omnibus, & Manga w/ No Vol Number")]
         public void InStockTrades_OnePiece_Manga_Test()
         {
-            Assert.That(InStockTrades.GetInStockTradesData("one piece", Book.Manga, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\InStockTrades\InStockTradesOnePieceData.txt")));
+            Assert.That(InStockTrades.GetInStockTradesData("one piece", Book.Manga, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\InStockTrades\InStockTradesOnePieceMangaData.txt")));
         }
 
         [Test]
@@ -29,7 +29,7 @@ namespace Tests.Websites
         [Test, Description("Validates Manga w/ Character Book and Novels")]
         public void InStockTrades_Bleach_Manga_Test()
         {
-            Assert.That(InStockTrades.GetInStockTradesData("Bleach", Book.Manga, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\InStockTrades\InStockTradesBleachData.txt")));
+            Assert.That(InStockTrades.GetInStockTradesData("Bleach", Book.Manga, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\InStockTrades\InStockTradesBleachMangaData.txt")));
         }
 
         [Test, Description("Validates Novel w/ Manga Entries")]
@@ -47,7 +47,7 @@ namespace Tests.Websites
         [Test, Description("Validates Series w/ Non Letter or Digit Char in Title")]
         public void InStockTrades_AkaneBanashi_Manga_Test()
         {
-            Assert.That(InStockTrades.GetInStockTradesData("Akane-Banashi", Book.Manga, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\InStockTrades\InStockTradesAkaneBanashiData.txt")));
+            Assert.That(InStockTrades.GetInStockTradesData("Akane-Banashi", Book.Manga, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\InStockTrades\InStockTradesAkaneBanashiMangaData.txt")));
         }
 
         [Test, Description("Validates Manga Series w/ Novel that doesn't have LN identifier")]
@@ -65,13 +65,19 @@ namespace Tests.Websites
         [Test, Description("Validates Manga Series w/ Deluxe Hardcover Volumes")]
         public void InStockTrades_Berserk_Manga_Test()
         {
-            Assert.That(InStockTrades.GetInStockTradesData("Berserk", Book.Manga, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\InStockTrades\InStockTradesBerserkData.txt")));
+            Assert.That(InStockTrades.GetInStockTradesData("Berserk", Book.Manga, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\InStockTrades\InStockTradesBerserkMangaData.txt")));
         }
 
         [Test, Description("Validates Manga Series w/ Box Set w/ No Vol")]
         public void InStockTrades_Toilet_Manga_Test()
         {
-            Assert.That(InStockTrades.GetInStockTradesData("Toilet-bound Hanako-kun", Book.Manga, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\InStockTrades\InStockTradesToiletData.txt")));
+            Assert.That(InStockTrades.GetInStockTradesData("Toilet-bound Hanako-kun", Book.Manga, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\InStockTrades\InStockTradesToiletMangaData.txt")));
+        }
+
+        [Test, Description("Validates One Shot Manga Series")]
+        public void InStockTrades_Soichi_Manga_Test()
+        {
+            Assert.That(InStockTrades.GetInStockTradesData("Soichi", Book.Manga, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\InStockTrades\InStockTradesSoichiMangaData.txt")));
         }
     }
 }

@@ -57,11 +57,11 @@ namespace Tests.Websites
         //     Assert.That(BooksAMillion.GetBooksAMillionData("Overlord", Book.LightNovel, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionOverlordNovelData.txt")));
         // }
 
-        // [Test, Description("Validates Manga w/ Novel Entries & Has Paperback & Hardcover Initially")]
-        // public void BooksAMillion_Overlord_Manga_Test()
-        // {
-        //     Assert.That(BooksAMillion.GetBooksAMillionData("overlord", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionOverlordMangaData.txt")));
-        // }
+        [Test, Description("Validates Manga w/ Novel Entries & Has Paperback & Hardcover Initially")]
+        public void BooksAMillion_Overlord_Manga_Test()
+        {
+            Assert.That(BooksAMillion.GetBooksAMillionData("overlord", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionOverlordMangaData.txt")));
+        }
 
         [Test, Description("Validates Series w/ Number")]
         public void BooksAMillion_DimensionalSeduction_Manga_Test()
@@ -104,5 +104,11 @@ namespace Tests.Websites
         // {
         //     Assert.That(BooksAMillion.GetBooksAMillionData("Toilet-bound Hanako-kun", Book.Manga, false, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionToiletMangaData.txt")));
         // }
+
+        [Test, Description("Validates One Shot Manga Series")]
+        public void BooksAMillion_Member_GoodbyeEri_Manga_Test()
+        {
+            Assert.That(BooksAMillion.GetBooksAMillionData("Goodbye, Eri", Book.Manga, true, 1), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\BooksAMillion\BooksAMillionGoodbyeEriMangaData.txt")));
+        }
     }
 }

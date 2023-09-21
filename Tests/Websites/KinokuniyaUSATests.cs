@@ -21,7 +21,6 @@ namespace Tests.Websites
         }
 
         [Test]
-        [Ignore("Not Working")]
         public void KinokuniyaUSA_Naruto_Novel_Test()
         {
             Assert.That(KinokuniyaUSA.GetKinokuniyaUSAData("Naruto", Book.LightNovel, false), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\KinokuniyaUSA\KinokuniyaUSANarutoNovelData.txt")));
@@ -79,6 +78,12 @@ namespace Tests.Websites
         public void KinokuniyaUSA_Toilet_Manga_Test()
         {
             Assert.That(KinokuniyaUSA.GetKinokuniyaUSAData("Toilet-bound Hanako-kun", Book.Manga, false), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\KinokuniyaUSA\KinokuniyaUSAToiletMangaData.txt")));
+        }
+
+        [Test, Description("Validates One Shot Manga Series")]
+        public void KinokuniyaUSA_GoodbyeEri_Manga_Test()
+        {
+            Assert.That(KinokuniyaUSA.GetKinokuniyaUSAData("Goodbye, Eri", Book.Manga, false), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Data\KinokuniyaUSA\KinokuniyaUSAGoodbyeEriMangaData.txt")));
         }
     }
 }

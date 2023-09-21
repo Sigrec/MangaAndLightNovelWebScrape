@@ -70,7 +70,6 @@ namespace MangaLightNovelWebScrape.Websites
                 }
                 volGroup = VolNumberRegex().Match(curTitle.ToString()).Groups[1];
             }
-            Logger.Debug(System.Net.WebUtility.HtmlDecode($"{TitleRegex().Replace(OmnibusRegex().Replace(curTitle.ToString(), "Omnibus"), "")} {volGroup.Value.TrimStart('0')}".Trim()));
             return System.Net.WebUtility.HtmlDecode($"{TitleRegex().Replace(OmnibusRegex().Replace(curTitle.ToString(), "Omnibus"), "")} {volGroup.Value.TrimStart('0')}".Trim());
         }
 
@@ -78,6 +77,7 @@ namespace MangaLightNovelWebScrape.Websites
         {
             WebDriver driver = MasterScrape.SetupBrowserDriver(false);
             ushort maxPages = 0;
+            bool oneShotCheck = false;
             try
             {
                 WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
@@ -92,6 +92,7 @@ namespace MangaLightNovelWebScrape.Websites
 
                     // Get the page data from the HTML doc
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes("/html/body/div[2]/div/div[3]/div/div[2][not(div[@class='damage'])]/div/a");
+                    oneShotCheck = !titleData.AsParallel().Any(title => title.InnerText.Contains("Vol") || title.InnerText.Contains("Box Set") || title.InnerText.Contains("Manga"));
                     HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes("/html/body/div[2]/div/div[3]/div/div[2][not(div[@class='damage'])]/div/div[1]/div[2]");
                     if (maxPages == 0)
                     {
@@ -106,7 +107,6 @@ namespace MangaLightNovelWebScrape.Websites
                     for (int x = 0; x < titleData.Count; x++)
                     {
                         titleText = titleData[x].InnerText;
-                        Logger.Debug($"{titleText} -> {MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Boruto")}");
                         if (
                             !titleText.Contains("Artbook")
                             && !titleText.Contains("Character Bk")
@@ -114,9 +114,15 @@ namespace MangaLightNovelWebScrape.Websites
                                 (
                                     book == Book.Manga 
                                     && ( // Ensure manga entry contains valid indentifier
-                                            titleText.Contains("Vol") 
-                                            || titleText.Contains("Box Set") 
-                                            || titleText.Contains("Manga")
+                                            oneShotCheck
+                                            || (
+                                                    !oneShotCheck
+                                                    && (
+                                                            titleText.Contains("Vol") 
+                                                            || titleText.Contains("Box Set") 
+                                                            || titleText.Contains("Manga")
+                                                        )
+                                                )
                                         )
                                     && !titleText.Contains(" Novel", StringComparison.OrdinalIgnoreCase)
                                     && !( // Remove unintended volumes from specific series
@@ -136,6 +142,7 @@ namespace MangaLightNovelWebScrape.Websites
                             )
                         )
                         {
+                            Logger.Debug(titleText);
                             InStockTradesData.Add(
                                 new EntryModel
                                 (

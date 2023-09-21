@@ -34,14 +34,14 @@ namespace MangaLightNovelWebScrape
         /// <summary>
         /// The browser arguments used for Chrome & Edge
         /// </summary>
-        private static string[] ChromeBrowserArguments = { "--headless=new", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-geolocation", "--disable-logging"  };
+        private static string[] ChromeBrowserArguments = { "--headless=new", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications" };
         /// <summary>
         /// The browser arguments used for FireFox
         /// </summary>
         private static string[] FireFoxBrowserArguments = { "-headless", "-new-instance", "-private" };
-        [GeneratedRegex("[^\\w+]")] public static partial Regex RemoveNonWordsRegex();
-        [GeneratedRegex("\\d{1,3}")] public static partial Regex FindVolNumRegex();
-        [GeneratedRegex("\\s{2,}")] public static partial Regex MultipleWhiteSpaceRegex();
+        [GeneratedRegex(@"[^\w+]")] public static partial Regex RemoveNonWordsRegex();
+        [GeneratedRegex(@"\d{1,3}")] public static partial Regex FindVolNumRegex();
+        [GeneratedRegex(@"\s{2,}|--|—")] public static partial Regex MultipleWhiteSpaceRegex();
 
         // In the UK there's 
         // Wordery https://wordery.com/
@@ -70,7 +70,7 @@ namespace MangaLightNovelWebScrape
             Indigo
         }
 
-        public MasterScrape(bool IsDebugEnabled = false) {}
+        public MasterScrape() { }
 
         private async Task CreateRightStufAnimeTask(string bookTitle, Book book, bool isMember)
         {
@@ -139,21 +139,23 @@ namespace MangaLightNovelWebScrape
         /// <summary>
         /// Disables debug mode
         /// </summary>
-        public static void DisableDebugMode()
+        public MasterScrape DisableDebugMode()
         {
             IsDebugEnabled = false;
+            return this;
         }
 
         /// <summary>
         /// Enables debug mode aka printing txt files to Data folder
         /// </summary>
-        public static void EnableDebugMode()
+        public MasterScrape EnableDebugMode()
         {
             IsDebugEnabled = true;
             if (!Directory.Exists(@"\Data"))
             {
                 Directory.CreateDirectory(@"\Data");
             }
+            return this;
         }
 
         /// <summary>
@@ -278,6 +280,11 @@ namespace MangaLightNovelWebScrape
         }
     
         // TODO Need to find a way to find/check for driver.exe since it only checks current drive
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="needsUserAgent"></param>
+        /// <returns></returns>
         public static WebDriver SetupBrowserDriver(bool needsUserAgent)
         {
             switch (browser)
@@ -288,7 +295,6 @@ namespace MangaLightNovelWebScrape
                         PageLoadStrategy = PageLoadStrategy.Eager,
                     };
                     edgeOptions.AddArguments(ChromeBrowserArguments);
-                    edgeOptions.AddUserProfilePreference("profile.default_content_settings.geolocation", 2);
                     if (needsUserAgent)
                     {
                         WebDriver dummyDriver = new EdgeDriver(edgeOptions);
@@ -312,7 +318,6 @@ namespace MangaLightNovelWebScrape
                         PageLoadStrategy = PageLoadStrategy.Eager,
                     };
                     chromeOptions.AddArguments(ChromeBrowserArguments);
-                    chromeOptions.AddUserProfilePreference("profile.default_content_settings.geolocation", 2);
                     if (needsUserAgent)
                     {
                         WebDriver dummyDriver = new ChromeDriver(chromeOptions);
@@ -336,11 +341,23 @@ namespace MangaLightNovelWebScrape
             return bookTitle.Equals(searchTitle, StringComparison.OrdinalIgnoreCase) && curTitle.Contains(removeText, StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="bookTitle"></param>
+        /// <returns></returns>
+        public static string FilterBookTitle(string bookTitle){
+            char[] trimedChars = {' ', '\'', '!', '-', ','};
+            foreach (char var in trimedChars){
+                bookTitle = bookTitle.Replace(var.ToString(), "%" + Convert.ToByte(var).ToString("x2"));
+            }
+            return bookTitle;
+        }
+
         // TODO Add Logic for when the prices are the same
         // TODO Create a Website Interface so websites can extend it
-        // TODO Improve performance of Website QueriesStarting w/ RightStufAnime
+        // TODO Improve performance of Website Queries Starting w/ RightStufAnime
         // TODO Add ReadMe
-        // TODO Figure out how to remove the "Know your Location" popup for BAM & B&N
 
         /// <summary>
         /// Starts the web scrape
@@ -532,10 +549,9 @@ namespace MangaLightNovelWebScrape
         {
             Stopwatch watch = new();
             watch.Start();
-            MasterScrape test = new();
-            EnableDebugMode();
+            MasterScrape test = new MasterScrape().EnableDebugMode();
             // { Website.RightStufAnime, Website.BarnesAndNoble, Website.InStockTrades, Website.RobertsAnimeCornerStore, Website.KinokuniyaUSA, Website.BooksAMillion }
-            await test.InitializeScrapeAsync("Bleach", Book.Manga, new string[] { }, new List<Website>() { Website.BarnesAndNoble }, "Chrome", false, false, false, false, false);
+            await test.InitializeScrapeAsync("overlord", Book.Manga, new string[] { }, new List<Website>() {  Website.BooksAMillion }, "Chrome", false, false, false, false, false);
             watch.Stop();
             Logger.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
