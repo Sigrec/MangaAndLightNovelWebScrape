@@ -68,52 +68,91 @@ namespace MangaLightNovelWebScrape
         }
 
         /// <summary>
-        /// <br>Compares the titles of various entries for a series against each other to determine if they are similar enough to be cosnidered equal</br> 
-        /// <br>Allowing comparisons of titles who are technically the same but there websites have slightly different formats.</br> 
-        /// <br>By determining if they are similar enough by a threshold of 1/6 the size of longest title being the same</br> 
+        /// http://blog.softwx.net/2015/01/optimizing-damerau-levenshtein_15.html
         /// </summary>
-        /// <param name="titleOne">The first title in the comparison and is used for determining when to stop traversing</param>
-        /// <param name="titleTwo">The 2nd title in the comparison</param>
-        /// <returns></returns>
-        public static bool Similar(string titleOne, string titleTwo)
+        /// <returns>distance, >= 0 representing the number of edits required
+        /// to transform one string to the other, or -1 if the distance is greater than the specified maxDistance.</returns>
+        public static int Similar(string s, string t, int maxDistance)
         {
-            if (titleOne != null && titleTwo != null)
-            {
-                int count = 0; // The amount of times that the characters and there "alignment" don't match
-                int titleOnePointer = 0, titleTwoPointer = 0; // Pointers for the characters in both strings
-                titleOne = Helper.RemoveInPlaceCharArray(titleOne.ToLower());
-                titleTwo = Helper.RemoveInPlaceCharArray(titleTwo.ToLower());
+            if (string.IsNullOrEmpty(s)) return ((t ?? "").Length <= maxDistance) ? (t ?? "").Length : -1;
+            if (string.IsNullOrEmpty(t)) return (s.Length <= maxDistance) ? s.Length : -1;
 
-                while (titleOnePointer < titleOne.Length && titleTwoPointer < titleTwo.Length) // Keep traversing until u reach the end of titleOne's string
-                {
-                    // Logger.Debug("O " + titleOnePointer + "(" + titleOne[titleOnePointer] + ")" + "\t" + titleTwoPointer + "(" + titleTwo[titleTwoPointer] + ")");
-                    if (titleOne[titleOnePointer] != titleTwo[titleTwoPointer]) // Checks to see if the characters match
-                    {
-                        // Logger.Debug($"{titleOne[titleOnePointer]},{titleOnePointer} | {titleTwo[titleTwoPointer]},{titleTwoPointer}");
-                        count++; // There is 1 additional character difference
-                        for (int z = titleOnePointer; z < titleOne.Length; z++) // Start at the index of where the characters were not the same, then traverse the other string to see if it matches
-                        {
-                            // Logger.Debug("I " + z + "(" + titleOne[z] + ")" + "\t" + titleTwoPointer + "(" + titleTwo[titleTwoPointer] + ")");
-                            if (titleOne[z] == titleTwo[titleTwoPointer]) // Checks to see if the character is present in the other string and is in a similar position
-                            {
-                                break;
-                            }
-                        }
-                        // Logger.Debug("Current Cache Size After = " + cache);
-                        // Logger.Debug("Count = " + count);
-                    } 
-                    else // Characters do match so just move to the next set of characters to compare in the strings
-                    {
-                        titleOnePointer++;
-                    }
-                    titleTwoPointer++;
-                }
-
-                // Logger.Debug("Count = " + count);
-                // Logger.Debug((count <= (titleOne.Length > titleTwo.Length ? titleTwo.Length / 6 : titleOne.Length / 6)) ? $"{titleOne} is Similar to {titleTwo}" : $"{titleOne} is Not Similar to {titleTwo}");
-                return count <= (titleOne.Length > titleTwo.Length ? titleTwo.Length / 6 : titleOne.Length / 6); // Determine if they are similar enough by a threshold of 1/6 the size of longest title
+            // if strings of different lengths, ensure shorter string is in s. This can result in a little
+            // faster speed by spending more time spinning just the inner loop during the main processing.
+            if (s.Length > t.Length) {
+                var temp = s; s = t; t = temp; // swap s and t
             }
-            return false;
+            int sLen = s.Length; // this is also the minimun length of the two strings
+            int tLen = t.Length;
+
+            // suffix common to both strings can be ignored
+            while ((sLen > 0) && (s[sLen - 1] == t[tLen - 1])) { sLen--; tLen--; }
+
+            int start = 0;
+            if ((s[0] == t[0]) || (sLen == 0)) { // if there's a shared prefix, or all s matches t's suffix
+                // prefix common to both strings can be ignored
+                while ((start < sLen) && (s[start] == t[start])) start++;
+                sLen -= start; // length of the part excluding common prefix and suffix
+                tLen -= start;
+
+                // if all of shorter string matches prefix and/or suffix of longer string, then
+                // edit distance is just the delete of additional characters present in longer string
+                if (sLen == 0) return (tLen <= maxDistance) ? tLen : -1;
+
+                t = t.Substring(start, tLen); // faster than t[start+j] in inner loop below
+            }
+            int lenDiff = tLen - sLen;
+            if ((maxDistance < 0) || (maxDistance > tLen)) {
+                maxDistance = tLen;
+            } else if (lenDiff > maxDistance) return -1;
+
+            var v0 = new int[tLen];
+            var v2 = new int[tLen]; // stores one level further back (offset by +1 position)
+            int j;
+            for (j = 0; j < maxDistance; j++) v0[j] = j + 1;
+            for (; j < tLen; j++) v0[j] = maxDistance + 1;
+
+            int jStartOffset = maxDistance - (tLen - sLen);
+            bool haveMax = maxDistance < tLen;
+            int jStart = 0;
+            int jEnd = maxDistance;
+            char sChar = s[0];
+            int current = 0;
+            for (int i = 0; i < sLen; i++) {
+                char prevsChar = sChar;
+                sChar = s[start + i];
+                char tChar = t[0];
+                int left = i;
+                current = left + 1;
+                int nextTransCost = 0;
+                // no need to look beyond window of lower right diagonal - maxDistance cells (lower right diag is i - lenDiff)
+                // and the upper left diagonal + maxDistance cells (upper left is i)
+                jStart += (i > jStartOffset) ? 1 : 0;
+                jEnd += (jEnd < tLen) ? 1 : 0;
+                for (j = jStart; j < jEnd; j++) {
+                    int above = current;
+                    int thisTransCost = nextTransCost;
+                    nextTransCost = v2[j];
+                    v2[j] = current = left; // cost of diagonal (substitution)
+                    left = v0[j];    // left now equals current cost (which will be diagonal at next iteration)
+                    char prevtChar = tChar;
+                    tChar = t[j];
+                    if (sChar != tChar) {
+                        if (left < current) current = left;   // insertion
+                        if (above < current) current = above; // deletion
+                        current++;
+                        if ((i != 0) && (j != 0)
+                            && (sChar == prevtChar)
+                            && (prevsChar == tChar)) {
+                            thisTransCost++;
+                            if (thisTransCost < current) current = thisTransCost; // transposition
+                        }
+                    }
+                    v0[j] = current;
+                }
+                if (haveMax && (v0[i + lenDiff] > maxDistance)) return -1;
+            }
+            return (current <= maxDistance) ? current : -1;
         }
 
         public override bool Equals(object obj)
