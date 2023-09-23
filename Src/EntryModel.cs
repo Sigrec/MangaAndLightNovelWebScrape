@@ -77,39 +77,43 @@ namespace MangaLightNovelWebScrape
         /// <returns></returns>
         public static bool Similar(string titleOne, string titleTwo)
         {
-            int count = 0; // The amount of times that the characters and there "alignment" don't match
-            int titleOnePointer = 0, titleTwoPointer = 0; // Pointers for the characters in both strings
-            titleOne = Helper.RemoveInPlaceCharArray(titleOne.ToLower());
-            titleTwo = Helper.RemoveInPlaceCharArray(titleTwo.ToLower());
-
-            while (titleOnePointer < titleOne.Length && titleTwoPointer < titleTwo.Length) // Keep traversing until u reach the end of titleOne's string
+            if (titleOne != null && titleTwo != null)
             {
-                // Logger.Debug("O " + titleOnePointer + "(" + titleOne[titleOnePointer] + ")" + "\t" + titleTwoPointer + "(" + titleTwo[titleTwoPointer] + ")");
-                if (titleOne[titleOnePointer] != titleTwo[titleTwoPointer]) // Checks to see if the characters match
-                {
-                    // Logger.Debug($"{titleOne[titleOnePointer]},{titleOnePointer} | {titleTwo[titleTwoPointer]},{titleTwoPointer}");
-                    count++; // There is 1 additional character difference
-                    for (int z = titleOnePointer; z < titleOne.Length; z++) // Start at the index of where the characters were not the same, then traverse the other string to see if it matches
-                    {
-                        // Logger.Debug("I " + z + "(" + titleOne[z] + ")" + "\t" + titleTwoPointer + "(" + titleTwo[titleTwoPointer] + ")");
-                        if (titleOne[z] == titleTwo[titleTwoPointer]) // Checks to see if the character is present in the other string and is in a similar position
-                        {
-                            break;
-                        }
-                    }
-                    // Logger.Debug("Current Cache Size After = " + cache);
-                    // Logger.Debug("Count = " + count);
-                } 
-                else // Characters do match so just move to the next set of characters to compare in the strings
-                {
-                    titleOnePointer++;
-                }
-                titleTwoPointer++;
-            }
+                int count = 0; // The amount of times that the characters and there "alignment" don't match
+                int titleOnePointer = 0, titleTwoPointer = 0; // Pointers for the characters in both strings
+                titleOne = Helper.RemoveInPlaceCharArray(titleOne.ToLower());
+                titleTwo = Helper.RemoveInPlaceCharArray(titleTwo.ToLower());
 
-            // Logger.Debug("Count = " + count);
-            // Logger.Debug((count <= (titleOne.Length > titleTwo.Length ? titleTwo.Length / 6 : titleOne.Length / 6)) ? $"{titleOne} is Similar to {titleTwo}" : $"{titleOne} is Not Similar to {titleTwo}");
-            return count <= (titleOne.Length > titleTwo.Length ? titleTwo.Length / 6 : titleOne.Length / 6); // Determine if they are similar enough by a threshold of 1/6 the size of longest title
+                while (titleOnePointer < titleOne.Length && titleTwoPointer < titleTwo.Length) // Keep traversing until u reach the end of titleOne's string
+                {
+                    // Logger.Debug("O " + titleOnePointer + "(" + titleOne[titleOnePointer] + ")" + "\t" + titleTwoPointer + "(" + titleTwo[titleTwoPointer] + ")");
+                    if (titleOne[titleOnePointer] != titleTwo[titleTwoPointer]) // Checks to see if the characters match
+                    {
+                        // Logger.Debug($"{titleOne[titleOnePointer]},{titleOnePointer} | {titleTwo[titleTwoPointer]},{titleTwoPointer}");
+                        count++; // There is 1 additional character difference
+                        for (int z = titleOnePointer; z < titleOne.Length; z++) // Start at the index of where the characters were not the same, then traverse the other string to see if it matches
+                        {
+                            // Logger.Debug("I " + z + "(" + titleOne[z] + ")" + "\t" + titleTwoPointer + "(" + titleTwo[titleTwoPointer] + ")");
+                            if (titleOne[z] == titleTwo[titleTwoPointer]) // Checks to see if the character is present in the other string and is in a similar position
+                            {
+                                break;
+                            }
+                        }
+                        // Logger.Debug("Current Cache Size After = " + cache);
+                        // Logger.Debug("Count = " + count);
+                    } 
+                    else // Characters do match so just move to the next set of characters to compare in the strings
+                    {
+                        titleOnePointer++;
+                    }
+                    titleTwoPointer++;
+                }
+
+                // Logger.Debug("Count = " + count);
+                // Logger.Debug((count <= (titleOne.Length > titleTwo.Length ? titleTwo.Length / 6 : titleOne.Length / 6)) ? $"{titleOne} is Similar to {titleTwo}" : $"{titleOne} is Not Similar to {titleTwo}");
+                return count <= (titleOne.Length > titleTwo.Length ? titleTwo.Length / 6 : titleOne.Length / 6); // Determine if they are similar enough by a threshold of 1/6 the size of longest title
+            }
+            return false;
         }
 
         public override bool Equals(object obj)

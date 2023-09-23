@@ -1,4 +1,4 @@
-namespace Src.Models
+namespace MangaLightNovelWebScrape.Models
 {
     public enum Book
     {

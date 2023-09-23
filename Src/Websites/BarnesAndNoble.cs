@@ -101,9 +101,9 @@ namespace MangaLightNovelWebScrape.Websites
                     }
                 }
 
-                return curTitle.ToString().Trim();
+                return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
             }
-            return ParseTitleRegex().Replace(VolTitleFixRegex().Replace(titleText, "Vol"), "").Trim();
+            return MasterScrape.MultipleWhiteSpaceRegex().Replace(ParseTitleRegex().Replace(VolTitleFixRegex().Replace(titleText, "Vol"), ""), " ").Trim();
         }
 
         private static bool RunClickEvent(string xPath, WebDriver driver, WebDriverWait wait, string type)
@@ -204,6 +204,7 @@ namespace MangaLightNovelWebScrape.Websites
                     for (int x = 0; x < titleData.Count; x++)
                     {
                         curTitle = !oneShotCheck ? titleData[x].GetAttributeValue("title", "Title Error") : titleData[x].InnerText;
+                        Logger.Debug(curTitle);
                         if (
                             !oneShotCheck
                             && (
@@ -239,14 +240,14 @@ namespace MangaLightNovelWebScrape.Websites
                         }
 
                         curTitle = TitleParse(curTitle, book, bookTitle, oneShotCheck);
-                        if (!BarnesAndNobleData.Exists(entry => entry.Entry.Equals(curTitle)))
+                        if (!hardcoverCheck || (!BarnesAndNobleData.Exists(entry => entry.Entry.Equals(curTitle))))
                         {
                             price = decimal.Parse(priceData[x].InnerText.Trim()[1..]);
                             BarnesAndNobleData.Add(
                                 new EntryModel
                                 (
                                     curTitle,
-                                    $"${(memberStatus ? EntryModel.ApplyDiscount(price, MEMBERSHIP_DISCOUNT) : price.ToString())}",
+                                    $"${(memberStatus ? EntryModel.ApplyDiscount(price, MEMBERSHIP_DISCOUNT) : price)}",
                                     stockStatusData[x].InnerText.Contains("Pre-order", StringComparison.OrdinalIgnoreCase) ? "PO" : "IS", WEBSITE_TITLE
                                 )
                             );

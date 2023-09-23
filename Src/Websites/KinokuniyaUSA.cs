@@ -191,7 +191,6 @@ namespace MangaLightNovelWebScrape.Websites
                                 )
                             )
                         {
-                            // Logger.Debug(titleText);
                             KinokuniyaUSAData.Add(
                                 new EntryModel(
                                     TitleParse(titleText, book, bookTitle, entryDesc, oneShotCheck), 

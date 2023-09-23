@@ -28,6 +28,7 @@ namespace MangaLightNovelWebScrape.Websites
         [GeneratedRegex(",| #\\d+-\\d+| #\\d+|Graphic Novel| :|\\(.*?\\)|\\[Novel\\]")] private static partial Regex OmnibusTitleFilterRegex();
         [GeneratedRegex("-(\\d+)")] private static partial Regex OmnibusVolNumberRegex();
         [GeneratedRegex("\\s+|[^a-zA-Z0-9]")] private static partial Regex FindTitleRegex();
+        [GeneratedRegex("Official|Guidebook", RegexOptions.IgnoreCase)] private static partial Regex TitleRemovalRegex();
 
         public static string GetUrl()
         {
@@ -147,8 +148,7 @@ namespace MangaLightNovelWebScrape.Websites
                     doc.LoadHtml(driver.PageSource);
 
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes("//font[@face='dom bold, arial, helvetica']/b");
-
-                    HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes("//form[@method='POST'][contains(text()[2], '$')]//font[@color='#ffcc33'][2]"); // //form[@method='POST'][contains(text()[2], '$')]/text()[2] | //font[2][@color='#ffcc33']
+                    HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes("//form[@method='POST'][contains(text()[2], '$')]//font[@color='#ffcc33'][2]");
                     driver.Close();
                     driver.Quit();
                     string titleText;
@@ -167,7 +167,8 @@ namespace MangaLightNovelWebScrape.Websites
                     {
                         titleText = titleData[x].InnerText;
                         if (
-                                string.IsNullOrWhiteSpace(titleText) 
+                                TitleRemovalRegex().IsMatch(titleText)
+                                || string.IsNullOrWhiteSpace(titleText) 
                                 || titleText.Contains("Poster") 
                                 || (
                                         titleText.Contains("[Novel]") 

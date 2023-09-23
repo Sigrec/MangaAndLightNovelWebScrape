@@ -3,6 +3,7 @@ using Microsoft.IdentityModel.Tokens;
 using OpenQA.Selenium.Firefox;
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
 namespace MangaLightNovelWebScrape
@@ -116,7 +117,7 @@ namespace MangaLightNovelWebScrape
         {
             await Task.Run(() => 
             {
-                MasterList.Add(BooksAMillion.GetBooksAMillionData(bookTitle, book, isMember, 1));
+                MasterList.Add(BooksAMillion.GetBooksAMillionData(bookTitle, book, isMember));
             });
         }
 
@@ -209,7 +210,6 @@ namespace MangaLightNovelWebScrape
        /// <param name="biggerList">The bigger list of data sets between the two websites</param>
        /// <param name="bookTitle">The initial title inputted by the user used to determine if the titles in the lists "match"</param>
        /// <returns>The final list of data containing all available lowest price volumes between the two websites</returns>
-       /// TODO Need to figure out what to do if the prices are the same, most likely at the end the site with the most entries is favored? Or can list multiple
         private static List<EntryModel> PriceComparison(List<EntryModel> smallerList, List<EntryModel> biggerList, string bookTitle)
         {
             List<EntryModel> finalData = new List<EntryModel>(); // The final list of data containing all available volumes for the series from the website with the lowest price
@@ -218,7 +218,7 @@ namespace MangaLightNovelWebScrape
             double biggerListCurrentVolNum; // The current vol number from the website with the bigger list of volumes that is being checked
             // Logger.Debug($"Smaller -> {smallerList[0].Website} | Bigger -> {biggerList[0].Website}");
 
-            foreach (EntryModel biggerListData in biggerList){
+            foreach (EntryModel biggerListData in CollectionsMarshal.AsSpan(biggerList)){
                 sameVolumeCheck = false; // Reset the check to determine if two volumes with the same number has been found to false
                 biggerListCurrentVolNum = EntryModel.GetCurrentVolumeNum(biggerListData.Entry);
 
@@ -229,26 +229,26 @@ namespace MangaLightNovelWebScrape
                         // Check to see if the titles are not the same and they are not similar enough, or it is not new then go to the next volume
                         if (smallerList[y].Entry.Contains("Imperfect") || (!smallerList[y].Entry.Equals(biggerListData.Entry, StringComparison.OrdinalIgnoreCase) && !EntryModel.Similar(smallerList[y].Entry, biggerListData.Entry)))
                         {
-                            Logger.Debug($"Not The Same {smallerList[y].Entry} | {biggerListData.Entry} | {!smallerList[y].Entry.Equals(biggerListData.Entry)} | {!EntryModel.Similar(smallerList[y].Entry, biggerListData.Entry)} | {smallerList[y].Entry.Contains("Imperfect")}");
+                            // Logger.Debug($"Not The Same {smallerList[y].Entry} | {biggerListData.Entry} | {!smallerList[y].Entry.Equals(biggerListData.Entry)} | {!EntryModel.Similar(smallerList[y].Entry, biggerListData.Entry)} | {smallerList[y].Entry.Contains("Imperfect")}");
                             continue;
                         }
                         // If the vol numbers are the same and the titles are similar or the same from the if check above, add the lowest price volume to the list
                         
-                        Logger.Debug($"MATCH? ({biggerListCurrentVolNum}, {(biggerListData.Entry.Contains("Box Set") ? EntryModel.GetCurrentVolumeNum(smallerList[y].Entry) : EntryModel.GetCurrentVolumeNum(smallerList[y].Entry))}) = {biggerListCurrentVolNum == (biggerListData.Entry.Contains("Box Set") ? EntryModel.GetCurrentVolumeNum(smallerList[y].Entry) : EntryModel.GetCurrentVolumeNum(smallerList[y].Entry))}");
+                        // Logger.Debug($"MATCH? ({biggerListCurrentVolNum}, {(biggerListData.Entry.Contains("Box Set") ? EntryModel.GetCurrentVolumeNum(smallerList[y].Entry) : EntryModel.GetCurrentVolumeNum(smallerList[y].Entry))}) = {biggerListCurrentVolNum == (biggerListData.Entry.Contains("Box Set") ? EntryModel.GetCurrentVolumeNum(smallerList[y].Entry) : EntryModel.GetCurrentVolumeNum(smallerList[y].Entry))}");
                         if (biggerListCurrentVolNum == (biggerListData.Entry.Contains("Box Set") ? EntryModel.GetCurrentVolumeNum(smallerList[y].Entry) : EntryModel.GetCurrentVolumeNum(smallerList[y].Entry)))
                         {
-                            Logger.Debug($"Found Match for {biggerListData.Entry} {smallerList[y].Entry}");
-                            Logger.Debug($"PRICE COMPARISON ({float.Parse(biggerListData.Price[1..])}, {float.Parse(smallerList[y].Price[1..])}) -> {float.Parse(biggerListData.Price[1..]) > float.Parse(smallerList[y].Price[1..])}");
+                            // Logger.Debug($"Found Match for {biggerListData.Entry} {smallerList[y].Entry}");
+                            // Logger.Debug($"PRICE COMPARISON ({float.Parse(biggerListData.Price[1..])}, {float.Parse(smallerList[y].Price[1..])}) -> {float.Parse(biggerListData.Price[1..]) > float.Parse(smallerList[y].Price[1..])}");
                             // Get the lowest price between the two then add the lowest dataset
                             if (float.Parse(biggerListData.Price[1..]) > float.Parse(smallerList[y].Price[1..]))
                             {
                                 finalData.Add(smallerList[y]);
-                                Logger.Debug($"Add Match SmallerList {smallerList[y]}");
+                                // Logger.Debug($"Add Match SmallerList {smallerList[y]}");
                             }
                             else
                             {
                                 finalData.Add(biggerListData);
-                                Logger.Debug($"Add Match BiggerList {biggerListData}");
+                                // Logger.Debug($"Add Match BiggerList {biggerListData}");
                             }
                             smallerList.RemoveAt(y);
 
@@ -262,7 +262,7 @@ namespace MangaLightNovelWebScrape
 
                 if (!sameVolumeCheck) // If the current volume number in the bigger list has no match in the smaller list (same volume number and name) then add it
                 {
-                    Logger.Debug($"Add No Match {biggerListData}");
+                    // Logger.Debug($"Add No Match {biggerListData}");
                     finalData.Add(biggerListData);
                 }
             }
@@ -279,7 +279,7 @@ namespace MangaLightNovelWebScrape
             return finalData;
         }
     
-        // TODO Need to find a way to find/check for driver.exe since it only checks current drive
+        // TODO Need to find a way to find/check for driver.exe since it only checks current drive, fixed in next selenium version https://github.com/SeleniumHQ/selenium/pull/12711
         /// <summary>
         /// 
         /// </summary>
@@ -295,6 +295,7 @@ namespace MangaLightNovelWebScrape
                         PageLoadStrategy = PageLoadStrategy.Eager,
                     };
                     edgeOptions.AddArguments(ChromeBrowserArguments);
+                    edgeOptions.AddUserProfilePreference("profile.default_content_settings.geolocation", 2);
                     if (needsUserAgent)
                     {
                         WebDriver dummyDriver = new EdgeDriver(edgeOptions);
@@ -318,6 +319,7 @@ namespace MangaLightNovelWebScrape
                         PageLoadStrategy = PageLoadStrategy.Eager,
                     };
                     chromeOptions.AddArguments(ChromeBrowserArguments);
+                    chromeOptions.AddUserProfilePreference("profile.default_content_settings.geolocation", 2);
                     if (needsUserAgent)
                     {
                         WebDriver dummyDriver = new ChromeDriver(chromeOptions);
@@ -347,17 +349,17 @@ namespace MangaLightNovelWebScrape
         /// <param name="bookTitle"></param>
         /// <returns></returns>
         public static string FilterBookTitle(string bookTitle){
-            char[] trimedChars = {' ', '\'', '!', '-', ','};
+            char[] trimedChars = [' ', '\'', '!', '-', ','];
             foreach (char var in trimedChars){
                 bookTitle = bookTitle.Replace(var.ToString(), "%" + Convert.ToByte(var).ToString("x2"));
             }
             return bookTitle;
         }
 
-        // TODO Add Logic for when the prices are the same
         // TODO Create a Website Interface so websites can extend it
         // TODO Improve performance of Website Queries Starting w/ RightStufAnime
         // TODO Add ReadMe
+        // TODO Figure out how to remove "know your location" from B&N & BAM
 
         /// <summary>
         /// Starts the web scrape
@@ -551,7 +553,7 @@ namespace MangaLightNovelWebScrape
             watch.Start();
             MasterScrape test = new MasterScrape().EnableDebugMode();
             // { Website.RightStufAnime, Website.BarnesAndNoble, Website.InStockTrades, Website.RobertsAnimeCornerStore, Website.KinokuniyaUSA, Website.BooksAMillion }
-            await test.InitializeScrapeAsync("overlord", Book.Manga, new string[] { }, new List<Website>() {  Website.BooksAMillion }, "Chrome", false, false, false, false, false);
+            await test.InitializeScrapeAsync("jujutsu kaisen", Book.Manga, [], [Website.RightStufAnime, Website.BarnesAndNoble, Website.InStockTrades], "Chrome", false, false, false, false, false);
             watch.Stop();
             Logger.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
