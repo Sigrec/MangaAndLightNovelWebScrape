@@ -1,5 +1,3 @@
-using System;
-using OpenQA.Selenium.Firefox;
 namespace MangaLightNovelWebScrape.Websites
 {
     public partial class AmazonUSA

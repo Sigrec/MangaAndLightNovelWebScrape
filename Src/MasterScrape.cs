@@ -1,8 +1,6 @@
 using MangaLightNovelWebScrape.Websites;
-using Microsoft.IdentityModel.Tokens;
 using OpenQA.Selenium.Firefox;
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
@@ -10,10 +8,10 @@ namespace MangaLightNovelWebScrape
 {
     public partial class MasterScrape
     { 
-        private List<List<EntryModel>> MasterList = new();
+        private List<List<EntryModel>> MasterList = [];
         private static string browser { get; set; }
-        private ConcurrentBag<List<EntryModel>> ResultsList = new();
-        private List<Task> WebTasks = new();
+        private ConcurrentBag<List<EntryModel>> ResultsList = [];
+        private List<Task> WebTasks = [];
         private Task[] ComparisonTaskList; // Holds the comparison tasks for execution
         private Dictionary<string, string> MasterUrls = new Dictionary<string, string>
         {
@@ -35,14 +33,14 @@ namespace MangaLightNovelWebScrape
         /// <summary>
         /// The browser arguments used for Chrome & Edge
         /// </summary>
-        private static string[] ChromeBrowserArguments = { "--headless=new", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications" };
+        private static string[] ChromeBrowserArguments = { "--headless=new", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent" };
         /// <summary>
         /// The browser arguments used for FireFox
         /// </summary>
-        private static string[] FireFoxBrowserArguments = { "-headless", "-new-instance", "-private" };
+        private static string[] FireFoxBrowserArguments = { "-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3" };
         [GeneratedRegex(@"[^\w+]")] public static partial Regex RemoveNonWordsRegex();
         [GeneratedRegex(@"\d{1,3}")] public static partial Regex FindVolNumRegex();
-        [GeneratedRegex(@"\s{2,}|--|—")] public static partial Regex MultipleWhiteSpaceRegex();
+        [GeneratedRegex(@"--|—|\s{2,}")] public static partial Regex MultipleWhiteSpaceRegex();
 
         // In the UK there's 
         // Wordery https://wordery.com/
@@ -57,21 +55,10 @@ namespace MangaLightNovelWebScrape
         // Alibris https://m.alibris.co.uk/
         // And, of course, SciFier https://scifier.com/
 
-        public enum Website
+        static MasterScrape()
         {
-            AmazonJapan,
-            AmazonUSA,
-            BarnesAndNoble,
-            BooksAMillion,
-            CDJapan,
-            InStockTrades,
-            KinokuniyaUSA,
-            RightStufAnime,
-            RobertsAnimeCornerStore,
-            Indigo
+           
         }
-
-        public MasterScrape() { }
 
         private async Task CreateRightStufAnimeTask(string bookTitle, Book book, bool isMember)
         {
@@ -165,7 +152,7 @@ namespace MangaLightNovelWebScrape
         /// <returns></returns>
         public List<EntryModel> GetResults()
         {
-            return MasterList.ElementAt(0);
+            return MasterList != null && MasterList.Any() ? MasterList[0] : null;
         }
 
         /// <summary>
@@ -190,7 +177,7 @@ namespace MangaLightNovelWebScrape
         /// <summary>
         /// Clears all entry and url data for every website
         /// </summary>
-        public static void ClearAllWebsiteData()
+        private static void ClearAllWebsiteData()
         {
             RightStufAnime.ClearData();
             RobertsAnimeCornerStore.ClearData();
@@ -271,7 +258,7 @@ namespace MangaLightNovelWebScrape
             // Smaller list has volumes that are not present in the bigger list and are volumes that have a volume # greater than the greatest volume # in the bigger lis
             for (int x = 0; x < smallerList.Count; x++)
             {
-                Logger.Debug($"Add SmallerList Leftovers {smallerList[x]}");
+                // Logger.Debug($"Add SmallerList Leftovers {smallerList[x]}");
                 finalData.Add(smallerList[x]);
             }
             // finalData.ForEach(data => Logger.Info($"Final -> {data}"));
@@ -294,6 +281,8 @@ namespace MangaLightNovelWebScrape
                     {
                         PageLoadStrategy = PageLoadStrategy.Eager,
                     };
+                    EdgeDriverService edgeDriverService = EdgeDriverService.CreateDefaultService();
+                    edgeDriverService.HideCommandPromptWindow = true;
                     edgeOptions.AddArguments(ChromeBrowserArguments);
                     edgeOptions.AddUserProfilePreference("profile.default_content_settings.geolocation", 2);
                     if (needsUserAgent)
@@ -302,22 +291,26 @@ namespace MangaLightNovelWebScrape
                         edgeOptions.AddArgument("user-agent=" + dummyDriver.ExecuteScript("return navigator.userAgent").ToString().Replace("Headless", ""));
                         dummyDriver.Quit();
                     }
-                    return new EdgeDriver(edgeOptions);
+                    return new EdgeDriver(edgeDriverService, edgeOptions);
                 case "FireFox":
                     FirefoxOptions firefoxOptions = new()
                     {
                         PageLoadStrategy = PageLoadStrategy.Eager,
                         AcceptInsecureCertificates = true
                     };
+                    FirefoxDriverService fireFoxDriverService = FirefoxDriverService.CreateDefaultService();
+                    fireFoxDriverService.HideCommandPromptWindow = true;
                     firefoxOptions.AddArguments(FireFoxBrowserArguments);
                     firefoxOptions.SetPreference("profile.default_content_settings.geolocation", 2); 
-                    return new FirefoxDriver(firefoxOptions);
+                    return new FirefoxDriver(fireFoxDriverService, firefoxOptions);
                 case "Chrome":
                 default:
                     ChromeOptions chromeOptions = new()
                     {
                         PageLoadStrategy = PageLoadStrategy.Eager,
                     };
+                    ChromeDriverService chromeDriverService = ChromeDriverService.CreateDefaultService();
+                    chromeDriverService.HideCommandPromptWindow = true;
                     chromeOptions.AddArguments(ChromeBrowserArguments);
                     chromeOptions.AddUserProfilePreference("profile.default_content_settings.geolocation", 2);
                     if (needsUserAgent)
@@ -326,7 +319,7 @@ namespace MangaLightNovelWebScrape
                         chromeOptions.AddArgument("user-agent=" + dummyDriver.ExecuteScript("return navigator.userAgent").ToString().Replace("Headless", ""));
                         dummyDriver.Quit();
                     }
-                    return new ChromeDriver(chromeOptions);
+                    return new ChromeDriver(chromeDriverService, chromeOptions);
             }
         }
 
@@ -356,6 +349,48 @@ namespace MangaLightNovelWebScrape
             return bookTitle;
         }
 
+        private static List<Website> GenerateWebsiteList(IEnumerable<string> input)
+        {
+            List<Website> WebsiteList = [];
+            if (input != null && input.Any())
+            {
+                foreach (string website in input)
+                {
+                    switch (website)
+                    {
+                        case "RightStufAnime":
+                            WebsiteList.Add(Website.RightStufAnime);
+                            break;
+                        case "Barnes & Noble":
+                            WebsiteList.Add(Website.BarnesAndNoble);
+                            break;
+                        case "Books-A-Million":
+                            WebsiteList.Add(Website.BooksAMillion);
+                            break;
+                        case "RobertsAnimeCornerStore":
+                            WebsiteList.Add(Website.RobertsAnimeCornerStore);
+                            break;
+                        case "InStockTrades":
+                            WebsiteList.Add(Website.InStockTrades);
+                            break;
+                        case "Kinokuniya USA":
+                            WebsiteList.Add(Website.KinokuniyaUSA);
+                            break;
+                        case "AmazonUSA":
+                            WebsiteList.Add(Website.AmazonUSA);
+                            break;
+                        case "AmazonJapan":
+                            WebsiteList.Add(Website.AmazonJapan);
+                            break;
+                        case "CDJapan":
+                            WebsiteList.Add(Website.CDJapan);
+                            break;
+                    }
+                }
+            }
+            return WebsiteList;
+        }
+        
         // TODO Create a Website Interface so websites can extend it
         // TODO Improve performance of Website Queries Starting w/ RightStufAnime
         // TODO Add ReadMe
@@ -373,7 +408,7 @@ namespace MangaLightNovelWebScrape
         /// <param name="isBooksAMillionMember">Whether the user is a Books-A-Million Member</param>
         /// <param name="isKinokuniyaUSAMember">Whether the user is a Kinokuniya USA member</param>
         /// <returns></returns>
-        public async Task InitializeScrapeAsync(string bookTitle, Book book, string[] stockFilter, List<Website> webScrapeList, string curBrowser = "Error", bool isRightStufMember = false, bool isBarnesAndNobleMember = false, bool isBooksAMillionMember = false, bool isKinokuniyaUSAMember = false, bool isIndigoMember = false)
+        public async Task InitializeScrapeAsync(string bookTitle, Book book, string[] stockFilter, IEnumerable<string> webScrapeList, string curBrowser = "Error", bool isRightStufMember = false, bool isBarnesAndNobleMember = false, bool isBooksAMillionMember = false, bool isKinokuniyaUSAMember = false, bool isIndigoMember = false)
         {
             browser = curBrowser;
             Logger.Debug($"Running on {browser} Browser");
@@ -386,7 +421,7 @@ namespace MangaLightNovelWebScrape
                 }
                 
                 // Generate List of Tasks to 
-                foreach (Website site in webScrapeList)
+                foreach (Website site in GenerateWebsiteList(webScrapeList))
                 {
                     switch (site)
                     {
@@ -427,96 +462,101 @@ namespace MangaLightNovelWebScrape
                 await Task.WhenAll(WebTasks);
                 MasterList.RemoveAll(x => x.Count == 0); // Clear all lists from websites that didn't have any data
                 WebTasks.Clear();
-                if (MasterList.IsNullOrEmpty())
+                if (MasterList != null && MasterList.Any())
                 {
-                    goto Skip;
-                }
-
-                // Apply Stock Status Filter
-                Logger.Debug("Applying Stock Filters");
-                if (stockFilter.Length != 0)
-                {
-                    foreach (List<EntryModel> website in MasterList)
+                    // Apply Stock Status Filter
+                    if (stockFilter != null && stockFilter.Any())
                     {
-                        for (int x = 0; x < website.Count; x++)
+                        Logger.Debug("Applying Stock Filters");
+                        foreach (List<EntryModel> website in MasterList)
                         {
-                            if (stockFilter.Contains(website[x].StockStatus))
+                            for (int x = 0; x < website.Count; x++)
                             {
-                                Logger.Debug($"Removed {website[x].Entry} for {website[x].StockStatus} from {website[x].Website}");
-                                website.RemoveAt(x--);
+                                if (stockFilter.Contains(website[x].StockStatus))
+                                {
+                                    Logger.Debug($"Removed {website[x].Entry} for {website[x].StockStatus} from {website[x].Website}");
+                                    website.RemoveAt(x--);
+                                }
+                            }
+                        }
+                    }
+
+                    // If user only is searched from 1 website then skip comparison
+                    if (MasterList.Count == 1)
+                    {
+                        MasterList[0] = new List<EntryModel>(MasterList[0]);
+                        goto Skip;
+                    }
+
+                    int pos = 0; // The position of the new lists of data after comparing
+                    int taskCount;
+                    int initialMasterListCount;
+                    Array.Resize(ref ComparisonTaskList, MasterList.Count / 2); // Holds the comparison tasks for execution
+                    Logger.Debug("Starting Price Comparison");
+                    while (MasterList.Count > 1) // While there is still 2 or more lists of data to compare prices continue
+                    {
+                        initialMasterListCount = MasterList.Count;
+                        taskCount = MasterList.Count / 2;
+                        MasterList.Sort((dataSet1, dataSet2) => dataSet1.Count.CompareTo(dataSet2.Count));
+                        for (int curTask = 0; curTask < MasterList.Count - 1; curTask += 2) // Create all of the tasks for compare processing
+                        {
+                            List<EntryModel> smallerList = MasterList[curTask];
+                            List<EntryModel> biggerList = MasterList[curTask + 1];
+                            ComparisonTaskList[pos] = Task.Run(() => 
+                            {
+                                ResultsList.Add(PriceComparison(smallerList, biggerList, bookTitle));
+                            });
+                            pos++;
+                        }
+                        await Task.WhenAll(ComparisonTaskList);
+                        MasterList.AddRange(ResultsList); // Add all of the compared lists to the MasterList
+                        ResultsList.Clear();
+
+                        MasterList.RemoveRange(0, initialMasterListCount % 2 == 0 ? initialMasterListCount : initialMasterListCount - 1); // Shrink List
+
+                        // MasterList[MasterList.Count - 1].ForEach(data => Logger.Info($"List 1 {data.ToString()}"));
+                        // MasterList[0].ForEach(data => Logger.Debug($"List 0 {data}"));
+                        // Logger.Debug("Current Pos = " + pos);
+                        pos = 0;
+                    }
+
+                    // Add the links to the MasterUrl list and clear data lists
+                    Skip:
+                    foreach (EntryModel entry in MasterList[0])
+                    {
+                        if (string.IsNullOrWhiteSpace(MasterUrls[entry.Website]))
+                        {
+                            switch (entry.Website)
+                            {
+                                case RightStufAnime.WEBSITE_TITLE:
+                                    MasterUrls[entry.Website] = RightStufAnime.GetUrl();
+                                    break;
+                                case RobertsAnimeCornerStore.WEBSITE_TITLE:
+                                    MasterUrls[entry.Website] = RobertsAnimeCornerStore.GetUrl();
+                                    break;
+                                case InStockTrades.WEBSITE_TITLE:
+                                    MasterUrls[entry.Website] = InStockTrades.GetUrl();
+                                    break;
+                                case BarnesAndNoble.WEBSITE_TITLE:
+                                    MasterUrls[entry.Website] = BarnesAndNoble.GetUrl();
+                                    break;
+                                case KinokuniyaUSA.WEBSITE_TITLE:
+                                    MasterUrls[entry.Website] = KinokuniyaUSA.GetUrl();
+                                    break;
+                                case BooksAMillion.WEBSITE_TITLE:
+                                    MasterUrls[entry.Website] = BooksAMillion.GetUrl();
+                                    break;
+                                case AmazonUSA.WEBSITE_TITLE:
+                                    MasterUrls[entry.Website] = AmazonUSA.AmazonUSALinks[0];
+                                    break;
+                                case Indigo.WEBSITE_TITLE:
+                                    MasterUrls[entry.Website] = Indigo.IndigoLinks[0];
+                                    break;
                             }
                         }
                     }
                 }
 
-                int pos = 0; // The position of the new lists of data after comparing
-                int taskCount;
-                int initialMasterListCount;
-                Array.Resize(ref ComparisonTaskList, MasterList.Count / 2); // Holds the comparison tasks for execution
-                Logger.Debug("Starting Price Comparison");
-                while (MasterList.Count > 1) // While there is still 2 or more lists of data to compare prices continue
-                {
-                    initialMasterListCount = MasterList.Count;
-                    taskCount = MasterList.Count / 2;
-                    MasterList.Sort((dataSet1, dataSet2) => dataSet1.Count.CompareTo(dataSet2.Count));
-                    for (int curTask = 0; curTask < MasterList.Count - 1; curTask += 2) // Create all of the tasks for compare processing
-                    {
-                        List<EntryModel> smallerList = MasterList[curTask];
-                        List<EntryModel> biggerList = MasterList[curTask + 1];
-                        ComparisonTaskList[pos] = Task.Run(() => 
-                        {
-                            ResultsList.Add(PriceComparison(smallerList, biggerList, bookTitle));
-                        });
-                        pos++;
-                    }
-                    await Task.WhenAll(ComparisonTaskList);
-                    MasterList.AddRange(ResultsList); // Add all of the compared lists to the MasterList
-                    ResultsList.Clear();
-
-                    MasterList.RemoveRange(0, initialMasterListCount % 2 == 0 ? initialMasterListCount : initialMasterListCount - 1); // Shrink List
-
-                    // MasterList[MasterList.Count - 1].ForEach(data => Logger.Info($"List 1 {data.ToString()}"));
-                    // MasterList[0].ForEach(data => Logger.Debug($"List 0 {data}"));
-                    // Logger.Debug("Current Pos = " + pos);
-                    pos = 0;
-                }
-
-                // Add the links to the MasterUrl list and clear data lists
-                foreach (EntryModel entry in MasterList[0])
-                {
-                    if (string.IsNullOrWhiteSpace(MasterUrls[entry.Website]))
-                    {
-                        switch (entry.Website)
-                        {
-                            case RightStufAnime.WEBSITE_TITLE:
-                                MasterUrls[entry.Website] = RightStufAnime.GetUrl();
-                                break;
-                            case RobertsAnimeCornerStore.WEBSITE_TITLE:
-                                MasterUrls[entry.Website] = RobertsAnimeCornerStore.GetUrl();
-                                break;
-                            case InStockTrades.WEBSITE_TITLE:
-                                MasterUrls[entry.Website] = InStockTrades.GetUrl();
-                                break;
-                            case BarnesAndNoble.WEBSITE_TITLE:
-                                MasterUrls[entry.Website] = BarnesAndNoble.GetUrl();
-                                break;
-                            case KinokuniyaUSA.WEBSITE_TITLE:
-                                MasterUrls[entry.Website] = KinokuniyaUSA.GetUrl();
-                                break;
-                            case BooksAMillion.WEBSITE_TITLE:
-                                MasterUrls[entry.Website] = BooksAMillion.GetUrl();
-                                break;
-                            case AmazonUSA.WEBSITE_TITLE:
-                                MasterUrls[entry.Website] = AmazonUSA.AmazonUSALinks[0];
-                                break;
-                            case Indigo.WEBSITE_TITLE:
-                                MasterUrls[entry.Website] = Indigo.IndigoLinks[0];
-                                break;
-                        }
-                    }
-                }
-                Skip:
-                ClearAllWebsiteData();
                 if (IsDebugEnabled)
                 {
                     using (StreamWriter outputFile = new(@"Data\MasterData.txt"))
@@ -544,23 +584,24 @@ namespace MangaLightNovelWebScrape
                         }
                     }
                 }
+                ClearAllWebsiteData();
             });
         }
         
-        private static async Task Main(string[] args)
-        {
-            Stopwatch watch = new();
-            watch.Start();
-            MasterScrape test = new MasterScrape().EnableDebugMode();
-            // { Website.RightStufAnime, Website.BarnesAndNoble, Website.InStockTrades, Website.RobertsAnimeCornerStore, Website.KinokuniyaUSA, Website.BooksAMillion }
-            await test.InitializeScrapeAsync("jujutsu kaisen", Book.Manga, [], [Website.RightStufAnime, Website.BarnesAndNoble, Website.InStockTrades], "Chrome", false, false, false, false, false);
-            watch.Stop();
-            Logger.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
-        }
-
-        // public static void Main(string[] args)
+        // private static async Task Main(string[] args)
         // {
-            
+        //     System.Diagnostics.Stopwatch watch = new();
+        //     watch.Start();
+        //     MasterScrape test = new MasterScrape().EnableDebugMode();
+        //     List<string> web = ["RightStufAnime"];
+        //     await test.InitializeScrapeAsync("world trigger", Book.Manga, [], web, "Edge", false, false, false, false, false);
+        //     watch.Stop();
+        //     Logger.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         // }
+
+        public static void Main(string[] args)
+        {
+            
+        }
     }
 }

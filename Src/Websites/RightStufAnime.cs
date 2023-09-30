@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace MangaLightNovelWebScrape.Websites
 {
     public partial class RightStufAnime
@@ -84,17 +82,6 @@ namespace MangaLightNovelWebScrape.Websites
                     HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes("//div[@class='product-line-stock-container '] | //span[@class='product-line-stock-msg-out-text']");
                     HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode("//li[@class='global-views-pagination-next']");
 
-                    if (pageCheck != null)
-                    {
-                        currPageNum++;
-                    }
-                    else
-                    {
-                        driver.Close();
-                        driver.Quit();
-                        anotherPage = false;
-                    }
-
                     for (int x = 0; x < titleData.Count; x++)
                     {
                         titleText = TitleParseRegex().Replace(titleData[x].InnerText, "").Trim();           
@@ -127,6 +114,17 @@ namespace MangaLightNovelWebScrape.Websites
                                 )
                             );
                         }
+                    }
+
+                    if (pageCheck != null)
+                    {
+                        currPageNum++;
+                    }
+                    else
+                    {
+                        driver.Close();
+                        driver.Quit();
+                        anotherPage = false;
                     }
                 }
                 RightStufAnimeData.Sort(new VolumeSort());

@@ -76,11 +76,12 @@ namespace MangaLightNovelWebScrape
         {
             if (string.IsNullOrEmpty(s)) return ((t ?? "").Length <= maxDistance) ? (t ?? "").Length : -1;
             if (string.IsNullOrEmpty(t)) return (s.Length <= maxDistance) ? s.Length : -1;
-
+            s = s.ToLower();
+            t = t.ToLower(); 
             // if strings of different lengths, ensure shorter string is in s. This can result in a little
             // faster speed by spending more time spinning just the inner loop during the main processing.
             if (s.Length > t.Length) {
-                var temp = s; s = t; t = temp; // swap s and t
+                (t, s) = (s, t);
             }
             int sLen = s.Length; // this is also the minimun length of the two strings
             int tLen = t.Length;

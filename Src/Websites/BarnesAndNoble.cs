@@ -1,7 +1,3 @@
-using System.Collections.ObjectModel;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
-
 namespace MangaLightNovelWebScrape.Websites
 {
     public partial class BarnesAndNoble
@@ -78,7 +74,7 @@ namespace MangaLightNovelWebScrape.Websites
                     titleText = ParseTitleRegex().Replace(titleText, "");
                 }
 
-                StringBuilder curTitle = new StringBuilder(titleText);
+                StringBuilder curTitle = new StringBuilder(titleText).Replace('-', ' ');
                 if (titleText.Contains("Toilet-bound Hanako-kun First Stall"))
                 {
                     curTitle.Append(" Box Set");
@@ -91,7 +87,7 @@ namespace MangaLightNovelWebScrape.Websites
                 }
                 else if (book == Book.LightNovel && !titleText.Contains("Novel"))
                 {
-                    if (titleText.IndexOf("Vol") != -1)
+                    if (titleText.Contains("Vol"))
                     {
                         curTitle.Insert(titleText.IndexOf("Vol"), "Novel ");
                     }
@@ -109,7 +105,7 @@ namespace MangaLightNovelWebScrape.Websites
         private static bool RunClickEvent(string xPath, WebDriver driver, WebDriverWait wait, string type)
         {
             var elements = driver.FindElements(By.XPath(xPath));
-            if (!elements.IsNullOrEmpty())
+            if (elements != null && elements.Any())
             {
                 Logger.Debug(type);
                 wait.Until(driver => driver.FindElement(By.XPath("(//span[@class='augHeader']/h2[contains(text(), 'Format')]/ancestor::span)[1]"))).Click();
@@ -140,7 +136,7 @@ namespace MangaLightNovelWebScrape.Websites
                 wait.Until(e => e.FindElement(By.XPath("//div[@class='product-view-section pl-lg-l p-sm-0'] | //div[@id='productDetail']")));
 
                 var elements = driver.FindElements(By.XPath("//div[@id='productDetail']"));
-                if (!elements.IsNullOrEmpty())
+                if (elements != null && elements.Any())
                 {
                     oneShotCheck = true;
                     Logger.Debug("One Shot Series");
@@ -289,7 +285,7 @@ namespace MangaLightNovelWebScrape.Websites
                         Logger.Debug("Going to Format Check");
                         goto FormatCheck;
                     }
-                    else if (!oneShotCheck && !secondCheck && BarnesAndNobleData.IsNullOrEmpty())
+                    else if (!oneShotCheck && !secondCheck && BarnesAndNobleData.Count == 0)
                     {
                         Logger.Debug("Checking Dif Url for Manga");
                         secondCheck = true;
@@ -316,7 +312,7 @@ namespace MangaLightNovelWebScrape.Websites
             {
                 using (StreamWriter outputFile = new(@"Data\BarnesAndNobleData.txt"))
                 {
-                    if (!BarnesAndNobleData.IsNullOrEmpty())
+                    if (BarnesAndNobleData != null && BarnesAndNobleData.Any())
                     {
                         foreach (EntryModel data in BarnesAndNobleData)
                         {

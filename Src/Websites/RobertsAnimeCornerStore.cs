@@ -1,7 +1,3 @@
-using System;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace MangaLightNovelWebScrape.Websites
 {
     public partial class RobertsAnimeCornerStore

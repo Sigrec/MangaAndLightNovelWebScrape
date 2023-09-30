@@ -1,7 +1,3 @@
-using System.Text.RegularExpressions;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
-
 namespace MangaLightNovelWebScrape.Websites
 {
     public partial class BooksAMillion
@@ -124,7 +120,7 @@ namespace MangaLightNovelWebScrape.Websites
         private static bool RunClickEvent(string xPath, WebDriver driver, WebDriverWait wait, string type)
         {
             var elements = driver.FindElements(By.XPath(xPath));
-            if (!elements.IsNullOrEmpty())
+            if (elements != null && elements.Any())
             {
                 Logger.Debug(type);
                 wait.Until(driver => driver.FindElement(By.XPath(xPath))).Click();
@@ -209,8 +205,8 @@ namespace MangaLightNovelWebScrape.Websites
                                     $"${(memberStatus ? EntryModel.ApplyDiscount(priceVal, MEMBERSHIP_DISCOUNT) : priceVal.ToString())}",
                                     stockStatusData[x].InnerText switch
                                     {
-                                        string curStatus when curStatus.Contains("In Stock") => "IS",
-                                        string curStatus when curStatus.Contains("Preorder") => "PO",
+                                        string curStatus when curStatus.Contains("In Stock", StringComparison.OrdinalIgnoreCase) => "IS",
+                                        string curStatus when curStatus.Contains("Preorder", StringComparison.OrdinalIgnoreCase) => "PO",
                                         _ => "OOS",
                                     },
                                     WEBSITE_TITLE

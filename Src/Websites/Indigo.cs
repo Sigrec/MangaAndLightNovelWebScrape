@@ -1,6 +1,3 @@
-using System.Collections.ObjectModel;
-using System.Runtime.InteropServices;
-using Microsoft.IdentityModel.Tokens;
 namespace MangaLightNovelWebScrape.Websites
 {
     public partial class Indigo
@@ -31,7 +28,7 @@ namespace MangaLightNovelWebScrape.Websites
         private static bool RunClickEvent(string xPath, WebDriver driver, WebDriverWait wait, string type)
         {
             var elements = driver.FindElements(By.XPath(xPath));
-            if (!elements.IsNullOrEmpty())
+            if (elements != null && elements.Any())
             {
                 Logger.Debug(type);
                 wait.Until(driver => driver.FindElements(By.XPath(xPath))[0]).Click();
@@ -62,7 +59,7 @@ namespace MangaLightNovelWebScrape.Websites
                 if(RunClickEvent("//div[@id='refinement-heading']/span[@aria-label='Book Format']", driver, wait, "Clicking Book Format Tab"))
                 {
                     var formatBoxesElements = driver.FindElements(By.XPath("//*[@id='refinement-book-format']/ul/li/button/div/label/div[2]/span[1]"));
-                    if (!formatBoxesElements.IsNullOrEmpty())
+                    if (formatBoxesElements != null && formatBoxesElements.Any())
                     {
                         foreach (IWebElement format in formatBoxesElements)
                         {
@@ -91,7 +88,7 @@ namespace MangaLightNovelWebScrape.Websites
                 // Load all entries before getting the html page source
                 int index = 1;
                 var loadMoreElements = driver.FindElements(By.XPath("//button[@class='btn btn-tertiary more']"));
-                while (!loadMoreElements.IsNullOrEmpty())
+                while (loadMoreElements.Count != 0)
                 {
                     // RunClickEvent("//button[@class='btn btn-tertiary more']", driver, wait, $"Clicking Load More {index}");
                     Logger.Debug($"Clicking Load More {index}");

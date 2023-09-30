@@ -1,6 +1,3 @@
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
-
 namespace MangaLightNovelWebScrape.Websites
 {
     public partial class KinokuniyaUSA
@@ -84,7 +81,7 @@ namespace MangaLightNovelWebScrape.Websites
         private static bool RunClickEvent(string xPath, WebDriver driver, WebDriverWait wait, string type)
         {
             var elements = driver.FindElements(By.XPath(xPath));
-            if (!elements.IsNullOrEmpty())
+            if (elements != null && elements.Any())
             {
                 Logger.Debug(type);
                 wait.Until(driver => driver.FindElement(By.XPath(xPath))).Click();

@@ -9,5 +9,6 @@ global using System;
 global using System.Text.RegularExpressions;
 global using System.Linq;
 global using NLog;
-global using MangaLightNovelWebScrape.Models;
-global using Helpers;
+global using System.Text;
+global using System.Threading.Tasks;
+global using static Src.Models.Constants;
