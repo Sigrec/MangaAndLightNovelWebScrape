@@ -1,4 +1,4 @@
-namespace MangaLightNovelWebScrape.Websites
+namespace MangaLightNovelWebScrape.Websites.America
 {
     public partial class InStockTrades
     {
@@ -6,6 +6,7 @@ namespace MangaLightNovelWebScrape.Websites
         public static List<EntryModel> InStockTradesData = new();
         public const string WEBSITE_TITLE = "InStockTrades";
         private static readonly Logger Logger = LogManager.GetLogger("InStockTradesLogs");
+        private const Region WEBSITE_REGION = Region.America;
 
         [GeneratedRegex(" GN| TP| HC| Manga|(?<=Vol).*|(?<=Box Set).*")]  private static partial Regex TitleRegex();
         [GeneratedRegex("Vol (\\d+)|Box Set (\\d+)")] private static partial Regex VolNumberRegex();
@@ -24,7 +25,7 @@ namespace MangaLightNovelWebScrape.Websites
 
         public static string GetUrl()
         {
-            return InStockTradesLinks[0];
+            return InStockTradesLinks.Count != 0 ? InStockTradesLinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
 
         public static void ClearData()
@@ -33,7 +34,7 @@ namespace MangaLightNovelWebScrape.Websites
             InStockTradesData.Clear();
         }
 
-        private static string TitleParse(string bookTitle, string titleText, Book book)
+        private static string TitleParse(string bookTitle, string titleText, BookType bookType)
         {
             Group volGroup;
             StringBuilder curTitle = new StringBuilder(titleText);
@@ -58,11 +59,11 @@ namespace MangaLightNovelWebScrape.Websites
                 curTitle.Replace("Light Novel", "Novel");
                 curTitle.Replace("Deluxe Edition", "Deluxe");
 
-                if (book == Book.Manga && !titleText.Contains("Vol"))
+                if (bookType == BookType.Manga && !titleText.Contains("Vol"))
                 {
                     curTitle.Append(" Vol 1");
                 }
-                else if (book == Book.LightNovel && !titleText.Contains("Novel"))
+                else if (bookType == BookType.LightNovel && !titleText.Contains("Novel"))
                 {
                     curTitle.Append(" Novel");
                 }
@@ -71,7 +72,7 @@ namespace MangaLightNovelWebScrape.Websites
             return System.Net.WebUtility.HtmlDecode($"{TitleRegex().Replace(OmnibusRegex().Replace(curTitle.ToString(), "Omnibus"), "")} {volGroup.Value.TrimStart('0')}".Trim());
         }
 
-        public static List<EntryModel> GetInStockTradesData(string bookTitle, Book book, byte currPageNum)
+        public static List<EntryModel> GetInStockTradesData(string bookTitle, BookType bookType, byte currPageNum)
         {
             WebDriver driver = MasterScrape.SetupBrowserDriver(false);
             ushort maxPages = 0;
@@ -110,7 +111,7 @@ namespace MangaLightNovelWebScrape.Websites
                             && !titleText.Contains("Character Bk")
                             && (   
                                 (
-                                    book == Book.Manga 
+                                    bookType == BookType.Manga 
                                     && ( // Ensure manga entry contains valid indentifier
                                             oneShotCheck
                                             || (
@@ -130,7 +131,7 @@ namespace MangaLightNovelWebScrape.Websites
                                 )
                                 || 
                                 ( // Ensure novel entry doesn't contain Manga & Contains Novel or doesn't contain "Vol" identifier
-                                    book == Book.LightNovel 
+                                    bookType == BookType.LightNovel 
                                     && !titleText.Contains("Manga") 
                                     && (
                                             titleText.Contains(" Novel", StringComparison.OrdinalIgnoreCase) 
@@ -144,9 +145,9 @@ namespace MangaLightNovelWebScrape.Websites
                             InStockTradesData.Add(
                                 new EntryModel
                                 (
-                                    TitleParse(bookTitle, titleText, book),
+                                    TitleParse(bookTitle, titleText, bookType),
                                     priceData[x].InnerText.Trim(), 
-                                    "IS", 
+                                    StockStatus.IS, 
                                     WEBSITE_TITLE
                                 )
                             );

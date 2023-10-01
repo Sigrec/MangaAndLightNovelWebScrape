@@ -1,4 +1,4 @@
-namespace MangaLightNovelWebScrape.Websites
+namespace MangaLightNovelWebScrape.Websites.America
 {
     public partial class BooksAMillion
     {
@@ -7,6 +7,8 @@ namespace MangaLightNovelWebScrape.Websites
         public const string WEBSITE_TITLE = "Books-A-Million";
         private static readonly Logger Logger = LogManager.GetLogger("BooksAMillionLogs");
         private const decimal MEMBERSHIP_DISCOUNT = 0.1M;
+        private const Region WEBSITE_REGION = Region.America;
+        
         [GeneratedRegex(@"Vol\.|Volume")] private static partial Regex ParseTitleVolRegex();
         [GeneratedRegex(@"(?<=Box Set).*|:|\!|,|Includes.*|--The Manga|\d+-\d+|\(Manga\) |\d+, \d+ \& \d+")] private static partial Regex MangaFilterTitleRegex();
         [GeneratedRegex(@":|\!|,|Includes.*|\d+-\d+|\d+, \d+ \& \d+")] private static partial Regex NovelFilterTitleRegex();
@@ -18,7 +20,7 @@ namespace MangaLightNovelWebScrape.Websites
 
         public static string GetUrl()
         {
-            return BooksAMillionLinks[0];
+            return BooksAMillionLinks.Count != 0 ? BooksAMillionLinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
 
         public static void ClearData()
@@ -27,9 +29,9 @@ namespace MangaLightNovelWebScrape.Websites
             BooksAMillionData.Clear();
         }
 
-        private static string GetUrl(string bookTitle, bool boxsetCheck, Book book){
+        private static string GetUrl(string bookTitle, bool boxsetCheck, BookType bookType){
             StringBuilder url = new StringBuilder();
-            if (book == Book.LightNovel)
+            if (bookType == BookType.LightNovel)
             {
                 // https://www.booksamillion.com/search?filter=product_type%3Abooks&query=naruto+novel&sort=date&page=1
                 url.AppendFormat("https://www.booksamillion.com/search?filter=product_type%3Abooks&query={0}{1}&sort=date", MasterScrape.FilterBookTitle(bookTitle), boxsetCheck ? "+novel+box+set" : "+novel");
@@ -51,11 +53,11 @@ namespace MangaLightNovelWebScrape.Websites
             return url.ToString();
         }
 
-        public static string TitleParse(string textTitle, Book book, string inputTitle)
+        public static string TitleParse(string textTitle, BookType bookType, string inputTitle)
         {
             string boxSetNum = string.Empty;
             StringBuilder curTitle;
-            if (book == Book.LightNovel)
+            if (bookType == BookType.LightNovel)
             {
                 textTitle = CleanFilterTitleRegex().Replace(NovelFilterTitleRegex().Replace(textTitle, ""), "");
                 curTitle = new StringBuilder(textTitle).Replace("(Novel)", "Novel").Replace("(Light Novel)", "Novel");
@@ -113,14 +115,13 @@ namespace MangaLightNovelWebScrape.Websites
                     curTitle.Insert(MasterScrape.FindVolNumRegex().Match(textTitle).Index, "Vol ");
                 }
             }
-
             return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString().Trim(), " ");
         }
 
         private static bool RunClickEvent(string xPath, WebDriver driver, WebDriverWait wait, string type)
         {
             var elements = driver.FindElements(By.XPath(xPath));
-            if (elements != null && elements.Any())
+            if (elements != null && elements.Count != 0)
             {
                 Logger.Debug(type);
                 wait.Until(driver => driver.FindElement(By.XPath(xPath))).Click();
@@ -130,7 +131,7 @@ namespace MangaLightNovelWebScrape.Websites
             return false;
         }
 
-        public static List<EntryModel> GetBooksAMillionData(string bookTitle, Book book, bool memberStatus)
+        public static List<EntryModel> GetBooksAMillionData(string bookTitle, BookType bookType, bool memberStatus)
         {
             WebDriver driver = MasterScrape.SetupBrowserDriver(true);
             try
@@ -143,7 +144,7 @@ namespace MangaLightNovelWebScrape.Websites
                 bool boxsetCheck = false, boxsetValidation = false;
                 HtmlNodeCollection titleData, priceData, stockStatusData, bookQuality;
                 HtmlNode pageCheck;
-                driver.Navigate().GoToUrl(GetUrl(bookTitle, boxsetCheck, book));
+                driver.Navigate().GoToUrl(GetUrl(bookTitle, boxsetCheck, bookType));
                 
                 while(true)
                 {
@@ -179,7 +180,7 @@ namespace MangaLightNovelWebScrape.Websites
                                     && !boxsetCheck
                                 )
                                 || !(
-                                    book == Book.Manga 
+                                    bookType == BookType.Manga 
                                     && (
                                             curTitle.Contains("(Light Novel") 
                                             || (
@@ -201,13 +202,13 @@ namespace MangaLightNovelWebScrape.Websites
                             BooksAMillionData.Add(
                                 new EntryModel
                                 (
-                                    TitleParse(ParseTitleVolRegex().Replace(System.Net.WebUtility.HtmlDecode(curTitle), "Vol"), book, bookTitle),
+                                    TitleParse(ParseTitleVolRegex().Replace(System.Net.WebUtility.HtmlDecode(curTitle), "Vol"), bookType, bookTitle),
                                     $"${(memberStatus ? EntryModel.ApplyDiscount(priceVal, MEMBERSHIP_DISCOUNT) : priceVal.ToString())}",
                                     stockStatusData[x].InnerText switch
                                     {
-                                        string curStatus when curStatus.Contains("In Stock", StringComparison.OrdinalIgnoreCase) => "IS",
-                                        string curStatus when curStatus.Contains("Preorder", StringComparison.OrdinalIgnoreCase) => "PO",
-                                        _ => "OOS",
+                                        string curStatus when curStatus.Contains("In Stock", StringComparison.OrdinalIgnoreCase) => StockStatus.IS,
+                                        string curStatus when curStatus.Contains("Preorder", StringComparison.OrdinalIgnoreCase) => StockStatus.PO,
+                                        _ => StockStatus.OOS,
                                     },
                                     WEBSITE_TITLE
                                 )
@@ -224,7 +225,7 @@ namespace MangaLightNovelWebScrape.Websites
                         if (boxsetValidation && !boxsetCheck)
                         {
                             boxsetCheck = true;
-                            driver.Navigate().GoToUrl(GetUrl(bookTitle, boxsetCheck, book));
+                            driver.Navigate().GoToUrl(GetUrl(bookTitle, boxsetCheck, bookType));
                         }
                         else
                         {

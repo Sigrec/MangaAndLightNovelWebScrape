@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <PublishReadyToRun>true</PublishReadyToRun>
     <PublishSingleFile>False</PublishSingleFile>
     <Optimize>true</Optimize>
@@ -11,6 +11,7 @@
 	<FileVersion>1.0.0.0</FileVersion>
     <Authors>Prem</Authors>
     <Owners>Prem</Owners>
+    <Title>MangaAndLightNovelWebScrape</Title>
 	  <!--  <GeneratePackageOnBuild>True</GeneratePackageOnBuild> -->
   </PropertyGroup>
 

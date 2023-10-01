@@ -1,4 +1,4 @@
-namespace MangaLightNovelWebScrape.Websites
+namespace MangaLightNovelWebScrape.Websites.America
 {
     public partial class BarnesAndNoble
     {
@@ -7,6 +7,7 @@ namespace MangaLightNovelWebScrape.Websites
         public const string WEBSITE_TITLE = "Barnes & Noble";
         private const decimal MEMBERSHIP_DISCOUNT = 0.1M;
         private static readonly Logger Logger = LogManager.GetLogger("BarnesAndNobleLogs");
+        private const Region WEBSITE_REGION = Region.America;
 
         [GeneratedRegex("(?<=\\d{1,3})[^\\d{1,3}.]+.*|\\,|:| \\([^()]*\\)| Complete")] private static partial Regex ParseBoxSetTitleRegex();
         [GeneratedRegex("Vol\\.|Volume")] private static partial Regex VolTitleFixRegex(); 
@@ -14,9 +15,9 @@ namespace MangaLightNovelWebScrape.Websites
         [GeneratedRegex("\\(Omnibus Edition\\)|\\(3-in-1 Edition\\)|\\(2-in-1 Edition\\)")]  private static partial Regex OmnibusTitleRegex();
         [GeneratedRegex(@"Official|Character Book|Guide|[^\w]Art of |Illustration|Artbook|Error", RegexOptions.IgnoreCase)] private static partial Regex TitleRemovalRegex();
 
-        private static string GetUrl(Book book, byte currPageNum, string bookTitle, bool check){
+        private static string GetUrl(BookType bookType, byte currPageNum, string bookTitle, bool check){
             string url = string.Empty;
-            if (book == Book.Manga)
+            if (bookType == BookType.Manga)
             {
                 if (!check)
                 {
@@ -31,7 +32,7 @@ namespace MangaLightNovelWebScrape.Websites
                     url = $"https://www.barnesandnoble.com/s/{MasterScrape.FilterBookTitle(bookTitle)}+manga/_/N-8q8Zucb/?Nrpp=40&page={currPageNum}";
                 }
             }
-            else if (book == Book.LightNovel)
+            else if (bookType == BookType.LightNovel)
             {
                 // https://www.barnesandnoble.com/s/overlord+novel/_/N-1z141wbZ8q8/?Nrpp=40&page=1
                 url = $"https://www.barnesandnoble.com/s/{MasterScrape.FilterBookTitle(bookTitle)}+novel/_/N-1z141wbZ8q8/?Nrpp=40&page={currPageNum}";
@@ -43,16 +44,16 @@ namespace MangaLightNovelWebScrape.Websites
 
         public static string GetUrl()
         {
-            return BarnesAndNobleLinks[0];
+            return BarnesAndNobleLinks.Count != 0 ? BarnesAndNobleLinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
 
-        public static void ClearData()
+        internal static void ClearData()
         {
             BarnesAndNobleLinks.Clear();
             BarnesAndNobleData.Clear();
         }
 
-        private static string TitleParse(string titleText, Book book, string inputTitle, bool oneShotCheck)
+        private static string TitleParse(string titleText, BookType bookType, string inputTitle, bool oneShotCheck)
         {
             if (!oneShotCheck)
             {
@@ -63,7 +64,7 @@ namespace MangaLightNovelWebScrape.Websites
                 }
                 else
                 {
-                    if (book == Book.LightNovel)
+                    if (bookType == BookType.LightNovel)
                     {
                         titleText = titleText.Replace("(Light Novel)", "Novel");
                     }
@@ -81,11 +82,11 @@ namespace MangaLightNovelWebScrape.Websites
                 }
                 titleText = curTitle.ToString();
 
-                if (book == Book.Manga && !titleText.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !titleText.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
+                if (bookType == BookType.Manga && !titleText.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !titleText.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
                 {
                     curTitle.Insert(MasterScrape.FindVolNumRegex().Match(titleText).Index, "Vol ");
                 }
-                else if (book == Book.LightNovel && !titleText.Contains("Novel"))
+                else if (bookType == BookType.LightNovel && !titleText.Contains("Novel"))
                 {
                     if (titleText.Contains("Vol"))
                     {
@@ -105,7 +106,7 @@ namespace MangaLightNovelWebScrape.Websites
         private static bool RunClickEvent(string xPath, WebDriver driver, WebDriverWait wait, string type)
         {
             var elements = driver.FindElements(By.XPath(xPath));
-            if (elements != null && elements.Any())
+            if (elements != null && elements.Count != 0)
             {
                 Logger.Debug(type);
                 wait.Until(driver => driver.FindElement(By.XPath("(//span[@class='augHeader']/h2[contains(text(), 'Format')]/ancestor::span)[1]"))).Click();
@@ -118,7 +119,7 @@ namespace MangaLightNovelWebScrape.Websites
             return false;
         }
 
-        public static List<EntryModel> GetBarnesAndNobleData(string bookTitle, Book book, bool memberStatus, byte currPageNum)
+        public static List<EntryModel> GetBarnesAndNobleData(string bookTitle, BookType bookType, bool memberStatus, byte currPageNum)
         {
             WebDriver driver = MasterScrape.SetupBrowserDriver(true);
             WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
@@ -131,7 +132,7 @@ namespace MangaLightNovelWebScrape.Websites
                 HtmlDocument doc = new();
 
                 CheckOther:
-                string originalUrl = GetUrl(book, currPageNum, bookTitle, secondCheck);
+                string originalUrl = GetUrl(bookType, currPageNum, bookTitle, secondCheck);
                 driver.Navigate().GoToUrl(originalUrl);
                 wait.Until(e => e.FindElement(By.XPath("//div[@class='product-view-section pl-lg-l p-sm-0'] | //div[@id='productDetail']")));
 
@@ -207,7 +208,7 @@ namespace MangaLightNovelWebScrape.Websites
                                 TitleRemovalRegex().IsMatch(curTitle)
                                 || !MasterScrape.TitleContainsBookTitle(bookTitle, curTitle)
                                 || (
-                                        book == Book.Manga
+                                        bookType == BookType.Manga
                                         && (
                                                 (
                                                     !curTitle.Contains("Vol") 
@@ -235,7 +236,7 @@ namespace MangaLightNovelWebScrape.Websites
                             continue;
                         }
 
-                        curTitle = TitleParse(curTitle, book, bookTitle, oneShotCheck);
+                        curTitle = TitleParse(curTitle, bookType, bookTitle, oneShotCheck);
                         if (!hardcoverCheck || (!BarnesAndNobleData.Exists(entry => entry.Entry.Equals(curTitle))))
                         {
                             price = decimal.Parse(priceData[x].InnerText.Trim()[1..]);
@@ -244,7 +245,8 @@ namespace MangaLightNovelWebScrape.Websites
                                 (
                                     curTitle,
                                     $"${(memberStatus ? EntryModel.ApplyDiscount(price, MEMBERSHIP_DISCOUNT) : price)}",
-                                    stockStatusData[x].InnerText.Contains("Pre-order", StringComparison.OrdinalIgnoreCase) ? "PO" : "IS", WEBSITE_TITLE
+                                    stockStatusData[x].InnerText.Contains("Pre-order", StringComparison.OrdinalIgnoreCase) ? StockStatus.PO : StockStatus.IS, 
+                                    WEBSITE_TITLE
                                 )
                             );
                         }

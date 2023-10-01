@@ -1,25 +1,36 @@
-namespace MangaLightNovelWebScrape.Websites
+namespace MangaLightNovelWebScrape.Websites.America
 {
     public partial class AmazonUSA
     {
         public static List<string> AmazonUSALinks = new List<string>();
         public static List<EntryModel> AmazonUSAData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "Amazon USA";
-        private static readonly NLog.Logger Logger = NLog.LogManager.GetLogger("AmazonUSALogs");
+        private const Region WEBSITE_REGION = Region.America;
+        private static readonly Logger Logger = LogManager.GetLogger("AmazonUSALogs");
         private static readonly List<string> SeriesBypass = new List<string>(){ "Jujutsu Kaisen" };
+        
         [GeneratedRegex("\\d+-\\d+-(\\d+)")] private static partial Regex OmnibusFixRegex();
-        [GeneratedRegex("\\d+-\\d+-\\d+")] private static partial Regex VolNumMatchRegex(); 
+        [GeneratedRegex("\\d+-\\d+-\\d+")] private static partial Regex VolNumMatchRegex();
+        [GeneratedRegex("(?<=\\d{1,3})[^\\d{1,3}.]+.*|\\,|Manga ")] private static partial Regex ParsedTitleNoDigitRegex();
+        [GeneratedRegex("(?<=\\d{1,3}.$)[^\\d{1,3}]+.*|\\,|Manga ")] private static partial Regex ParsedTitleWithDigitRegex();
+        [GeneratedRegex(":(?<=:).*")]private static partial Regex OmnibusParsedTitleRegex();
+        [GeneratedRegex(@"\d{1,3}")] private static partial Regex GetVolNumRegex(); 
 
         // Manga
         //https://www.amazon.com/s?k=world+trigger&i=stripbooks&rh=n%3A4367%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page=1&qid=1685551243&rnid=1294421011&ref=sr_pg_1
         //https://www.amazon.com/s?k=one+piece&i=stripbooks&rh=n%3A4367%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page=1&qid=1685551243&rnid=1294421011&ref=sr_pg_1
         //https://www.amazon.com/s?k=fruits+basket&i=stripbooks&rh=n%3A4366%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page=2&qid=1685551123&rnid=1294421011&ref=sr_pg_2
-        internal static string GetUrl(Book book, byte currPageNum, string bookTitle){
+        private static string GetUrl(BookType bookType, byte currPageNum, string bookTitle){
             // string url = $"https://www.amazon.com/s?k={bookTitle.Replace(" ", "+")}&i=stripbooks&rh=n%3A7421474011%2Cp_n_condition-type%3A1294423011%2Cp_n_feature_nine_browse-bin%3A3291437011&s=date-desc-rank&dc&page={currPageNum}&qid=1678483439&rnid=3291435011&ref=sr_pg_{currPageNum}";
             string url = $"https://www.amazon.com/s?k={bookTitle.Replace(" ", "+")}&i=stripbooks&rh=n%3A4367%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page={currPageNum}&qid=1685551243&rnid=1294421011&ref=sr_pg_{currPageNum}";
             Logger.Debug(url);
             AmazonUSALinks.Add(url);
             return url;
+        }
+
+        public static string GetUrl()
+        {
+            return AmazonUSALinks.Count != 0 ? AmazonUSALinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
         
         public static void ClearData()
@@ -28,7 +39,7 @@ namespace MangaLightNovelWebScrape.Websites
             AmazonUSAData.Clear();
         }
 
-        public static string TitleParse(string bookTitle, Book book, string inputTitle)
+        public static string TitleParse(string bookTitle, BookType bookType, string inputTitle)
         {
             if (inputTitle.Contains("one piece", StringComparison.OrdinalIgnoreCase) && bookTitle.Equals("One Piece Box Set: East Blue and Baroque Works, Volumes 1-23 (One Piece Box Sets)"))
             {
@@ -55,7 +66,7 @@ namespace MangaLightNovelWebScrape.Websites
 
             if (!parsedTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !parsedTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
             {
-                parsedTitle = parsedTitle.Insert(Regex.Match(parsedTitle, @"\d{1,3}").Index, "Vol ");
+                parsedTitle = parsedTitle.Insert(GetVolNumRegex().Match(parsedTitle).Index, "Vol ");
             }
             return parsedTitle.Trim();
         }
@@ -66,13 +77,13 @@ namespace MangaLightNovelWebScrape.Websites
             if (!foundBookSeries && bookSeriesElement.Count == 1 && bookSeriesElement[0].Text.Contains(bookTitle, StringComparison.OrdinalIgnoreCase))
             {
                 Logger.Info("Clicking Book Series");
-                wait.Until(driver => bookSeriesElement[0]).Click();
+                wait.Until(driver => driver.FindElement(By.XPath("//*[@id='brandsRefinements']/ul//li/span/a/span"))).Click();
                 foundBookSeries = true;
                 Logger.Info(driver.Url);
             }
         }
 
-        public static List<EntryModel> GetAmazonUSAData(string bookTitle, Book book, byte currPageNum)
+        public static List<EntryModel> GetAmazonUSAData(string bookTitle, BookType bookType, byte currPageNum)
         {
             WebDriver driver = MasterScrape.SetupBrowserDriver(false);
             try
@@ -82,7 +93,7 @@ namespace MangaLightNovelWebScrape.Websites
                 string currTitle;
                 bool foundPaperback = false, foundHardcover = false, foundBookSeries = false;
                 
-                driver.Navigate().GoToUrl(GetUrl(book, currPageNum, bookTitle));
+                driver.Navigate().GoToUrl(GetUrl(bookType, currPageNum, bookTitle));
                 while (true)
                 {
                     HardcoverRestart:
@@ -143,10 +154,17 @@ namespace MangaLightNovelWebScrape.Websites
                     {
                         if (titleData[x].InnerText.Contains("Vol", StringComparison.OrdinalIgnoreCase) || titleData[x].InnerText.Contains("Volume", StringComparison.OrdinalIgnoreCase) || titleData[x].InnerText.Contains("Box Set", StringComparison.OrdinalIgnoreCase) || VolNumMatchRegex().Match(titleData[x].InnerText).Success || SeriesBypass.Any(titleData[x].InnerText.Contains))
                         {
-                            currTitle = TitleParse(titleData[x].InnerText.Trim(), book, bookTitle);
+                            currTitle = TitleParse(titleData[x].InnerText.Trim(), bookType, bookTitle);
                             if(MasterScrape.RemoveNonWordsRegex().Replace(currTitle, "").Contains(MasterScrape.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase))
                             {
-                                AmazonUSAData.Add(new EntryModel(currTitle, priceData[x].InnerText.Trim(), stockStatusData[x].InnerText.Contains("Pre-order") ? "PO" : "IS", WEBSITE_TITLE));
+                                AmazonUSAData.Add(
+                                    new EntryModel(
+                                        currTitle, 
+                                        priceData[x].InnerText.Trim(), 
+                                        stockStatusData[x].InnerText.Contains("Pre-order") ? StockStatus.PO : StockStatus.IS, 
+                                        WEBSITE_TITLE
+                                    )
+                                );
                             }
                         }
                     }
@@ -207,12 +225,5 @@ namespace MangaLightNovelWebScrape.Websites
 
             return AmazonUSAData;
         }
-
-        [GeneratedRegex("(?<=\\d{1,3})[^\\d{1,3}.]+.*|\\,|Manga ")]
-        private static partial Regex ParsedTitleNoDigitRegex();
-        [GeneratedRegex("(?<=\\d{1,3}.$)[^\\d{1,3}]+.*|\\,|Manga ")]
-        private static partial Regex ParsedTitleWithDigitRegex();
-        [GeneratedRegex(":(?<=:).*")]
-        private static partial Regex OmnibusParsedTitleRegex();
     }
 }

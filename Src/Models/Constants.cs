@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-
 namespace Src.Models
 {
     public class Constants
@@ -21,10 +16,26 @@ namespace Src.Models
             Indigo
         }
 
-        public enum Book
+        public enum BookType
         {
             Manga,
             LightNovel
+        }
+
+        public enum Region
+        {
+            America,
+            Canada,
+            Britain,
+            Japan
+        }
+
+        public enum StockStatus
+        {
+            IS,
+            OOS,
+            PO,
+            NA
         }
     }
 }

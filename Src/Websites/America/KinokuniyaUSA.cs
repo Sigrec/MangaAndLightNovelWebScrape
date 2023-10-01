@@ -1,4 +1,4 @@
-namespace MangaLightNovelWebScrape.Websites
+namespace MangaLightNovelWebScrape.Websites.America
 {
     public partial class KinokuniyaUSA
     {
@@ -7,6 +7,8 @@ namespace MangaLightNovelWebScrape.Websites
         public const string WEBSITE_TITLE = "Kinokuniya USA";
         private static readonly Logger Logger = LogManager.GetLogger("KinokuniyaUSALogs");
         private static readonly int STATUS_START_INDEX = "Availability Status : ".Length;
+        private const Region WEBSITE_REGION = Region.America;
+        
         [GeneratedRegex("Official|Character Book|Guide|Art of |Illustration|Chapter Book", RegexOptions.IgnoreCase)] private static partial Regex TitleRemovalRegex();
         [GeneratedRegex("\\(Omnibus Edition\\)|\\(3-In-1 Edition\\)|\\(2-In-1 Edition\\)", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
         [GeneratedRegex(@"\(Light Novel\)|Novel", RegexOptions.IgnoreCase)] private static partial Regex NovelRegex();
@@ -20,8 +22,8 @@ namespace MangaLightNovelWebScrape.Websites
         // Light Novel English Search
         //https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=overlord+novel&taxon=&x=33&y=8&per_page=100&form_taxon=109
         //https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=classroom+of+the+elite&taxon=&x=33&y=8&per_page=100&form_taxon=109
-        private static string GetUrl(Book book, string titleText){
-            string url = $"https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords={titleText.Replace(" ", "+")}{(book == Book.LightNovel ? "+novel" : "")}&taxon=2&x=39&y=11&page=1&per_page=100";
+        private static string GetUrl(BookType bookType, string titleText){
+            string url = $"https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords={titleText.Replace(" ", "+")}{(bookType == BookType.LightNovel ? "+novel" : "")}&taxon=2&x=39&y=11&page=1&per_page=100";
             Logger.Debug(url);
             KinokuniyaUSALinks.Add(url);
             return url;
@@ -29,7 +31,7 @@ namespace MangaLightNovelWebScrape.Websites
 
         public static string GetUrl()
         {
-            return KinokuniyaUSALinks[0];
+            return KinokuniyaUSALinks.Count != 0 ? KinokuniyaUSALinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
         
         public static void ClearData()
@@ -38,18 +40,18 @@ namespace MangaLightNovelWebScrape.Websites
             KinokuniyaUSAData.Clear();
         }
 
-        public static string TitleParse(string titleText, Book book, string bookTitle, string entryDesc, bool oneShotCheck)
+        public static string TitleParse(string titleText, BookType bookType, string bookTitle, string entryDesc, bool oneShotCheck)
         {
             if (!oneShotCheck)
             {
-                if (book == Book.LightNovel)
+                if (bookType == BookType.LightNovel)
                 {
                     titleText = NovelRegex().Replace(titleText, "Novel");
                 }
                 titleText = TitleFixRegex().Replace(OmnibusRegex().Replace(VolumeRegex().Replace(titleText, "Vol"), "Omnibus"), "$1");
                 StringBuilder curTitle = new StringBuilder(titleText);
 
-                if (book == Book.LightNovel && !titleText.Contains("Novel"))
+                if (bookType == BookType.LightNovel && !titleText.Contains("Novel"))
                 {
                     int index = titleText.IndexOf("Vol");
                     if (index != -1)
@@ -61,7 +63,7 @@ namespace MangaLightNovelWebScrape.Websites
                         curTitle.Insert(curTitle.Length - 1, " Novel");
                     }
                 }
-                else if (book == Book.Manga && !titleText.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !titleText.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
+                else if (bookType == BookType.Manga && !titleText.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !titleText.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
                 {
                     if (titleText.AsParallel().Any(char.IsDigit) && !bookTitle.AsParallel().Any(char.IsDigit))
                     {
@@ -92,18 +94,19 @@ namespace MangaLightNovelWebScrape.Websites
             return false;
         }
         
-        public static List<EntryModel> GetKinokuniyaUSAData(string bookTitle, Book book, bool memberStatus)
+        public static List<EntryModel> GetKinokuniyaUSAData(string bookTitle, BookType bookType, bool memberStatus)
         {
             WebDriver driver = MasterScrape.SetupBrowserDriver(true);
             int maxPageCount = -1, curPageNum = 1;
             bool oneShotCheck = false;
             string titleText, entryDesc;
+            StockStatus stockStatus;
             try
             {
                 WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
-                driver.Navigate().GoToUrl(GetUrl(book, bookTitle));
+                driver.Navigate().GoToUrl(GetUrl(bookType, bookTitle));
                 wait.Until(driver => driver.FindElement(By.XPath("//div[@id='loading' and @style='display: none;']")));
-                if (book == Book.Manga)
+                if (bookType == BookType.Manga)
                 {
                     driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("//p[contains(text(), 'English Books')]/following-sibling::ul//a[contains(text(), 'Manga')]"))));
                     wait.Until(driver => driver.FindElement(By.XPath("//div[@id='loading' and @style='display: none;']")));
@@ -142,7 +145,7 @@ namespace MangaLightNovelWebScrape.Websites
                             && MasterScrape.TitleContainsBookTitle(bookTitle, titleText) 
                             && (
                                     (
-                                        book == Book.Manga
+                                        bookType == BookType.Manga
                                         && (
                                                 titleText.Contains("graphic novel", StringComparison.OrdinalIgnoreCase) 
                                                 || !titleText.Contains("light novel", StringComparison.OrdinalIgnoreCase)
@@ -174,7 +177,7 @@ namespace MangaLightNovelWebScrape.Websites
                                     )
                                     || 
                                     (
-                                        book == Book.LightNovel
+                                        bookType == BookType.LightNovel
                                         && !titleText.Contains("graphic novel", StringComparison.OrdinalIgnoreCase) 
                                         && (
                                             titleText.Contains("light novel", StringComparison.OrdinalIgnoreCase) 
@@ -188,17 +191,19 @@ namespace MangaLightNovelWebScrape.Websites
                                 )
                             )
                         {
+                            stockStatus = stockStatusData[x].InnerText.Trim().AsSpan(STATUS_START_INDEX) switch
+                                                    {
+                                                        "In stock at the Fulfilment Center." or "Available for order from suppliers." => StockStatus.IS,
+                                                        "Available for Pre Order" => StockStatus.PO,
+                                                        "Out of stock." => StockStatus.OOS,
+                                                        _ => StockStatus.NA
+                                                    };
+                            if (stockStatus != StockStatus.NA)
                             KinokuniyaUSAData.Add(
                                 new EntryModel(
-                                    TitleParse(titleText, book, bookTitle, entryDesc, oneShotCheck), 
+                                    TitleParse(titleText, bookType, bookTitle, entryDesc, oneShotCheck), 
                                     priceData[x].InnerText.Trim(), 
-                                    stockStatusData[x].InnerText.Trim().AsSpan(STATUS_START_INDEX) switch
-                                    {
-                                        "In stock at the Fulfilment Center." or "Available for order from suppliers." => "IS",
-                                        "Available for Pre Order" => "PO",
-                                        "Out of stock." => "OOS",
-                                        _ => "Error"
-                                    },
+                                    stockStatus,
                                     WEBSITE_TITLE
                                 )
                             );

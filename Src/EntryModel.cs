@@ -6,7 +6,7 @@ namespace MangaLightNovelWebScrape
     {
         public string Entry { get; set; }
         public string Price { get; set; }
-        public string StockStatus { get; set; }
+        public StockStatus StockStatus { get; set; }
         public string  Website { get; set; }
         private static readonly Logger Logger = LogManager.GetLogger("MasterScrapeLogs");
         [GeneratedRegex("[Vol|Box Set].*?(\\d+).*")]  private static partial Regex VolumeNumRegex();
@@ -19,12 +19,12 @@ namespace MangaLightNovelWebScrape
         /// <param name="price">The price of the entry</param>
         /// <param name="stockStatus">The stockstatus of an entry, either IS, PO, OOS, OOP</param>
         /// <param name="website">The website in which the entry is found at</param>
-        public EntryModel (string entry, string price, string stockStatus, string website)
+        public EntryModel (string Entry, string Price, StockStatus StockStatus, string Website)
         {
-            Entry = entry;
-            Price = price;
-            StockStatus = stockStatus;
-            Website = website;
+            this.Entry = Entry;
+            this.Price = Price;
+            this.StockStatus = StockStatus;
+            this.Website = Website;
         }
 
         /// <summary>
@@ -74,8 +74,8 @@ namespace MangaLightNovelWebScrape
         /// to transform one string to the other, or -1 if the distance is greater than the specified maxDistance.</returns>
         public static int Similar(string s, string t, int maxDistance)
         {
-            if (string.IsNullOrEmpty(s)) return ((t ?? "").Length <= maxDistance) ? (t ?? "").Length : -1;
-            if (string.IsNullOrEmpty(t)) return (s.Length <= maxDistance) ? s.Length : -1;
+            if (string.IsNullOrWhiteSpace(s)) return ((t ?? "").Length <= maxDistance) ? (t ?? "").Length : -1;
+            if (string.IsNullOrWhiteSpace(t)) return (s.Length <= maxDistance) ? s.Length : -1;
             s = s.ToLower();
             t = t.ToLower(); 
             // if strings of different lengths, ensure shorter string is in s. This can result in a little

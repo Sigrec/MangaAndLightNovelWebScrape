@@ -1,12 +1,14 @@
-namespace MangaLightNovelWebScrape.Websites
+namespace MangaLightNovelWebScrape.Websites.America
 {
     public partial class RightStufAnime
     {
-        private static List<string> RightStufAnimeLinks = new();
-        private static List<EntryModel> RightStufAnimeData = new();
+        private static readonly Logger LOGGER = LogManager.GetLogger("RightStufAnimeLogs");
+        private static List<string> RightStufAnimeLinks = new List<string>();
+        private static List<EntryModel> RightStufAnimeData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "RightStufAnime";
         private const decimal GOT_ANIME_DISCOUNT = 0.1M;
-        private static readonly Logger Logger = LogManager.GetLogger("RightStufAnimeLogs");
+        private const Region WEBSITE_REGION = Region.America;
+        
         [GeneratedRegex("\\(.*?\\)")] private static partial Regex TitleParseRegex();
         [GeneratedRegex(" Manga|,|:")] private static partial Regex FormatRemovalRegex();
         [GeneratedRegex("3 [iI]n 1|2 [iI]n 1")] private static partial Regex OmnibusRegex();
@@ -19,23 +21,23 @@ namespace MangaLightNovelWebScrape.Websites
 
         public static string GetUrl()
         {
-            return RightStufAnimeLinks[0];
+            return RightStufAnimeLinks.Count != 0 ? RightStufAnimeLinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
 
-        private static string GetUrl(Book book, byte currPageNum, string bookTitle){
+        private static string GetUrl(BookType bookType, byte currPageNum, string bookTitle){
             StringBuilder url = new StringBuilder("https://www.rightstufanime.com/category/");
-            url.Append(book == Book.Manga ? "Manga" : "Novels").Append("?page=").Append(currPageNum).Append("&show=96&keywords=").Append(MasterScrape.FilterBookTitle(bookTitle));
-            Logger.Debug(url.ToString());
+            url.Append(bookType == BookType.Manga ? "Manga" : "Novels").Append("?page=").Append(currPageNum).Append("&show=96&keywords=").Append(MasterScrape.FilterBookTitle(bookTitle));
+            LOGGER.Debug(url.ToString());
             RightStufAnimeLinks.Add(url.ToString());
             return url.ToString();
         }
 
-        private static string TitleParse(string titleText, Book book)
+        private static string TitleParse(string titleText, BookType bookType)
         {
             StringBuilder curTitle = new StringBuilder(OmnibusRegex().Replace(FormatRemovalRegex().Replace(titleText, ""), "Omnibus"));
             curTitle.Replace("Volume", "Vol").ToString();
 
-            if (book == Book.Manga)
+            if (bookType == BookType.Manga)
             {
                 curTitle.Replace("Omnibus Edition", "Omnibus");
                 if (titleText.Contains("Deluxe"))
@@ -43,9 +45,9 @@ namespace MangaLightNovelWebScrape.Websites
                     curTitle.Replace("Omnibus ", "").Replace("Deluxe Edition", "Deluxe");
                 }
             }
-            else if (book == Book.LightNovel && !titleText.Contains("Novel"))
+            else if (bookType == BookType.LightNovel && !titleText.Contains("Novel"))
             {
-                if (titleText.IndexOf("Vol") != -1)
+                if (titleText.Contains("Vol"))
                 {
                     curTitle.Insert(titleText.IndexOf("Vol"), "Novel ");
                 }
@@ -57,19 +59,20 @@ namespace MangaLightNovelWebScrape.Websites
             return curTitle.ToString().Trim();
         }
 
-        public static List<EntryModel> GetRightStufAnimeData(string bookTitle, Book book, bool memberStatus, byte currPageNum)
+        public static List<EntryModel> GetRightStufAnimeData(string bookTitle, BookType bookType, bool memberStatus, byte currPageNum)
         {
             WebDriver driver = MasterScrape.SetupBrowserDriver(false);
 
             try
             {
                 WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
-                decimal priceVal;
                 string titleText;
+                decimal priceVal;
+                StockStatus stockStatus;
                 bool anotherPage = true;
                 while (anotherPage)
                 {
-                    driver.Navigate().GoToUrl(GetUrl(book, currPageNum, bookTitle));
+                    driver.Navigate().GoToUrl(GetUrl(bookType, currPageNum, bookTitle));
                     wait.Until(e => e.FindElement(By.XPath("//div[@class='shopping-layout-content']")));
 
                     // Initialize the html doc for crawling
@@ -84,12 +87,12 @@ namespace MangaLightNovelWebScrape.Websites
 
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        titleText = TitleParseRegex().Replace(titleData[x].InnerText, "").Trim();           
+                        titleText = TitleParseRegex().Replace(titleData[x].InnerText, "").Trim();          
                         if(
                             !titleText.Contains("Imperfect")
                             && MasterScrape.TitleContainsBookTitle(bookTitle, titleText.ToString()) 
                             && !(
-                                    book == Book.Manga
+                                    bookType == BookType.Manga
                                     && (
                                             MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", titleText.ToString(), "of Gluttony")
                                             || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText.ToString(), "Boruto")
@@ -98,21 +101,25 @@ namespace MangaLightNovelWebScrape.Websites
                         )
                         {
                             priceVal = Convert.ToDecimal(priceData[x].InnerText.Trim());
-                            RightStufAnimeData.Add(
-                                new EntryModel
-                                (
-                                    TitleParse(titleText, book),
-                                    $"${(memberStatus ? EntryModel.ApplyDiscount(priceVal, GOT_ANIME_DISCOUNT) : priceVal)}",
-                                    stockStatusData[x].InnerText switch
-                                    {
-                                        string curStatus when curStatus.Contains("In Stock") => "IS",
-                                        string curStatus when curStatus.Contains("Out of Stock") => "OOS",
-                                        string curStatus when curStatus.Contains("Pre-Order") => "PO",
-                                        _ => "Error",
-                                    },
-                                    WEBSITE_TITLE
-                                )
-                            );
+                            stockStatus = stockStatusData[x].InnerText switch
+                                        {
+                                            string curStatus when curStatus.Contains("In Stock") => StockStatus.IS,
+                                            string curStatus when curStatus.Contains("Out of Stock") => StockStatus.OOS,
+                                            string curStatus when curStatus.Contains("Pre-Order") => StockStatus.PO,
+                                            _ => StockStatus.NA,
+                                        };
+                            if (stockStatus != StockStatus.NA)
+                            {
+                                RightStufAnimeData.Add(
+                                    new EntryModel
+                                    (
+                                        TitleParse(titleText, bookType),
+                                        $"${(memberStatus ? EntryModel.ApplyDiscount(priceVal, GOT_ANIME_DISCOUNT) : priceVal)}",
+                                        stockStatus,
+                                        WEBSITE_TITLE
+                                    )
+                                );
+                            }
                         }
                     }
 
@@ -133,7 +140,7 @@ namespace MangaLightNovelWebScrape.Websites
             {
                 driver.Close();
                 driver.Quit();
-                Logger.Error($"{bookTitle} Does Not Exist @ RightStufAnime {ex}");
+                LOGGER.Error($"{bookTitle} Does Not Exist @ RightStufAnime \n{ex}");
             }
 
             if (MasterScrape.IsDebugEnabled)
@@ -144,13 +151,13 @@ namespace MangaLightNovelWebScrape.Websites
                     {
                         foreach (EntryModel data in RightStufAnimeData)
                         {
-                            Logger.Debug(data.ToString());
+                            LOGGER.Debug(data.ToString());
                             outputFile.WriteLine(data.ToString());
                         }
                     }
                     else
                     {
-                        Logger.Debug(bookTitle + " Does Not Exist at RightStufAnime");
+                        LOGGER.Debug(bookTitle + " Does Not Exist at RightStufAnime");
                         outputFile.WriteLine(bookTitle + " Does Not Exist at RightStufAnime");
                     }
                 } 

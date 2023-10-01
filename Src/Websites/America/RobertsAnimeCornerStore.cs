@@ -1,4 +1,4 @@
-namespace MangaLightNovelWebScrape.Websites
+namespace MangaLightNovelWebScrape.Websites.America
 {
     public partial class RobertsAnimeCornerStore
     {
@@ -18,6 +18,7 @@ namespace MangaLightNovelWebScrape.Websites
             {"magrnotv", @"^[t-vT-V]"},
             {"magrnowz", @"^[w-zW-Z]"}
         };
+        private const Region WEBSITE_REGION = Region.America;
 
         [GeneratedRegex("-|\\s+")] private static partial Regex FilterBookTitleRegex();
         [GeneratedRegex(",|#| Graphic Novel| :|\\(.*?\\)|\\[Novel\\]")] private static partial Regex TitleFilterRegex();
@@ -28,7 +29,7 @@ namespace MangaLightNovelWebScrape.Websites
 
         public static string GetUrl()
         {
-            return RobertsAnimeCornerStoreLinks[RobertsAnimeCornerStoreLinks.Count - 1];
+            return RobertsAnimeCornerStoreLinks.Count != 0 ? RobertsAnimeCornerStoreLinks[^1] : $"{WEBSITE_TITLE} Has no Link";
         }
         
         private static string GetUrl(string htmlString, bool pageExists)
@@ -64,7 +65,7 @@ namespace MangaLightNovelWebScrape.Websites
         /**
          * TODO: Figure out a way to when checking for title for it to ignore case
          */
-        private static string GetPageData(WebDriver driver, string bookTitle, Book book, HtmlDocument doc, WebDriverWait wait)
+        private static string GetPageData(WebDriver driver, string bookTitle, BookType book, HtmlDocument doc, WebDriverWait wait)
         {
             string link = "";
             driver.Navigate().GoToUrl(GetUrl(bookTitle, false));
@@ -85,7 +86,7 @@ namespace MangaLightNovelWebScrape.Websites
             return link;
         }
 
-        private static string TitleParse(string titleText, Book book)
+        private static string TitleParse(string titleText, BookType book)
         {
             StringBuilder curTitle;
             if (titleText.Contains("Omnibus"))
@@ -112,10 +113,10 @@ namespace MangaLightNovelWebScrape.Websites
                     curTitle.Append('1');
                 }
             }
-            return book == Book.Manga ? MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ") : MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.Replace("Vol", "Novel Vol").ToString(), " ");
+            return book == BookType.Manga ? MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ") : MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.Replace("Vol", "Novel Vol").ToString(), " ");
         }
         
-        public static List<EntryModel> GetRobertsAnimeCornerStoreData(string bookTitle, Book book)
+        public static List<EntryModel> GetRobertsAnimeCornerStoreData(string bookTitle, BookType bookType)
         {
             WebDriver driver = MasterScrape.SetupBrowserDriver(false);
             WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
@@ -123,7 +124,7 @@ namespace MangaLightNovelWebScrape.Websites
             // Initialize the html doc for crawling
             HtmlDocument doc = new();
 
-            string linkPage = GetPageData(driver, FilterBookTitleRegex().Replace(bookTitle, ""), book, doc, wait);
+            string linkPage = GetPageData(driver, FilterBookTitleRegex().Replace(bookTitle, ""), bookType, doc, wait);
             string errorMessage;
             if (string.IsNullOrEmpty(linkPage))
             {
@@ -168,11 +169,11 @@ namespace MangaLightNovelWebScrape.Websites
                                 || titleText.Contains("Poster") 
                                 || (
                                         titleText.Contains("[Novel]") 
-                                        && book == Book.Manga
+                                        && bookType == BookType.Manga
                                     ) 
                                 || (
                                         titleText.Contains("Graphic") 
-                                        && book == Book.LightNovel
+                                        && bookType == BookType.LightNovel
                                     )
                             ) // If the user is looking for manga and the page returned a novel data set and vice versa skip that data set
                         {
@@ -181,13 +182,13 @@ namespace MangaLightNovelWebScrape.Websites
 
                         RobertsAnimeCornerStoreData.Add(
                             new EntryModel(
-                                TitleParse(titleText, book),
+                                TitleParse(titleText, bookType),
                                 priceData[x].InnerText.Trim(),
                                 titleText switch
                                 {
-                                    string curTitle when curTitle.Contains("Pre Order") => "PO",
-                                    string curTitle when curTitle.Contains("Backorder") => "OOS",
-                                    _ => "IS"
+                                    string curTitle when curTitle.Contains("Pre Order") => StockStatus.PO,
+                                    string curTitle when curTitle.Contains("Backorder") => StockStatus.OOS,
+                                    _ => StockStatus.IS
                                 },
                                 WEBSITE_TITLE
                             )
