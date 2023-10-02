@@ -34,13 +34,13 @@ namespace MangaLightNovelWebScrape
         {
             { CDJapan.WEBSITE_TITLE, "" },
         };
-        private AmazonUSA AmazonUSA;
-        private BarnesAndNoble BarnesAndNoble;
-        private BooksAMillion BooksAMillion;
-        private InStockTrades InStockTrades;
-        private KinokuniyaUSA KinokuniyaUSA;
-        private RightStufAnime RightStufAnime;
-        private RobertsAnimeCornerStore RobertsAnimeCornerStore;
+        private AmazonUSA AmazonUSA = new AmazonUSA();
+        private BarnesAndNoble BarnesAndNoble = new BarnesAndNoble();
+        private BooksAMillion BooksAMillion = new BooksAMillion();
+        private InStockTrades InStockTrades = new InStockTrades();
+        private KinokuniyaUSA KinokuniyaUSA = new KinokuniyaUSA();
+        private RightStufAnime RightStufAnime = new RightStufAnime();
+        private RobertsAnimeCornerStore RobertsAnimeCornerStore = new RobertsAnimeCornerStore();
         private Indigo Indigo = new Indigo();
         private CDJapan CDJapan = new CDJapan();
         private Region Region { get; set; }
@@ -51,31 +51,19 @@ namespace MangaLightNovelWebScrape
         /// <summary>
         /// Determines whether debug mode is enabled (Disabled by default)
         /// </summary>
-        public static bool IsDebugEnabled { get; set; }
+        internal static bool IsDebugEnabled { get; set; } = false;
 
         [GeneratedRegex(@"[^\w+]")] public static partial Regex RemoveNonWordsRegex();
         [GeneratedRegex(@"\d{1,3}")] public static partial Regex FindVolNumRegex();
         [GeneratedRegex(@"--|—|\s{2,}")] public static partial Regex MultipleWhiteSpaceRegex();
-        // TODO Move Task creation methods to inside website classes
+
+        public MasterScrape() { } 
+        public MasterScrape(Browser Browser = Browser.Chrome) => this.Browser = Browser;
+        public MasterScrape(Region Region) => this.Region = Region;
         public MasterScrape(Region Region, Browser Browser = Browser.Chrome)
         {
-            IsDebugEnabled = false;
             this.Region = Region;
-            switch (Region)
-            {
-                case Region.America:
-                    AmazonUSA = new AmazonUSA();
-                    BarnesAndNoble = new BarnesAndNoble();
-                    BooksAMillion = new BooksAMillion();
-                    InStockTrades = new InStockTrades();
-                    KinokuniyaUSA = new KinokuniyaUSA();
-                    RightStufAnime = new RightStufAnime();
-                    RobertsAnimeCornerStore = new RobertsAnimeCornerStore();
-                    break;
-                case Region.Canada:
-                    Indigo = new Indigo();
-                    break;
-            }
+            this.Browser = Browser;
         }
 
         /// <summary>
