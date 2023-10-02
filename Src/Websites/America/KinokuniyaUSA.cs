@@ -1,6 +1,6 @@
 namespace MangaLightNovelWebScrape.Websites.America
 {
-    internal partial class KinokuniyaUSA
+    public partial class KinokuniyaUSA
     {
         private List<string> KinokuniyaUSALinks = new();
         private List<EntryModel> KinokuniyaUSAData = new();

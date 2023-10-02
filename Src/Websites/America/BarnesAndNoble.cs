@@ -1,6 +1,6 @@
 namespace MangaLightNovelWebScrape.Websites.America
 {
-    internal partial class BarnesAndNoble
+    public partial class BarnesAndNoble
     {
         private List<string> BarnesAndNobleLinks = new();
         private List<EntryModel> BarnesAndNobleData = new();

@@ -1,6 +1,6 @@
 namespace MangaLightNovelWebScrape.Websites.America
 {
-    internal partial class RightStufAnime
+    public partial class RightStufAnime
     {
         private static readonly Logger LOGGER = LogManager.GetLogger("RightStufAnimeLogs");
         private List<string> RightStufAnimeLinks = new List<string>();

@@ -1,10 +1,10 @@
 namespace MangaLightNovelWebScrape.Websites.America
 {
-    internal partial class RobertsAnimeCornerStore
+    public partial class RobertsAnimeCornerStore
     {
         private List<string> RobertsAnimeCornerStoreLinks = new();
         private List<EntryModel> RobertsAnimeCornerStoreData = new();
-        internal const string WEBSITE_TITLE = "RobertsAnimeCornerStore";
+        public const string WEBSITE_TITLE = "RobertsAnimeCornerStore";
         private static readonly Logger Logger = LogManager.GetLogger("RobertsAnimeCornerStoreLogs");
         private static readonly Dictionary<string, string> URL_MAP_DICT = new()
         { 

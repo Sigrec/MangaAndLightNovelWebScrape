@@ -43,8 +43,8 @@ namespace MangaLightNovelWebScrape
         private RobertsAnimeCornerStore RobertsAnimeCornerStore = new RobertsAnimeCornerStore();
         private Indigo Indigo = new Indigo();
         private CDJapan CDJapan = new CDJapan();
-        private Region Region { get; set; }
-        private Browser Browser { get; set; }
+        public Region Region { get; set; }
+        public Browser Browser { get; set; }
         private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
         private static readonly string[] CHROME_BROWSER_ARGUMENTS = {"--headless=new", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent"};
         private static readonly string[] FIREFOX_BROWSER_ARGUMENTS = {"-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3"};

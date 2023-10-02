@@ -1,6 +1,6 @@
 namespace MangaLightNovelWebScrape.Websites.America
 {
-    internal partial class InStockTrades
+    public partial class InStockTrades
     {
         private List<string> InStockTradesLinks = new();
         private List<EntryModel> InStockTradesData = new();

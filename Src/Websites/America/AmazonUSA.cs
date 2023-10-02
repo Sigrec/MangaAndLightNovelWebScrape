@@ -1,6 +1,6 @@
 namespace MangaLightNovelWebScrape.Websites.America
 {
-    internal partial class AmazonUSA
+    public partial class AmazonUSA
     {
         private List<string> AmazonUSALinks = new List<string>();
         private List<EntryModel> AmazonUSAData = new List<EntryModel>();
