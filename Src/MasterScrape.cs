@@ -59,11 +59,32 @@ namespace MangaLightNovelWebScrape
 
         public MasterScrape() { } 
         public MasterScrape(Browser Browser = Browser.Chrome) => this.Browser = Browser;
-        public MasterScrape(Region Region) => this.Region = Region;
-        public MasterScrape(Region Region, Browser Browser = Browser.Chrome)
+        public MasterScrape(Region Region = Region.America) => this.Region = Region;
+        public MasterScrape(Region Region = Region.America, Browser Browser = Browser.Chrome)
         {
             this.Region = Region;
             this.Browser = Browser;
+        }
+
+        public static Browser GetBrowserFromString(string browser)
+        {
+            return browser switch
+            {
+                "Edge" => Browser.Edge,
+                "FireFox" => Browser.FireFox,
+                _ => Browser.Chrome,
+            };
+        }
+
+        public static Region GetRegionFromString(string region)
+        {
+            return region switch
+            {
+                "Britain" => Region.Britain,
+                "Japan" => Region.Japan,
+                "Canada" => Region.Canada,
+                _ => Region.America,
+            };
         }
 
         /// <summary>
