@@ -1,6 +1,6 @@
 namespace MangaLightNovelWebScrape.Websites.Canada
 {
-    internal partial class Indigo
+    public partial class Indigo
     {
         public List<string> IndigoLinks = new();
         public List<EntryModel> IndigoData = new();
