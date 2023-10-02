@@ -1,9 +1,9 @@
 namespace MangaLightNovelWebScrape.Websites.America
 {
-    public partial class BooksAMillion
+    internal partial class BooksAMillion
     {
-        private static List<string> BooksAMillionLinks = new();
-        private static List<EntryModel> BooksAMillionData = new();
+        private List<string> BooksAMillionLinks = new();
+        private List<EntryModel> BooksAMillionData = new();
         public const string WEBSITE_TITLE = "Books-A-Million";
         private static readonly Logger Logger = LogManager.GetLogger("BooksAMillionLogs");
         private const decimal MEMBERSHIP_DISCOUNT = 0.1M;
@@ -18,18 +18,26 @@ namespace MangaLightNovelWebScrape.Websites.America
         [GeneratedRegex("3-In-1 V(\\d+)|\\d+-(\\d+)|\\d+, \\d+ \\& (\\d+)", RegexOptions.IgnoreCase)] private static partial Regex OmnibusMatchRegex();
         [GeneratedRegex("Compendium|Anniversary Book|Art of |\\(Osi\\)|Character|Guide|Illustration|Anime|Advertising", RegexOptions.IgnoreCase)] private static partial Regex TitleRemovalRegex();
 
-        public static string GetUrl()
+        internal async Task CreateBooksAMillionTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList, WebDriver driver)
+        {
+            await Task.Run(() => 
+            {
+                MasterDataList.Add(GetBooksAMillionData(bookTitle, book, isMember, driver));
+            });
+        }
+
+        internal string GetUrl()
         {
             return BooksAMillionLinks.Count != 0 ? BooksAMillionLinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
 
-        public static void ClearData()
+        internal void ClearData()
         {
             BooksAMillionLinks.Clear();
             BooksAMillionData.Clear();
         }
 
-        private static string GetUrl(string bookTitle, bool boxsetCheck, BookType bookType){
+        private string GetUrl(string bookTitle, bool boxsetCheck, BookType bookType){
             StringBuilder url = new StringBuilder();
             if (bookType == BookType.LightNovel)
             {
@@ -53,7 +61,7 @@ namespace MangaLightNovelWebScrape.Websites.America
             return url.ToString();
         }
 
-        public static string TitleParse(string textTitle, BookType bookType, string inputTitle)
+        private static string TitleParse(string textTitle, BookType bookType, string inputTitle)
         {
             string boxSetNum = string.Empty;
             StringBuilder curTitle;
@@ -131,9 +139,8 @@ namespace MangaLightNovelWebScrape.Websites.America
             return false;
         }
 
-        public static List<EntryModel> GetBooksAMillionData(string bookTitle, BookType bookType, bool memberStatus)
+        private List<EntryModel> GetBooksAMillionData(string bookTitle, BookType bookType, bool memberStatus, WebDriver driver)
         {
-            WebDriver driver = MasterScrape.SetupBrowserDriver(true);
             try
             {
                 WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));

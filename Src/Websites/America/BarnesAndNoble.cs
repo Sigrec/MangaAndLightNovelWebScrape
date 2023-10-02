@@ -1,9 +1,9 @@
 namespace MangaLightNovelWebScrape.Websites.America
 {
-    public partial class BarnesAndNoble
+    internal partial class BarnesAndNoble
     {
-        private static List<string> BarnesAndNobleLinks = new();
-        private static List<EntryModel> BarnesAndNobleData = new();
+        private List<string> BarnesAndNobleLinks = new();
+        private List<EntryModel> BarnesAndNobleData = new();
         public const string WEBSITE_TITLE = "Barnes & Noble";
         private const decimal MEMBERSHIP_DISCOUNT = 0.1M;
         private static readonly Logger Logger = LogManager.GetLogger("BarnesAndNobleLogs");
@@ -15,7 +15,16 @@ namespace MangaLightNovelWebScrape.Websites.America
         [GeneratedRegex("\\(Omnibus Edition\\)|\\(3-in-1 Edition\\)|\\(2-in-1 Edition\\)")]  private static partial Regex OmnibusTitleRegex();
         [GeneratedRegex(@"Official|Character Book|Guide|[^\w]Art of |Illustration|Artbook|Error", RegexOptions.IgnoreCase)] private static partial Regex TitleRemovalRegex();
 
-        private static string GetUrl(BookType bookType, byte currPageNum, string bookTitle, bool check){
+        internal async Task CreateBarnesAndNobleTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList, WebDriver driver)
+        {
+            await Task.Run(() => 
+            {
+                MasterDataList.Add(GetBarnesAndNobleData(bookTitle, book, isMember, 1, driver));
+            });
+        }
+
+        private string GetUrl(BookType bookType, byte currPageNum, string bookTitle, bool check)
+        {
             string url = string.Empty;
             if (bookType == BookType.Manga)
             {
@@ -42,12 +51,12 @@ namespace MangaLightNovelWebScrape.Websites.America
             return url;
         }
 
-        public static string GetUrl()
+        internal string GetUrl()
         {
             return BarnesAndNobleLinks.Count != 0 ? BarnesAndNobleLinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
 
-        internal static void ClearData()
+        internal void ClearData()
         {
             BarnesAndNobleLinks.Clear();
             BarnesAndNobleData.Clear();
@@ -119,9 +128,8 @@ namespace MangaLightNovelWebScrape.Websites.America
             return false;
         }
 
-        public static List<EntryModel> GetBarnesAndNobleData(string bookTitle, BookType bookType, bool memberStatus, byte currPageNum)
+        private List<EntryModel> GetBarnesAndNobleData(string bookTitle, BookType bookType, bool memberStatus, byte currPageNum, WebDriver driver)
         {
-            WebDriver driver = MasterScrape.SetupBrowserDriver(true);
             WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
             try
             {

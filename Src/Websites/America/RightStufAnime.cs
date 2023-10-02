@@ -1,10 +1,10 @@
 namespace MangaLightNovelWebScrape.Websites.America
 {
-    public partial class RightStufAnime
+    internal partial class RightStufAnime
     {
         private static readonly Logger LOGGER = LogManager.GetLogger("RightStufAnimeLogs");
-        private static List<string> RightStufAnimeLinks = new List<string>();
-        private static List<EntryModel> RightStufAnimeData = new List<EntryModel>();
+        private List<string> RightStufAnimeLinks = new List<string>();
+        private List<EntryModel> RightStufAnimeData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "RightStufAnime";
         private const decimal GOT_ANIME_DISCOUNT = 0.1M;
         private const Region WEBSITE_REGION = Region.America;
@@ -13,18 +13,27 @@ namespace MangaLightNovelWebScrape.Websites.America
         [GeneratedRegex(" Manga|,|:")] private static partial Regex FormatRemovalRegex();
         [GeneratedRegex("3 [iI]n 1|2 [iI]n 1")] private static partial Regex OmnibusRegex();
 
-        public static void ClearData()
+        internal void ClearData()
         {
             RightStufAnimeLinks.Clear();
             RightStufAnimeData.Clear();
         }
 
-        public static string GetUrl()
+        internal async Task CreateRightStufAnimeTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList, WebDriver driver)
+        {
+            await Task.Run(() =>
+            {
+                MasterDataList.Add(GetRightStufAnimeData(bookTitle, book, isMember, 1, driver));
+            });
+        }
+
+        internal string GetUrl()
         {
             return RightStufAnimeLinks.Count != 0 ? RightStufAnimeLinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
 
-        private static string GetUrl(BookType bookType, byte currPageNum, string bookTitle){
+        private string GetUrl(BookType bookType, byte currPageNum, string bookTitle)
+        {
             StringBuilder url = new StringBuilder("https://www.rightstufanime.com/category/");
             url.Append(bookType == BookType.Manga ? "Manga" : "Novels").Append("?page=").Append(currPageNum).Append("&show=96&keywords=").Append(MasterScrape.FilterBookTitle(bookTitle));
             LOGGER.Debug(url.ToString());
@@ -59,10 +68,8 @@ namespace MangaLightNovelWebScrape.Websites.America
             return curTitle.ToString().Trim();
         }
 
-        public static List<EntryModel> GetRightStufAnimeData(string bookTitle, BookType bookType, bool memberStatus, byte currPageNum)
+        private List<EntryModel> GetRightStufAnimeData(string bookTitle, BookType bookType, bool memberStatus, byte currPageNum, WebDriver driver)
         {
-            WebDriver driver = MasterScrape.SetupBrowserDriver(false);
-
             try
             {
                 WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));

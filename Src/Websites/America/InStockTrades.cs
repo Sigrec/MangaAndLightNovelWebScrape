@@ -1,9 +1,9 @@
 namespace MangaLightNovelWebScrape.Websites.America
 {
-    public partial class InStockTrades
+    internal partial class InStockTrades
     {
-        public static List<string> InStockTradesLinks = new();
-        public static List<EntryModel> InStockTradesData = new();
+        private List<string> InStockTradesLinks = new();
+        private List<EntryModel> InStockTradesData = new();
         public const string WEBSITE_TITLE = "InStockTrades";
         private static readonly Logger Logger = LogManager.GetLogger("InStockTradesLogs");
         private const Region WEBSITE_REGION = Region.America;
@@ -12,23 +12,31 @@ namespace MangaLightNovelWebScrape.Websites.America
         [GeneratedRegex("Vol (\\d+)|Box Set (\\d+)")] private static partial Regex VolNumberRegex();
         [GeneratedRegex("3In1 Ed|3In1")] private static partial Regex OmnibusRegex();
 
+        internal async Task CreateInStockTradesTask(string bookTitle, BookType book, List<List<EntryModel>> MasterDataList, WebDriver driver)
+        {
+            await Task.Run(() => 
+            {
+                MasterDataList.Add(GetInStockTradesData(bookTitle, book, 1, driver));
+            });
+        }
 
         //https://www.instocktrades.com/search?term=world+trigger
         //https://www.instocktrades.com/search?pg=1&title=World+Trigger&publisher=&writer=&artist=&cover=&ps=true
         // https://www.instocktrades.com/search?title=overlord+novel&publisher=&writer=&artist=&cover=&ps=true
-        private static string GetUrl(byte currPageNum, string bookTitle){
+        private string GetUrl(byte currPageNum, string bookTitle)
+        {
             string url = $"https://www.instocktrades.com/search?pg={currPageNum}&title={bookTitle.Replace(' ', '+')}&publisher=&writer=&artist=&cover=&ps=true";
             InStockTradesLinks.Add(url);
             Logger.Debug(url);
             return url;
         }
 
-        public static string GetUrl()
+        internal string GetUrl()
         {
             return InStockTradesLinks.Count != 0 ? InStockTradesLinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
 
-        public static void ClearData()
+        internal void ClearData()
         {
             InStockTradesLinks.Clear();
             InStockTradesData.Clear();
@@ -72,9 +80,8 @@ namespace MangaLightNovelWebScrape.Websites.America
             return System.Net.WebUtility.HtmlDecode($"{TitleRegex().Replace(OmnibusRegex().Replace(curTitle.ToString(), "Omnibus"), "")} {volGroup.Value.TrimStart('0')}".Trim());
         }
 
-        public static List<EntryModel> GetInStockTradesData(string bookTitle, BookType bookType, byte currPageNum)
+        private List<EntryModel> GetInStockTradesData(string bookTitle, BookType bookType, byte currPageNum, WebDriver driver)
         {
-            WebDriver driver = MasterScrape.SetupBrowserDriver(false);
             ushort maxPages = 0;
             bool oneShotCheck = false;
             try

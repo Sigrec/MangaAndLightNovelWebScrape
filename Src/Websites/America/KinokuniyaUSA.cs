@@ -1,9 +1,9 @@
 namespace MangaLightNovelWebScrape.Websites.America
 {
-    public partial class KinokuniyaUSA
+    internal partial class KinokuniyaUSA
     {
-        private static List<string> KinokuniyaUSALinks = new();
-        private static List<EntryModel> KinokuniyaUSAData = new();
+        private List<string> KinokuniyaUSALinks = new();
+        private List<EntryModel> KinokuniyaUSAData = new();
         public const string WEBSITE_TITLE = "Kinokuniya USA";
         private static readonly Logger Logger = LogManager.GetLogger("KinokuniyaUSALogs");
         private static readonly int STATUS_START_INDEX = "Availability Status : ".Length;
@@ -22,25 +22,35 @@ namespace MangaLightNovelWebScrape.Websites.America
         // Light Novel English Search
         //https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=overlord+novel&taxon=&x=33&y=8&per_page=100&form_taxon=109
         //https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=classroom+of+the+elite&taxon=&x=33&y=8&per_page=100&form_taxon=109
-        private static string GetUrl(BookType bookType, string titleText){
+
+        internal async Task CreateKinokuniyaUSATask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList, WebDriver driver)
+        {
+            await Task.Run(() => 
+            {
+                MasterDataList.Add(GetKinokuniyaUSAData(bookTitle, book, isMember, driver));
+            });
+        }
+
+        private string GetUrl(BookType bookType, string titleText)
+        {
             string url = $"https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords={titleText.Replace(" ", "+")}{(bookType == BookType.LightNovel ? "+novel" : "")}&taxon=2&x=39&y=11&page=1&per_page=100";
             Logger.Debug(url);
             KinokuniyaUSALinks.Add(url);
             return url;
         }
 
-        public static string GetUrl()
+        internal string GetUrl()
         {
             return KinokuniyaUSALinks.Count != 0 ? KinokuniyaUSALinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
         
-        public static void ClearData()
+        internal void ClearData()
         {
             KinokuniyaUSALinks.Clear();
             KinokuniyaUSAData.Clear();
         }
 
-        public static string TitleParse(string titleText, BookType bookType, string bookTitle, string entryDesc, bool oneShotCheck)
+        private static string TitleParse(string titleText, BookType bookType, string bookTitle, string entryDesc, bool oneShotCheck)
         {
             if (!oneShotCheck)
             {
@@ -94,9 +104,8 @@ namespace MangaLightNovelWebScrape.Websites.America
             return false;
         }
         
-        public static List<EntryModel> GetKinokuniyaUSAData(string bookTitle, BookType bookType, bool memberStatus)
+        private List<EntryModel> GetKinokuniyaUSAData(string bookTitle, BookType bookType, bool memberStatus, WebDriver driver)
         {
-            WebDriver driver = MasterScrape.SetupBrowserDriver(true);
             int maxPageCount = -1, curPageNum = 1;
             bool oneShotCheck = false;
             string titleText, entryDesc;

@@ -2,6 +2,12 @@ namespace Src.Models
 {
     public class Constants
     {
+        public enum Browser
+        {
+            Chrome,
+            Edge,
+            FireFox
+        }
         public enum Website
         {
             AmazonJapan,

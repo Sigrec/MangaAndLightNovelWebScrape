@@ -1,9 +1,9 @@
 namespace MangaLightNovelWebScrape.Websites.Canada
 {
-    public partial class Indigo
+    internal partial class Indigo
     {
-        public static List<string> IndigoLinks = new();
-        public static List<EntryModel> IndigoData = new();
+        public List<string> IndigoLinks = new();
+        public List<EntryModel> IndigoData = new();
         public const string WEBSITE_TITLE = "Indigo";
         private const decimal PLUM_DISCOUNT = 0.1M;
         private static readonly Logger LOGGER = LogManager.GetLogger("IndigoLogs");
@@ -11,20 +11,28 @@ namespace MangaLightNovelWebScrape.Websites.Canada
 
         [GeneratedRegex(@",|\.")] private static partial Regex TitleRegex();
 
-        public static void ClearData()
+        internal async Task CreateIndigoTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList, WebDriver driver)
+        {
+            await Task.Run(() => 
+            {
+                MasterDataList.Add(GetIndigoData(bookTitle, book, isMember, driver));
+            });
+        }
+
+        public void ClearData()
         {
             IndigoLinks.Clear();
             IndigoData.Clear();
         }
 
-        public static string GetUrl()
+        public string GetUrl()
         {
             return IndigoLinks.Count != 0 ? IndigoLinks[0] : $"{WEBSITE_TITLE} Has no Link"; 
         }
 
         // https://www.indigo.ca/en-ca/search?q=world+trigger&search-button=&lang=en_CA
         // https://www.indigo.ca/en-ca/search?q=jujutsu+kaisen&search-button=&lang=en_CA
-        private static string GetUrl(string bookTitle, BookType bookType)
+        private string GetUrl(string bookTitle, BookType bookType)
         {
             string url = $"https://www.indigo.ca/en-ca/search?q={bookTitle.Replace(' ', '+')}&search-button=&lang=en_CA";
             LOGGER.Debug(url);
@@ -45,11 +53,8 @@ namespace MangaLightNovelWebScrape.Websites.Canada
             return false;
         }
 
-        public static List<EntryModel> GetIndigoData(string bookTitle, BookType bookType, bool isMember)
+        internal List<EntryModel> GetIndigoData(string bookTitle, BookType bookType, bool isMember, WebDriver driver)
         {
-            LOGGER.Debug("Indigo Going");
-            WebDriver driver = MasterScrape.SetupBrowserDriver(false);
-
             try
             {
                 WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));

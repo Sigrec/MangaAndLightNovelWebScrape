@@ -1,27 +1,35 @@
 namespace MangaLightNovelWebScrape.Websites.Japan
 {
-    public partial class CDJapan
+    internal partial class CDJapan
     {
-         private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         public const Region WEBSITE_REGION = Region.Japan;
         public const string WEBSITE_TITLE = "CDJapan";
-        private static List<string> CDJapanLinks = new List<string>();
-        private static List<EntryModel> CDJapanData = new List<EntryModel>();
+        private List<string> CDJapanLinks = new List<string>();
+        private List<EntryModel> CDJapanData = new List<EntryModel>();
 
         [GeneratedRegex(@"\(.*?\)|\[.*?\]")] private static partial Regex TitleParseRegex();
+
+        internal async Task CreateCDJapanTask(string bookTitle, BookType book, List<List<EntryModel>> MasterDataList, WebDriver driver)
+        {
+            await Task.Run(() => 
+            {
+                MasterDataList.Add(GetCDJapanData(bookTitle, book, driver));
+            });
+        }
         
-        public static void ClearData()
+        internal void ClearData()
         {
             CDJapanLinks.Clear();
             CDJapanData.Clear();
         }
 
-        public static string GetUrl()
+        internal string GetUrl()
         {
             return CDJapanLinks.Count != 0 ? CDJapanLinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
 
-        private static string GetUrl(string bookTitle, BookType bookType)
+        private  string GetUrl(string bookTitle, BookType bookType)
         {
             // Light Novel
             // https://www.cdjapan.co.jp/searchuni?term.media_format=BOOK&q=classroom+of+the+elite+novel&opt.exclude_eoa=on&opt.exclude_prx=on
@@ -42,10 +50,8 @@ namespace MangaLightNovelWebScrape.Websites.Japan
             return bookTitle;
         }
 
-        public static List<EntryModel> GetCDJapanData(string bookTitle, BookType bookType)
+        internal List<EntryModel> GetCDJapanData(string bookTitle, BookType bookType, WebDriver driver)
         {
-            WebDriver driver = MasterScrape.SetupBrowserDriver(false);
-            string titleText = string.Empty;
             try
             {
                 WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
@@ -64,7 +70,7 @@ namespace MangaLightNovelWebScrape.Websites.Japan
                 // Backorder:Usually ships in 1-3 weeks
                 for (int x = 0; x < titleData.Count; x++)
                 {
-                    titleText = titleData[x].InnerText;
+                    string titleText = titleData[x].InnerText;
                     if (MasterScrape.TitleContainsBookTitle(bookTitle, titleText) && !titleText.Contains("Manga Set"))
                     {
                         CDJapanData.Add(

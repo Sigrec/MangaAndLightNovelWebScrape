@@ -4,6 +4,7 @@ using OpenQA.Selenium.Firefox;
 using OpenQA.Selenium.Edge;
 using OpenQA.Selenium.Chrome;
 using System.Collections.Concurrent;
+using MangaLightNovelWebScrape.Websites.Japan;
 
 namespace MangaLightNovelWebScrape
 {
@@ -12,8 +13,7 @@ namespace MangaLightNovelWebScrape
     /// </summary>
     public partial class MasterScrape
     { 
-        private List<List<EntryModel>> MasterDataList = new List<List<EntryModel>>();
-        private static string Browser { get; set; }
+        internal List<List<EntryModel>> MasterDataList = new List<List<EntryModel>>();
         private ConcurrentBag<List<EntryModel>> ResultsList = new ConcurrentBag<List<EntryModel>>();
         private List<Task> WebTasks = new List<Task>();
         private Dictionary<string, string> AmericaMasterUrls = new Dictionary<string, string>
@@ -30,6 +30,21 @@ namespace MangaLightNovelWebScrape
         {
             { Indigo.WEBSITE_TITLE, "" },
         };
+        private Dictionary<string, string> JapanMasterUrls = new Dictionary<string, string>
+        {
+            { CDJapan.WEBSITE_TITLE, "" },
+        };
+        private AmazonUSA AmazonUSA;
+        private BarnesAndNoble BarnesAndNoble;
+        private BooksAMillion BooksAMillion;
+        private InStockTrades InStockTrades;
+        private KinokuniyaUSA KinokuniyaUSA;
+        private RightStufAnime RightStufAnime;
+        private RobertsAnimeCornerStore RobertsAnimeCornerStore;
+        private Indigo Indigo = new Indigo();
+        private CDJapan CDJapan = new CDJapan();
+        private Region Region { get; set; }
+        private Browser Browser { get; set; }
         private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
         private static readonly string[] CHROME_BROWSER_ARGUMENTS = {"--headless=new", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent"};
         private static readonly string[] FIREFOX_BROWSER_ARGUMENTS = {"-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3"};
@@ -42,73 +57,25 @@ namespace MangaLightNovelWebScrape
         [GeneratedRegex(@"\d{1,3}")] public static partial Regex FindVolNumRegex();
         [GeneratedRegex(@"--|—|\s{2,}")] public static partial Regex MultipleWhiteSpaceRegex();
         // TODO Move Task creation methods to inside website classes
-        public MasterScrape()
+        public MasterScrape(Region Region, Browser Browser = Browser.Chrome)
         {
             IsDebugEnabled = false;
-        }
-
-        private async Task CreateRightStufAnimeTask(string bookTitle, BookType book, bool isMember)
-        {
-            await Task.Run(() =>
+            this.Region = Region;
+            switch (Region)
             {
-                MasterDataList.Add(RightStufAnime.GetRightStufAnimeData(bookTitle, book, isMember, 1));
-            });
-        }
-
-        private async Task CreateRobertsAnimeCornerStoreTask(string bookTitle, BookType book)
-        {
-            await Task.Run(() =>
-            {
-                MasterDataList.Add(RobertsAnimeCornerStore.GetRobertsAnimeCornerStoreData(bookTitle, book));
-            });
-        }
-        
-        private async Task CreateInStockTradesTask(string bookTitle, BookType book)
-        {
-            await Task.Run(() => 
-            {
-                MasterDataList.Add(InStockTrades.GetInStockTradesData(bookTitle, book, 1));
-            });
-        }
-
-        private async Task CreateKinokuniyaUSATask(string bookTitle, BookType book, bool isMember)
-        {
-            await Task.Run(() => 
-            {
-                MasterDataList.Add(KinokuniyaUSA.GetKinokuniyaUSAData(bookTitle, book, isMember));
-            });
-        }
-
-        private async Task CreateBarnesAndNobleTask(string bookTitle, BookType book, bool isMember)
-        {
-            await Task.Run(() => 
-            {
-                MasterDataList.Add(BarnesAndNoble.GetBarnesAndNobleData(bookTitle, book, isMember, 1));
-            });
-        }
-
-        private async Task CreateBooksAMillionTask(string bookTitle, BookType book, bool isMember)
-        {
-            await Task.Run(() => 
-            {
-                MasterDataList.Add(BooksAMillion.GetBooksAMillionData(bookTitle, book, isMember));
-            });
-        }
-
-        private async Task CreateAmazonUSATask(string bookTitle, BookType book)
-        {
-            await Task.Run(() => 
-            {
-                MasterDataList.Add(AmazonUSA.GetAmazonUSAData(bookTitle, book, 1));
-            });
-        }
-
-        private async Task CreateIndigoTask(string bookTitle, BookType book, bool isMember)
-        {
-            await Task.Run(() => 
-            {
-                MasterDataList.Add(Indigo.GetIndigoData(bookTitle, book, isMember));
-            });
+                case Region.America:
+                    AmazonUSA = new AmazonUSA();
+                    BarnesAndNoble = new BarnesAndNoble();
+                    BooksAMillion = new BooksAMillion();
+                    InStockTrades = new InStockTrades();
+                    KinokuniyaUSA = new KinokuniyaUSA();
+                    RightStufAnime = new RightStufAnime();
+                    RobertsAnimeCornerStore = new RobertsAnimeCornerStore();
+                    break;
+                case Region.Canada:
+                    Indigo = new Indigo();
+                    break;
+            }
         }
 
         /// <summary>
@@ -171,7 +138,7 @@ namespace MangaLightNovelWebScrape
         /// <summary>
         /// Clears all entry and url data for every website
         /// </summary>
-        private static void ClearAllWebsiteData()
+        private void ClearAllWebsiteData()
         {
             RightStufAnime.ClearData();
             RobertsAnimeCornerStore.ClearData();
@@ -265,11 +232,11 @@ namespace MangaLightNovelWebScrape
         /// </summary>
         /// <param name="needsUserAgent">Whether the website needs a valid user-agent</param>
         /// <returns>Edge, Chrome, or FireFox WebDriver</returns>
-        internal static WebDriver SetupBrowserDriver(bool needsUserAgent)
+        internal WebDriver SetupBrowserDriver(bool needsUserAgent)
         {
-            switch (Browser)
+            switch (this.Browser)
             {
-                case "Edge":
+                case Browser.Edge:
                     EdgeOptions edgeOptions = new()
                     {
                         PageLoadStrategy = PageLoadStrategy.Eager,
@@ -286,7 +253,7 @@ namespace MangaLightNovelWebScrape
                         dummyDriver.Quit();
                     }
                     return new EdgeDriver(edgeDriverService, edgeOptions);
-                case "FireFox":
+                case Browser.FireFox:
                     FirefoxOptions firefoxOptions = new()
                     {
                         PageLoadStrategy = PageLoadStrategy.Eager,
@@ -297,7 +264,7 @@ namespace MangaLightNovelWebScrape
                     firefoxOptions.AddArguments(FIREFOX_BROWSER_ARGUMENTS);
                     firefoxOptions.SetPreference("profile.default_content_settings.geolocation", 2); 
                     return new FirefoxDriver(fireFoxDriverService, firefoxOptions);
-                case "Chrome":
+                case Browser.Chrome:
                 default:
                     ChromeOptions chromeOptions = new()
                     {
@@ -336,7 +303,8 @@ namespace MangaLightNovelWebScrape
         /// </summary>
         /// <param name="bookTitle"></param>
         /// <returns></returns>
-        internal static string FilterBookTitle(string bookTitle){
+        internal static string FilterBookTitle(string bookTitle)
+        {
             char[] trimedChars = {' ', '\'', '!', '-', ','};
             foreach (char var in trimedChars){
                 bookTitle = bookTitle.Replace(var.ToString(), "%" + Convert.ToByte(var).ToString("x2"));
@@ -344,7 +312,7 @@ namespace MangaLightNovelWebScrape
             return bookTitle;
         }
 
-        private static List<Website> GenerateWebsiteList(IEnumerable<string> input)
+        public static List<Website> GenerateWebsiteList(IEnumerable<string> input)
         {
             List<Website> WebsiteList = new List<Website>();
             if (input != null && input.Any())
@@ -389,7 +357,7 @@ namespace MangaLightNovelWebScrape
             return WebsiteList;
         }
         
-        private static void GenerateMasterUrlDictionary(Dictionary<string, string> MasterUrls, List<EntryModel> CurMasterDataList)
+        private void GenerateMasterUrlDictionary(Dictionary<string, string> MasterUrls, List<EntryModel> CurMasterDataList)
         {
             foreach (EntryModel entry in CurMasterDataList)
             {
@@ -434,9 +402,9 @@ namespace MangaLightNovelWebScrape
             });
         }
 
-        private void GenerateTaskList(Region curRegion, List<Website> webScrapeList, string bookTitle, BookType book, bool isRightStufMember, bool isBarnesAndNobleMember, bool isBooksAMillionMember, bool isKinokuniyaUSAMember, bool isIndigoMember)
+        private void GenerateTaskList(IEnumerable<Website> webScrapeList, string bookTitle, BookType book, bool isRightStufMember, bool isBarnesAndNobleMember, bool isBooksAMillionMember, bool isKinokuniyaUSAMember, bool isIndigoMember)
         {
-            switch (curRegion)
+            switch (this.Region)
             {
                 case Region.America:
                     LOGGER.Debug("America Websites");
@@ -446,31 +414,31 @@ namespace MangaLightNovelWebScrape
                         switch (site)
                         {
                             case Website.RightStufAnime:
-                                WebTasks.Add(CreateRightStufAnimeTask(bookTitle, book, isRightStufMember));
+                                WebTasks.Add(RightStufAnime.CreateRightStufAnimeTask(bookTitle, book, isRightStufMember, MasterDataList, SetupBrowserDriver(false)));
                                 LOGGER.Debug("RightStufAnime Going");
                                 break;
                             case Website.BarnesAndNoble:
-                                WebTasks.Add(CreateBarnesAndNobleTask(bookTitle, book, isBarnesAndNobleMember));
+                                WebTasks.Add(BarnesAndNoble.CreateBarnesAndNobleTask(bookTitle, book, isBarnesAndNobleMember, MasterDataList, SetupBrowserDriver(true)));
                                 LOGGER.Debug("Barnes & Noble Going");
                                 break;
                             case Website.RobertsAnimeCornerStore:
-                                WebTasks.Add(CreateRobertsAnimeCornerStoreTask(bookTitle, book));
+                                WebTasks.Add(RobertsAnimeCornerStore.CreateRobertsAnimeCornerStoreTask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
                                 LOGGER.Debug("RobertsAnimeCornerStore Going");
                                 break;
                             case Website.InStockTrades:
-                                WebTasks.Add(CreateInStockTradesTask(bookTitle, book));
+                                WebTasks.Add(InStockTrades.CreateInStockTradesTask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
                                 LOGGER.Debug("InStockTrades Going");
                                 break;
                             case Website.KinokuniyaUSA:
-                                WebTasks.Add(CreateKinokuniyaUSATask(bookTitle, book, isKinokuniyaUSAMember));
+                                WebTasks.Add(KinokuniyaUSA.CreateKinokuniyaUSATask(bookTitle, book, isKinokuniyaUSAMember, MasterDataList, SetupBrowserDriver(true)));
                                 LOGGER.Debug("Kinokuniya USA Going");
                                 break;
                             case Website.BooksAMillion:
-                                WebTasks.Add(CreateBooksAMillionTask(bookTitle, book, isBooksAMillionMember));
+                                WebTasks.Add(BooksAMillion.CreateBooksAMillionTask(bookTitle, book, isBooksAMillionMember, MasterDataList, SetupBrowserDriver(true)));
                                 LOGGER.Debug("Books-A-Million Going");
                                 break;
                             case Website.AmazonUSA:
-                                WebTasks.Add(CreateAmazonUSATask(bookTitle, book));
+                                WebTasks.Add(AmazonUSA.CreateAmazonUSATask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
                                 LOGGER.Debug("Amazon USA Going");
                                 break;
                             default:
@@ -485,7 +453,23 @@ namespace MangaLightNovelWebScrape
                         switch (site)
                         {
                             case Website.Indigo:
-                                WebTasks.Add(CreateIndigoTask(bookTitle, book, isIndigoMember));
+                                WebTasks.Add(Indigo.CreateIndigoTask(bookTitle, book, isIndigoMember, MasterDataList, SetupBrowserDriver(false)));
+                                LOGGER.Debug("Indigo Going");
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    break;
+                case Region.Japan:
+                    ClearMasterUrlDictionary(JapanMasterUrls);
+                    foreach (Website site in webScrapeList)
+                    {
+                        switch (site)
+                        {
+                            case Website.CDJapan:
+                                WebTasks.Add(CDJapan.CreateCDJapanTask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
+                                LOGGER.Debug("CDJapan Going");
                                 break;
                             default:
                                 break;
@@ -512,16 +496,15 @@ namespace MangaLightNovelWebScrape
         /// <param name="isBooksAMillionMember">Whether the user is a Books-A-Million Member</param>
         /// <param name="isKinokuniyaUSAMember">Whether the user is a Kinokuniya USA member</param>
         /// <returns></returns>
-        public async Task InitializeScrapeAsync(string bookTitle, BookType book, StockStatus[] stockFilter, IEnumerable<string> webScrapeList, string curBrowser, Region curRegion, bool isRightStufMember = false, bool isBarnesAndNobleMember = false, bool isBooksAMillionMember = false, bool isKinokuniyaUSAMember = false, bool isIndigoMember = false)
+        public async Task InitializeScrapeAsync(string bookTitle, BookType book, StockStatus[] stockFilter, IEnumerable<Website> webScrapeList, bool isRightStufMember = false, bool isBarnesAndNobleMember = false, bool isBooksAMillionMember = false, bool isKinokuniyaUSAMember = false, bool isIndigoMember = false)
         {
             await Task.Run(async () =>
             {
-                Browser = curBrowser;
-                LOGGER.Debug($"Running on {Browser} Browser");
+                LOGGER.Debug($"Running on {this.Browser} Browser");
                 MasterDataList.Clear(); // Clear the masterlist everytime there is a new run
                 
                 // Generate List of Tasks to 
-                GenerateTaskList(curRegion, GenerateWebsiteList(webScrapeList), bookTitle, book, isRightStufMember, isBarnesAndNobleMember, isBooksAMillionMember, isKinokuniyaUSAMember, isIndigoMember);
+                GenerateTaskList(webScrapeList, bookTitle, book, isRightStufMember, isBarnesAndNobleMember, isBooksAMillionMember, isKinokuniyaUSAMember, isIndigoMember);
                 await Task.WhenAll(WebTasks);
 
                 MasterDataList.RemoveAll(x => x.Count == 0); // Clear all lists from websites that didn't have any data
@@ -586,7 +569,7 @@ namespace MangaLightNovelWebScrape
 
                     // Add the links to the MasterUrl list and clear data lists
                     Skip:
-                    switch (curRegion)
+                    switch (this.Region)
                     {
                         case Region.America:
                             GenerateMasterUrlDictionary(AmericaMasterUrls, MasterDataList[0]);
@@ -609,7 +592,7 @@ namespace MangaLightNovelWebScrape
                                 outputFile.WriteLine(data.ToString());
                             }
 
-                            foreach (KeyValuePair<string, string> website in GetResultUrls(curRegion))
+                            foreach (KeyValuePair<string, string> website in GetResultUrls(this.Region))
                             {
                                 if (!string.IsNullOrWhiteSpace(website.Value))
                                 {
@@ -628,19 +611,19 @@ namespace MangaLightNovelWebScrape
             });
         }
         
-        // private static async Task Main(string[] args)
-        // {
-        //     System.Diagnostics.Stopwatch watch = new();
-        //     watch.Start();
-        //     MasterScrape scrape = new MasterScrape().EnableDebugMode();
-        //     await scrape.InitializeScrapeAsync("World Trigger", BookType.Manga, new StockStatus[] { StockStatus.OOS, StockStatus.PO }, new List<string>() {"RobertsAnimeCornerStore", "InStockTrades", "RightStufAnime"}, "Chrome", Region.America, false, false, false, false, false);
-        //     watch.Stop();
-        //     LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
-        // }
-
-        public static void Main(string[] args)
+        private static async Task Main(string[] args)
         {
-            
+            System.Diagnostics.Stopwatch watch = new();
+            watch.Start();
+            MasterScrape scrape = new MasterScrape(Region.America, Browser.Chrome).EnableDebugMode();
+            await scrape.InitializeScrapeAsync("World Trigger", BookType.Manga, new StockStatus[] { StockStatus.OOS, StockStatus.PO }, GenerateWebsiteList(new List<string>() {"RobertsAnimeCornerStore", "InStockTrades", "RightStufAnime", "Barnes & Noble"}), false, false, false, false, false);
+            watch.Stop();
+            LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
+
+        // public static void Main(string[] args)
+        // {
+            
+        // }
     }
 }

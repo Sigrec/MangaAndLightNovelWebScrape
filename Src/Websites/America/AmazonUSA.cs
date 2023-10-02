@@ -1,9 +1,9 @@
 namespace MangaLightNovelWebScrape.Websites.America
 {
-    public partial class AmazonUSA
+    internal partial class AmazonUSA
     {
-        public static List<string> AmazonUSALinks = new List<string>();
-        public static List<EntryModel> AmazonUSAData = new List<EntryModel>();
+        private List<string> AmazonUSALinks = new List<string>();
+        private List<EntryModel> AmazonUSAData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "Amazon USA";
         private const Region WEBSITE_REGION = Region.America;
         private static readonly Logger Logger = LogManager.GetLogger("AmazonUSALogs");
@@ -16,11 +16,20 @@ namespace MangaLightNovelWebScrape.Websites.America
         [GeneratedRegex(":(?<=:).*")]private static partial Regex OmnibusParsedTitleRegex();
         [GeneratedRegex(@"\d{1,3}")] private static partial Regex GetVolNumRegex(); 
 
+        internal async Task CreateAmazonUSATask(string bookTitle, BookType book, List<List<EntryModel>> MasterDataList, WebDriver driver)
+        {
+            await Task.Run(() => 
+            {
+                MasterDataList.Add(GetAmazonUSAData(bookTitle, book, 1, driver));
+            });
+        }
+
         // Manga
         //https://www.amazon.com/s?k=world+trigger&i=stripbooks&rh=n%3A4367%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page=1&qid=1685551243&rnid=1294421011&ref=sr_pg_1
         //https://www.amazon.com/s?k=one+piece&i=stripbooks&rh=n%3A4367%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page=1&qid=1685551243&rnid=1294421011&ref=sr_pg_1
         //https://www.amazon.com/s?k=fruits+basket&i=stripbooks&rh=n%3A4366%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page=2&qid=1685551123&rnid=1294421011&ref=sr_pg_2
-        private static string GetUrl(BookType bookType, byte currPageNum, string bookTitle){
+        private string GetUrl(BookType bookType, byte currPageNum, string bookTitle)
+        {
             // string url = $"https://www.amazon.com/s?k={bookTitle.Replace(" ", "+")}&i=stripbooks&rh=n%3A7421474011%2Cp_n_condition-type%3A1294423011%2Cp_n_feature_nine_browse-bin%3A3291437011&s=date-desc-rank&dc&page={currPageNum}&qid=1678483439&rnid=3291435011&ref=sr_pg_{currPageNum}";
             string url = $"https://www.amazon.com/s?k={bookTitle.Replace(" ", "+")}&i=stripbooks&rh=n%3A4367%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page={currPageNum}&qid=1685551243&rnid=1294421011&ref=sr_pg_{currPageNum}";
             Logger.Debug(url);
@@ -28,18 +37,18 @@ namespace MangaLightNovelWebScrape.Websites.America
             return url;
         }
 
-        public static string GetUrl()
+        internal string GetUrl()
         {
             return AmazonUSALinks.Count != 0 ? AmazonUSALinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
         
-        public static void ClearData()
+        internal void ClearData()
         {
             AmazonUSALinks.Clear();
             AmazonUSAData.Clear();
         }
 
-        public static string TitleParse(string bookTitle, BookType bookType, string inputTitle)
+        private static string TitleParse(string bookTitle, BookType bookType, string inputTitle)
         {
             if (inputTitle.Contains("one piece", StringComparison.OrdinalIgnoreCase) && bookTitle.Equals("One Piece Box Set: East Blue and Baroque Works, Volumes 1-23 (One Piece Box Sets)"))
             {
@@ -83,9 +92,8 @@ namespace MangaLightNovelWebScrape.Websites.America
             }
         }
 
-        public static List<EntryModel> GetAmazonUSAData(string bookTitle, BookType bookType, byte currPageNum)
+        private List<EntryModel> GetAmazonUSAData(string bookTitle, BookType bookType, byte currPageNum, WebDriver driver)
         {
-            WebDriver driver = MasterScrape.SetupBrowserDriver(false);
             try
             {
                 WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
