@@ -32,19 +32,6 @@ namespace Tests.Websites
         // }
 
         // [Test]
-        // public void BooksAMillion_TitleParse_Test()
-        // {
-        //     Assert.Multiple(() => {
-        //         Assert.That(BooksAMillion.TitleParse("World Trigger, Vol. 10, 10", 'M', "world trigger"), Is.EqualTo("World Trigger Vol 10"));
-        //         Assert.That(BooksAMillion.TitleParse("07-Ghost, Volume 12", 'M', "07-ghost"), Is.EqualTo("07-Ghost Vol 12"));
-        //         Assert.That(BooksAMillion.TitleParse("One Piece Box Set 4 : Dressrosa to Reverie: Volumes 71-90 with Premium", 'M', "one piece"), Is.EqualTo("One Piece Box Set 4"));
-        //         Assert.That(BooksAMillion.TitleParse("One Piece (Omnibus Edition), Vol. 33 : Includes Vols. 97, 98 & 99", 'M', "one piece"), Is.EqualTo("One Piece Omnibus Vol 33"));
-        //         Assert.That(BooksAMillion.TitleParse("One Piece, Vol. 11 : Volume 11", 'M', "one piece"), Is.EqualTo("One Piece Vol 11"));
-        //         Assert.That(BooksAMillion.TitleParse("Jujutsu Kaisen 0", 'M', "jujutsu kaisen"), Is.EqualTo("Jujutsu Kaisen Vol 0"));
-        //     });
-        // }
-
-        // [Test]
         // public void KinokuniyaUSA_TitleParse_Test()
         // {
         //     Assert.Multiple(() => {

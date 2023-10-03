@@ -15,8 +15,11 @@ namespace MangaLightNovelWebScrape.Websites.America
 
         internal void ClearData()
         {
-            RightStufAnimeLinks.Clear();
-            RightStufAnimeData.Clear();
+            if (this != null)
+            {
+                RightStufAnimeLinks.Clear();
+                RightStufAnimeData.Clear();
+            }
         }
 
         internal async Task CreateRightStufAnimeTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList, WebDriver driver)

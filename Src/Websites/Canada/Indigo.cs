@@ -19,13 +19,16 @@ namespace MangaLightNovelWebScrape.Websites.Canada
             });
         }
 
-        public void ClearData()
+        internal void ClearData()
         {
-            IndigoLinks.Clear();
-            IndigoData.Clear();
+            if (this != null)
+            {
+                IndigoLinks.Clear();
+                IndigoData.Clear();
+            }
         }
 
-        public string GetUrl()
+        internal string GetUrl()
         {
             return IndigoLinks.Count != 0 ? IndigoLinks[0] : $"{WEBSITE_TITLE} Has no Link"; 
         }

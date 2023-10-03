@@ -46,8 +46,11 @@ namespace MangaLightNovelWebScrape.Websites.America
         
         internal void ClearData()
         {
-            KinokuniyaUSALinks.Clear();
-            KinokuniyaUSAData.Clear();
+            if (this != null)
+            {
+                KinokuniyaUSALinks.Clear();
+                KinokuniyaUSAData.Clear();
+            }
         }
 
         private static string TitleParse(string titleText, BookType bookType, string bookTitle, string entryDesc, bool oneShotCheck)

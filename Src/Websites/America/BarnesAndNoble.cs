@@ -1,3 +1,6 @@
+using System.Collections.ObjectModel;
+using System.Xml.XPath;
+
 namespace MangaLightNovelWebScrape.Websites.America
 {
     public partial class BarnesAndNoble
@@ -6,10 +9,18 @@ namespace MangaLightNovelWebScrape.Websites.America
         private List<EntryModel> BarnesAndNobleData = new();
         public const string WEBSITE_TITLE = "Barnes & Noble";
         private const decimal MEMBERSHIP_DISCOUNT = 0.1M;
-        private static readonly Logger Logger = LogManager.GetLogger("BarnesAndNobleLogs");
+        private static readonly Logger LOGGER = LogManager.GetLogger("BarnesAndNobleLogs");
         private const Region WEBSITE_REGION = Region.America;
+        private static readonly XPathExpression NotOneShotTitleXPath = XPathExpression.Compile("//div[contains(@class, 'product-shelf-title product-info-title pt-xs')]/a");
+        private static readonly XPathExpression OneShotTitleXPath = XPathExpression.Compile("//div[@id='commerce-zone']//h1[@itemprop='name']");
+        private static readonly XPathExpression NotOneShotPriceXPath = XPathExpression.Compile("//div[@class='product-shelf-pricing mt-xs']//div//a//span[2]");
+        private static readonly XPathExpression OneShotPriceXPath = XPathExpression.Compile("(//span[@id='pdp-cur-price'])[1]");
+        private static readonly XPathExpression NotOneShotStockStatusXPath = XPathExpression.Compile("//p[@class='ml-xxs bopis-badge-message mt-0 mb-0' and (contains(text(), 'Online') or contains(text(), 'Pre-order'))]");
+        private static readonly XPathExpression OneShotStockStatusXPath = XPathExpression.Compile("//span[@class='shipping-message-text mt-0 mb-0']/span");
+        private static readonly XPathExpression PaginationCheckXPath = XPathExpression.Compile("//li[@class='pagination__next ']");
+        
 
-        [GeneratedRegex("(?<=\\d{1,3})[^\\d{1,3}.]+.*|\\,|:| \\([^()]*\\)| Complete")] private static partial Regex ParseBoxSetTitleRegex();
+        [GeneratedRegex(@"(?:Vol).*|(?<=\d{1,3})[^\d{1,3}.]+.*|\,|:| \([^()]*\)| Complete")] private static partial Regex ParseBoxSetTitleRegex();
         [GeneratedRegex("Vol\\.|Volume")] private static partial Regex VolTitleFixRegex(); 
         [GeneratedRegex("(?<=Vol \\d{1,3})[^\\d{1,3}.]+.*|\\,|:| \\([^()]*\\)")]  private static partial Regex ParseTitleRegex();
         [GeneratedRegex("\\(Omnibus Edition\\)|\\(3-in-1 Edition\\)|\\(2-in-1 Edition\\)")]  private static partial Regex OmnibusTitleRegex();
@@ -23,7 +34,7 @@ namespace MangaLightNovelWebScrape.Websites.America
             });
         }
 
-        private string GetUrl(BookType bookType, byte currPageNum, string bookTitle, bool check)
+        private string GetUrl(BookType bookType, string bookTitle, bool check)
         {
             string url = string.Empty;
             if (bookType == BookType.Manga)
@@ -34,19 +45,21 @@ namespace MangaLightNovelWebScrape.Websites.America
                     // https://www.barnesandnoble.com/s/overlord/_/N-8q8Zucc/?Nrpp=40&page=1
                     // https://www.barnesandnoble.com/s/overlord/_/N-8q8Zucb/?Nrpp=40&page=1
                     // https://www.barnesandnoble.com/s/world+trigger/_/N-8q8Zucb/?Nrpp=40&page=1
-                    url = $"https://www.barnesandnoble.com/s/{MasterScrape.FilterBookTitle(bookTitle)}/_/N-8q8Zucb/?Nrpp=40&page={currPageNum}";
+                    url = $"https://www.barnesandnoble.com/s/{MasterScrape.FilterBookTitle(bookTitle)}/_/N-8q8Zucb/?Nrpp=40";
+                    LOGGER.Info($"Initial Url = {url}");
                 }
                 else
                 {
-                    url = $"https://www.barnesandnoble.com/s/{MasterScrape.FilterBookTitle(bookTitle)}+manga/_/N-8q8Zucb/?Nrpp=40&page={currPageNum}";
+                    url = $"https://www.barnesandnoble.com/s/{MasterScrape.FilterBookTitle(bookTitle)}+manga/_/N-8q8Zucb/?Nrpp=40";
+                    LOGGER.Info($"Dif Manga Url = {url}");
                 }
             }
             else if (bookType == BookType.LightNovel)
             {
                 // https://www.barnesandnoble.com/s/overlord+novel/_/N-1z141wbZ8q8/?Nrpp=40&page=1
-                url = $"https://www.barnesandnoble.com/s/{MasterScrape.FilterBookTitle(bookTitle)}+novel/_/N-1z141wbZ8q8/?Nrpp=40&page={currPageNum}";
+                url = $"https://www.barnesandnoble.com/s/{MasterScrape.FilterBookTitle(bookTitle)}+novel/_/N-1z141wbZ8q8/?Nrpp=40";
+                LOGGER.Info($"Initial Url = {url}");
             }
-            Logger.Debug(url);
             BarnesAndNobleLinks.Add(url);
             return url;
         }
@@ -58,168 +71,158 @@ namespace MangaLightNovelWebScrape.Websites.America
 
         internal void ClearData()
         {
-            BarnesAndNobleLinks.Clear();
-            BarnesAndNobleData.Clear();
+            if (this != null)
+            {
+                BarnesAndNobleLinks.Clear();
+                BarnesAndNobleData.Clear();
+            }
         }
 
         private static string TitleParse(string titleText, BookType bookType, string inputTitle, bool oneShotCheck)
         {
-            if (!oneShotCheck)
+            titleText = VolTitleFixRegex().Replace(titleText, "Vol");
+            if (titleText.Contains("Box Set"))
             {
-                titleText = VolTitleFixRegex().Replace(titleText, "Vol");
-                if (titleText.Contains("Box Set"))
+                titleText = ParseBoxSetTitleRegex().Replace(titleText, "");
+            }
+            else
+            {
+                if (bookType == BookType.LightNovel)
                 {
-                    titleText = ParseBoxSetTitleRegex().Replace(titleText, "");
+                    titleText = titleText.Replace("(Light Novel)", "Novel");
+                }
+                else if (titleText.Contains("Edition"))
+                {
+                    titleText = OmnibusTitleRegex().Replace(titleText, "Omnibus");
+                }
+                titleText = ParseTitleRegex().Replace(titleText, "");
+            }
+            
+            StringBuilder curTitle = new StringBuilder(titleText);
+            if (!inputTitle.Contains('-'))
+            {
+                curTitle.Replace('-', ' ');
+            }
+            if (titleText.Contains("Toilet-bound Hanako-kun First Stall"))
+            {
+                curTitle.Append(" Box Set");
+            }
+            titleText = curTitle.ToString();
+
+            if (!oneShotCheck && bookType == BookType.Manga && !titleText.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !titleText.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
+            {
+                curTitle.Insert(MasterScrape.FindVolNumRegex().Match(titleText).Index, "Vol ");
+            }
+            else if (!oneShotCheck && bookType == BookType.LightNovel && !titleText.Contains("Novel"))
+            {
+                if (titleText.Contains("Vol"))
+                {
+                    curTitle.Insert(titleText.IndexOf("Vol"), "Novel ");
                 }
                 else
                 {
-                    if (bookType == BookType.LightNovel)
-                    {
-                        titleText = titleText.Replace("(Light Novel)", "Novel");
-                    }
-                    else if (titleText.Contains("Edition"))
-                    {
-                        titleText = OmnibusTitleRegex().Replace(titleText, "Omnibus");
-                    }
-                    titleText = ParseTitleRegex().Replace(titleText, "");
+                    curTitle.Insert(titleText.Length, " Novel");
                 }
-
-                StringBuilder curTitle = new StringBuilder(titleText).Replace('-', ' ');
-                if (titleText.Contains("Toilet-bound Hanako-kun First Stall"))
-                {
-                    curTitle.Append(" Box Set");
-                }
-                titleText = curTitle.ToString();
-
-                if (bookType == BookType.Manga && !titleText.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !titleText.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
-                {
-                    curTitle.Insert(MasterScrape.FindVolNumRegex().Match(titleText).Index, "Vol ");
-                }
-                else if (bookType == BookType.LightNovel && !titleText.Contains("Novel"))
-                {
-                    if (titleText.Contains("Vol"))
-                    {
-                        curTitle.Insert(titleText.IndexOf("Vol"), "Novel ");
-                    }
-                    else
-                    {
-                        curTitle.Insert(titleText.Length, " Novel");
-                    }
-                }
-
-                return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
             }
-            return MasterScrape.MultipleWhiteSpaceRegex().Replace(ParseTitleRegex().Replace(VolTitleFixRegex().Replace(titleText, "Vol"), ""), " ").Trim();
-        }
 
-        private static bool RunClickEvent(string xPath, WebDriver driver, WebDriverWait wait, string type)
-        {
-            var elements = driver.FindElements(By.XPath(xPath));
-            if (elements != null && elements.Count != 0)
-            {
-                Logger.Debug(type);
-                wait.Until(driver => driver.FindElement(By.XPath("(//span[@class='augHeader']/h2[contains(text(), 'Format')]/ancestor::span)[1]"))).Click();
-                IWebElement element = driver.FindElement(By.XPath(xPath));
-                wait.Until(driver => element.Displayed);
-                wait.Until(driver => element).Click();
-                return true;
-            }
-            Logger.Debug($"{type} Failed");
-            return false;
+            return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
+            // return MasterScrape.MultipleWhiteSpaceRegex().Replace(ParseTitleRegex().Replace(VolTitleFixRegex().Replace(titleText, "Vol"), ""), " ").Trim();
         }
 
         private List<EntryModel> GetBarnesAndNobleData(string bookTitle, BookType bookType, bool memberStatus, byte currPageNum, WebDriver driver)
         {
-            WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
             try
             {
                 string curTitle = string.Empty;
-                string pageSource = string.Empty;
                 string paperbackUrl = string.Empty, hardcoverUrl = string.Empty, curUrl = string.Empty;
-                bool paperbackCheck = false, hardcoverCheck = false, secondCheck = false, oneShotCheck = false;
+                bool hardcoverCheck = false, secondCheck = false, oneShotCheck = false;
+                WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
                 HtmlDocument doc = new();
 
                 CheckOther:
-                string originalUrl = GetUrl(bookType, currPageNum, bookTitle, secondCheck);
-                driver.Navigate().GoToUrl(originalUrl);
-                wait.Until(e => e.FindElement(By.XPath("//div[@class='product-view-section pl-lg-l p-sm-0'] | //div[@id='productDetail']")));
+                List<KeyValuePair<Uri, string>> ValidUrls = new List<KeyValuePair<Uri, string>>();
+                int validUrlCount = 0;
+                driver.Navigate().GoToUrl(GetUrl(bookType, bookTitle, secondCheck));
+                wait.Until(driver => driver.FindElement(By.XPath("//div[@class='product-view-section pl-lg-l p-sm-0'] | //div[@id='productDetail']")));
 
-                var elements = driver.FindElements(By.XPath("//div[@id='productDetail']"));
+                var elements = driver.FindElements(By.Id("productDetail-container"));
                 if (elements != null && elements.Any())
                 {
                     oneShotCheck = true;
-                    Logger.Debug("One Shot Series");
-                    goto OneShot;
+                    LOGGER.Info("One Shot Series");
                 }
-                else if (!paperbackCheck && RunClickEvent("(//span[@class='augHeader']/h2[contains(text(), 'Format')]/ancestor::span/following-sibling::ul//a[contains(text(), 'Paperback')])[1]", driver, wait, "Clicking Paperback"))
+                else
                 {
-                    curUrl = driver.Url;
-                    paperbackUrl = $"{(curUrl.IndexOf(';') != -1 ? curUrl[..curUrl.IndexOf(';')] : curUrl)}/?Nrpp=40&page=1";
-                }
-
-                driver.Navigate().GoToUrl(originalUrl);
-                wait.Until(e => e.FindElement(By.XPath("//div[@class='product-view-section pl-lg-l p-sm-0']")));
-                if (!hardcoverCheck && RunClickEvent("(//span[@class='augHeader']/h2[contains(text(), 'Format')]/ancestor::span/following-sibling::ul//a[contains(text(), 'Hardcover')])[1]", driver, wait, "Clicking Hardcover"))
-                {
-                    curUrl = driver.Url;
-                    hardcoverUrl = $"{(curUrl.IndexOf(';') != -1 ? curUrl[..curUrl.IndexOf(';')] : curUrl)}/?Nrpp=40&page=1";
-                }
-
-                FormatCheck:
-                if (!string.IsNullOrWhiteSpace(paperbackUrl))
-                {
-                    Logger.Debug($"Going To Paperback Url {paperbackUrl}");
-                    driver.Navigate().GoToUrl(paperbackUrl);
-                    paperbackCheck = true;
-                }
-                else if (!string.IsNullOrWhiteSpace(hardcoverUrl))
-                {
-                    Logger.Debug($"Going To Hardcover Url {hardcoverUrl}");
-                    driver.Navigate().GoToUrl(hardcoverUrl);
-                    hardcoverCheck = true;
+                    ReadOnlyCollection<IWebElement> formats = driver.FindElements(By.XPath("(//div[@class='sidebar__section refinements']/span/h2[contains(text(), 'Format')])[1]/ancestor::div[1]/ul//a[contains(text(), 'Paperback') or contains(text(), 'Hardcover') or contains(text(), 'BN Exclusive')]"));
+                    if (formats.Count != 0)
+                    {
+                        LOGGER.Debug("Found Formats");
+                        foreach(IWebElement format in formats)
+                        {
+                            if (!hardcoverCheck && format.GetAttribute("innerText").Contains("Hardcover", StringComparison.OrdinalIgnoreCase))
+                            {
+                                ValidUrls.Add(new KeyValuePair<Uri, string>(new Uri($"{MasterScrape.RemoveJSessionIDRegex().Replace(format.GetAttribute("href"), "")}/?Nrpp=40"), "Hardcover"));
+                            }
+                            else if (!hardcoverCheck && format.GetAttribute("innerText").Contains("BN Exclusive", StringComparison.OrdinalIgnoreCase))
+                            {
+                                ValidUrls.Add(new KeyValuePair<Uri, string>(new Uri(MasterScrape.RemoveJSessionIDRegex().Replace(format.GetAttribute("href"), "")), "OneShot"));
+                            }
+                            else
+                            {
+                                ValidUrls.Add(new KeyValuePair<Uri, string>(new Uri($"{MasterScrape.RemoveJSessionIDRegex().Replace(format.GetAttribute("href"), "")}/?Nrpp=40"), "Paperback"));
+                            }
+                        }
+                    }
                 }
 
-                OneShot:
-                while(true)
+                HtmlNode pageCheck = null;
+                while (oneShotCheck || (validUrlCount <= ValidUrls.Count))
                 {
-                    HtmlNodeCollection titleData = null;
-                    HtmlNodeCollection priceData = null;
-                    HtmlNodeCollection stockStatusData = null;
-                    HtmlNode pageCheck = null;
-                    
-                    pageSource = driver.PageSource;
+                    if (!oneShotCheck && pageCheck == null)
+                    {
+                        driver.Navigate().GoToUrl(ValidUrls[validUrlCount].Key);
+                        hardcoverCheck = ValidUrls[validUrlCount].Value.Equals("Hardcover");
+                        oneShotCheck = ValidUrls[validUrlCount].Value.Equals("OneShot");
+                        LOGGER.Debug($"{ValidUrls[validUrlCount].Value} Url = {ValidUrls[validUrlCount].Key}");
+                        validUrlCount++;
+                    }
+
+                    string pageSource = driver.PageSource;
                     if (!pageSource.Contains("The page you requested can't be found") && !pageSource.Contains("Sorry, we couldn't find what you're looking for"))
                     {
-                        Logger.Debug("Valid page");
+                        LOGGER.Info("Valid Page");
                         doc.LoadHtml(pageSource);
-                        // wait.Until(e => e.FindElement(By.XPath("//div[@class='product-view-section pl-lg-l p-sm-0']")));
                     }
                     else
                     {
-                        Logger.Debug("Invalid Page");
+                        LOGGER.Info("Invalid Page");
                         goto Quit;
                     }
 
-                    titleData = doc.DocumentNode.SelectNodes(!oneShotCheck ? "//div[contains(@class, 'product-shelf-title product-info-title pt-xs')]/a" : "//div[@id='commerce-zone']//h1[@itemprop='name']");
-                    priceData = doc.DocumentNode.SelectNodes(!oneShotCheck ? "//div[@class='product-shelf-pricing mt-xs']//div//a//span[2]" : "//span[@class='span-with-normal-white-space' and contains(text(), 'Paperback')]//ancestor::a/span/strong");
-                    stockStatusData = doc.DocumentNode.SelectNodes(!oneShotCheck ? "//p[@class='ml-xxs bopis-badge-message mt-0 mb-0' and (contains(text(), 'Online') or contains(text(), 'Pre-order'))]" : "//span[@class='shipping-message-text mt-0 mb-0']/span");
-                    pageCheck = doc.DocumentNode.SelectSingleNode("//li[@class='pagination__next ']");
+                    if (!oneShotCheck && driver.FindElements(By.Id("productDetail-container")).Count != 0)
+                    {
+                        oneShotCheck = true;
+                        LOGGER.Debug($"The Art of Naruto Uzumaki {TitleRemovalRegex().IsMatch("The Art of Naruto Uzumaki")}");
+                    }
 
-                    decimal price;
+                    HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(!oneShotCheck ? NotOneShotTitleXPath : OneShotTitleXPath);
+                    HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(!oneShotCheck ? NotOneShotPriceXPath : OneShotPriceXPath);
+                    HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(!oneShotCheck ? NotOneShotStockStatusXPath : OneShotStockStatusXPath);
+                    pageCheck = doc.DocumentNode.SelectSingleNode(PaginationCheckXPath);
+
                     for (int x = 0; x < titleData.Count; x++)
                     {
                         curTitle = !oneShotCheck ? titleData[x].GetAttributeValue("title", "Title Error") : titleData[x].InnerText;
-                        Logger.Debug(curTitle);
                         if (
-                            !oneShotCheck
+                            TitleRemovalRegex().IsMatch(curTitle)
+                            || !oneShotCheck
                             && (
-                                TitleRemovalRegex().IsMatch(curTitle)
-                                || !MasterScrape.TitleContainsBookTitle(bookTitle, curTitle)
+                                !MasterScrape.TitleContainsBookTitle(bookTitle, curTitle)
                                 || (
                                         bookType == BookType.Manga
                                         && (
                                                 (
-                                                    !curTitle.Contains("Vol") 
+                                                    !curTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase) 
                                                     && !curTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) 
                                                     && !curTitle.Contains("Toilet-bound Hanako-kun: First Stall")
                                                     && !(
@@ -227,27 +230,27 @@ namespace MangaLightNovelWebScrape.Websites.America
                                                             && !bookTitle.AsParallel().Any(char.IsDigit)
                                                         ) 
                                                 ) 
-                                                || curTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) || 
-                                                (
+                                                || curTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
+                                                || (
                                                     bookTitle.Equals("Naruto", StringComparison.OrdinalIgnoreCase) 
                                                     && (
                                                             curTitle.Contains("Boruto") || curTitle.Contains("Itachi's Story")
                                                         )
                                                 ) 
-                                                || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", curTitle, "of Gluttony")
+                                                || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", curTitle, "Gluttony")
                                         )
                                     )
                                 )
                             )
                         {
-                            Logger.Debug($"Removed {curTitle}");
+                            LOGGER.Info($"Removed {curTitle}");
                             continue;
                         }
 
                         curTitle = TitleParse(curTitle, bookType, bookTitle, oneShotCheck);
-                        if (!hardcoverCheck || (!BarnesAndNobleData.Exists(entry => entry.Entry.Equals(curTitle))))
+                        if (!hardcoverCheck || !BarnesAndNobleData.Exists(entry => entry.Entry.Equals(curTitle)))
                         {
-                            price = decimal.Parse(priceData[x].InnerText.Trim()[1..]);
+                            decimal price = !oneShotCheck ? decimal.Parse(priceData[x].InnerText.Trim()[1..]) : decimal.Parse(System.Net.WebUtility.HtmlDecode(priceData[x].InnerText).Trim()[1..]);
                             BarnesAndNobleData.Add(
                                 new EntryModel
                                 (
@@ -261,47 +264,18 @@ namespace MangaLightNovelWebScrape.Websites.America
                     }
 
                     Quit:
-                    if (pageCheck == null && !oneShotCheck)
-                    {
-                        Logger.Debug("No More Pages");
-                        if (paperbackCheck)
-                        {
-                            paperbackUrl = string.Empty;
-                            paperbackCheck = false;
-                        }
-                        else if (hardcoverCheck)
-                        {
-                            hardcoverUrl = string.Empty;
-                            hardcoverCheck = false;
-                        }
-                    }
-
                     if (pageCheck != null)
                     {
-                        currPageNum++;
-                        if (paperbackCheck)
-                        {
-                            Logger.Debug($"Next Paperback Page {paperbackUrl[..^1]}{currPageNum}");
-                            driver.Navigate().GoToUrl($"{paperbackUrl[..^1]}{currPageNum}");
-                        }
-                        else if (hardcoverCheck)
-                        {
-                            Logger.Debug($"Next Hardcover Page {hardcoverUrl[..^1]}{currPageNum}");
-                            driver.Navigate().GoToUrl($"{hardcoverUrl[..^1]}{currPageNum}");
-                        }
+                        driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.ClassName("next-button"))));
+                        wait.Until(driver => driver.FindElement(By.CssSelector(".product-view-section")));
+                        LOGGER.Info($"Next Page {driver.Url}");
                     }
-                    else if ((string.IsNullOrWhiteSpace(paperbackUrl) && !string.IsNullOrWhiteSpace(hardcoverUrl)) || (!string.IsNullOrWhiteSpace(paperbackUrl) && string.IsNullOrWhiteSpace(hardcoverUrl)))
+                    else if (!oneShotCheck && !secondCheck && validUrlCount <= ValidUrls.Count && BarnesAndNobleData.Count == 0)
                     {
-                        Logger.Debug("Going to Format Check");
-                        goto FormatCheck;
-                    }
-                    else if (!oneShotCheck && !secondCheck && BarnesAndNobleData.Count == 0)
-                    {
-                        Logger.Debug("Checking Dif Url for Manga");
                         secondCheck = true;
                         goto CheckOther;
                     }
-                    else
+                    else if (validUrlCount == ValidUrls.Count)
                     {
                         driver.Close();
                         driver.Quit();
@@ -315,7 +289,7 @@ namespace MangaLightNovelWebScrape.Websites.America
             {
                 driver.Close();
                 driver.Quit();
-                Logger.Error($"{bookTitle} Does Not Exist @ Barnes & Noble \n{e}");
+                LOGGER.Error($"{bookTitle} Does Not Exist @ Barnes & Noble \n{e}");
             }
 
             if (MasterScrape.IsDebugEnabled)
@@ -326,13 +300,13 @@ namespace MangaLightNovelWebScrape.Websites.America
                     {
                         foreach (EntryModel data in BarnesAndNobleData)
                         {
-                            Logger.Debug(data.ToString());
+                            LOGGER.Info(data.ToString());
                             outputFile.WriteLine(data.ToString());
                         }
                     }
                     else
                     {
-                        Logger.Error(bookTitle + " Does Not Exist at BarnesAndNoble");
+                        LOGGER.Error(bookTitle + " Does Not Exist at BarnesAndNoble");
                         outputFile.WriteLine(bookTitle + " Does Not Exist at BarnesAndNoble");
                     }
                 }

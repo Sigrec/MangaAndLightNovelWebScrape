@@ -34,15 +34,15 @@ namespace MangaLightNovelWebScrape
         {
             { CDJapan.WEBSITE_TITLE, "" },
         };
-        private AmazonUSA AmazonUSA = new AmazonUSA();
-        private BarnesAndNoble BarnesAndNoble = new BarnesAndNoble();
-        private BooksAMillion BooksAMillion = new BooksAMillion();
-        private InStockTrades InStockTrades = new InStockTrades();
-        private KinokuniyaUSA KinokuniyaUSA = new KinokuniyaUSA();
-        private RightStufAnime RightStufAnime = new RightStufAnime();
-        private RobertsAnimeCornerStore RobertsAnimeCornerStore = new RobertsAnimeCornerStore();
-        private Indigo Indigo = new Indigo();
-        private CDJapan CDJapan = new CDJapan();
+        private AmazonUSA AmazonUSA;
+        private BarnesAndNoble BarnesAndNoble;
+        private BooksAMillion BooksAMillion;
+        private InStockTrades InStockTrades;
+        private KinokuniyaUSA KinokuniyaUSA;
+        private RightStufAnime RightStufAnime;
+        private RobertsAnimeCornerStore RobertsAnimeCornerStore;
+        private Indigo Indigo;
+        private CDJapan CDJapan;
         public Region Region { get; set; }
         public Browser Browser { get; set; }
         private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
@@ -53,9 +53,10 @@ namespace MangaLightNovelWebScrape
         /// </summary>
         internal static bool IsDebugEnabled { get; set; } = false;
 
-        [GeneratedRegex(@"[^\w+]")] public static partial Regex RemoveNonWordsRegex();
-        [GeneratedRegex(@"\d{1,3}")] public static partial Regex FindVolNumRegex();
-        [GeneratedRegex(@"--|—|\s{2,}")] public static partial Regex MultipleWhiteSpaceRegex();
+        [GeneratedRegex(@"[^\w+]")] internal static partial Regex RemoveNonWordsRegex();
+        [GeneratedRegex(@"\d{1,3}")] internal static partial Regex FindVolNumRegex();
+        [GeneratedRegex(@"--|—|\s{2,}")] internal static partial Regex MultipleWhiteSpaceRegex();
+        [GeneratedRegex(@";jsessionid=[^?]*")] internal static partial Regex RemoveJSessionIDRegex();
 
         public MasterScrape() { } 
         public MasterScrape(Browser Browser = Browser.Chrome) => this.Browser = Browser;
@@ -84,6 +85,17 @@ namespace MangaLightNovelWebScrape
                 "Japan" => Region.Japan,
                 "Canada" => Region.Canada,
                 _ => Region.America,
+            };
+        }
+
+        public static StockStatus GetStockStatusFromString(string stockStatus)
+        {
+            return stockStatus switch
+            {
+                "IS" or "In Stock" => StockStatus.IS,
+                "PO" or "Pre-Order" => StockStatus.PO,
+                "OOS" or "Out of Stock" => StockStatus.OOS,
+                _ => StockStatus.NA
             };
         }
 
@@ -147,15 +159,25 @@ namespace MangaLightNovelWebScrape
         /// <summary>
         /// Clears all entry and url data for every website
         /// </summary>
-        private void ClearAllWebsiteData()
+        private void ClearAmericaWebsiteData()
         {
-            RightStufAnime.ClearData();
-            RobertsAnimeCornerStore.ClearData();
-            InStockTrades.ClearData();
-            KinokuniyaUSA.ClearData();
-            BarnesAndNoble.ClearData();
-            BooksAMillion.ClearData();
-            AmazonUSA.ClearData();
+            RightStufAnime?.ClearData();
+            RobertsAnimeCornerStore?.ClearData();
+            InStockTrades?.ClearData();
+            KinokuniyaUSA?.ClearData();
+            BarnesAndNoble?.ClearData();
+            BooksAMillion?.ClearData();
+            AmazonUSA?.ClearData();
+        }
+
+        private void ClearCanadaWebsiteData()
+        {
+            Indigo?.ClearData();
+        }
+
+        private void ClearJapanWebsiteData()
+        {
+            CDJapan?.ClearData();
         }
 
         /// <summary>
@@ -248,12 +270,14 @@ namespace MangaLightNovelWebScrape
                 case Browser.Edge:
                     EdgeOptions edgeOptions = new()
                     {
-                        PageLoadStrategy = PageLoadStrategy.Eager,
+                        PageLoadStrategy = PageLoadStrategy.Normal,
                     };
                     EdgeDriverService edgeDriverService = EdgeDriverService.CreateDefaultService();
                     edgeDriverService.HideCommandPromptWindow = true;
                     edgeOptions.AddArguments(CHROME_BROWSER_ARGUMENTS);
+                    edgeOptions.AddExcludedArgument("disable-popup-blocking");
                     edgeOptions.AddUserProfilePreference("profile.default_content_settings.geolocation", 2);
+                    edgeOptions.AddUserProfilePreference("profile.default_content_setting_values.notifications", 2);
                     if (needsUserAgent)
                     {
                         WebDriver dummyDriver = new EdgeDriver(edgeOptions);
@@ -265,24 +289,27 @@ namespace MangaLightNovelWebScrape
                 case Browser.FireFox:
                     FirefoxOptions firefoxOptions = new()
                     {
-                        PageLoadStrategy = PageLoadStrategy.Eager,
+                        PageLoadStrategy = PageLoadStrategy.Normal,
                         AcceptInsecureCertificates = true
                     };
                     FirefoxDriverService fireFoxDriverService = FirefoxDriverService.CreateDefaultService();
                     fireFoxDriverService.HideCommandPromptWindow = true;
                     firefoxOptions.AddArguments(FIREFOX_BROWSER_ARGUMENTS);
-                    firefoxOptions.SetPreference("profile.default_content_settings.geolocation", 2); 
+                    firefoxOptions.SetPreference("profile.default_content_settings.geolocation", 2);
+                    firefoxOptions.SetPreference("profile.default_content_setting_values.notifications", 2);
                     return new FirefoxDriver(fireFoxDriverService, firefoxOptions);
                 case Browser.Chrome:
                 default:
                     ChromeOptions chromeOptions = new()
                     {
-                        PageLoadStrategy = PageLoadStrategy.Eager,
+                        PageLoadStrategy = PageLoadStrategy.Normal,
                     };
                     ChromeDriverService chromeDriverService = ChromeDriverService.CreateDefaultService();
                     chromeDriverService.HideCommandPromptWindow = true;
                     chromeOptions.AddArguments(CHROME_BROWSER_ARGUMENTS);
+                    chromeOptions.AddExcludedArgument("disable-popup-blocking");
                     chromeOptions.AddUserProfilePreference("profile.default_content_settings.geolocation", 2);
+                    chromeOptions.AddUserProfilePreference("profile.default_content_setting_values.notifications", 2);
                     if (needsUserAgent)
                     {
                         WebDriver dummyDriver = new ChromeDriver(chromeOptions);
@@ -304,7 +331,7 @@ namespace MangaLightNovelWebScrape
         /// <returns>True if the curTitle should be removed</returns>
         internal static bool RemoveUnintendedVolumes(string bookTitle, string searchTitle, string curTitle, string removeText)
         {
-            return bookTitle.Equals(searchTitle, StringComparison.OrdinalIgnoreCase) && curTitle.Contains(removeText, StringComparison.OrdinalIgnoreCase);
+            return bookTitle.Contains(searchTitle, StringComparison.OrdinalIgnoreCase) && curTitle.Contains(removeText, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -334,6 +361,7 @@ namespace MangaLightNovelWebScrape
                             WebsiteList.Add(Website.RightStufAnime);
                             break;
                         case "Barnes & Noble":
+                        case "BarnesAndNoble":
                             WebsiteList.Add(Website.BarnesAndNoble);
                             break;
                         case "Books-A-Million":
@@ -346,12 +374,16 @@ namespace MangaLightNovelWebScrape
                             WebsiteList.Add(Website.InStockTrades);
                             break;
                         case "Kinokuniya USA":
+                        case "KinokuniyaUSA":
                             WebsiteList.Add(Website.KinokuniyaUSA);
                             break;
+                        case "Amazon USA":
                         case "AmazonUSA":
                             WebsiteList.Add(Website.AmazonUSA);
                             break;
+                        case "Amazon Japan":
                         case "AmazonJapan":
+                        case "AmazonJP":
                             WebsiteList.Add(Website.AmazonJapan);
                             break;
                         case "CDJapan":
@@ -416,79 +448,86 @@ namespace MangaLightNovelWebScrape
             switch (this.Region)
             {
                 case Region.America:
-                    LOGGER.Debug("America Websites");
                     ClearMasterUrlDictionary(AmericaMasterUrls);
-                    foreach (Website site in webScrapeList)
+                    Parallel.ForEach(webScrapeList, (site) =>
                     {
                         switch (site)
                         {
                             case Website.RightStufAnime:
+                                RightStufAnime = new RightStufAnime();
+                                LOGGER.Info($"{RightStufAnime.WEBSITE_TITLE} Going");
                                 WebTasks.Add(RightStufAnime.CreateRightStufAnimeTask(bookTitle, book, isRightStufMember, MasterDataList, SetupBrowserDriver(false)));
-                                LOGGER.Debug("RightStufAnime Going");
                                 break;
                             case Website.BarnesAndNoble:
+                                BarnesAndNoble = new BarnesAndNoble();
+                                LOGGER.Info($"{BarnesAndNoble.WEBSITE_TITLE} Going");
                                 WebTasks.Add(BarnesAndNoble.CreateBarnesAndNobleTask(bookTitle, book, isBarnesAndNobleMember, MasterDataList, SetupBrowserDriver(true)));
-                                LOGGER.Debug("Barnes & Noble Going");
                                 break;
                             case Website.RobertsAnimeCornerStore:
+                                RobertsAnimeCornerStore = new RobertsAnimeCornerStore();
+                                LOGGER.Info($"{RobertsAnimeCornerStore.WEBSITE_TITLE} Going");
                                 WebTasks.Add(RobertsAnimeCornerStore.CreateRobertsAnimeCornerStoreTask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
-                                LOGGER.Debug("RobertsAnimeCornerStore Going");
                                 break;
                             case Website.InStockTrades:
+                                InStockTrades = new InStockTrades();
+                                LOGGER.Info($"{InStockTrades.WEBSITE_TITLE} Going");
                                 WebTasks.Add(InStockTrades.CreateInStockTradesTask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
-                                LOGGER.Debug("InStockTrades Going");
                                 break;
                             case Website.KinokuniyaUSA:
+                                KinokuniyaUSA = new KinokuniyaUSA();
+                                LOGGER.Info($"{KinokuniyaUSA.WEBSITE_TITLE} Going");
                                 WebTasks.Add(KinokuniyaUSA.CreateKinokuniyaUSATask(bookTitle, book, isKinokuniyaUSAMember, MasterDataList, SetupBrowserDriver(true)));
-                                LOGGER.Debug("Kinokuniya USA Going");
                                 break;
                             case Website.BooksAMillion:
+                                BooksAMillion = new BooksAMillion();
+                                LOGGER.Info($"{BooksAMillion.WEBSITE_TITLE} Going");
                                 WebTasks.Add(BooksAMillion.CreateBooksAMillionTask(bookTitle, book, isBooksAMillionMember, MasterDataList, SetupBrowserDriver(true)));
-                                LOGGER.Debug("Books-A-Million Going");
                                 break;
                             case Website.AmazonUSA:
+                                AmazonUSA = new AmazonUSA();
+                                LOGGER.Info($"{AmazonUSA.WEBSITE_TITLE} Going");
                                 WebTasks.Add(AmazonUSA.CreateAmazonUSATask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
-                                LOGGER.Debug("Amazon USA Going");
                                 break;
                             default:
                                 break;
                         }
-                    }
+                    });
                     break;
                 case Region.Canada:
                     ClearMasterUrlDictionary(CanadaMasterUrls);
-                    foreach (Website site in webScrapeList)
+                    Parallel.ForEach(webScrapeList, (site) =>
                     {
                         switch (site)
                         {
                             case Website.Indigo:
+                                Indigo = new Indigo();
+                                LOGGER.Info($"{Indigo.WEBSITE_TITLE} Going");
                                 WebTasks.Add(Indigo.CreateIndigoTask(bookTitle, book, isIndigoMember, MasterDataList, SetupBrowserDriver(false)));
-                                LOGGER.Debug("Indigo Going");
                                 break;
                             default:
                                 break;
                         }
-                    }
+                    });
                     break;
                 case Region.Japan:
                     ClearMasterUrlDictionary(JapanMasterUrls);
-                    foreach (Website site in webScrapeList)
+                    Parallel.ForEach(webScrapeList, (site) =>
                     {
                         switch (site)
                         {
                             case Website.CDJapan:
+                                CDJapan = new CDJapan();
+                                LOGGER.Info($"{CDJapan.WEBSITE_TITLE} Going");
                                 WebTasks.Add(CDJapan.CreateCDJapanTask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
-                                LOGGER.Debug("CDJapan Going");
                                 break;
                             default:
                                 break;
                         }
-                    }
+                    });
                     break;
             }
         }
 
-        // TODO Create a Website Interface so websites can extend it
         // TODO Improve performance of Website Queries Starting w/ RightStufAnime
         // TODO Add ReadMe
         // TODO Figure out how to remove "know your location" from B&N & BAM
@@ -509,7 +548,7 @@ namespace MangaLightNovelWebScrape
         {
             await Task.Run(async () =>
             {
-                LOGGER.Debug($"Running on {this.Browser} Browser");
+                LOGGER.Info($"Running on {this.Browser} Browser");
                 MasterDataList.Clear(); // Clear the masterlist everytime there is a new run
                 
                 // Generate List of Tasks to 
@@ -577,14 +616,20 @@ namespace MangaLightNovelWebScrape
                     }
 
                     // Add the links to the MasterUrl list and clear data lists
-                    Skip:
+                    Skip: 
                     switch (this.Region)
                     {
                         case Region.America:
                             GenerateMasterUrlDictionary(AmericaMasterUrls, MasterDataList[0]);
+                            ClearAmericaWebsiteData();
                             break;
                         case Region.Canada:
                             GenerateMasterUrlDictionary(CanadaMasterUrls, MasterDataList[0]);
+                            ClearCanadaWebsiteData();
+                            break;
+                        case Region.Japan:
+                            GenerateMasterUrlDictionary(JapanMasterUrls, MasterDataList[0]);
+                            ClearJapanWebsiteData();
                             break;
                     }
                 }
@@ -597,7 +642,7 @@ namespace MangaLightNovelWebScrape
                         {
                             foreach (EntryModel data in MasterDataList[0])
                             {
-                                LOGGER.Debug(data.ToString());
+                                LOGGER.Info(data.ToString());
                                 outputFile.WriteLine(data.ToString());
                             }
 
@@ -605,18 +650,17 @@ namespace MangaLightNovelWebScrape
                             {
                                 if (!string.IsNullOrWhiteSpace(website.Value))
                                 {
-                                    LOGGER.Debug(website);
+                                    LOGGER.Info(website);
                                     outputFile.WriteLine(website);
                                 }
                             }
                         }
                         else
                         {
-                            LOGGER.Info("No MasterData Available");
+                            LOGGER.Warn("No MasterData Available");
                         }
                     }
                 }
-                ClearAllWebsiteData();
             });
         }
         
@@ -625,7 +669,7 @@ namespace MangaLightNovelWebScrape
             System.Diagnostics.Stopwatch watch = new();
             watch.Start();
             MasterScrape scrape = new MasterScrape(Region.America, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("World Trigger", BookType.Manga, new StockStatus[] { StockStatus.OOS, StockStatus.PO }, GenerateWebsiteList(new List<string>() {"RobertsAnimeCornerStore", "InStockTrades", "RightStufAnime", "Barnes & Noble"}), false, false, false, false, false);
+            await scrape.InitializeScrapeAsync("naruto", BookType.Manga, Array.Empty<StockStatus>(), GenerateWebsiteList(new List<string>() {"BarnesAndNoble"}), false, false, false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }

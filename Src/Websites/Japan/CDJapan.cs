@@ -20,8 +20,11 @@ namespace MangaLightNovelWebScrape.Websites.Japan
         
         internal void ClearData()
         {
-            CDJapanLinks.Clear();
-            CDJapanData.Clear();
+            if (this != null)
+            {
+                CDJapanLinks.Clear();
+                CDJapanData.Clear();
+            }
         }
 
         internal string GetUrl()

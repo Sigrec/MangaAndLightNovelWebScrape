@@ -5,7 +5,7 @@ namespace MangaLightNovelWebScrape.Websites.America
         private List<string> RobertsAnimeCornerStoreLinks = new();
         private List<EntryModel> RobertsAnimeCornerStoreData = new();
         public const string WEBSITE_TITLE = "RobertsAnimeCornerStore";
-        private static readonly Logger Logger = LogManager.GetLogger("RobertsAnimeCornerStoreLogs");
+        private static readonly Logger LOGGER = LogManager.GetLogger("RobertsAnimeCornerStoreLogs");
         private static readonly Dictionary<string, string> URL_MAP_DICT = new()
         { 
             {"mangrapnovag", @"^[a-bA-B\d]"},
@@ -60,14 +60,17 @@ namespace MangaLightNovelWebScrape.Websites.America
                 url = $"https://www.animecornerstore.com/{htmlString}";
                 RobertsAnimeCornerStoreLinks.Add(url);
             }
-            Logger.Debug(url);
+            LOGGER.Debug(url);
             return url;
         }
 
         internal void ClearData()
         {
-            RobertsAnimeCornerStoreLinks.Clear();
-            RobertsAnimeCornerStoreData.Clear();
+            if (this != null)
+            {
+                RobertsAnimeCornerStoreLinks.Clear();
+                RobertsAnimeCornerStoreData.Clear();
+            }
         }
 
         /**
@@ -136,7 +139,7 @@ namespace MangaLightNovelWebScrape.Websites.America
             if (string.IsNullOrEmpty(linkPage))
             {
                 errorMessage = "Error! Invalid Series Title";
-                Logger.Error(errorMessage);
+                LOGGER.Warn(errorMessage);
                 driver.Close();
                 driver.Quit();
             }
@@ -208,7 +211,7 @@ namespace MangaLightNovelWebScrape.Websites.America
                 {
                     driver.Close();
                     driver.Quit();
-                    Logger.Error(bookTitle + " Does Not Exist at RobertsAnimeCornerStore\n" + ex);
+                    LOGGER.Warn(bookTitle + " Does Not Exist at RobertsAnimeCornerStore\n" + ex);
                 }
 
                 if (MasterScrape.IsDebugEnabled)
@@ -219,7 +222,7 @@ namespace MangaLightNovelWebScrape.Websites.America
                         {
                             foreach (EntryModel data in RobertsAnimeCornerStoreData)
                             {
-                                Logger.Debug(data.ToString());
+                                LOGGER.Debug(data.ToString());
                                 outputFile.WriteLine(data.ToString());
                             }
                         }

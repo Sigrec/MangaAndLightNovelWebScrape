@@ -33,8 +33,11 @@ namespace MangaLightNovelWebScrape.Websites.America
 
         internal void ClearData()
         {
-            BooksAMillionLinks.Clear();
-            BooksAMillionData.Clear();
+            if (this != null)
+            {
+                BooksAMillionLinks.Clear();
+                BooksAMillionData.Clear();
+            }
         }
 
         private string GetUrl(string bookTitle, bool boxsetCheck, BookType bookType){

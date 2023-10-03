@@ -44,8 +44,11 @@ namespace MangaLightNovelWebScrape.Websites.America
         
         internal void ClearData()
         {
-            AmazonUSALinks.Clear();
-            AmazonUSAData.Clear();
+            if (this != null)
+            {
+                AmazonUSALinks.Clear();
+                AmazonUSAData.Clear();
+            }
         }
 
         private static string TitleParse(string bookTitle, BookType bookType, string inputTitle)
