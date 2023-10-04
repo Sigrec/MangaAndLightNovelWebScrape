@@ -3,7 +3,7 @@ namespace MangaLightNovelWebScrape.Websites.America
     public partial class RobertsAnimeCornerStore
     {
         private List<string> RobertsAnimeCornerStoreLinks = new List<string>(2);
-        private List<EntryModel> RobertsAnimeCornerStoreData = new();
+        private List<EntryModel> RobertsAnimeCornerStoreData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "RobertsAnimeCornerStore";
         private static readonly Logger LOGGER = LogManager.GetLogger("RobertsAnimeCornerStoreLogs");
         private static readonly Dictionary<string, string> URL_MAP_DICT = new()

@@ -5,6 +5,7 @@ using OpenQA.Selenium.Edge;
 using OpenQA.Selenium.Chrome;
 using System.Collections.Concurrent;
 using MangaLightNovelWebScrape.Websites.Japan;
+using Src.Websites;
 
 namespace MangaLightNovelWebScrape
 {
@@ -52,6 +53,7 @@ namespace MangaLightNovelWebScrape
         /// Determines whether debug mode is enabled (Disabled by default)
         /// </summary>
         internal static bool IsDebugEnabled { get; set; } = false;
+        public static readonly string[] AmericaWebsites = {AmazonUSA.WEBSITE_TITLE, BarnesAndNoble.WEBSITE_TITLE, BooksAMillion.WEBSITE_TITLE, InStockTrades.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE, RightStufAnime.WEBSITE_TITLE, RobertsAnimeCornerStore.WEBSITE_TITLE, SciFier.WEBSITE_TITLE};
 
         [GeneratedRegex(@"[^\w+]")] internal static partial Regex RemoveNonWordsRegex();
         [GeneratedRegex(@"\d{1,3}")] internal static partial Regex FindVolNumRegex();
@@ -71,9 +73,10 @@ namespace MangaLightNovelWebScrape
         {
             return browser switch
             {
-                "Edge" => Browser.Edge,
-                "FireFox" => Browser.FireFox,
-                _ => Browser.Chrome,
+                string curBrowser when curBrowser.Equals("Chrome", StringComparison.OrdinalIgnoreCase) => Browser.Chrome,
+                string curBrowser when curBrowser.Equals("Edge", StringComparison.OrdinalIgnoreCase) => Browser.Edge,
+                string curBrowser when curBrowser.Equals("FireFox", StringComparison.OrdinalIgnoreCase) => Browser.FireFox,
+                _ => throw new Exception(),
             };
         }
 
@@ -81,10 +84,12 @@ namespace MangaLightNovelWebScrape
         {
             return region switch
             {
-                "Britain" => Region.Britain,
-                "Japan" => Region.Japan,
-                "Canada" => Region.Canada,
-                _ => Region.America,
+                string curBrowser when curBrowser.Equals("America", StringComparison.OrdinalIgnoreCase) => Region.America,
+                string curBrowser when curBrowser.Equals("Britain", StringComparison.OrdinalIgnoreCase) => Region.Britain,
+                string curBrowser when curBrowser.Equals("Japan", StringComparison.OrdinalIgnoreCase) => Region.Japan,
+                string curBrowser when curBrowser.Equals("Canada", StringComparison.OrdinalIgnoreCase) => Region.Canada,
+                string curBrowser when curBrowser.Equals("Europe", StringComparison.OrdinalIgnoreCase) => Region.Europe,
+                _ => throw new Exception(),
             };
         }
 
@@ -96,6 +101,19 @@ namespace MangaLightNovelWebScrape
                 "PO" or "Pre-Order" => StockStatus.PO,
                 "OOS" or "Out of Stock" => StockStatus.OOS,
                 _ => StockStatus.NA
+            };
+        }
+
+        public static string[] GetRegionWebsiteList(Region region)
+        {
+            return region switch
+            {
+                Region.America => new string[] { AmazonUSA.WEBSITE_TITLE, BarnesAndNoble.WEBSITE_TITLE, BooksAMillion.WEBSITE_TITLE, InStockTrades.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE, RightStufAnime.WEBSITE_TITLE, RobertsAnimeCornerStore.WEBSITE_TITLE, SciFier.WEBSITE_TITLE },
+                Region.Britain => new string[] { SciFier.WEBSITE_TITLE },
+                Region.Canada => new string[] { Indigo.WEBSITE_TITLE, SciFier.WEBSITE_TITLE },
+                Region.Europe => new string[] { SciFier.WEBSITE_TITLE },
+                Region.Japan => new string[] { AmazonJapan.WEBSITE_TITLE, CDJapan.WEBSITE_TITLE },
+                _ => Array.Empty<string>(),
             };
         }
 
