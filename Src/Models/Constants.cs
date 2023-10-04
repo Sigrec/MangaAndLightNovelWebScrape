@@ -28,11 +28,13 @@ namespace Src.Models
             LightNovel
         }
 
+        [Flags]
         public enum Region
         {
             America,
-            Canada,
             Britain,
+            Canada,
+            Europe,
             Japan
         }
 

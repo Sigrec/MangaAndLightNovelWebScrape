@@ -7,6 +7,9 @@ namespace MangaLightNovelWebScrape.Websites.America
         public const string WEBSITE_TITLE = "InStockTrades";
         private static readonly Logger Logger = LogManager.GetLogger("InStockTradesLogs");
         private const Region WEBSITE_REGION = Region.America;
+        private static readonly XPathExpression TitleXPath = XPathExpression.Compile("/html/body/div[2]/div/div[3]/div/div[2][not(div[@class='damage'])]/div/a");
+        private static readonly XPathExpression PriceXPath = XPathExpression.Compile("/html/body/div[2]/div/div[3]/div/div[2][not(div[@class='damage'])]/div/div[1]/div[2]");
+        private static readonly XPathExpression PageCheckXPath= XPathExpression.Compile("/html/body/div[2]/div/div[4]/span/input");
 
         [GeneratedRegex(" GN| TP| HC| Manga|(?<=Vol).*|(?<=Box Set).*")]  private static partial Regex TitleRegex();
         [GeneratedRegex("Vol (\\d+)|Box Set (\\d+)")] private static partial Regex VolNumberRegex();
@@ -100,12 +103,12 @@ namespace MangaLightNovelWebScrape.Websites.America
                     doc.LoadHtml(driver.PageSource);
 
                     // Get the page data from the HTML doc
-                    HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes("/html/body/div[2]/div/div[3]/div/div[2][not(div[@class='damage'])]/div/a");
+                    HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
                     oneShotCheck = !titleData.AsParallel().Any(title => title.InnerText.Contains("Vol") || title.InnerText.Contains("Box Set") || title.InnerText.Contains("Manga"));
-                    HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes("/html/body/div[2]/div/div[3]/div/div[2][not(div[@class='damage'])]/div/div[1]/div[2]");
+                    HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
                     if (maxPages == 0)
                     {
-                        HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode("/html/body/div[2]/div/div[4]/span/input");
+                        HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
                         if (pageCheck != null)
                         {
                             maxPages = Convert.ToUInt16(pageCheck.GetAttributeValue("data-max", "Page Num Error"));

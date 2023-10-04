@@ -7,7 +7,7 @@ namespace MangaLightNovelWebScrape.Websites.America
         private List<EntryModel> RightStufAnimeData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "RightStufAnime";
         private const decimal GOT_ANIME_DISCOUNT = 0.1M;
-        private const Region WEBSITE_REGION = Region.America;
+        private const Region WEBSITE_REGION = Region.America | Region.Canada;
         
         [GeneratedRegex("\\(.*?\\)")] private static partial Regex TitleParseRegex();
         [GeneratedRegex(" Manga|,|:")] private static partial Regex FormatRemovalRegex();
@@ -15,11 +15,8 @@ namespace MangaLightNovelWebScrape.Websites.America
 
         internal void ClearData()
         {
-            if (this != null)
-            {
-                RightStufAnimeLinks.Clear();
-                RightStufAnimeData.Clear();
-            }
+            RightStufAnimeLinks.Clear();
+            RightStufAnimeData.Clear();
         }
 
         internal async Task CreateRightStufAnimeTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList, WebDriver driver)

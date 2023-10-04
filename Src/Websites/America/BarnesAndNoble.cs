@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Xml.XPath;
 
 namespace MangaLightNovelWebScrape.Websites.America
 {

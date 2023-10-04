@@ -669,7 +669,7 @@ namespace MangaLightNovelWebScrape
             System.Diagnostics.Stopwatch watch = new();
             watch.Start();
             MasterScrape scrape = new MasterScrape(Region.America, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("naruto", BookType.Manga, Array.Empty<StockStatus>(), GenerateWebsiteList(new List<string>() {"BarnesAndNoble"}), false, false, false, false, false);
+            await scrape.InitializeScrapeAsync("Berserk", BookType.Manga, Array.Empty<StockStatus>(), GenerateWebsiteList(new List<string>() {"RobertsAnimeCornerStore"}), false, false, false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }

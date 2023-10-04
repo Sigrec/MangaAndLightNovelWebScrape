@@ -2,7 +2,7 @@ namespace MangaLightNovelWebScrape.Websites.America
 {
     public partial class RobertsAnimeCornerStore
     {
-        private List<string> RobertsAnimeCornerStoreLinks = new();
+        private List<string> RobertsAnimeCornerStoreLinks = new List<string>(2);
         private List<EntryModel> RobertsAnimeCornerStoreData = new();
         public const string WEBSITE_TITLE = "RobertsAnimeCornerStore";
         private static readonly Logger LOGGER = LogManager.GetLogger("RobertsAnimeCornerStoreLogs");
@@ -19,6 +19,9 @@ namespace MangaLightNovelWebScrape.Websites.America
             {"magrnowz", @"^[w-zW-Z]"}
         };
         private const Region WEBSITE_REGION = Region.America;
+        private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//font[@face='dom bold, arial, helvetica']/b");
+        private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//form[@method='POST'][contains(text()[2], '$')]//font[@color='#ffcc33'][2]");
+        private static readonly XPathExpression SeriesTitleXPath = XPathExpression.Compile("//b//a[1]");
 
         [GeneratedRegex("-|\\s+")] private static partial Regex FilterBookTitleRegex();
         [GeneratedRegex(",|#| Graphic Novel| :|\\(.*?\\)|\\[Novel\\]")] private static partial Regex TitleFilterRegex();
@@ -40,27 +43,20 @@ namespace MangaLightNovelWebScrape.Websites.America
             return RobertsAnimeCornerStoreLinks.Count != 0 ? RobertsAnimeCornerStoreLinks[^1] : $"{WEBSITE_TITLE} Has no Link";
         }
         
-        private string GetUrl(string htmlString, bool pageExists)
+        private string GetUrl(string bookTitle)
         {
             string url = "";
-            if (!pageExists) // Gets the starting page based on first letter and checks if we are looking for the 1st webpage (false) or 2nd webpage containing the actual item data (true)
+            // Gets the starting page based on first letter and checks if we are looking for the 1st webpage (false) or 2nd webpage containing the actual item data (true)
+            Parallel.ForEach(URL_MAP_DICT, (link, state) =>
             {
-                Parallel.ForEach(URL_MAP_DICT, (link, state) =>
+                if (new Regex(link.Value).Match(bookTitle).Success)
                 {
-                    if (new Regex(link.Value).Match(htmlString).Success)
-                    {
-                        url = $"https://www.animecornerstore.com/{link.Key}.html";
-                        RobertsAnimeCornerStoreLinks.Add(url);
-                        state.Stop();
-                    }
-                });
-            }
-            else
-            { //Gets the actual page that houses the data the user is looking for
-                url = $"https://www.animecornerstore.com/{htmlString}";
-                RobertsAnimeCornerStoreLinks.Add(url);
-            }
-            LOGGER.Debug(url);
+                    url = $"https://www.animecornerstore.com/{link.Key}.html";
+                    state.Stop();
+                }
+            });
+            RobertsAnimeCornerStoreLinks.Add(url);
+            LOGGER.Info(url);
             return url;
         }
 
@@ -71,30 +67,6 @@ namespace MangaLightNovelWebScrape.Websites.America
                 RobertsAnimeCornerStoreLinks.Clear();
                 RobertsAnimeCornerStoreData.Clear();
             }
-        }
-
-        /**
-         * TODO: Figure out a way to when checking for title for it to ignore case
-         */
-        private string GetPageData(WebDriver driver, string bookTitle, BookType book, HtmlDocument doc, WebDriverWait wait)
-        {
-            string link = "";
-            driver.Navigate().GoToUrl(GetUrl(bookTitle, false));
-            wait.Until(e => e.FindElement(By.XPath($"//b//a[1]")));
-            doc.LoadHtml(driver.PageSource);
-
-            HtmlNodeCollection seriesTitle = doc.DocumentNode.SelectNodes($"//b//a[1]");
-            string seriesText;
-            foreach (HtmlNode series in seriesTitle)
-            {
-                seriesText = series.InnerText;
-                if (MasterScrape.TitleContainsBookTitle(bookTitle, seriesText))
-                {
-                    link = GetUrl(series.Attributes["href"].Value, true);
-                    break;
-                }
-            }
-            return link;
         }
 
         private static string TitleParse(string titleText, BookType book)
@@ -129,50 +101,46 @@ namespace MangaLightNovelWebScrape.Websites.America
         
         private List<EntryModel> GetRobertsAnimeCornerStoreData(string bookTitle, BookType bookType, WebDriver driver)
         {
-            WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
-
-            // Initialize the html doc for crawling
-            HtmlDocument doc = new();
-
-            string linkPage = GetPageData(driver, FilterBookTitleRegex().Replace(bookTitle, ""), bookType, doc, wait);
-            string errorMessage;
-            if (string.IsNullOrEmpty(linkPage))
+            bool DriverHasQuit = false;
+            try
             {
-                errorMessage = "Error! Invalid Series Title";
-                LOGGER.Warn(errorMessage);
-                driver.Close();
-                driver.Quit();
-            }
-            else
-            {
-                try
+                // Start scraping the URL where the data is found
+                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
+                HtmlDocument doc = new HtmlDocument();
+                string link = string.Empty;
+
+                driver.Navigate().GoToUrl(GetUrl(bookTitle));
+                wait.Until(e => e.FindElement(By.XPath("/html/body/center/table/tbody/tr/td/font/b/a")));
+                doc.LoadHtml(driver.PageSource);
+
+                foreach (HtmlNode series in doc.DocumentNode.SelectNodes(SeriesTitleXPath))
                 {
-                    // Start scraping the URL where the data is found
-                    driver.Navigate().GoToUrl(linkPage);
-                    wait.Until(e => e.FindElement(By.XPath("//font[@face='dom bold, arial, helvetica']/b")));
+                    string seriesText = series.InnerText;
+                    if (MasterScrape.TitleContainsBookTitle(bookTitle, seriesText))
+                    {
+                        link = series.Attributes["href"].Value;
+                        break;
+                    }
+                }
 
-                    // Get the html doc for crawling
+                if (!string.IsNullOrWhiteSpace(link))
+                {
+                    driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.CssSelector($"[href='{link}']"))));
+                    wait.Until(e => e.FindElement(By.CssSelector("tbody")));
                     doc.LoadHtml(driver.PageSource);
-
-                    HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes("//font[@face='dom bold, arial, helvetica']/b");
-                    HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes("//form[@method='POST'][contains(text()[2], '$')]//font[@color='#ffcc33'][2]");
                     driver.Close();
                     driver.Quit();
-                    string titleText;
+                    DriverHasQuit = true;
+                    
+                    LOGGER.Info($"https://www.animecornerstore.com/{link}");
+                    RobertsAnimeCornerStoreLinks.Add($"https://www.animecornerstore.com/{link}");
 
-                    // Remove All Empty Titles
-                    for (int x = 0; x < titleData.Count; x++)
-                    {
-                        titleText = titleData[x].InnerText;
-                        if (string.IsNullOrWhiteSpace(titleText))
-                        {
-                            titleData.RemoveAt(x);
-                        }
-                    }
+                    List<HtmlNode> titleData = doc.DocumentNode.SelectNodes(TitleXPath).Where(title => !string.IsNullOrWhiteSpace(title.InnerText)).ToList();
+                    HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
 
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        titleText = titleData[x].InnerText;
+                        string titleText = titleData[x].InnerText;
                         if (
                                 TitleRemovalRegex().IsMatch(titleText)
                                 || string.IsNullOrWhiteSpace(titleText) 
@@ -207,32 +175,35 @@ namespace MangaLightNovelWebScrape.Websites.America
 
                     RobertsAnimeCornerStoreData.Sort(new VolumeSort());
                 }
-                catch(Exception ex)
+            }
+            catch(Exception ex)
+            {
+                if (!DriverHasQuit)
                 {
                     driver.Close();
                     driver.Quit();
-                    LOGGER.Warn(bookTitle + " Does Not Exist at RobertsAnimeCornerStore\n" + ex);
                 }
+                LOGGER.Warn(bookTitle + " Does Not Exist at RobertsAnimeCornerStore\n" + ex);
+            }
 
-                if (MasterScrape.IsDebugEnabled)
+            if (MasterScrape.IsDebugEnabled)
+            {
+                using (StreamWriter outputFile = new(@"Data\RobertsAnimeCornerStoreData.txt"))
                 {
-                    using (StreamWriter outputFile = new(@"Data\RobertsAnimeCornerStoreData.txt"))
+                    if (RobertsAnimeCornerStoreData.Count != 0)
                     {
-                        if (RobertsAnimeCornerStoreData.Count != 0)
+                        foreach (EntryModel data in RobertsAnimeCornerStoreData)
                         {
-                            foreach (EntryModel data in RobertsAnimeCornerStoreData)
-                            {
-                                LOGGER.Debug(data.ToString());
-                                outputFile.WriteLine(data.ToString());
-                            }
+                            LOGGER.Debug(data.ToString());
+                            outputFile.WriteLine(data.ToString());
                         }
-                        else
-                        {
-                            errorMessage = bookTitle + " Does Not Exist at RobertsAnimeCornerStore";
-                            outputFile.WriteLine(errorMessage);
-                        }
-                    } 
-                }
+                    }
+                    else
+                    {
+                        LOGGER.Warn($"{bookTitle} Does Not Exist at RobertsAnimeCornerStore");
+                        outputFile.WriteLine($"{bookTitle} Does Not Exist at RobertsAnimeCornerStore");
+                    }
+                } 
             }
             
             return RobertsAnimeCornerStoreData;
