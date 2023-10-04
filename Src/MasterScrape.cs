@@ -53,7 +53,6 @@ namespace MangaLightNovelWebScrape
         /// Determines whether debug mode is enabled (Disabled by default)
         /// </summary>
         internal static bool IsDebugEnabled { get; set; } = false;
-        public static readonly string[] AmericaWebsites = {AmazonUSA.WEBSITE_TITLE, BarnesAndNoble.WEBSITE_TITLE, BooksAMillion.WEBSITE_TITLE, InStockTrades.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE, RightStufAnime.WEBSITE_TITLE, RobertsAnimeCornerStore.WEBSITE_TITLE, SciFier.WEBSITE_TITLE};
 
         [GeneratedRegex(@"[^\w+]")] internal static partial Regex RemoveNonWordsRegex();
         [GeneratedRegex(@"\d{1,3}")] internal static partial Regex FindVolNumRegex();
