@@ -40,7 +40,7 @@ namespace MangaLightNovelWebScrape
 
         public override string ToString()
         {
-            return $"[{Entry}, {Price}, {StockStatus}, {Website}]";
+            return $"[{this.Entry}, {this.Price}, {this.StockStatus}, {this.Website}]";
         }
 
         /// <summary>

@@ -1,4 +1,4 @@
-namespace Src.Websites
+namespace MangaLightNovelWebScrape.Websites
 {
     public class SciFier
     {

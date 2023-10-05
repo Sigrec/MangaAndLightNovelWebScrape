@@ -5,7 +5,8 @@ using OpenQA.Selenium.Edge;
 using OpenQA.Selenium.Chrome;
 using System.Collections.Concurrent;
 using MangaLightNovelWebScrape.Websites.Japan;
-using Src.Websites;
+using MangaLightNovelWebScrape.Websites;
+using MangaLightNovelWebScrape.Websites.Britain;
 
 namespace MangaLightNovelWebScrape
 {
@@ -16,7 +17,7 @@ namespace MangaLightNovelWebScrape
     { 
         internal List<List<EntryModel>> MasterDataList = new List<List<EntryModel>>();
         private ConcurrentBag<List<EntryModel>> ResultsList = new ConcurrentBag<List<EntryModel>>();
-        private List<Task> WebTasks = new List<Task>();
+        private List<Task> WebTasks = new List<Task>(11);
         private Dictionary<string, string> AmericaMasterUrls = new Dictionary<string, string>
         {
             { RightStufAnime.WEBSITE_TITLE, "" },
@@ -108,7 +109,7 @@ namespace MangaLightNovelWebScrape
             return region switch
             {
                 Region.America => new string[] { AmazonUSA.WEBSITE_TITLE, BarnesAndNoble.WEBSITE_TITLE, BooksAMillion.WEBSITE_TITLE, InStockTrades.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE, RightStufAnime.WEBSITE_TITLE, RobertsAnimeCornerStore.WEBSITE_TITLE, SciFier.WEBSITE_TITLE },
-                Region.Britain => new string[] { SciFier.WEBSITE_TITLE },
+                Region.Britain => new string[] { Waterstones.WEBSITE_TITLE, SciFier.WEBSITE_TITLE },
                 Region.Canada => new string[] { Indigo.WEBSITE_TITLE, SciFier.WEBSITE_TITLE },
                 Region.Europe => new string[] { SciFier.WEBSITE_TITLE },
                 Region.Japan => new string[] { AmazonJapan.WEBSITE_TITLE, CDJapan.WEBSITE_TITLE },
@@ -365,49 +366,99 @@ namespace MangaLightNovelWebScrape
             return bookTitle;
         }
 
-        public static List<Website> GenerateWebsiteList(IEnumerable<string> input)
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="input"></param>
+        /// <param name="curRegion"></param>
+        /// <returns></returns>
+        public static List<Website> GenerateWebsiteList(IEnumerable<string> input, Region curRegion)
         {
             List<Website> WebsiteList = new List<Website>();
             if (input != null && input.Any())
             {
                 foreach (string website in input)
                 {
-                    switch (website)
+                    switch (curRegion)
                     {
-                        case "RightStufAnime":
-                            WebsiteList.Add(Website.RightStufAnime);
+                        case Region.America:
+                            switch (website)
+                            {
+                                case RightStufAnime.WEBSITE_TITLE:
+                                    WebsiteList.Add(Website.RightStufAnime);
+                                    break;
+                                case BarnesAndNoble.WEBSITE_TITLE:
+                                case "BarnesAndNoble":
+                                    WebsiteList.Add(Website.BarnesAndNoble);
+                                    break;
+                                case "BooksAMillion":
+                                case BooksAMillion.WEBSITE_TITLE:
+                                    WebsiteList.Add(Website.BooksAMillion);
+                                    break;
+                                case RobertsAnimeCornerStore.WEBSITE_TITLE:
+                                    WebsiteList.Add(Website.RobertsAnimeCornerStore);
+                                    break;
+                                case InStockTrades.WEBSITE_TITLE:
+                                    WebsiteList.Add(Website.InStockTrades);
+                                    break;
+                                case KinokuniyaUSA.WEBSITE_TITLE:
+                                case "KinokuniyaUSA":
+                                    WebsiteList.Add(Website.KinokuniyaUSA);
+                                    break;
+                                case AmazonUSA.WEBSITE_TITLE:
+                                case "AmazonUSA":
+                                    WebsiteList.Add(Website.AmazonUSA);
+                                    break;
+                                case SciFier.WEBSITE_TITLE:
+                                    WebsiteList.Add(Website.SciFier);
+                                    break;
+                            }
                             break;
-                        case "Barnes & Noble":
-                        case "BarnesAndNoble":
-                            WebsiteList.Add(Website.BarnesAndNoble);
+                        case Region.Britain:
+                            switch (website)
+                            {
+                                case Waterstones.WEBSITE_TITLE:
+                                    WebsiteList.Add(Website.Waterstones);
+                                    break;
+                                case Indigo.WEBSITE_TITLE:
+                                    WebsiteList.Add(Website.Indigo);
+                                    break;
+                                case SciFier.WEBSITE_TITLE:
+                                    WebsiteList.Add(Website.SciFier);
+                                    break;
+                            }
                             break;
-                        case "Books-A-Million":
-                            WebsiteList.Add(Website.BooksAMillion);
+                        case Region.Canada:
+                            switch (website)
+                            {
+                                case Indigo.WEBSITE_TITLE:
+                                    WebsiteList.Add(Website.Indigo);
+                                    break;
+                                case SciFier.WEBSITE_TITLE:
+                                    WebsiteList.Add(Website.SciFier);
+                                    break;
+                            }
                             break;
-                        case "RobertsAnimeCornerStore":
-                            WebsiteList.Add(Website.RobertsAnimeCornerStore);
+                        case Region.Europe:
+                            switch (website)
+                            {
+                                case SciFier.WEBSITE_TITLE:
+                                    WebsiteList.Add(Website.SciFier);
+                                    break;
+                            }
                             break;
-                        case "InStockTrades":
-                            WebsiteList.Add(Website.InStockTrades);
-                            break;
-                        case "Kinokuniya USA":
-                        case "KinokuniyaUSA":
-                            WebsiteList.Add(Website.KinokuniyaUSA);
-                            break;
-                        case "Amazon USA":
-                        case "AmazonUSA":
-                            WebsiteList.Add(Website.AmazonUSA);
-                            break;
-                        case "Amazon Japan":
-                        case "AmazonJapan":
-                        case "AmazonJP":
-                            WebsiteList.Add(Website.AmazonJapan);
-                            break;
-                        case "CDJapan":
-                            WebsiteList.Add(Website.CDJapan);
-                            break;
-                        case "Indigo":
-                            WebsiteList.Add(Website.Indigo);
+                        case Region.Japan:
+                            switch (website)
+                            {
+                                case AmazonJapan.WEBSITE_TITLE:
+                                case "AmazonJapan":
+                                case "AmazonJP":
+                                    WebsiteList.Add(Website.AmazonJapan);
+                                    break;
+                                case CDJapan.WEBSITE_TITLE:
+                                    WebsiteList.Add(Website.CDJapan);
+                                    break;
+                            }
                             break;
                     }
                 }
@@ -686,7 +737,7 @@ namespace MangaLightNovelWebScrape
             System.Diagnostics.Stopwatch watch = new();
             watch.Start();
             MasterScrape scrape = new MasterScrape(Region.America, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("Berserk", BookType.Manga, Array.Empty<StockStatus>(), GenerateWebsiteList(new List<string>() {"RobertsAnimeCornerStore"}), false, false, false, false, false);
+            await scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, Array.Empty<StockStatus>(), GenerateWebsiteList(new List<string>() { BooksAMillion.WEBSITE_TITLE }, Region.America), false, false, true, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }

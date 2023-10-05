@@ -9,7 +9,7 @@ namespace Tests.Websites
         public void OneTimeSetUp()
         {
             Scrape = new MasterScrape(Region.America, Browser.Chrome);
-            WebsiteList = new List<Website>() {Website.RobertsAnimeCornerStore};
+            WebsiteList = new List<Website>() {Website.BooksAMillion};
         }
 
         [Test, Description("Tests Manga book, Box Sets, Omnibus, & Manga w/ No Vol Number")]
@@ -118,7 +118,7 @@ namespace Tests.Websites
         [Test, Description("Validates One Shot Manga Series")]
         public async Task BooksAMillion_Member_GoodbyeEri_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
+            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList, false, false, true);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\America\Data\BooksAMillion\BooksAMillionGoodbyeEriMangaData.txt")));
         }
     }

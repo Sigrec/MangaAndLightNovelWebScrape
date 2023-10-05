@@ -15,11 +15,13 @@ namespace Src.Models
             BarnesAndNoble,
             BooksAMillion,
             CDJapan,
+            Indigo,
             InStockTrades,
             KinokuniyaUSA,
             RightStufAnime,
             RobertsAnimeCornerStore,
-            Indigo
+            Waterstones,
+            SciFier
         }
 
         public enum BookType
