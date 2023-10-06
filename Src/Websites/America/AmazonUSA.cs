@@ -99,7 +99,7 @@ namespace MangaLightNovelWebScrape.Websites.America
         {
             try
             {
-                WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
+                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
 
                 string currTitle;
                 bool foundPaperback = false, foundHardcover = false, foundBookSeries = false;

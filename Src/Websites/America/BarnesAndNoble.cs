@@ -135,7 +135,7 @@ namespace MangaLightNovelWebScrape.Websites.America
                 string curTitle = string.Empty;
                 string paperbackUrl = string.Empty, hardcoverUrl = string.Empty, curUrl = string.Empty;
                 bool hardcoverCheck = false, secondCheck = false, oneShotCheck = false;
-                WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
+                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
                 HtmlDocument doc = new();
 
                 CheckOther:

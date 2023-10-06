@@ -57,7 +57,7 @@ namespace MangaLightNovelWebScrape.Websites.Japan
         {
             try
             {
-                WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
+                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
                 driver.Navigate().GoToUrl(GetUrl(bookTitle, bookType));
 
                 // Initialize the html doc for crawling

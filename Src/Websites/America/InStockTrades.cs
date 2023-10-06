@@ -92,7 +92,7 @@ namespace MangaLightNovelWebScrape.Websites.America
             bool oneShotCheck = false;
             try
             {
-                WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
+                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
                 while (true)
                 {
                     driver.Navigate().GoToUrl(GetUrl(currPageNum, bookTitle));

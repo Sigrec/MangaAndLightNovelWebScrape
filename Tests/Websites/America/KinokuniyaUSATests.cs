@@ -50,7 +50,7 @@ namespace Tests.Websites
         [Test, Description("Validates Member Status & Series w/ Non Letter or Digit Char in Title")]
         public async Task KinokuniyaUSA_Member_AkaneBanashi_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("Akane-Banashi", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
+            await Scrape.InitializeScrapeAsync("Akane-Banashi", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList, false, false, false, true);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\America\Data\KinokuniyaUSA\KinokuniyaUSAAkaneBanashiMangaData.txt")));
         }
 
@@ -78,7 +78,7 @@ namespace Tests.Websites
         [Test, Description("Validates Manga Series w/ Special Edition, Paperback, & Omni Volumes")]
         public async Task KinokuniyaUSA_FMAB_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("fullmetal alchemist", BookType.LightNovel, Array.Empty<StockStatus>(), WebsiteList);
+            await Scrape.InitializeScrapeAsync("fullmetal alchemist", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\America\Data\KinokuniyaUSA\KinokuniyaUSAFMABMangaData.txt")));
         }
 

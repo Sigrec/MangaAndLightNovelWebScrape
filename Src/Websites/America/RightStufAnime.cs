@@ -72,7 +72,7 @@ namespace MangaLightNovelWebScrape.Websites.America
         {
             try
             {
-                WebDriverWait wait = new(driver, TimeSpan.FromMinutes(1));
+                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
                 string titleText;
                 decimal priceVal;
                 StockStatus stockStatus;

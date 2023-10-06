@@ -18,7 +18,7 @@ namespace MangaLightNovelWebScrape
         internal List<List<EntryModel>> MasterDataList = new List<List<EntryModel>>();
         private ConcurrentBag<List<EntryModel>> ResultsList = new ConcurrentBag<List<EntryModel>>();
         private List<Task> WebTasks = new List<Task>(11);
-        private Dictionary<string, string> AmericaMasterUrls = new Dictionary<string, string>
+        private Dictionary<string, string> MasterUrls = new Dictionary<string, string>
         {
             { RightStufAnime.WEBSITE_TITLE, "" },
             { BarnesAndNoble.WEBSITE_TITLE , "" },
@@ -26,15 +26,13 @@ namespace MangaLightNovelWebScrape
             { AmazonUSA.WEBSITE_TITLE , "" },
             { KinokuniyaUSA.WEBSITE_TITLE , "" },
             { InStockTrades.WEBSITE_TITLE , "" },
-            { RobertsAnimeCornerStore.WEBSITE_TITLE , "" }
-        };
-        private Dictionary<string, string> CanadaMasterUrls = new Dictionary<string, string>
-        {
-            { Indigo.WEBSITE_TITLE, "" },
-        };
-        private Dictionary<string, string> JapanMasterUrls = new Dictionary<string, string>
-        {
+            { RobertsAnimeCornerStore.WEBSITE_TITLE , "" },
+            { SciFier.WEBSITE_TITLE, "" },
+            { ForbiddenPlanet.WEBSITE_TITLE, "" },
+            { Waterstones.WEBSITE_TITLE, "" },
+            { AmazonJapan.WEBSITE_TITLE, "" },
             { CDJapan.WEBSITE_TITLE, "" },
+            { Indigo.WEBSITE_TITLE, "" }
         };
         private AmazonUSA AmazonUSA;
         private BarnesAndNoble BarnesAndNoble;
@@ -44,11 +42,15 @@ namespace MangaLightNovelWebScrape
         private RightStufAnime RightStufAnime;
         private RobertsAnimeCornerStore RobertsAnimeCornerStore;
         private Indigo Indigo;
+        private AmazonJapan AmazonJapan;
         private CDJapan CDJapan;
+        private SciFier SciFier;
+        private Waterstones Waterstones;
+        private ForbiddenPlanet ForbiddenPlanet;
         public Region Region { get; set; }
         public Browser Browser { get; set; }
         private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
-        private static readonly string[] CHROME_BROWSER_ARGUMENTS = {"--headless=new", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent"};
+        private static readonly string[] CHROME_BROWSER_ARGUMENTS = {"--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent"};
         private static readonly string[] FIREFOX_BROWSER_ARGUMENTS = {"-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3"};
         /// <summary>
         /// Determines whether debug mode is enabled (Disabled by default)
@@ -59,6 +61,8 @@ namespace MangaLightNovelWebScrape
         [GeneratedRegex(@"\d{1,3}")] internal static partial Regex FindVolNumRegex();
         [GeneratedRegex(@"--|—|\s{2,}")] internal static partial Regex MultipleWhiteSpaceRegex();
         [GeneratedRegex(@";jsessionid=[^?]*")] internal static partial Regex RemoveJSessionIDRegex();
+        [GeneratedRegex(@"Volume|Vol\\.|Volumr", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
+        [GeneratedRegex("Official|Character Book|Guide|Art of |Illustration|Chapter Book|Anime Profiles", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
 
         public MasterScrape() { } 
         public MasterScrape(Browser Browser = Browser.Chrome) => this.Browser = Browser;
@@ -69,6 +73,11 @@ namespace MangaLightNovelWebScrape
             this.Browser = Browser;
         }
 
+        /// <summary>
+        /// Gets Browser Enum from string
+        /// </summary>
+        /// <param name="browser"></param>
+        /// <returns></returns>
         public static Browser GetBrowserFromString(string browser)
         {
             return browser switch
@@ -80,6 +89,11 @@ namespace MangaLightNovelWebScrape
             };
         }
 
+        /// <summary>
+        /// Gets Region Enum from string
+        /// </summary>
+        /// <param name="region"></param>
+        /// <returns></returns>
         public static Region GetRegionFromString(string region)
         {
             return region switch
@@ -93,6 +107,11 @@ namespace MangaLightNovelWebScrape
             };
         }
 
+        /// <summary>
+        /// Gets StockStatus Enum from string
+        /// </summary>
+        /// <param name="stockStatus"></param>
+        /// <returns></returns>
         public static StockStatus GetStockStatusFromString(string stockStatus)
         {
             return stockStatus switch
@@ -104,12 +123,17 @@ namespace MangaLightNovelWebScrape
             };
         }
 
-        public static string[] GetRegionWebsiteList(Region region)
+        /// <summary>
+        /// Gets the array of Websites available for a specific region as strings
+        /// </summary>
+        /// <param name="region">The region to get</param>
+        /// <returns></returns>
+        public static string[] GetRegionWebsiteListAsString(Region region)
         {
             return region switch
             {
                 Region.America => new string[] { AmazonUSA.WEBSITE_TITLE, BarnesAndNoble.WEBSITE_TITLE, BooksAMillion.WEBSITE_TITLE, InStockTrades.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE, RightStufAnime.WEBSITE_TITLE, RobertsAnimeCornerStore.WEBSITE_TITLE, SciFier.WEBSITE_TITLE },
-                Region.Britain => new string[] { Waterstones.WEBSITE_TITLE, SciFier.WEBSITE_TITLE },
+                Region.Britain => new string[] { ForbiddenPlanet.WEBSITE_TITLE, Waterstones.WEBSITE_TITLE, SciFier.WEBSITE_TITLE },
                 Region.Canada => new string[] { Indigo.WEBSITE_TITLE, SciFier.WEBSITE_TITLE },
                 Region.Europe => new string[] { SciFier.WEBSITE_TITLE },
                 Region.Japan => new string[] { AmazonJapan.WEBSITE_TITLE, CDJapan.WEBSITE_TITLE },
@@ -118,7 +142,25 @@ namespace MangaLightNovelWebScrape
         }
 
         /// <summary>
-        /// Disables debug mode prints the data to text files
+        /// Gets the array of Websites available for a specific region as Website Enums
+        /// </summary>
+        /// <param name="region"></param>
+        /// <returns></returns>
+        public static Website[] GetRegionWebsiteList(Region region)
+        {
+            return region switch
+            {
+                Region.America => new Website[] { Website.AmazonUSA, Website.BarnesAndNoble, Website.BooksAMillion, Website.InStockTrades, Website.KinokuniyaUSA, Website.RightStufAnime, Website.RobertsAnimeCornerStore, Website.SciFier },
+                Region.Britain => new Website[] { Website.ForbiddenPlanet, Website.Waterstones, Website.SciFier },
+                Region.Canada => new Website[] { Website.Indigo, Website.SciFier },
+                Region.Europe => new Website[] { Website.SciFier },
+                Region.Japan => new Website[] { Website.AmazonJapan, Website.CDJapan },
+                _ => Array.Empty<Website>(),
+            };
+        }
+
+        /// <summary>
+        /// Disables debug mode
         /// </summary>
         public MasterScrape DisableDebugMode()
         {
@@ -127,7 +169,7 @@ namespace MangaLightNovelWebScrape
         }
 
         /// <summary>
-        /// Enables debug mode aka printing txt files to Data folder
+        /// Enables debug mode allowing printing to txt files in "Data" directory
         /// </summary>
         public MasterScrape EnableDebugMode()
         {
@@ -152,16 +194,9 @@ namespace MangaLightNovelWebScrape
         /// Gets the dictionary containing the links to the websites that are used in the final results
         /// </summary>
         /// <returns>Resulting Dictionary based on Region</returns>
-        public Dictionary<string, string> GetResultUrls(Region curRegion)
+        public Dictionary<string, string> GetResultUrls()
         {
-            return curRegion switch
-            {
-                Region.America => AmericaMasterUrls,
-                Region.Canada => CanadaMasterUrls,
-                Region.Britain => throw new NotImplementedException(),
-                Region.Japan => throw new NotImplementedException(),
-                _ => new Dictionary<string, string>()
-            };
+            return MasterUrls;
         }
 
         /// <summary>
@@ -174,9 +209,6 @@ namespace MangaLightNovelWebScrape
             return RemoveNonWordsRegex().Replace(curTitle, "").Contains(RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase);
         }
 
-        /// <summary>
-        /// Clears all entry and url data for every website
-        /// </summary>
         private void ClearAmericaWebsiteData()
         {
             RightStufAnime?.ClearData();
@@ -186,16 +218,25 @@ namespace MangaLightNovelWebScrape
             BarnesAndNoble?.ClearData();
             BooksAMillion?.ClearData();
             AmazonUSA?.ClearData();
+            SciFier?.ClearData();
         }
 
         private void ClearCanadaWebsiteData()
         {
             Indigo?.ClearData();
+            SciFier?.ClearData();
         }
 
         private void ClearJapanWebsiteData()
         {
             CDJapan?.ClearData();
+        }
+
+        private void ClearBritainWebsiteData()
+        {
+            ForbiddenPlanet?.ClearData();
+            Waterstones?.ClearData();
+            SciFier?.ClearData();
         }
 
         /// <summary>
@@ -367,10 +408,10 @@ namespace MangaLightNovelWebScrape
         }
 
         /// <summary>
-        /// 
+        /// Generates a list of Website Enums from a given string & region
         /// </summary>
-        /// <param name="input"></param>
-        /// <param name="curRegion"></param>
+        /// <param name="input">The input list of strings</param>
+        /// <param name="curRegion">The region the user wants to create the list from</param>
         /// <returns></returns>
         public static List<Website> GenerateWebsiteList(IEnumerable<string> input, Region curRegion)
         {
@@ -417,11 +458,11 @@ namespace MangaLightNovelWebScrape
                         case Region.Britain:
                             switch (website)
                             {
+                                case ForbiddenPlanet.WEBSITE_TITLE:
+                                    WebsiteList.Add(Website.ForbiddenPlanet);
+                                    break;
                                 case Waterstones.WEBSITE_TITLE:
                                     WebsiteList.Add(Website.Waterstones);
-                                    break;
-                                case Indigo.WEBSITE_TITLE:
-                                    WebsiteList.Add(Website.Indigo);
                                     break;
                                 case SciFier.WEBSITE_TITLE:
                                     WebsiteList.Add(Website.SciFier);
@@ -466,49 +507,53 @@ namespace MangaLightNovelWebScrape
             return WebsiteList;
         }
         
-        private void GenerateMasterUrlDictionary(Dictionary<string, string> MasterUrls, List<EntryModel> CurMasterDataList)
+        private void GenerateMasterUrlDictionary(List<EntryModel> CurMasterDataList)
         {
             foreach (EntryModel entry in CurMasterDataList)
             {
-                if (string.IsNullOrWhiteSpace(MasterUrls[entry.Website]))
+                switch (entry.Website)
                 {
-                    switch (entry.Website)
-                    {
-                        case RightStufAnime.WEBSITE_TITLE:
-                            MasterUrls[entry.Website] = RightStufAnime.GetUrl();
-                            break;
-                        case RobertsAnimeCornerStore.WEBSITE_TITLE:
-                            MasterUrls[entry.Website] = RobertsAnimeCornerStore.GetUrl();
-                            break;
-                        case InStockTrades.WEBSITE_TITLE:
-                            MasterUrls[entry.Website] = InStockTrades.GetUrl();
-                            break;
-                        case BarnesAndNoble.WEBSITE_TITLE:
-                            MasterUrls[entry.Website] = BarnesAndNoble.GetUrl();
-                            break;
-                        case KinokuniyaUSA.WEBSITE_TITLE:
-                            MasterUrls[entry.Website] = KinokuniyaUSA.GetUrl();
-                            break;
-                        case BooksAMillion.WEBSITE_TITLE:
-                            MasterUrls[entry.Website] = BooksAMillion.GetUrl();
-                            break;
-                        case AmazonUSA.WEBSITE_TITLE:
-                            MasterUrls[entry.Website] = AmazonUSA.GetUrl();
-                            break;
-                        case Indigo.WEBSITE_TITLE:
-                            MasterUrls[entry.Website] = Indigo.GetUrl();
-                            break;
-                    }
+                    case RightStufAnime.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = RightStufAnime.GetUrl();
+                        break;
+                    case RobertsAnimeCornerStore.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = RobertsAnimeCornerStore.GetUrl();
+                        break;
+                    case InStockTrades.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = InStockTrades.GetUrl();
+                        break;
+                    case BarnesAndNoble.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = BarnesAndNoble.GetUrl();
+                        break;
+                    case KinokuniyaUSA.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = KinokuniyaUSA.GetUrl();
+                        break;
+                    case BooksAMillion.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = BooksAMillion.GetUrl();
+                        break;
+                    case AmazonUSA.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = AmazonUSA.GetUrl();
+                        break;
+                    case SciFier.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = SciFier.GetUrl();
+                        break;
+                    case ForbiddenPlanet.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = ForbiddenPlanet.GetUrl();
+                        break;
+                    case Waterstones.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = Waterstones.GetUrl();
+                        break;
+                    case Indigo.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = Indigo.GetUrl();
+                        break;
+                    case AmazonJapan.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = AmazonJapan.GetUrl();
+                        break;
+                    case CDJapan.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = CDJapan.GetUrl();
+                        break;
                 }
             }
-        }
-
-        private static void ClearMasterUrlDictionary(Dictionary<string, string> MasterUrls)
-        {
-            Parallel.ForEach(MasterUrls.Keys, (website, state) =>
-            {
-                MasterUrls[website] = string.Empty;
-            });
         }
 
         private void GenerateTaskList(IEnumerable<Website> webScrapeList, string bookTitle, BookType book, bool isRightStufMember, bool isBarnesAndNobleMember, bool isBooksAMillionMember, bool isKinokuniyaUSAMember, bool isIndigoMember)
@@ -516,7 +561,6 @@ namespace MangaLightNovelWebScrape
             switch (this.Region)
             {
                 case Region.America:
-                    ClearMasterUrlDictionary(AmericaMasterUrls);
                     Parallel.ForEach(webScrapeList, (site) =>
                     {
                         switch (site)
@@ -556,13 +600,42 @@ namespace MangaLightNovelWebScrape
                                 LOGGER.Info($"{AmazonUSA.WEBSITE_TITLE} Going");
                                 WebTasks.Add(AmazonUSA.CreateAmazonUSATask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
                                 break;
+                            case Website.SciFier:
+                                SciFier = new SciFier();
+                                LOGGER.Info($"{SciFier.WEBSITE_TITLE} Going");
+                                WebTasks.Add(SciFier.CreateSciFierTask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
+                                break;
+                            default:
+                                break;
+                        }
+                    });
+                    break;
+                case Region.Britain:
+                    Parallel.ForEach(webScrapeList, (site) =>
+                    {
+                        switch (site)
+                        {
+                            case Website.ForbiddenPlanet:
+                                ForbiddenPlanet = new ForbiddenPlanet();
+                                LOGGER.Info($"{ForbiddenPlanet.WEBSITE_TITLE} Going");
+                                WebTasks.Add(ForbiddenPlanet.CreateForbiddenPlanetTask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
+                                break;
+                            case Website.Waterstones:
+                                Waterstones = new Waterstones();
+                                LOGGER.Info($"{Waterstones.WEBSITE_TITLE} Going");
+                                WebTasks.Add(Waterstones.CreateWaterstonesTask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
+                                break;
+                            case Website.SciFier:
+                                SciFier = new SciFier();
+                                LOGGER.Info($"{SciFier.WEBSITE_TITLE} Going");
+                                WebTasks.Add(SciFier.CreateSciFierTask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
+                                break;
                             default:
                                 break;
                         }
                     });
                     break;
                 case Region.Canada:
-                    ClearMasterUrlDictionary(CanadaMasterUrls);
                     Parallel.ForEach(webScrapeList, (site) =>
                     {
                         switch (site)
@@ -572,17 +645,26 @@ namespace MangaLightNovelWebScrape
                                 LOGGER.Info($"{Indigo.WEBSITE_TITLE} Going");
                                 WebTasks.Add(Indigo.CreateIndigoTask(bookTitle, book, isIndigoMember, MasterDataList, SetupBrowserDriver(false)));
                                 break;
+                            case Website.SciFier:
+                                SciFier = new SciFier();
+                                LOGGER.Info($"{SciFier.WEBSITE_TITLE} Going");
+                                WebTasks.Add(SciFier.CreateSciFierTask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
+                                break;
                             default:
                                 break;
                         }
                     });
                     break;
                 case Region.Japan:
-                    ClearMasterUrlDictionary(JapanMasterUrls);
                     Parallel.ForEach(webScrapeList, (site) =>
                     {
                         switch (site)
                         {
+                            case Website.AmazonJapan:
+                                AmazonJapan = new AmazonJapan();
+                                LOGGER.Info($"{AmazonJapan.WEBSITE_TITLE} Going");
+                                WebTasks.Add(AmazonJapan.CreateAmazonJapanTask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
+                                break;
                             case Website.CDJapan:
                                 CDJapan = new CDJapan();
                                 LOGGER.Info($"{CDJapan.WEBSITE_TITLE} Going");
@@ -599,25 +681,34 @@ namespace MangaLightNovelWebScrape
         // TODO Improve performance of Website Queries Starting w/ RightStufAnime
         // TODO Add ReadMe
         // TODO Figure out how to remove "know your location" from B&N & BAM
+        // TODO Brit store https://travellingman.com/
 
         /// <summary>
-        /// Starts the web scrape
+        /// Initalizes the scrape and outputs the compared data
         /// </summary>
         /// <param name="bookTitle">The title of the series to search for</param>
-        /// <param name="book">The book type of the series either Manga (M) or Novel (N)</param>
+        /// <param name="book">The book type of the series either Manga or Light Novel</param>
+        /// <param name="stockFilter"></param>
         /// <param name="webScrapeList">The list of websites you want to search at</param>
         /// <param name="browser">The browser either Edge, Chrome,l or FireFox the user wants to use</param>
         /// <param name="isRightStufMember">Whether the user is a RightStufAnime Member</param>
         /// <param name="isBarnesAndNobleMember">Whether the user is a Barnes & Noble Member</param>
         /// <param name="isBooksAMillionMember">Whether the user is a Books-A-Million Member</param>
         /// <param name="isKinokuniyaUSAMember">Whether the user is a Kinokuniya USA member</param>
+        /// <param name="isIndigoMember">Whether the user is a Indigo member</param>
         /// <returns></returns>
         public async Task InitializeScrapeAsync(string bookTitle, BookType book, StockStatus[] stockFilter, IEnumerable<Website> webScrapeList, bool isRightStufMember = false, bool isBarnesAndNobleMember = false, bool isBooksAMillionMember = false, bool isKinokuniyaUSAMember = false, bool isIndigoMember = false)
         {
             await Task.Run(async () =>
             {
                 LOGGER.Info($"Running on {this.Browser} Browser");
-                MasterDataList.Clear(); // Clear the masterlist everytime there is a new run
+
+                // Clear the Data & Urls everytime there is a new run
+                MasterDataList.Clear();
+                Parallel.ForEach(MasterUrls.Keys, (website, state) =>
+                {
+                    MasterUrls[website] = string.Empty;
+                });
                 
                 // Generate List of Tasks to 
                 GenerateTaskList(webScrapeList, bookTitle, book, isRightStufMember, isBarnesAndNobleMember, isBooksAMillionMember, isKinokuniyaUSAMember, isIndigoMember);
@@ -684,20 +775,21 @@ namespace MangaLightNovelWebScrape
                     }
 
                     // Add the links to the MasterUrl list and clear data lists
-                    Skip: 
+                    Skip:
+                    GenerateMasterUrlDictionary(MasterDataList[0]);
                     switch (this.Region)
                     {
                         case Region.America:
-                            GenerateMasterUrlDictionary(AmericaMasterUrls, MasterDataList[0]);
                             ClearAmericaWebsiteData();
                             break;
                         case Region.Canada:
-                            GenerateMasterUrlDictionary(CanadaMasterUrls, MasterDataList[0]);
                             ClearCanadaWebsiteData();
                             break;
                         case Region.Japan:
-                            GenerateMasterUrlDictionary(JapanMasterUrls, MasterDataList[0]);
                             ClearJapanWebsiteData();
+                            break;
+                        case Region.Britain:
+                            ClearBritainWebsiteData();
                             break;
                     }
                 }
@@ -714,7 +806,7 @@ namespace MangaLightNovelWebScrape
                                 outputFile.WriteLine(data.ToString());
                             }
 
-                            foreach (KeyValuePair<string, string> website in GetResultUrls(this.Region))
+                            foreach (KeyValuePair<string, string> website in GetResultUrls())
                             {
                                 if (!string.IsNullOrWhiteSpace(website.Value))
                                 {
@@ -736,8 +828,8 @@ namespace MangaLightNovelWebScrape
         {
             System.Diagnostics.Stopwatch watch = new();
             watch.Start();
-            MasterScrape scrape = new MasterScrape(Region.America, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, Array.Empty<StockStatus>(), GenerateWebsiteList(new List<string>() { BooksAMillion.WEBSITE_TITLE }, Region.America), false, false, true, false, false);
+            MasterScrape scrape = new MasterScrape(Region.Britain, Browser.Chrome).EnableDebugMode();
+            await scrape.InitializeScrapeAsync("Naruto", BookType.Manga, Array.Empty<StockStatus>(), GenerateWebsiteList(new List<string>() { ForbiddenPlanet.WEBSITE_TITLE }, Region.Britain), false, false, false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }

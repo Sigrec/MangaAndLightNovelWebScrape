@@ -15,6 +15,7 @@ namespace Src.Models
             BarnesAndNoble,
             BooksAMillion,
             CDJapan,
+            ForbiddenPlanet,
             Indigo,
             InStockTrades,
             KinokuniyaUSA,
