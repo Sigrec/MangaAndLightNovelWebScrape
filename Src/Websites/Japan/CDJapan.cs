@@ -98,7 +98,7 @@ namespace MangaLightNovelWebScrape.Websites.Japan
             {
                 driver.Close();
                 driver.Quit();
-                LOGGER.Error($"{bookTitle} Does Not Exist @ RightStufAnime \n{e}");
+                LOGGER.Error($"{bookTitle} Does Not Exist @ Crunchyroll \n{e}");
             }
             return CDJapanData;
         }

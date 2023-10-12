@@ -23,8 +23,6 @@ namespace MangaLightNovelWebScrape.Websites.America
         [GeneratedRegex("Vol\\.|Volume")] private static partial Regex VolTitleFixRegex(); 
         [GeneratedRegex("(?<=Vol \\d{1,3})[^\\d{1,3}.]+.*|\\,|:| \\([^()]*\\)")]  private static partial Regex ParseTitleRegex();
         [GeneratedRegex("\\(Omnibus Edition\\)|\\(3-in-1 Edition\\)|\\(2-in-1 Edition\\)")]  private static partial Regex OmnibusTitleRegex();
-        [GeneratedRegex(@"Official|Character Book|Guide|[^\w]Art of |Illustration|Artbook|Error", RegexOptions.IgnoreCase)] private static partial Regex TitleRemovalRegex();
-
         internal async Task CreateBarnesAndNobleTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList, WebDriver driver)
         {
             await Task.Run(() => 
@@ -185,23 +183,26 @@ namespace MangaLightNovelWebScrape.Websites.America
                         LOGGER.Debug($"{ValidUrls[validUrlCount].Value} Url = {ValidUrls[validUrlCount].Key}");
                         validUrlCount++;
                     }
+                    else if (oneShotCheck)
+                    {
+                        validUrlCount++;
+                    }
 
                     string pageSource = driver.PageSource;
                     if (!pageSource.Contains("The page you requested can't be found") && !pageSource.Contains("Sorry, we couldn't find what you're looking for"))
                     {
-                        LOGGER.Info("Valid Page");
+                        LOGGER.Debug("Valid Page");
                         doc.LoadHtml(pageSource);
                     }
                     else
                     {
-                        LOGGER.Info("Invalid Page");
+                        LOGGER.Debug("Invalid Page");
                         goto Quit;
                     }
 
                     if (!oneShotCheck && driver.FindElements(By.Id("productDetail-container")).Count != 0)
                     {
                         oneShotCheck = true;
-                        LOGGER.Debug($"The Art of Naruto Uzumaki {TitleRemovalRegex().IsMatch("The Art of Naruto Uzumaki")}");
                     }
 
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(!oneShotCheck ? NotOneShotTitleXPath : OneShotTitleXPath);
@@ -213,7 +214,7 @@ namespace MangaLightNovelWebScrape.Websites.America
                     {
                         curTitle = !oneShotCheck ? titleData[x].GetAttributeValue("title", "Title Error") : titleData[x].InnerText;
                         if (
-                            TitleRemovalRegex().IsMatch(curTitle)
+                            MasterScrape.EntryRemovalRegex().IsMatch(curTitle)
                             || !oneShotCheck
                             && (
                                 !MasterScrape.TitleContainsBookTitle(bookTitle, curTitle)
@@ -237,6 +238,9 @@ namespace MangaLightNovelWebScrape.Websites.America
                                                         )
                                                 ) 
                                                 || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", curTitle, "Gluttony")
+                                                || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Attack On Titan", curTitle, "No Regrets")
+                                                || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Attack On Titan", curTitle, "Lost Girls")
+                                                || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Attack On Titan", curTitle, "The Harsh Mistress of the City")
                                         )
                                     )
                                 )
@@ -263,6 +267,7 @@ namespace MangaLightNovelWebScrape.Websites.America
                     }
 
                     Quit:
+                    LOGGER.Debug($"{validUrlCount} | {ValidUrls.Count}");
                     if (pageCheck != null)
                     {
                         driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.ClassName("next-button"))));

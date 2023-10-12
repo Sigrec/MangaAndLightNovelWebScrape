@@ -10,5 +10,5 @@ global using NLog;
 global using System.Text;
 global using System.Xml.XPath;
 global using System.Threading.Tasks;
-global using MangaLightNovelWebScrape;
+global using Helpers;
 global using static Src.Models.Constants;

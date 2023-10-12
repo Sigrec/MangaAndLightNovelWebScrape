@@ -1,4 +1,4 @@
-namespace Tests.Websites
+namespace Tests.Websites.America
 {
     public class BooksAMillionTests
     {

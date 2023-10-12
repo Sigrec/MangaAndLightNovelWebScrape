@@ -1,4 +1,4 @@
-namespace Tests.Websites
+namespace Tests.Websites.America
 {
     [TestFixture]
     [Author("Sean (Alias -> Prem or Sigrec)")]

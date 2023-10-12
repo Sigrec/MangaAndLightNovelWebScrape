@@ -19,7 +19,7 @@ namespace Src.Models
             Indigo,
             InStockTrades,
             KinokuniyaUSA,
-            RightStufAnime,
+            Crunchyroll,
             RobertsAnimeCornerStore,
             Waterstones,
             SciFier

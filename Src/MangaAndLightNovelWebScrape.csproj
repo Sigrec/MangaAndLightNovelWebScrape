@@ -16,7 +16,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-	  <Content Include="NLog.config">
+	  <Content Condition="'$(Configuration)' == 'Debug'" Include="NLog.config">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 	  </Content>
   </ItemGroup>
