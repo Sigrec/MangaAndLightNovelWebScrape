@@ -62,7 +62,7 @@ namespace MangaLightNovelWebScrape
         [GeneratedRegex(@"--|—|\s{2,}")] internal static partial Regex MultipleWhiteSpaceRegex();
         [GeneratedRegex(@";jsessionid=[^?]*")] internal static partial Regex RemoveJSessionIDRegex();
         [GeneratedRegex(@"GN|Graphic Novel|:\s+Volumes|Volumes|:\s+Volume|Volume|Vol\\.|:\s+Volumr|Volumr", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
-        [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character Book|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|DVD|Compendium|Artbook|Error", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
+        [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character Book|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|DVD|Compendium|Artbook|Error|Playing Cards", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
 
         public MasterScrape() { } 
         public MasterScrape(Browser Browser = Browser.Chrome) => this.Browser = Browser;
@@ -556,7 +556,7 @@ namespace MangaLightNovelWebScrape
             }
         }
 
-        private void GenerateTaskList(IEnumerable<Website> webScrapeList, string bookTitle, BookType book, bool isCrunchyrollMember, bool isBarnesAndNobleMember, bool isBooksAMillionMember, bool isKinokuniyaUSAMember, bool isIndigoMember)
+        private void GenerateTaskList(IEnumerable<Website> webScrapeList, string bookTitle, BookType book, bool isBarnesAndNobleMember, bool isBooksAMillionMember, bool isKinokuniyaUSAMember, bool isIndigoMember)
         {
             switch (this.Region)
             {
@@ -568,7 +568,7 @@ namespace MangaLightNovelWebScrape
                             case Website.Crunchyroll:
                                 Crunchyroll = new Crunchyroll();
                                 LOGGER.Info($"{Crunchyroll.WEBSITE_TITLE} Going");
-                                WebTasks.Add(Crunchyroll.CreateCrunchyrollTask(bookTitle, book, isCrunchyrollMember, MasterDataList, SetupBrowserDriver(false)));
+                                WebTasks.Add(Crunchyroll.CreateCrunchyrollTask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
                                 break;
                             case Website.BarnesAndNoble:
                                 BarnesAndNoble = new BarnesAndNoble();
@@ -643,7 +643,7 @@ namespace MangaLightNovelWebScrape
                             case Website.Crunchyroll:
                                 Crunchyroll = new Crunchyroll();
                                 LOGGER.Info($"{Crunchyroll.WEBSITE_TITLE} Going");
-                                WebTasks.Add(Crunchyroll.CreateCrunchyrollTask(bookTitle, book, isCrunchyrollMember, MasterDataList, SetupBrowserDriver(false)));
+                                WebTasks.Add(Crunchyroll.CreateCrunchyrollTask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
                                 break;
                             case Website.Indigo:
                                 Indigo = new Indigo();
@@ -702,7 +702,7 @@ namespace MangaLightNovelWebScrape
         /// <param name="isKinokuniyaUSAMember">Whether the user is a Kinokuniya USA member</param>
         /// <param name="isIndigoMember">Whether the user is a Indigo member</param>
         /// <returns></returns>
-        public async Task InitializeScrapeAsync(string bookTitle, BookType book, StockStatus[] stockFilter, IEnumerable<Website> webScrapeList, bool isCrunchyrollMember = false, bool isBarnesAndNobleMember = false, bool isBooksAMillionMember = false, bool isKinokuniyaUSAMember = false, bool isIndigoMember = false)
+        public async Task InitializeScrapeAsync(string bookTitle, BookType book, StockStatus[] stockFilter, IEnumerable<Website> webScrapeList, bool isBarnesAndNobleMember = false, bool isBooksAMillionMember = false, bool isKinokuniyaUSAMember = false, bool isIndigoMember = false)
         {
             await Task.Run(async () =>
             {
@@ -716,7 +716,7 @@ namespace MangaLightNovelWebScrape
                 });
                 
                 // Generate List of Tasks to 
-                GenerateTaskList(webScrapeList, bookTitle, book, isCrunchyrollMember, isBarnesAndNobleMember, isBooksAMillionMember, isKinokuniyaUSAMember, isIndigoMember);
+                GenerateTaskList(webScrapeList, bookTitle, book, isBarnesAndNobleMember, isBooksAMillionMember, isKinokuniyaUSAMember, isIndigoMember);
                 await Task.WhenAll(WebTasks);
 
                 MasterDataList.RemoveAll(x => x.Count == 0); // Clear all lists from websites that didn't have any data
@@ -848,7 +848,7 @@ namespace MangaLightNovelWebScrape
             System.Diagnostics.Stopwatch watch = new();
             watch.Start();
             MasterScrape scrape = new MasterScrape(Region.America, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("fullmetal alchmeist", BookType.Manga, Array.Empty<StockStatus>(), scrape.GenerateWebsiteList(new List<string>() { Crunchyroll.WEBSITE_TITLE }), true, false, false, false, false);
+            await scrape.InitializeScrapeAsync("fullmetal alchemist", BookType.Manga, Array.Empty<StockStatus>(), scrape.GenerateWebsiteList(new List<string>() { Crunchyroll.WEBSITE_TITLE }), false, false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }

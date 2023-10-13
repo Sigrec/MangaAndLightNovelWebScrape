@@ -93,10 +93,17 @@ namespace Tests.Websites
         }
 
         [Test, Description("Validates One Shot Manga Series")]
-        public async Task Crunchyroll_Member_GoodbyeEri_Manga_Test()
+        public async Task Crunchyroll_GoodbyeEri_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList, true);
+            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollGoodbyeEriMangaData.txt")));
+        }
+
+         [Test, Description("Validates Series w/ dif Types of Omnibus & Box Set Entries")]
+        public async Task Crunchyroll_AttackOnTitan_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("attack on titan", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollAttackOnTitanMangaData.txt")));
         }
     }
 }

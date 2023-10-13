@@ -13,8 +13,9 @@ namespace MangaLightNovelWebScrape.Websites
         private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[contains(@class, 'sash-content')]");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//a[@class='right-arrow']");
         
-        [GeneratedRegex(@"\(.*?\)| Manga|,|:")] private static partial Regex TitleParseRegex();
+        [GeneratedRegex(@"\(.*?\)| Manga|,|:|Comics|Hardcover")] private static partial Regex TitleParseRegex();
         [GeneratedRegex(@"(?:3 in 1|2 in 1|Omnibus) Edition", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
+        [GeneratedRegex(@"\d{1,3}$", RegexOptions.IgnoreCase)] private static partial Regex FindVolNum();
 
         internal void ClearData()
         {
@@ -22,11 +23,11 @@ namespace MangaLightNovelWebScrape.Websites
             CrunchyrollData.Clear();
         }
 
-        internal async Task CreateCrunchyrollTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList, WebDriver driver)
+        internal async Task CreateCrunchyrollTask(string bookTitle, BookType book, List<List<EntryModel>> MasterDataList, WebDriver driver)
         {
             await Task.Run(() =>
             {
-                MasterDataList.Add(GetCrunchyrollData(bookTitle, book, isMember, 1, driver));
+                MasterDataList.Add(GetCrunchyrollData(bookTitle, book, 1, driver));
             });
         }
 
@@ -47,7 +48,7 @@ namespace MangaLightNovelWebScrape.Websites
             return url;
         }
 
-        private static string TitleParse(string titleText, BookType bookType)
+        private static string TitleParse(string titleText, string baseTitleText, BookType bookType)
         {
             StringBuilder curTitle;
             if (OmnibusRegex().IsMatch(titleText))
@@ -61,9 +62,21 @@ namespace MangaLightNovelWebScrape.Websites
 
             if (bookType == BookType.Manga)
             {
-                if (titleText.Contains("Deluxe"))
+                if (titleText.Contains("Deluxe Edition"))
                 {
                     curTitle.Replace("Omnibus ", "").Replace("Deluxe Edition", "Deluxe");
+                }
+
+                if (!curTitle.ToString().Contains("Vol") && !titleText.Contains("Box Set"))
+                {
+                    if (FindVolNum().IsMatch(titleText))
+                    {
+                        curTitle.Insert(FindVolNum().Match(titleText).Index, "Vol ");
+                    }
+                    else if (baseTitleText.Contains("(Hardcover)"))
+                    {
+                        return curTitle.Append(" Hardcover").ToString();
+                    }
                 }
             }
             else if (bookType == BookType.LightNovel && !titleText.Contains("Novel"))
@@ -77,14 +90,10 @@ namespace MangaLightNovelWebScrape.Websites
                     curTitle.Insert(curTitle.Length, " Novel");
                 }
             }
-            return curTitle.ToString().Trim();
+            return curTitle.Replace("Hardcover", "").ToString().Trim();
         }
 
-
-        // TODO Need to recalvulate how to add memberhsip discount with new CR membership
-        // TODO FMAB not working for some reaosn
-        // TODO Add AoT test
-        private List<EntryModel> GetCrunchyrollData(string bookTitle, BookType bookType, bool memberStatus, byte currPageNum, WebDriver driver)
+        private List<EntryModel> GetCrunchyrollData(string bookTitle, BookType bookType, byte currPageNum, WebDriver driver)
         {
             try
             {
@@ -107,18 +116,19 @@ namespace MangaLightNovelWebScrape.Websites
 
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        string titleText = titleData[x].InnerText;        
+                        string titleText = titleData[x].InnerText;   
                         if(
                             !titleText.Contains("Imperfect")
-                            && MasterScrape.TitleContainsBookTitle(bookTitle, titleText.ToString()) 
+                            && MasterScrape.TitleContainsBookTitle(bookTitle, titleText)
+                            && !MasterScrape.EntryRemovalRegex().IsMatch(titleText)
                             && !(
                                     bookType == BookType.Manga
                                     && (
-                                            MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", titleText.ToString(), "of Gluttony")
-                                            || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText.ToString(), "Boruto")
+                                            MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", titleText, "of Gluttony")
+                                            || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Boruto")
                                         )
                                 )
-                        )
+                            )
                         {
                             StockStatus stockStatus = stockStatusData[x].InnerText.Trim() switch
                             {
@@ -133,8 +143,8 @@ namespace MangaLightNovelWebScrape.Websites
                                 CrunchyrollData.Add(
                                     new EntryModel
                                     (
-                                        TitleParse(MasterScrape.FixVolumeRegex().Replace(TitleParseRegex().Replace(titleText, "").Trim(), "Vol"), bookType),
-                                        memberStatus ? $"${EntryModel.ApplyDiscount(decimal.Parse(priceData[x].InnerText.Trim()[1..]), MEMBERSHIP_DISCOUNT)}" : priceData[x].InnerText.Trim(),
+                                        TitleParse(MasterScrape.FixVolumeRegex().Replace(TitleParseRegex().Replace(titleText, "").Trim(), "Vol"), titleText, bookType),
+                                        priceData[x].InnerText.Trim(),
                                         stockStatus,
                                         WEBSITE_TITLE
                                     )
@@ -145,9 +155,6 @@ namespace MangaLightNovelWebScrape.Websites
 
                     if (pageCheck != null)
                     {
-                        // driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("//a[@rel='next']"))));
-                        // wait.Until(driver => driver.FindElement(By.XPath("//div[@class='pdp-link']/a"))); //div[@class='pdp-link']/a
-                        // LOGGER.Info($"Next Page {driver.Url}");
                         nextPage += 100;
                     }
                     else

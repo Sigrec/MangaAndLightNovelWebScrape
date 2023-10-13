@@ -56,6 +56,7 @@ namespace MangaLightNovelWebScrape.Websites.Britain
             return url;
         }
 
+        // TODO Refactor this so AoT is like CR "Attack on Titan Season 3 Part 2 Box Set"
         private static string TitleParse(string bookTitle, string titleText, BookType bookType)
         {
             titleText = MasterScrape.FixVolumeRegex().Replace(titleText.Trim(), " Vol");
@@ -91,7 +92,7 @@ namespace MangaLightNovelWebScrape.Websites.Britain
             }
             else if (titleText.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
             {
-                titleText = titleText.Replace("Part", "", StringComparison.OrdinalIgnoreCase).Trim();
+                // titleText = titleText.Replace("Part", "", StringComparison.OrdinalIgnoreCase).Trim();
                 if (BoxSetVolFindRegex().IsMatch(titleText))
                 {
                     curTitle = new StringBuilder(BoxSetVolFindRegex().Replace(BoxSetFixRegex().Replace(titleText, " Box Set $1"), ""));
@@ -200,9 +201,6 @@ namespace MangaLightNovelWebScrape.Websites.Britain
                                                 || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Boruto")
                                                 || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Itachi")
                                                 || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Bleach", titleText, "Can't Fear")
-                                                || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Attack On Titan", titleText, "No Regrets")
-                                                || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Attack On Titan", titleText, "Lost Girls")
-                                                || MasterScrape.RemoveUnintendedVolumes(bookTitle, "One Piece", titleText, "Ace's Story")
                                             )
                                         )
                                     )
