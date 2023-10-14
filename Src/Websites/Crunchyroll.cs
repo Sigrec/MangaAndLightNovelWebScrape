@@ -13,9 +13,8 @@ namespace MangaLightNovelWebScrape.Websites
         private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[contains(@class, 'sash-content')]");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//a[@class='right-arrow']");
         
-        [GeneratedRegex(@"\(.*?\)| Manga|,|:|Comics|Hardcover")] private static partial Regex TitleParseRegex();
+        [GeneratedRegex(@"\(.*?\)| Manga|:|Comics|Hardcover")] private static partial Regex TitleParseRegex();
         [GeneratedRegex(@"(?:3 in 1|2 in 1|Omnibus) Edition", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
-        [GeneratedRegex(@"\d{1,3}$", RegexOptions.IgnoreCase)] private static partial Regex FindVolNum();
 
         internal void ClearData()
         {
@@ -23,11 +22,11 @@ namespace MangaLightNovelWebScrape.Websites
             CrunchyrollData.Clear();
         }
 
-        internal async Task CreateCrunchyrollTask(string bookTitle, BookType book, List<List<EntryModel>> MasterDataList, WebDriver driver)
+        internal async Task CreateCrunchyrollTask(string bookTitle, BookType bookType, List<List<EntryModel>> MasterDataList)
         {
             await Task.Run(() =>
             {
-                MasterDataList.Add(GetCrunchyrollData(bookTitle, book, 1, driver));
+                MasterDataList.Add(GetCrunchyrollData(bookTitle, bookType));
             });
         }
 
@@ -42,7 +41,7 @@ namespace MangaLightNovelWebScrape.Websites
             // https://store.crunchyroll.com/search?q=overlord&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Manga
             // https://store.crunchyroll.com/search?q=overlord&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Novels
             
-            String url = $"https://store.crunchyroll.com/search?q={MasterScrape.FilterBookTitle(bookTitle)}&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2={(bookType == BookType.Manga ? "Manga" : "Novels")}&srule=Product%20Name%20(A-Z)&start={nextPage}&sz=100";
+            string url = $"https://store.crunchyroll.com/search?q={MasterScrape.FilterBookTitle(bookTitle)}&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2={(bookType == BookType.Manga ? "Manga" : "Novels")}&srule=Product%20Name%20(A-Z)&start={nextPage}&sz=100";
             LOGGER.Debug(url);
             CrunchyrollLinks.Add(url);
             return url;
@@ -69,9 +68,9 @@ namespace MangaLightNovelWebScrape.Websites
 
                 if (!curTitle.ToString().Contains("Vol") && !titleText.Contains("Box Set"))
                 {
-                    if (FindVolNum().IsMatch(titleText))
+                    if (MasterScrape.FindVolNumRegex().IsMatch(titleText))
                     {
-                        curTitle.Insert(FindVolNum().Match(titleText).Index, "Vol ");
+                        curTitle.Insert(MasterScrape.FindVolNumRegex().Match(titleText).Index, "Vol ");
                     }
                     else if (baseTitleText.Contains("(Hardcover)"))
                     {
@@ -90,23 +89,31 @@ namespace MangaLightNovelWebScrape.Websites
                     curTitle.Insert(curTitle.Length, " Novel");
                 }
             }
+            if (!baseTitleText.Contains(','))
+            {
+                curTitle.Replace(",", "");
+            }
             return curTitle.Replace("Hardcover", "").ToString().Trim();
         }
 
-        private List<EntryModel> GetCrunchyrollData(string bookTitle, BookType bookType, byte currPageNum, WebDriver driver)
+        private List<EntryModel> GetCrunchyrollData(string bookTitle, BookType bookType)
         {
             try
             {
-                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
-                HtmlDocument doc = new();
+                HtmlWeb web = new();
+                HtmlDocument doc = new()
+                {
+                    OptionCheckSyntax = false,
+                };
                 int nextPage = 0;
 
                 while (true)
                 {
                     // Initialize the html doc for crawling
-                    driver.Navigate().GoToUrl(GetUrl(bookType, bookTitle, nextPage));
-                    wait.Until(driver => driver.FindElement(By.CssSelector("div.product-grid.d-flex.flex-wrap")));
-                    doc.LoadHtml(driver.PageSource);
+                    //driver.Navigate().GoToUrl(GetUrl(bookType, bookTitle, nextPage));
+                    //wait.Until(driver => driver.FindElement(By.Id("maincontent")));
+                    //doc.LoadHtml(driver.PageSource);
+                    doc = web.Load(GetUrl(bookType, bookTitle, nextPage));
 
                     // Get the page data from the HTML doc
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
@@ -118,8 +125,7 @@ namespace MangaLightNovelWebScrape.Websites
                     {
                         string titleText = titleData[x].InnerText;   
                         if(
-                            !titleText.Contains("Imperfect")
-                            && MasterScrape.TitleContainsBookTitle(bookTitle, titleText)
+                            MasterScrape.TitleContainsBookTitle(bookTitle, titleText)
                             && !MasterScrape.EntryRemovalRegex().IsMatch(titleText)
                             && !(
                                     bookType == BookType.Manga
@@ -130,26 +136,21 @@ namespace MangaLightNovelWebScrape.Websites
                                 )
                             )
                         {
-                            StockStatus stockStatus = stockStatusData[x].InnerText.Trim() switch
-                            {
-                                "IN-STOCK" => StockStatus.IS,
-                                "SOLD-OUT" => StockStatus.OOS,
-                                "PRE-ORDER" => StockStatus.PO,
-                                _ => StockStatus.NA,
-                            };
-
-                            if (stockStatus != StockStatus.NA)
-                            {
-                                CrunchyrollData.Add(
-                                    new EntryModel
-                                    (
-                                        TitleParse(MasterScrape.FixVolumeRegex().Replace(TitleParseRegex().Replace(titleText, "").Trim(), "Vol"), titleText, bookType),
-                                        priceData[x].InnerText.Trim(),
-                                        stockStatus,
-                                        WEBSITE_TITLE
-                                    )
-                                );
-                            }
+                            CrunchyrollData.Add(
+                            new EntryModel
+                            (
+                                TitleParse(MasterScrape.FixVolumeRegex().Replace(TitleParseRegex().Replace(titleText, "").Trim(), "Vol"), titleText, bookType),
+                                priceData[x].InnerText.Trim(),
+                                stockStatusData[x].InnerText.Trim() switch
+                                {
+                                    "IN-STOCK" => StockStatus.IS,
+                                    "SOLD-OUT" => StockStatus.OOS,
+                                    "PRE-ORDER" => StockStatus.PO,
+                                    _ => StockStatus.NA,
+                                },
+                                WEBSITE_TITLE
+                            )
+                        );
                         }
                     }
 
@@ -159,8 +160,6 @@ namespace MangaLightNovelWebScrape.Websites
                     }
                     else
                     {
-                        driver.Close();
-                        driver.Quit();
                         break;
                     }
                 }
@@ -168,8 +167,6 @@ namespace MangaLightNovelWebScrape.Websites
             }
             catch (Exception ex)
             {
-                driver.Close();
-                driver.Quit();
                 LOGGER.Error($"{bookTitle} Does Not Exist @ Crunchyroll \n{ex}");
             }
 

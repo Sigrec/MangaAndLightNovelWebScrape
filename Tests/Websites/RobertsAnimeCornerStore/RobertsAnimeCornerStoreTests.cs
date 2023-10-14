@@ -1,9 +1,9 @@
-namespace Tests.Websites.America
+namespace Tests.Websites
 {
     [TestFixture]
     [Author("Sean (Alias -> Prem or Sigrec)")]
     [SetUICulture("en")]
-    public class RobertsAnimeCornerStoreTest
+    public class RobertsAnimeCornerStoreTests
     {
         MasterScrape Scrape;
         List<Website> WebsiteList;
@@ -13,6 +13,13 @@ namespace Tests.Websites.America
         {
             Scrape = new MasterScrape(Region.America, Browser.Chrome);
             WebsiteList = new List<Website>() {Website.RobertsAnimeCornerStore};
+        }
+
+        [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions")]
+        public async Task RobertsAnimeCornerStore_AttackOnTitan_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Attack on Titan", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\RobertsAnimeCornerStore\RobertsAnimeCornerStoreAttackOnTitanMangaData.txt")));
         }
 
         [Test]

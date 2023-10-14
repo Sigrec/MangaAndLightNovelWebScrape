@@ -11,15 +11,15 @@ namespace MangaLightNovelWebScrape.Websites.America
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("/html/body/div[2]/div/div[3]/div/div[2][not(div[@class='damage'])]/div/div[1]/div[2]");
         private static readonly XPathExpression PageCheckXPath= XPathExpression.Compile("/html/body/div[2]/div/div[4]/span/input");
 
-        [GeneratedRegex(" GN| TP| HC| Manga|(?<=Vol).*|(?<=Box Set).*")]  private static partial Regex TitleRegex();
-        [GeneratedRegex("Vol (\\d+)|Box Set (\\d+)")] private static partial Regex VolNumberRegex();
-        [GeneratedRegex("3In1 Ed|3In1")] private static partial Regex OmnibusRegex();
+        [GeneratedRegex(@" GN| TP| HC| Manga|(?<=Vol).*|(?<=Box Set).*")]  private static partial Regex TitleRegex();
+        [GeneratedRegex(@"Vol (\d+)|Box Set (\d+)|Box Set Part (\d+)")] private static partial Regex VolNumberRegex();
+        [GeneratedRegex(@"3In1 Ed|3In1")] private static partial Regex OmnibusRegex();
 
-        internal async Task CreateInStockTradesTask(string bookTitle, BookType book, List<List<EntryModel>> MasterDataList, WebDriver driver)
+        internal async Task CreateInStockTradesTask(string bookTitle, BookType book, List<List<EntryModel>> MasterDataList)
         {
             await Task.Run(() => 
             {
-                MasterDataList.Add(GetInStockTradesData(bookTitle, book, 1, driver));
+                MasterDataList.Add(GetInStockTradesData(bookTitle, book, 1));
             });
         }
 
@@ -41,11 +41,8 @@ namespace MangaLightNovelWebScrape.Websites.America
 
         internal void ClearData()
         {
-            if (this != null)
-            {
-                InStockTradesLinks.Clear();
-                InStockTradesData.Clear();
-            }
+            InStockTradesLinks.Clear();
+            InStockTradesData.Clear();
         }
 
         private static string TitleParse(string bookTitle, string titleText, BookType bookType)
@@ -55,7 +52,15 @@ namespace MangaLightNovelWebScrape.Websites.America
             if (titleText.Contains("Box Set")) 
             { 
                 curTitle.Replace("Vol ", "");
-                volGroup = VolNumberRegex().Match(curTitle.ToString()).Groups[2];
+                Match match = VolNumberRegex().Match(curTitle.ToString());
+                if (match.Groups[3] != null)
+                {
+                    volGroup = match.Groups[3];
+                }
+                else
+                {
+                    volGroup = match.Groups[2];
+                }
             }
             else
             {
@@ -83,24 +88,32 @@ namespace MangaLightNovelWebScrape.Websites.America
                 }
                 volGroup = VolNumberRegex().Match(curTitle.ToString()).Groups[1];
             }
+
+            if (!bookTitle.Contains("One", StringComparison.OrdinalIgnoreCase))
+            {
+                curTitle.Replace("One", "1");
+            }
+
             return System.Net.WebUtility.HtmlDecode($"{TitleRegex().Replace(OmnibusRegex().Replace(curTitle.ToString(), "Omnibus"), "")} {volGroup.Value.TrimStart('0')}".Trim());
         }
 
-        private List<EntryModel> GetInStockTradesData(string bookTitle, BookType bookType, byte currPageNum, WebDriver driver)
+        private List<EntryModel> GetInStockTradesData(string bookTitle, BookType bookType, byte currPageNum)
         {
             ushort maxPages = 0;
             bool oneShotCheck = false;
             try
             {
-                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
+                HtmlWeb web = new HtmlWeb();
+                HtmlDocument doc = new HtmlDocument();
                 while (true)
                 {
-                    driver.Navigate().GoToUrl(GetUrl(currPageNum, bookTitle));
-                    wait.Until(e => e.FindElement(By.XPath("/html/body/div[2]")));
+                    // driver.Navigate().GoToUrl(GetUrl(currPageNum, bookTitle));
+                    // wait.Until(e => e.FindElement(By.XPath("/html/body/div[2]")));
 
-                    // Initialize the html doc for crawling
-                    HtmlDocument doc = new();
-                    doc.LoadHtml(driver.PageSource);
+                    // // Initialize the html doc for crawling
+                    // HtmlDocument doc = new();
+                    // doc.LoadHtml(driver.PageSource);
+                    doc = web.Load(GetUrl(currPageNum, bookTitle));
 
                     // Get the page data from the HTML doc
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
@@ -154,7 +167,6 @@ namespace MangaLightNovelWebScrape.Websites.America
                             )
                         )
                         {
-                            Logger.Debug(titleText);
                             InStockTradesData.Add(
                                 new EntryModel
                                 (
@@ -173,8 +185,6 @@ namespace MangaLightNovelWebScrape.Websites.America
                     }
                     else
                     {
-                        driver.Close();
-                        driver.Quit();
                         InStockTradesData.Sort(new VolumeSort());
                         break;
                     }
@@ -182,8 +192,6 @@ namespace MangaLightNovelWebScrape.Websites.America
             }
             catch (Exception e)
             {
-                driver.Close();
-                driver.Quit();
                 Logger.Debug($"{bookTitle} Does Not Exist @ InStockTrades \n{e}");
             }
 

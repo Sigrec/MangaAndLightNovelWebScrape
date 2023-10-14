@@ -1,10 +1,10 @@
-namespace Tests.Websites.America
+namespace Tests.Websites
 {
     public class BarnesAndNobleTests
     {
         MasterScrape Scrape;
         List<Website> WebsiteList;
-        
+    
         [SetUp]
         public void Setup()
         {
@@ -12,7 +12,7 @@ namespace Tests.Websites.America
             WebsiteList = new List<Website>() {Website.BarnesAndNoble};
         }
 
-        [Test, Description("Test Manga Series w/ Box Set in Dif Formats, Color Editions, & Dif Omnibus Types")]
+        [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions")]
         public async Task BarnesAndNoble_AttackOnTitan_Manga_Test()
         {
             await Scrape.InitializeScrapeAsync("Attack on Titan", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
@@ -69,6 +69,7 @@ namespace Tests.Websites.America
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleOverlordNovelData.txt")));
         }
 
+        // Currently there A La Carte are under Subject Comic and not Manga so theyh aren't grabbed
         [Test, Description("Validates Manga w/ Novel Entries & Has Paperback & Hardcover Initially")]
         public async Task BarnesAndNoble_Overlord_Manga_Test()
         {
@@ -128,7 +129,7 @@ namespace Tests.Websites.America
         [Test, Description("Validates One Shot Manga Series")]
         public async Task BarnesAndNoble_Member_GoodbyeEri_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList, false, true);
+            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList, true);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleGoodbyeEriMangaData.txt")));
         }
     }

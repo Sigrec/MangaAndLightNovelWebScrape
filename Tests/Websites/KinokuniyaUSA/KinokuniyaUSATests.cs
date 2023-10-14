@@ -1,4 +1,4 @@
-namespace Tests.Websites.America
+namespace Tests.Websites
 {
     public class KinokuniyaUSATests
     {
@@ -10,6 +10,13 @@ namespace Tests.Websites.America
         {
             Scrape = new MasterScrape(Region.America, Browser.Chrome);
             WebsiteList = new List<Website>() {Website.KinokuniyaUSA};
+        }
+
+        [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions")]
+        public async Task KinokuniyaUSA_AttackOnTitan_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Attack on Titan", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\KinokuniyaUSA\KinokuniyaUSAAttackOnTitanMangaData.txt")));
         }
 
         [Test, Description("Validates Manga w/ Box Sets & Omnibus Volumes")]
@@ -50,7 +57,7 @@ namespace Tests.Websites.America
         [Test, Description("Validates Member Status & Series w/ Non Letter or Digit Char in Title")]
         public async Task KinokuniyaUSA_Member_AkaneBanashi_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("Akane-Banashi", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList, false, false, false, true);
+            await Scrape.InitializeScrapeAsync("Akane-Banashi", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList, false, false, true);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\KinokuniyaUSA\KinokuniyaUSAAkaneBanashiMangaData.txt")));
         }
 

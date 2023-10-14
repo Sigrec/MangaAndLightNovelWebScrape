@@ -1,4 +1,4 @@
-namespace Tests.Websites.America
+namespace Tests.Websites
 {
     public class BooksAMillionTests
     {
@@ -10,6 +10,13 @@ namespace Tests.Websites.America
         {
             Scrape = new MasterScrape(Region.America, Browser.Chrome);
             WebsiteList = new List<Website>() {Website.BooksAMillion};
+        }
+
+        [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions")]
+        public async Task BooksAMillion_AttackOnTitan_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Attack on Titan", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionAttackOnTitanMangaData.txt")));
         }
 
         [Test, Description("Tests Manga book, Box Sets, Omnibus, & Manga w/ No Vol Number")]
@@ -118,7 +125,7 @@ namespace Tests.Websites.America
         [Test, Description("Validates One Shot Manga Series")]
         public async Task BooksAMillion_Member_GoodbyeEri_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList, false, false, true);
+            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList, false, true);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionGoodbyeEriMangaData.txt")));
         }
     }

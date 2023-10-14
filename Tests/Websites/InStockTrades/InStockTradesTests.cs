@@ -1,4 +1,4 @@
-namespace Tests.Websites.America
+namespace Tests.Websites
 {
     public class InStockTradesTests
     {
@@ -10,6 +10,13 @@ namespace Tests.Websites.America
         {
             Scrape = new MasterScrape(Region.America, Browser.Chrome);
             WebsiteList = new List<Website>() {Website.InStockTrades};
+        }
+
+        [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions")]
+        public async Task InStockTrades_AttackOnTitan_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Attack on Titan", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\InStockTrades\InStockTradesAttackOnTitanMangaData.txt")));
         }
 
         [Test, Description("Tests Manga book, Box Sets, Omnibus, & Manga w/ No Vol Number")]
