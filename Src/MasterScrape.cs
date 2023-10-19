@@ -858,7 +858,7 @@ namespace MangaLightNovelWebScrape
             watch.Start();
             // Bleach
             MasterScrape scrape = new MasterScrape(Region.America, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("one piece", BookType.Manga, Array.Empty<StockStatus>(), scrape.GenerateWebsiteList(new List<string>() { SciFier.WEBSITE_TITLE }), false, false, false);
+            await scrape.InitializeScrapeAsync("one piece", BookType.Manga, Array.Empty<StockStatus>(), scrape.GenerateWebsiteList(new List<string>() { Crunchyroll.WEBSITE_TITLE }), false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }

@@ -18,15 +18,15 @@
     <Title>MangaAndLightNovelWebScrape</Title>
     <RepositoryUrl>https://github.com/Sigrec/MangaLightNovelWebScrape</RepositoryUrl>
     <PackageProjectUrl>https://github.com/Sigrec/MangaLightNovelWebScrape</PackageProjectUrl>
-    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <!-- <PackageLicenseExpression>MIT</PackageLicenseExpression> -->
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
 	  <!--  <GeneratePackageOnBuild>True</GeneratePackageOnBuild> -->
   </PropertyGroup>
 
-  <PropertyGroup>
-    <PackageReadmeFile>$(SolutionDir)README.md</PackageReadmeFile>
-	</PropertyGroup>
 	<ItemGroup>
-			<None Include="README.md" Pack="true" PackagePath="$(SolutionDir)"/>
+			<None Include="README.md" Pack="true" PackagePath=".github"/>
+			<None Include="LICENSE.md" Pack="true" PackagePath="\"/>
 	</ItemGroup>
 
   <ItemGroup>
