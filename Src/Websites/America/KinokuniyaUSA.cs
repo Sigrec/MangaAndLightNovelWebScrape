@@ -58,7 +58,7 @@ namespace MangaLightNovelWebScrape.Websites.America
         {
             if (!bookTitle.Contains('-'))
             {
-                titleText = titleText.Replace("-", string.Empty);
+                titleText = titleText.Replace("-", " ");
             }
             if (!bookTitle.Contains(','))
             {

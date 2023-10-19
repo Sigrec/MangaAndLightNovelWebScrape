@@ -5,7 +5,7 @@ namespace MangaLightNovelWebScrape.Websites.America
         private List<string> InStockTradesLinks = new();
         private List<EntryModel> InStockTradesData = new();
         public const string WEBSITE_TITLE = "InStockTrades";
-        private static readonly Logger Logger = LogManager.GetLogger("InStockTradesLogs");
+        private static readonly Logger LOGGER = LogManager.GetLogger("InStockTradesLogs");
         private const Region WEBSITE_REGION = Region.America;
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("/html/body/div[2]/div/div[3]/div/div[2][not(div[@class='damage'])]/div/a");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("/html/body/div[2]/div/div[3]/div/div[2][not(div[@class='damage'])]/div/div[1]/div[2]");
@@ -30,7 +30,7 @@ namespace MangaLightNovelWebScrape.Websites.America
         {
             string url = $"https://www.instocktrades.com/search?pg={currPageNum}&title={bookTitle.Replace(' ', '+')}&publisher=&writer=&artist=&cover=&ps=true";
             InStockTradesLinks.Add(url);
-            Logger.Debug(url);
+            LOGGER.Debug(url);
             return url;
         }
 
@@ -192,7 +192,7 @@ namespace MangaLightNovelWebScrape.Websites.America
             }
             catch (Exception e)
             {
-                Logger.Debug($"{bookTitle} Does Not Exist @ InStockTrades \n{e}");
+                LOGGER.Debug($"{bookTitle} Does Not Exist @ {WEBSITE_TITLE} \n{e}");
             }
 
             //Print data to a txt file
@@ -204,14 +204,14 @@ namespace MangaLightNovelWebScrape.Websites.America
                     {
                         foreach (EntryModel data in InStockTradesData)
                         {
-                            Logger.Debug(data);
+                            LOGGER.Debug(data);
                             outputFile.WriteLine(data.ToString());
                         }
                     }
                     else
                     {
-                        Logger.Debug($"{bookTitle} Does Not Exist at InStockTrades");
-                        outputFile.WriteLine($"{bookTitle} Does Not Exist at InStockTrades");
+                        LOGGER.Debug($"{bookTitle} Does Not Exist at {WEBSITE_TITLE}");
+                        outputFile.WriteLine($"{bookTitle} Does Not Exist at {WEBSITE_TITLE}");
                     }
                 }
             }

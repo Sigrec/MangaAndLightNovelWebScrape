@@ -607,7 +607,7 @@ namespace MangaLightNovelWebScrape
                                 break;
                             case Website.SciFier:
                                 LOGGER.Info($"{SciFier.WEBSITE_TITLE} Going");
-                                WebTasks.Add(SciFier.CreateSciFierTask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
+                                WebTasks.Add(SciFier.CreateSciFierTask(bookTitle, book, MasterDataList, this.Region));
                                 break;
                             default:
                                 break;
@@ -629,7 +629,7 @@ namespace MangaLightNovelWebScrape
                                 break;
                             case Website.SciFier:
                                 LOGGER.Info($"{SciFier.WEBSITE_TITLE} Going");
-                                WebTasks.Add(SciFier.CreateSciFierTask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
+                                WebTasks.Add(SciFier.CreateSciFierTask(bookTitle, book, MasterDataList, this.Region));
                                 break;
                             default:
                                 break;
@@ -651,7 +651,7 @@ namespace MangaLightNovelWebScrape
                                 break;
                             case Website.SciFier:
                                 LOGGER.Info($"{SciFier.WEBSITE_TITLE} Going");
-                                WebTasks.Add(SciFier.CreateSciFierTask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
+                                WebTasks.Add(SciFier.CreateSciFierTask(bookTitle, book, MasterDataList, this.Region));
                                 break;
                             default:
                                 break;
@@ -670,6 +670,20 @@ namespace MangaLightNovelWebScrape
                             case Website.CDJapan:
                                 LOGGER.Info($"{CDJapan.WEBSITE_TITLE} Going");
                                 WebTasks.Add(CDJapan.CreateCDJapanTask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
+                                break;
+                            default:
+                                break;
+                        }
+                    });
+                    break;
+                case Region.Europe:
+                    Parallel.ForEach(webScrapeList, (site) =>
+                    {
+                        switch (site)
+                        {
+                            case Website.SciFier:
+                                LOGGER.Info($"{SciFier.WEBSITE_TITLE} Going");
+                                WebTasks.Add(SciFier.CreateSciFierTask(bookTitle, book, MasterDataList, this.Region));
                                 break;
                             default:
                                 break;
@@ -844,7 +858,7 @@ namespace MangaLightNovelWebScrape
             watch.Start();
             // Bleach
             MasterScrape scrape = new MasterScrape(Region.America, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("naruto", BookType.LightNovel, Array.Empty<StockStatus>(), scrape.GenerateWebsiteList(new List<string>() { KinokuniyaUSA.WEBSITE_TITLE }), false, false, false);
+            await scrape.InitializeScrapeAsync("one piece", BookType.Manga, Array.Empty<StockStatus>(), scrape.GenerateWebsiteList(new List<string>() { SciFier.WEBSITE_TITLE }), false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
