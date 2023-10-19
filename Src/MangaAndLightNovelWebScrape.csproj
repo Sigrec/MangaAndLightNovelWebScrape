@@ -11,7 +11,7 @@
     <TrimMode>partial</TrimMode>
     <PackageVersion>1.0.0</PackageVersion>
     <Version>1.0.0</Version>
-	<FileVersion>1.0.0.0</FileVersion>
+		<FileVersion>1.0.0.0</FileVersion>
     <Authors>Prem</Authors>
     <Owners>Prem</Owners>
     <Description>.NET Framework that scrapes various websites for manga or light novel data for a specifc user inputted series. Then it compares the various prices for each available volume across the websites chosen and outputs a list of the volumes available and the website and price for the lowest volume.</Description>
@@ -23,10 +23,10 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReadmeFile>$(SolutionDir)README.md</PackageReadmeFile>
 	</PropertyGroup>
 	<ItemGroup>
-			<None Include="README.md" Pack="true" PackagePath="\"/>
+			<None Include="README.md" Pack="true" PackagePath="$(SolutionDir)"/>
 	</ItemGroup>
 
   <ItemGroup>
