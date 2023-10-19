@@ -18,8 +18,16 @@
     <Title>MangaAndLightNovelWebScrape</Title>
     <RepositoryUrl>https://github.com/Sigrec/MangaLightNovelWebScrape</RepositoryUrl>
     <PackageProjectUrl>https://github.com/Sigrec/MangaLightNovelWebScrape</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
 	  <!--  <GeneratePackageOnBuild>True</GeneratePackageOnBuild> -->
   </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+	</PropertyGroup>
+	<ItemGroup>
+			<None Include="EADME.md" Pack="true" PackagePath="\"/>
+	</ItemGroup>
 
   <ItemGroup>
 	  <Content Include="NLog.config">
