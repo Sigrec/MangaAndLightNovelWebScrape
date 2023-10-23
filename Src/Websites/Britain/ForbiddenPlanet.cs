@@ -238,7 +238,7 @@ namespace MangaLightNovelWebScrape.Websites.Britain
                     }
                 }
 
-                ForbiddenPlanetData.Sort(new VolumeSort());
+                ForbiddenPlanetData.Sort(MasterScrape.VolumeSort);
 
                 if (MasterScrape.IsDebugEnabled)
                 {

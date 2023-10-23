@@ -212,7 +212,7 @@ namespace MangaLightNovelWebScrape.Websites.America
                 Logger.Error($"{bookTitle} Does Not Exist @ AmazonUSA {ex}");
             }
 
-            AmazonUSAData.Sort(new VolumeSort());
+            AmazonUSAData.Sort(MasterScrape.VolumeSort);
 
             if (MasterScrape.IsDebugEnabled)
             {

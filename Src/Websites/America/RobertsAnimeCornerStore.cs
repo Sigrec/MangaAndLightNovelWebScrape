@@ -161,7 +161,7 @@ namespace MangaLightNovelWebScrape.Websites.America
                         );
                     }
 
-                    RobertsAnimeCornerStoreData.Sort(new VolumeSort());
+                    RobertsAnimeCornerStoreData.Sort(MasterScrape.VolumeSort);
                 }
             }
             catch(Exception ex)
@@ -177,8 +177,8 @@ namespace MangaLightNovelWebScrape.Websites.America
                     {
                         foreach (EntryModel data in RobertsAnimeCornerStoreData)
                         {
-                            LOGGER.Debug(data.ToString());
-                            outputFile.WriteLine(data.ToString());
+                            LOGGER.Debug(data);
+                            outputFile.WriteLine(data);
                         }
                     }
                     else

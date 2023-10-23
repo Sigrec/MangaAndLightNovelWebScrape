@@ -7,8 +7,6 @@ using System.Collections.Concurrent;
 using MangaLightNovelWebScrape.Websites.Japan;
 using MangaLightNovelWebScrape.Websites;
 using MangaLightNovelWebScrape.Websites.Britain;
-using System.Net.Http;
-using OpenQA.Selenium.DevTools;
 
 namespace MangaLightNovelWebScrape
 {
@@ -20,22 +18,22 @@ namespace MangaLightNovelWebScrape
         internal List<List<EntryModel>> MasterDataList = new List<List<EntryModel>>();
         private ConcurrentBag<List<EntryModel>> ResultsList = new ConcurrentBag<List<EntryModel>>();
         private List<Task> WebTasks = new List<Task>(11);
-        private Dictionary<string, string> MasterUrls = new Dictionary<string, string>
-        {
-            { Crunchyroll.WEBSITE_TITLE, "" },
-            { BarnesAndNoble.WEBSITE_TITLE , "" },
-            { BooksAMillion.WEBSITE_TITLE , "" },
-            { AmazonUSA.WEBSITE_TITLE , "" },
-            { KinokuniyaUSA.WEBSITE_TITLE , "" },
-            { InStockTrades.WEBSITE_TITLE , "" },
-            { RobertsAnimeCornerStore.WEBSITE_TITLE , "" },
-            { SciFier.WEBSITE_TITLE, "" },
-            { ForbiddenPlanet.WEBSITE_TITLE, "" },
-            { Waterstones.WEBSITE_TITLE, "" },
-            { AmazonJapan.WEBSITE_TITLE, "" },
-            { CDJapan.WEBSITE_TITLE, "" },
-            { Indigo.WEBSITE_TITLE, "" }
-        };
+        private Dictionary<string, string> MasterUrls = new Dictionary<string, string>();
+        // {
+        //     { Crunchyroll.WEBSITE_TITLE, "" },
+        //     { BarnesAndNoble.WEBSITE_TITLE , "" },
+        //     { BooksAMillion.WEBSITE_TITLE , "" },
+        //     { AmazonUSA.WEBSITE_TITLE , "" },
+        //     { KinokuniyaUSA.WEBSITE_TITLE , "" },
+        //     { InStockTrades.WEBSITE_TITLE , "" },
+        //     { RobertsAnimeCornerStore.WEBSITE_TITLE , "" },
+        //     { SciFier.WEBSITE_TITLE, "" },
+        //     { ForbiddenPlanet.WEBSITE_TITLE, "" },
+        //     { Waterstones.WEBSITE_TITLE, "" },
+        //     { AmazonJapan.WEBSITE_TITLE, "" },
+        //     { CDJapan.WEBSITE_TITLE, "" },
+        //     { Indigo.WEBSITE_TITLE, "" }
+        // };
         private AmazonUSA AmazonUSA = new AmazonUSA();
         private BarnesAndNoble BarnesAndNoble = new BarnesAndNoble();
         private BooksAMillion BooksAMillion = new BooksAMillion();
@@ -49,11 +47,34 @@ namespace MangaLightNovelWebScrape
         private SciFier SciFier = new SciFier();
         private Waterstones Waterstones = new Waterstones();
         private ForbiddenPlanet ForbiddenPlanet = new ForbiddenPlanet();
+        internal static VolumeSort VolumeSort = new VolumeSort();
+        /// <summary>
+        /// The current region of the Scrape
+        /// </summary>
         public Region Region { get; set; }
+        /// <summary>
+        /// The current browser of the Scrape
+        /// </summary>
         public Browser Browser { get; set; }
         private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
-        internal static readonly string[] CHROME_BROWSER_ARGUMENTS = { "--headless=new", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent" };
-        private static readonly string[] FIREFOX_BROWSER_ARGUMENTS = { "-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3" };
+        internal static readonly string[] CHROME_BROWSER_ARGUMENTS = ["--headless=new", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent"];
+        private static readonly string[] FIREFOX_BROWSER_ARGUMENTS = ["-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3"];
+        /// <summary>
+        /// Excludes nothing or include OOS (Out of Stock) & PO (Pre Order) Entries
+        /// </summary>
+        public static readonly StockStatus[] EXCLUDE_NONE_FILTER = [];
+        /// <summary>
+        /// Excludes both OOS (Out of Stock) & PO (Pre Order) entries
+        /// </summary>
+        public static readonly StockStatus[] EXCLUDE_BOTH_FILTER = [ StockStatus.PO, StockStatus.OOS ];
+        /// <summary>
+        /// Exludes PO (Pre Order) entries only
+        /// </summary>
+        public static readonly StockStatus[] EXCLUDE_PO_FILTER = [ StockStatus.PO ];
+        /// <summary>
+        /// Excludes OOS (Out of Stock) entries only
+        /// </summary>
+        public static readonly StockStatus[] EXCLUDE_OOS_FILTER = [ StockStatus.OOS ];
         /// <summary>
         /// Determines whether debug mode is enabled (Disabled by default)
         /// </summary>
@@ -66,19 +87,6 @@ namespace MangaLightNovelWebScrape
         [GeneratedRegex(@"GN|Graphic Novel|:\s+Volumes|Volumes|:\s+Volume|Volume|Vol\.|:\s+Volumr|Volumr", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
         [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character Book|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Special Edition|Compendium|Artbook|Error|Playing Cards|\(Osi\)|Advertising", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
 
-        public MasterScrape() 
-        { 
-
-        } 
-        public MasterScrape(Browser Browser = Browser.Chrome)
-        {
-            this.Browser = Browser;
-        }
-
-        public MasterScrape(Region Region = Region.America)
-        {
-            this.Region = Region;
-        }
         public MasterScrape(Region Region = Region.America, Browser Browser = Browser.Chrome)
         {
             this.Region = Region;
@@ -144,12 +152,12 @@ namespace MangaLightNovelWebScrape
         {
             return region switch
             {
-                Region.America => new string[] { AmazonUSA.WEBSITE_TITLE, BarnesAndNoble.WEBSITE_TITLE, BooksAMillion.WEBSITE_TITLE, InStockTrades.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE, Crunchyroll.WEBSITE_TITLE, RobertsAnimeCornerStore.WEBSITE_TITLE, SciFier.WEBSITE_TITLE },
-                Region.Britain => new string[] { ForbiddenPlanet.WEBSITE_TITLE, Waterstones.WEBSITE_TITLE, SciFier.WEBSITE_TITLE },
-                Region.Canada => new string[] { Indigo.WEBSITE_TITLE, SciFier.WEBSITE_TITLE },
-                Region.Europe => new string[] { SciFier.WEBSITE_TITLE },
-                Region.Japan => new string[] { AmazonJapan.WEBSITE_TITLE, CDJapan.WEBSITE_TITLE },
-                _ => Array.Empty<string>(),
+                Region.America => [ AmazonUSA.WEBSITE_TITLE, BarnesAndNoble.WEBSITE_TITLE, BooksAMillion.WEBSITE_TITLE, InStockTrades.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE, Crunchyroll.WEBSITE_TITLE, RobertsAnimeCornerStore.WEBSITE_TITLE, SciFier.WEBSITE_TITLE ],
+                Region.Britain => [ ForbiddenPlanet.WEBSITE_TITLE, Waterstones.WEBSITE_TITLE, SciFier.WEBSITE_TITLE ],
+                Region.Canada => [ Indigo.WEBSITE_TITLE, SciFier.WEBSITE_TITLE ],
+                Region.Europe => [ SciFier.WEBSITE_TITLE ],
+                Region.Japan => [ AmazonJapan.WEBSITE_TITLE, CDJapan.WEBSITE_TITLE ],
+                _ => []
             };
         }
 
@@ -162,12 +170,12 @@ namespace MangaLightNovelWebScrape
         {
             return region switch
             {
-                Region.America => new Website[] { Website.AmazonUSA, Website.BarnesAndNoble, Website.BooksAMillion, Website.InStockTrades, Website.KinokuniyaUSA, Website.Crunchyroll, Website.RobertsAnimeCornerStore, Website.SciFier },
-                Region.Britain => new Website[] { Website.ForbiddenPlanet, Website.Waterstones, Website.SciFier },
-                Region.Canada => new Website[] { Website.Indigo, Website.SciFier },
-                Region.Europe => new Website[] { Website.SciFier },
-                Region.Japan => new Website[] { Website.AmazonJapan, Website.CDJapan },
-                _ => Array.Empty<Website>(),
+                Region.America => [ Website.AmazonUSA, Website.BarnesAndNoble, Website.BooksAMillion, Website.InStockTrades, Website.KinokuniyaUSA, Website.Crunchyroll, Website.RobertsAnimeCornerStore, Website.SciFier ],
+                Region.Britain => [ Website.ForbiddenPlanet, Website.Waterstones, Website.SciFier ],
+                Region.Canada => [ Website.Indigo, Website.SciFier ],
+                Region.Europe => [ Website.SciFier ],
+                Region.Japan => [ Website.AmazonJapan, Website.CDJapan ],
+                _ => [ ],
             };
         }
 
@@ -196,16 +204,14 @@ namespace MangaLightNovelWebScrape
         /// <summary>
         /// Gets the results of a scrape
         /// </summary>
-        /// <returns></returns>
         public List<EntryModel> GetResults()
         {
             return MasterDataList.Count != 0 ? MasterDataList[0] : new List<EntryModel>();
         }
 
         /// <summary>
-        /// Gets the dictionary containing the links to the websites that are used in the final results
+        /// Gets the dictionary containing the links to the websites that were used in the final results
         /// </summary>
-        /// <returns>Resulting Dictionary based on Region</returns>
         public Dictionary<string, string> GetResultUrls()
         {
             return MasterUrls;
@@ -242,6 +248,7 @@ namespace MangaLightNovelWebScrape
         private void ClearJapanWebsiteData()
         {
             CDJapan?.ClearData();
+            AmazonJapan?.ClearData();
         }
 
         private void ClearBritainWebsiteData()
@@ -325,7 +332,7 @@ namespace MangaLightNovelWebScrape
                 finalData.Add(smallerList[x]);
             }
             // finalData.ForEach(data => LOGGER.Info($"Final -> {data}"));
-            finalData.Sort(new VolumeSort());
+            finalData.Sort(MasterScrape.VolumeSort);
             return finalData;
         }
     
@@ -693,7 +700,6 @@ namespace MangaLightNovelWebScrape
             }
         }
 
-        // TODO Add ReadMe
         // TODO Brit store https://travellingman.com/
         // TODO Remove "Location" Popup for BAM
 
@@ -705,7 +711,6 @@ namespace MangaLightNovelWebScrape
         /// <param name="stockFilter"></param>
         /// <param name="webScrapeList">The list of websites you want to search at</param>
         /// <param name="browser">The browser either Edge, Chrome, or FireFox the user wants to use</param>
-        /// <param name="isCrunchyrollMember">Whether the user is a Crunchyroll Member</param>
         /// <param name="isBarnesAndNobleMember">Whether the user is a Barnes & Noble Member</param>
         /// <param name="isBooksAMillionMember">Whether the user is a Books-A-Million Member</param>
         /// <param name="isKinokuniyaUSAMember">Whether the user is a Kinokuniya USA member</param>
@@ -814,7 +819,7 @@ namespace MangaLightNovelWebScrape
                     {
                         if (MasterDataList.Count > 0)
                         {
-                            foreach (EntryModel data in MasterDataList[0])
+                            foreach (EntryModel data in GetResults())
                             {
                                 LOGGER.Info(data.ToString());
                                 outputFile.WriteLine(data.ToString());
@@ -831,6 +836,7 @@ namespace MangaLightNovelWebScrape
                         }
                         else
                         {
+                            outputFile.WriteLine("No MasterData Available");
                             LOGGER.Warn("No MasterData Available");
                         }
                     }
@@ -852,20 +858,19 @@ namespace MangaLightNovelWebScrape
 
         // Command to end all chrome.exe process -> taskkill /F /IM chrome.exe /T
         // Command to end all chromedriver.exe process -> taskkill /F /IM chromedriver.exe /T
-        private static async Task Main(string[] args)
-        {
-            System.Diagnostics.Stopwatch watch = new();
-            watch.Start();
-            // Bleach
-            MasterScrape scrape = new MasterScrape(Region.America, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("one piece", BookType.Manga, Array.Empty<StockStatus>(), scrape.GenerateWebsiteList(new List<string>() { Crunchyroll.WEBSITE_TITLE }), false, false, false);
-            watch.Stop();
-            LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
-        }
-
-        // public static void Main(string[] args)
+        // private static async Task Main(string[] args)
         // {
-            
+        //     System.Diagnostics.Stopwatch watch = new();
+        //     watch.Start();
+        //     MasterScrape scrape = new MasterScrape(Region.America, Browser.Chrome).EnableDebugMode();
+        //     await scrape.InitializeScrapeAsync("world trigger", BookType.Manga, EXCLUDE_NONE_FILTER, scrape.GenerateWebsiteList(new List<string>() { RobertsAnimeCornerStore.WEBSITE_TITLE }), false, false, false);
+        //     watch.Stop();
+        //     LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         // }
+
+        public static void Main(string[] args)
+        {
+            
+        }
     }
 }

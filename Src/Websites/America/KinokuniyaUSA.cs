@@ -255,7 +255,7 @@ namespace MangaLightNovelWebScrape.Websites.America
                     {
                         driver.Close();
                         driver.Quit();
-                        KinokuniyaUSAData.Sort(new VolumeSort());
+                        KinokuniyaUSAData.Sort(MasterScrape.VolumeSort);
                         break;
                     }
                 }

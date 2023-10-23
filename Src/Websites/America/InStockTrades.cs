@@ -12,7 +12,7 @@ namespace MangaLightNovelWebScrape.Websites.America
         private static readonly XPathExpression PageCheckXPath= XPathExpression.Compile("/html/body/div[2]/div/div[4]/span/input");
 
         [GeneratedRegex(@" GN| TP| HC| Manga|(?<=Vol).*|(?<=Box Set).*")]  private static partial Regex TitleRegex();
-        [GeneratedRegex(@"Vol (\d+)|Box Set (\d+)|Box Set Part (\d+)")] private static partial Regex VolNumberRegex();
+        [GeneratedRegex(@"Vol\s+(\d+)|Box Set\s+(\d+)|Box Set\s+Part\s+(\d+)")] private static partial Regex VolNumberRegex();
         [GeneratedRegex(@"3In1 Ed|3In1")] private static partial Regex OmnibusRegex();
 
         internal async Task CreateInStockTradesTask(string bookTitle, BookType book, List<List<EntryModel>> MasterDataList)
@@ -47,19 +47,19 @@ namespace MangaLightNovelWebScrape.Websites.America
 
         private static string TitleParse(string bookTitle, string titleText, BookType bookType)
         {
-            Group volGroup;
+            string volGroup;
             StringBuilder curTitle = new StringBuilder(titleText);
             if (titleText.Contains("Box Set")) 
             { 
                 curTitle.Replace("Vol ", "");
                 Match match = VolNumberRegex().Match(curTitle.ToString());
-                if (match.Groups[3] != null)
+                if (!string.IsNullOrWhiteSpace(match.Groups[3].Value))
                 {
-                    volGroup = match.Groups[3];
+                    volGroup = match.Groups[3].Value;
                 }
                 else
                 {
-                    volGroup = match.Groups[2];
+                    volGroup = match.Groups[2].Value;
                 }
             }
             else
@@ -86,15 +86,15 @@ namespace MangaLightNovelWebScrape.Websites.America
                 {
                     curTitle.Append(" Novel");
                 }
-                volGroup = VolNumberRegex().Match(curTitle.ToString()).Groups[1];
+                volGroup = VolNumberRegex().Match(curTitle.ToString()).Groups[1].Value;
             }
 
-            if (!bookTitle.Contains("One", StringComparison.OrdinalIgnoreCase))
+            if (curTitle.ToString().Contains("One") && !bookTitle.Contains("One", StringComparison.OrdinalIgnoreCase))
             {
                 curTitle.Replace("One", "1");
             }
 
-            return System.Net.WebUtility.HtmlDecode($"{TitleRegex().Replace(OmnibusRegex().Replace(curTitle.ToString(), "Omnibus"), "")} {volGroup.Value.TrimStart('0')}".Trim());
+            return System.Net.WebUtility.HtmlDecode($"{TitleRegex().Replace(OmnibusRegex().Replace(curTitle.ToString(), "Omnibus"), "")} {volGroup.TrimStart('0')}".Trim());
         }
 
         private List<EntryModel> GetInStockTradesData(string bookTitle, BookType bookType, byte currPageNum)
@@ -107,12 +107,6 @@ namespace MangaLightNovelWebScrape.Websites.America
                 HtmlDocument doc = new HtmlDocument();
                 while (true)
                 {
-                    // driver.Navigate().GoToUrl(GetUrl(currPageNum, bookTitle));
-                    // wait.Until(e => e.FindElement(By.XPath("/html/body/div[2]")));
-
-                    // // Initialize the html doc for crawling
-                    // HtmlDocument doc = new();
-                    // doc.LoadHtml(driver.PageSource);
                     doc = web.Load(GetUrl(currPageNum, bookTitle));
 
                     // Get the page data from the HTML doc
@@ -185,7 +179,7 @@ namespace MangaLightNovelWebScrape.Websites.America
                     }
                     else
                     {
-                        InStockTradesData.Sort(new VolumeSort());
+                        InStockTradesData.Sort(MasterScrape.VolumeSort);
                         break;
                     }
                 }

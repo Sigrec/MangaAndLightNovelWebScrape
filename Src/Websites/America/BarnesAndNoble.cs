@@ -296,7 +296,7 @@ namespace MangaLightNovelWebScrape.Websites.America
             {
                 LOGGER.Error($"{bookTitle} Does Not Exist @ Barnes & Noble \n{e}");
             }
-            BarnesAndNobleData.Sort(new VolumeSort());
+            BarnesAndNobleData.Sort(MasterScrape.VolumeSort);
 
             if (MasterScrape.IsDebugEnabled)
             {

@@ -119,7 +119,7 @@ namespace MangaLightNovelWebScrape.Websites
                     }
                     else
                     {
-                        SciFierData.Sort(new VolumeSort());
+                        SciFierData.Sort(MasterScrape.VolumeSort);
                         break;
                     }
                 }

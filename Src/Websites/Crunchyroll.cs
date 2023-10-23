@@ -163,7 +163,7 @@ namespace MangaLightNovelWebScrape.Websites
                         break;
                     }
                 }
-                CrunchyrollData.Sort(new VolumeSort());
+                CrunchyrollData.Sort(MasterScrape.VolumeSort);
             }
             catch (Exception ex)
             {
@@ -178,14 +178,14 @@ namespace MangaLightNovelWebScrape.Websites
                     {
                         foreach (EntryModel data in CrunchyrollData)
                         {
-                            LOGGER.Debug(data.ToString());
-                            outputFile.WriteLine(data.ToString());
+                            LOGGER.Debug(data);
+                            outputFile.WriteLine(data);
                         }
                     }
                     else
                     {
-                        LOGGER.Debug(bookTitle + " Does Not Exist at Crunchyroll");
-                        outputFile.WriteLine(bookTitle + " Does Not Exist at Crunchyroll");
+                        LOGGER.Error($"{bookTitle} Does Not Exist at {WEBSITE_TITLE}");
+                        outputFile.WriteLine($"{bookTitle} Does Not Exist at {WEBSITE_TITLE}");
                     }
                 } 
             }

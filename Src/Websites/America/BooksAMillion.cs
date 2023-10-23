@@ -236,7 +236,7 @@ namespace MangaLightNovelWebScrape.Websites.America
                         }
                     }
                 }
-                BooksAMillionData.Sort(new VolumeSort());
+                BooksAMillionData.Sort(MasterScrape.VolumeSort);
             }
             catch (Exception ex)
             {

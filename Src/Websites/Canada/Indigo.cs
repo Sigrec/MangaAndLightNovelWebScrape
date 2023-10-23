@@ -34,6 +34,7 @@ namespace MangaLightNovelWebScrape.Websites.Canada
         }
 
         // https://www.indigo.ca/en-ca/search?q=world+trigger&search-button=&lang=en_CA
+        // https://www.indigo.ca/en-ca/search?q=one+piece&search-button=&lang=en_CA&start=0&sz=99999
         // https://www.indigo.ca/en-ca/search?q=jujutsu+kaisen&search-button=&lang=en_CA
         private string GetUrl(string bookTitle, BookType bookType)
         {
@@ -48,8 +49,8 @@ namespace MangaLightNovelWebScrape.Websites.Canada
             var elements = driver.FindElements(By.XPath(xPath));
             if (elements != null && elements.Count != 0)
             {
-                LOGGER.Debug(type);
                 wait.Until(driver => driver.FindElement(By.XPath(xPath))).Click();
+                LOGGER.Debug($"{type} Passed");
                 return true;
             }
             LOGGER.Debug($"{type} Failed");
@@ -73,6 +74,7 @@ namespace MangaLightNovelWebScrape.Websites.Canada
                         wait.Until(driver => driver.FindElement(By.XPath("//div[@id='refinement-book-format']//span[contains(text(), 'Paperback')]/ancestor::div[@class='custom-control custom-checkbox form-group']/input[@checked]")));
                     }
 
+                    LOGGER.Debug("Check1");
                     wait.Until(driver => driver.FindElement(By.XPath("//div[contains(@class, 'Book Format active')]"))); 
                     if (RunClickEvent("//div[@id='refinement-book-format']//span[contains(text(), 'Hardcover')]", driver, wait, "Clicking Hardcover"))
                     {
@@ -134,7 +136,7 @@ namespace MangaLightNovelWebScrape.Websites.Canada
                 LOGGER.Error($"{bookTitle} Does Not Exist @ Indigo {ex}");
             }
 
-            IndigoData.Sort(new VolumeSort());
+            IndigoData.Sort(MasterScrape.VolumeSort);
 
             if (MasterScrape.IsDebugEnabled)
             {

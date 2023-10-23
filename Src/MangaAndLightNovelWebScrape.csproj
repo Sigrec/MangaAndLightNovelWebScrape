@@ -9,25 +9,26 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>partial</TrimMode>
-    <PackageVersion>1.0.0</PackageVersion>
-    <Version>1.0.0</Version>
-		<FileVersion>1.0.0.0</FileVersion>
+    <PackageVersion>1.0.1</PackageVersion>
+    <Version>1.0.1</Version>
+	<FileVersion>1.0.1.0</FileVersion>
     <Authors>Prem</Authors>
     <Owners>Prem</Owners>
-		<ReleaseNotes>https://github.com/Sigrec/MangaLightNovelWebScrape/releases</ReleaseNotes>
+    <LangVersion>preview</LangVersion>
+	<ReleaseNotes>https://github.com/Sigrec/MangaLightNovelWebScrape/releases</ReleaseNotes>
     <Description>.NET Framework that scrapes various websites for manga or light novel data for a specifc user inputted series. Then it compares the various prices for each available volume across the websites chosen and outputs a list of the volumes available and the website and price for the lowest volume.</Description>
     <Title>MangaAndLightNovelWebScrape</Title>
     <RepositoryUrl>https://github.com/Sigrec/MangaLightNovelWebScrape</RepositoryUrl>
     <PackageProjectUrl>https://github.com/Sigrec/MangaLightNovelWebScrape</PackageProjectUrl>
     <!-- <PackageLicenseExpression>MIT</PackageLicenseExpression> -->
-		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
-	  <!--  <GeneratePackageOnBuild>True</GeneratePackageOnBuild> -->
+	<PackageReadmeFile>README.md</PackageReadmeFile>
+	<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+	<!--  <GeneratePackageOnBuild>True</GeneratePackageOnBuild> -->
   </PropertyGroup>
 
 	<ItemGroup>
-		<None Include="README.md" Pack="true" PackagePath="\"/>
-		<None Include="LICENSE.md" Pack="true" PackagePath="\"/>
+		<None Include="README.md" Pack="true" PackagePath="\" />
+		<None Include="LICENSE.md" Pack="true" PackagePath="\" />
 	</ItemGroup>
 
   <ItemGroup>
