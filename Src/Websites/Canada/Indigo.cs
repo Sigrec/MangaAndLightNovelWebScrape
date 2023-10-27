@@ -9,17 +9,18 @@ namespace MangaLightNovelWebScrape.Websites.Canada
         private static readonly Logger LOGGER = LogManager.GetLogger("IndigoLogs");
         private const Region WEBSITE_REGION = Region.Canada;
 
-        [GeneratedRegex(@",|\.")] private static partial Regex TitleRegex();
+        [GeneratedRegex(@"(?<=\d{1,3}): .*|—")] private static partial Regex TitleRegex();
+        [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)")] private static partial Regex OmnibusRegex();
 
-        internal async Task CreateIndigoTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList, WebDriver driver)
+        protected internal async Task CreateIndigoTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList)
         {
             await Task.Run(() => 
             {
-                MasterDataList.Add(GetIndigoData(bookTitle, book, isMember, driver));
+                MasterDataList.Add(GetIndigoData(bookTitle, book, isMember));
             });
         }
 
-        internal void ClearData()
+        protected internal void ClearData()
         {
             if (this != null)
             {
@@ -28,87 +29,46 @@ namespace MangaLightNovelWebScrape.Websites.Canada
             }
         }
 
-        internal string GetUrl()
+        protected internal string GetUrl()
         {
             return IndigoLinks.Count != 0 ? IndigoLinks[0] : $"{WEBSITE_TITLE} Has no Link"; 
         }
 
-        // https://www.indigo.ca/en-ca/search?q=world+trigger&search-button=&lang=en_CA
-        // https://www.indigo.ca/en-ca/search?q=one+piece&search-button=&lang=en_CA&start=0&sz=99999
-        // https://www.indigo.ca/en-ca/search?q=jujutsu+kaisen&search-button=&lang=en_CA
+        // https://www.indigo.ca/en-ca/search?q=one+piece+Manga&prefn1=BISACBindingTypeID&prefv1=Paperback%7CHardcover&prefn2=Language&prefv2=English&start=0&sz=1000
         private string GetUrl(string bookTitle, BookType bookType)
         {
-            string url = $"https://www.indigo.ca/en-ca/search?q={bookTitle.Replace(' ', '+')}&search-button=&lang=en_CA";
+            string url = $"https://www.indigo.ca/en-ca/search?q={bookTitle.Replace(' ', '+')}+{(bookType == BookType.Manga ? "manga" : "novel")}&prefn1=BISACBindingTypeID&prefv1=Paperback%7CHardcover&prefn2=Language&prefv2=English&start=0&sz=1000";
             LOGGER.Debug(url);
             IndigoLinks.Add(url);
             return url;
         }
 
-        private static bool RunClickEvent(string xPath, WebDriver driver, WebDriverWait wait, string type)
+        private string ParseTitle(string entryTitle, string bookTitle, BookType bookType)
         {
-            var elements = driver.FindElements(By.XPath(xPath));
-            if (elements != null && elements.Count != 0)
+            if (OmnibusRegex().IsMatch(entryTitle))
             {
-                wait.Until(driver => driver.FindElement(By.XPath(xPath))).Click();
-                LOGGER.Debug($"{type} Passed");
-                return true;
+                entryTitle = OmnibusRegex().Replace(entryTitle, "Omnibus");
             }
-            LOGGER.Debug($"{type} Failed");
-            return false;
-        }
 
-        internal List<EntryModel> GetIndigoData(string bookTitle, BookType bookType, bool isMember, WebDriver driver)
+            StringBuilder curTitle = new StringBuilder(entryTitle);
+            MasterScrape.RemoveCharacterFromTitle(ref curTitle, bookTitle, '.');
+            MasterScrape.RemoveCharacterFromTitle(ref curTitle, bookTitle, ',');
+            MasterScrape.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
+            
+            if (entryTitle.Contains("The Manga"))
+            {
+                curTitle.Replace("The Manga", "");
+            }
+
+            return curTitle.ToString();
+        }
+        protected internal List<EntryModel> GetIndigoData(string bookTitle, BookType bookType, bool isMember)
         {
             try
             {
-                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
-                driver.Navigate().GoToUrl(GetUrl(bookTitle, bookType));
-                // wait.Until(driver => driver.FindElement(By.XPath("/html[@style='position: relative;']")));
-
-                // Check formats to filter entries for Paperback & Hardcover
-                if(RunClickEvent("//div[@id='refinement-heading']/span[@aria-label='Book Format']", driver, wait, "Clicking Book Format Tab"))
-                {
-                    wait.Until(driver => driver.FindElement(By.XPath("//div[contains(@class, 'Book Format active')]")));
-                    if(RunClickEvent("//div[@id='refinement-book-format']//span[contains(text(), 'Paperback')]", driver, wait, "Clicking Paperback"))
-                    {
-                        wait.Until(driver => driver.FindElement(By.XPath("//div[@id='refinement-book-format']//span[contains(text(), 'Paperback')]/ancestor::div[@class='custom-control custom-checkbox form-group']/input[@checked]")));
-                    }
-
-                    LOGGER.Debug("Check1");
-                    wait.Until(driver => driver.FindElement(By.XPath("//div[contains(@class, 'Book Format active')]"))); 
-                    if (RunClickEvent("//div[@id='refinement-book-format']//span[contains(text(), 'Hardcover')]", driver, wait, "Clicking Hardcover"))
-                    {
-                        wait.Until(driver => driver.FindElement(By.XPath("//div[@id='refinement-book-format']//span[contains(text(), 'Hardcover')]/ancestor::div[@class='custom-control custom-checkbox form-group']/input[@checked]")));
-                    }
-
-                    // Ensure language is only English
-                    //wait.Until(driver => driver.FindElement(By.XPath(@"//div[@data-refinement-name='Language']")));
-                    if(RunClickEvent("//div[@id='refinement-heading']/span[@aria-label='Language']", driver, wait, "Clicking Language Tab"))
-                    {
-                        wait.Until(driver => driver.FindElement(By.XPath("//div[contains(@class, 'Language active')]")));
-                        if (RunClickEvent("//div[@id='refinement-language']//span[1][contains(text(), 'English')]", driver, wait, "Clicking English Language"))
-                        {
-                            wait.Until(driver => driver.FindElement(By.XPath("//div[@id='refinement-language']//span[contains(text(), 'English')]/ancestor::div[@class='custom-control custom-checkbox form-group']/input[@checked]")));
-                        }
-                    }
-                }
-
-                // Load all entries before getting the html page source
-                int index = 1;
-                var loadMoreElements = driver.FindElements(By.XPath("//button[@class='btn btn-tertiary more']"));
-                while (loadMoreElements.Count != 0)
-                {
-                    // RunClickEvent("//button[@class='btn btn-tertiary more']", driver, wait, $"Clicking Load More {index}");
-                    LOGGER.Debug($"Clicking Load More {index}");
-                    wait.Until(driver => driver.FindElements(By.XPath("//button[@class='btn btn-tertiary more']"))[0]).Click();
-                    loadMoreElements = driver.FindElements(By.XPath("//button[@class='btn btn-tertiary more']"));
-                    index++;
-                }
-
                 HtmlDocument doc = new();
-                doc.LoadHtml(driver.PageSource);
-                driver.Close();
-                driver.Quit();
+                HtmlWeb web = new HtmlWeb();
+                doc = web.Load(GetUrl(bookTitle, bookType));
 
                 HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes("//a[@class='link secondary']/h3/text()");
                 HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes("//span[@class='price-wrapper']/span/span");
@@ -117,22 +77,44 @@ namespace MangaLightNovelWebScrape.Websites.Canada
                 string price = string.Empty;
                 for(int x = 0; x < titleData.Count; x++)
                 {
-                    price = priceData[x].InnerText.Trim();
-                    IndigoData.Add(
-                        new EntryModel(
-                            TitleRegex().Replace(titleData[x].InnerText, ""),
-                            isMember ? EntryModel.ApplyDiscount(Convert.ToDecimal(price), PLUM_DISCOUNT) : price,
-                            !stockStatusData[x].InnerText.Contains("Pre-Order") ? StockStatus.IS : StockStatus.PO,
-                            WEBSITE_TITLE
+                    string entryTitle = System.Net.WebUtility.HtmlDecode(titleData[x].InnerText);
+                    if (!MasterScrape.EntryRemovalRegex().IsMatch(bookTitle))
+                    {
+                        if (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle)
+                        && MasterScrape.TitleContainsBookTitle(bookTitle, entryTitle)
+                        && MasterScrape.TitleStartsWithCheck(bookTitle, entryTitle)
+                        && (
+                            (
+                                entryTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase)
+                                && bookType == BookType.Manga
+                            )
+                                || !(
+                                        MasterScrape.RemoveUnintendedVolumes(bookTitle, "One Piece", entryTitle, "Ace's Story") 
+                                        || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear Your Own World") 
+                                    )
+                            )
                         )
-                    );
+                        {
+                            price = priceData[x].InnerText.Trim();
+                            IndigoData.Add(
+                                new EntryModel(
+                                    ParseTitle(TitleRegex().Replace(entryTitle, ""), bookTitle, bookType),
+                                    isMember ? EntryModel.ApplyDiscount(Convert.ToDecimal(price), PLUM_DISCOUNT) : price,
+                                    !stockStatusData[x].InnerText.Contains("Pre-Order") ? StockStatus.IS : StockStatus.PO,
+                                    WEBSITE_TITLE
+                                )
+                            );
+                        }
+                    }
+                    else
+                    {
+                        LOGGER.Debug($"{bookTitle} Contains a String to Remove");
+                    }
                 }
 
             }
             catch (Exception ex)
             {
-                // driver.Close();
-                // driver.Quit();
                 LOGGER.Error($"{bookTitle} Does Not Exist @ Indigo {ex}");
             }
 
@@ -146,14 +128,14 @@ namespace MangaLightNovelWebScrape.Websites.Canada
                     {
                         foreach (EntryModel data in IndigoData)
                         {
-                            LOGGER.Debug(data.ToString());
-                            outputFile.WriteLine(data.ToString());
+                            LOGGER.Debug(data);
+                            outputFile.WriteLine(data);
                         }
                     }
                     else
                     {
-                        LOGGER.Debug(bookTitle + " Does Not Exist at Indigo");
-                        outputFile.WriteLine(bookTitle + " Does Not Exist at Indigo");
+                        LOGGER.Debug($"{bookTitle} Does Not Exist at {WEBSITE_TITLE}");
+                        outputFile.WriteLine($"{bookTitle} Does Not Exist at {WEBSITE_TITLE}");
                     }
                 } 
             }

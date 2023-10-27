@@ -85,7 +85,7 @@ namespace MangaLightNovelWebScrape
         [GeneratedRegex(@"--|—|\s{2,}")] internal static partial Regex MultipleWhiteSpaceRegex();
         [GeneratedRegex(@";jsessionid=[^?]*")] internal static partial Regex RemoveJSessionIDRegex();
         [GeneratedRegex(@"GN|Graphic Novel|:\s+Volumes|Volumes|:\s+Volume|Volume|Vol\.|:\s+Volumr|Volumr", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
-        [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character Book|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Special Edition|Compendium|Artbook|Error|Playing Cards|\(Osi\)|Advertising", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
+        [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character Book|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Special Edition|Compendium|Artbook|Error|Playing Cards|\(Osi\)|Advertising|Art Book", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
 
         public MasterScrape(Region Region = Region.America, Browser Browser = Browser.Chrome)
         {
@@ -225,6 +225,11 @@ namespace MangaLightNovelWebScrape
         internal static bool TitleContainsBookTitle(string bookTitle, string curTitle)
         {
             return RemoveNonWordsRegex().Replace(curTitle, "").Contains(RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase);
+        }
+
+        internal static bool TitleStartsWithCheck(string bookTitle, string curTitle)
+        {
+            return RemoveNonWordsRegex().Replace(curTitle, "").StartsWith(RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase);
         }
 
         private void ClearAmericaWebsiteData()
@@ -654,7 +659,7 @@ namespace MangaLightNovelWebScrape
                                 break;
                             case Website.Indigo:
                                 LOGGER.Info($"{Indigo.WEBSITE_TITLE} Going");
-                                WebTasks.Add(Indigo.CreateIndigoTask(bookTitle, book, isIndigoMember, MasterDataList, SetupBrowserDriver(false)));
+                                WebTasks.Add(Indigo.CreateIndigoTask(bookTitle, book, isIndigoMember, MasterDataList));
                                 break;
                             case Website.SciFier:
                                 LOGGER.Info($"{SciFier.WEBSITE_TITLE} Going");
@@ -700,6 +705,14 @@ namespace MangaLightNovelWebScrape
             }
         }
 
+        public static void RemoveCharacterFromTitle(ref StringBuilder title, string bookTitle, char charToRemove)
+        {
+            if (!bookTitle.Contains(charToRemove))
+            {
+                title.Replace(charToRemove.ToString(), "");
+            }
+        }
+        
         // TODO Brit store https://travellingman.com/
         // TODO Remove "Location" Popup for BAM
 
@@ -858,19 +871,14 @@ namespace MangaLightNovelWebScrape
 
         // Command to end all chrome.exe process -> taskkill /F /IM chrome.exe /T
         // Command to end all chromedriver.exe process -> taskkill /F /IM chromedriver.exe /T
-        // private static async Task Main(string[] args)
-        // {
-        //     System.Diagnostics.Stopwatch watch = new();
-        //     watch.Start();
-        //     MasterScrape scrape = new MasterScrape(Region.America, Browser.Chrome).EnableDebugMode();
-        //     await scrape.InitializeScrapeAsync("world trigger", BookType.Manga, EXCLUDE_NONE_FILTER, scrape.GenerateWebsiteList(new List<string>() { RobertsAnimeCornerStore.WEBSITE_TITLE }), false, false, false);
-        //     watch.Stop();
-        //     LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
-        // }
-
-        public static void Main(string[] args)
+        private static async Task Main(string[] args)
         {
-            
+            System.Diagnostics.Stopwatch watch = new();
+            watch.Start();
+            MasterScrape scrape = new MasterScrape(Region.Canada, Browser.Chrome).EnableDebugMode();
+            await scrape.InitializeScrapeAsync("bleach", BookType.Manga, EXCLUDE_NONE_FILTER, scrape.GenerateWebsiteList(new List<string>() { Indigo.WEBSITE_TITLE }), false, false, false, false);
+            watch.Stop();
+            LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
     }
 }
