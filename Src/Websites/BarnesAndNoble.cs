@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace MangaLightNovelWebScrape.Websites.America
+namespace MangaLightNovelWebScrape.Websites
 {
     public partial class BarnesAndNoble
     {
@@ -154,7 +154,7 @@ namespace MangaLightNovelWebScrape.Websites.America
                         {
                             string innerText = format.InnerText.Trim();
                             string url = $"https://www.barnesandnoble.com/{format.GetAttributeValue("href", "No Url")}";
-                            LOGGER.Debug("{} Url -> {}", innerText, url);
+                            // LOGGER.Debug("{} Url -> {}", innerText, url);
                             if (!hardcoverCheck && innerText.Equals("Hardcover", StringComparison.OrdinalIgnoreCase))
                             {
                                 ValidUrls.Add(new KeyValuePair<Uri, string>(new Uri($"{UrlFixRegex().Replace(url, "")}/?Nrpp=40&Ns=P_Display_Name%7C0&page=1"), "Hardcover"));
@@ -173,6 +173,7 @@ namespace MangaLightNovelWebScrape.Websites.America
 
                 HtmlNode pageCheck = null;
                 Uri nextPage = !oneShotCheck ? ValidUrls[validUrlCount].Key : originalUrl;
+                bool entryRemovalBookTitleCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
                 while (oneShotCheck || (validUrlCount <= ValidUrls.Count))
                 {
                     if (!oneShotCheck && pageCheck == null)
@@ -211,47 +212,43 @@ namespace MangaLightNovelWebScrape.Websites.America
                     for (int x = 0; x < titleData.Count; x++)
                     {
                         string curTitle = !oneShotCheck ? titleData[x].GetAttributeValue("title", "Title Error") : titleData[x].InnerText;
-                        if (
-                            MasterScrape.EntryRemovalRegex().IsMatch(curTitle)
+                        
+                        if (!oneShotCheck
+                            && (!MasterScrape.TitleContainsBookTitle(bookTitle, curTitle)
                             || (
-                                !oneShotCheck
-                                && (
-                                    !MasterScrape.TitleContainsBookTitle(bookTitle, curTitle)
-                                    || (
-                                            bookType == BookType.Manga
-                                            && (
-                                                    (
-                                                        !curTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase) 
-                                                        && !curTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) 
-                                                        && !curTitle.Contains("Toilet-bound Hanako-kun: First Stall")
-                                                        && !(
-                                                                curTitle.AsParallel().Any(char.IsDigit) 
-                                                                && !bookTitle.AsParallel().Any(char.IsDigit)
-                                                            ) 
+                                    bookType == BookType.Manga
+                                    && (
+                                            (
+                                                !curTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase) 
+                                                && !curTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) 
+                                                && !curTitle.Contains("Toilet-bound Hanako-kun: First Stall")
+                                                && !(
+                                                        curTitle.AsParallel().Any(char.IsDigit) 
+                                                        && !bookTitle.AsParallel().Any(char.IsDigit)
                                                     ) 
-                                                    || curTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
-                                                    || (
-                                                        bookTitle.Equals("Naruto", StringComparison.OrdinalIgnoreCase) 
-                                                        && (
-                                                                curTitle.Contains("Boruto") || curTitle.Contains("Itachi's Story")
-                                                            )
-                                                    ) 
-                                                    || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", curTitle, "Gluttony")
-                                                    || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Attack On Titan", curTitle, "No Regrets")
-                                                    || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Attack On Titan", curTitle, "Lost Girls")
-                                                    || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Attack On Titan", curTitle, "The Harsh Mistress of the City")
-                                            )
-                                        )
+                                            ) 
+                                            || curTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
+                                            || (
+                                                bookTitle.Equals("Naruto", StringComparison.OrdinalIgnoreCase) 
+                                                && (
+                                                        curTitle.Contains("Boruto") || curTitle.Contains("Itachi's Story")
+                                                    )
+                                            ) 
+                                            || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", curTitle, "Gluttony")
+                                            || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Attack On Titan", curTitle, "No Regrets")
+                                            || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Attack On Titan", curTitle, "Lost Girls")
+                                            || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Attack On Titan", curTitle, "The Harsh Mistress of the City")
                                     )
                                 )
                             )
+                        )
                         {
-                            LOGGER.Debug($"Removed {curTitle}");
+                            LOGGER.Debug($"Removed {curTitle} for {bookTitle}");
                             continue;
                         }
 
                         curTitle = TitleParse(curTitle, bookType, bookTitle, oneShotCheck);
-                        if (!hardcoverCheck || !BarnesAndNobleData.Exists(entry => entry.Entry.Equals(curTitle)))
+                        if ((!MasterScrape.EntryRemovalRegex().IsMatch(curTitle) || entryRemovalBookTitleCheck) && (!hardcoverCheck || !BarnesAndNobleData.Exists(entry => entry.Entry.Equals(curTitle))))
                         {
                             decimal price = !oneShotCheck ? decimal.Parse(priceData[x].InnerText.Trim()[1..]) : decimal.Parse(WebUtility.HtmlDecode(priceData[x].InnerText).Trim()[1..]);
                             BarnesAndNobleData.Add(
@@ -273,8 +270,6 @@ namespace MangaLightNovelWebScrape.Websites.America
                     Quit:
                     if (pageCheck != null)
                     {
-                        // driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.ClassName("next-button"))));
-                        // wait.Until(driver => driver.FindElement(By.CssSelector(".product-view-section")));
                         nextPage = new Uri(doc.DocumentNode.SelectSingleNode("//a[@class='next-button']").GetAttributeValue("href", "No Url"));
                         LOGGER.Info($"Next Page {nextPage}");
                     }

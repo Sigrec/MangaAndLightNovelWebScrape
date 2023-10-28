@@ -1,4 +1,4 @@
-namespace MangaLightNovelWebScrape.Websites.Canada
+namespace MangaLightNovelWebScrape.Websites
 {
     public partial class Indigo
     {
@@ -9,7 +9,7 @@ namespace MangaLightNovelWebScrape.Websites.Canada
         private static readonly Logger LOGGER = LogManager.GetLogger("IndigoLogs");
         private const Region WEBSITE_REGION = Region.Canada;
 
-        [GeneratedRegex(@"(?<=\d{1,3}): .*|—")] private static partial Regex TitleRegex();
+        [GeneratedRegex(@",|(?<=\d{1,3}): .*|—")] private static partial Regex TitleRegex();
         [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)")] private static partial Regex OmnibusRegex();
 
         protected internal async Task CreateIndigoTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList)
@@ -52,12 +52,16 @@ namespace MangaLightNovelWebScrape.Websites.Canada
 
             StringBuilder curTitle = new StringBuilder(entryTitle);
             MasterScrape.RemoveCharacterFromTitle(ref curTitle, bookTitle, '.');
-            MasterScrape.RemoveCharacterFromTitle(ref curTitle, bookTitle, ',');
             MasterScrape.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
             
             if (entryTitle.Contains("The Manga"))
             {
                 curTitle.Replace("The Manga", "");
+            }
+
+            if (!entryTitle.Contains("Vol"))
+            {
+                curTitle.Insert(MasterScrape.FindVolNumRegex().Match(curTitle.ToString()).Index, "Vol ");
             }
 
             return curTitle.ToString();
@@ -75,12 +79,11 @@ namespace MangaLightNovelWebScrape.Websites.Canada
                 HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes("//div[@class='mb-0 product-tile-promotion mouse']");
 
                 string price = string.Empty;
+                bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
                 for(int x = 0; x < titleData.Count; x++)
                 {
                     string entryTitle = System.Net.WebUtility.HtmlDecode(titleData[x].InnerText);
-                    if (!MasterScrape.EntryRemovalRegex().IsMatch(bookTitle))
-                    {
-                        if (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle)
+                    if ((!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
                         && MasterScrape.TitleContainsBookTitle(bookTitle, entryTitle)
                         && MasterScrape.TitleStartsWithCheck(bookTitle, entryTitle)
                         && (
@@ -88,27 +91,26 @@ namespace MangaLightNovelWebScrape.Websites.Canada
                                 entryTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase)
                                 && bookType == BookType.Manga
                             )
-                                || !(
-                                        MasterScrape.RemoveUnintendedVolumes(bookTitle, "One Piece", entryTitle, "Ace's Story") 
-                                        || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear Your Own World") 
-                                    )
+                            || !(
+                                    MasterScrape.RemoveUnintendedVolumes(bookTitle, "One Piece", entryTitle, "Ace's Story") 
+                                    || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear Your Own World") 
+                                )
                             )
                         )
-                        {
-                            price = priceData[x].InnerText.Trim();
-                            IndigoData.Add(
-                                new EntryModel(
-                                    ParseTitle(TitleRegex().Replace(entryTitle, ""), bookTitle, bookType),
-                                    isMember ? EntryModel.ApplyDiscount(Convert.ToDecimal(price), PLUM_DISCOUNT) : price,
-                                    !stockStatusData[x].InnerText.Contains("Pre-Order") ? StockStatus.IS : StockStatus.PO,
-                                    WEBSITE_TITLE
-                                )
-                            );
-                        }
+                    {
+                        price = priceData[x].InnerText.Trim();
+                        IndigoData.Add(
+                            new EntryModel(
+                                ParseTitle(TitleRegex().Replace(entryTitle, ""), bookTitle, bookType),
+                                isMember ? EntryModel.ApplyDiscount(Convert.ToDecimal(price), PLUM_DISCOUNT) : price,
+                                !stockStatusData[x].InnerText.Contains("Pre-Order") ? StockStatus.IS : StockStatus.PO,
+                                WEBSITE_TITLE
+                            )
+                        );
                     }
                     else
                     {
-                        LOGGER.Debug($"{bookTitle} Contains a String to Remove");
+                        LOGGER.Debug($"Removed {entryTitle}");
                     }
                 }
 

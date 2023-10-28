@@ -3,13 +3,20 @@ namespace Tests.Websites
     public class BarnesAndNobleTests
     {
         MasterScrape Scrape;
-        List<Website> WebsiteList;
+        HashSet<Website> WebsiteList;
     
         [SetUp]
         public void Setup()
         {
             Scrape = new MasterScrape(Region.America, Browser.Chrome);
-            WebsiteList = new List<Website>() {Website.BarnesAndNoble};
+            WebsiteList = new HashSet<Website>() {Website.BarnesAndNoble};
+        }
+
+        [Test, Description("Test Title that contains a keyword to skip and contains ':'")]
+        public async Task BarnesAndNoble_AdventuresOfDai_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Dragon Quest: The Adventure of Dai", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleAdventuresOfDaiMangaData.txt")));
         }
 
         [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions")]

@@ -6,13 +6,20 @@ namespace Tests.Websites
     public class RobertsAnimeCornerStoreTests
     {
         MasterScrape Scrape;
-        List<Website> WebsiteList;
+        HashSet<Website> WebsiteList;
         
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
             Scrape = new MasterScrape(Region.America, Browser.Chrome);
-            WebsiteList = new List<Website>() {Website.RobertsAnimeCornerStore};
+            WebsiteList = new HashSet<Website>() {Website.RobertsAnimeCornerStore};
+        }
+
+        [Test, Description("Test Title that contains a keyword to skip and contains ':'")]
+        public async Task RobertsAnimeCornerStore_AdventuresOfDai_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Dragon Quest: The Adventure of Dai", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\RobertsAnimeCornerStore\RobertsAnimeCornerStoreAdventuresOfDaiMangaData.txt")));
         }
 
         [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions")]

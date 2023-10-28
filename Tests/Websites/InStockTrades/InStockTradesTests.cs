@@ -3,13 +3,13 @@ namespace Tests.Websites
     public class InStockTradesTests
     {
         MasterScrape Scrape;
-        List<Website> WebsiteList;
+        HashSet<Website> WebsiteList;
 
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
             Scrape = new MasterScrape(Region.America, Browser.Chrome);
-            WebsiteList = new List<Website>() {Website.InStockTrades};
+            WebsiteList = new HashSet<Website>() {Website.InStockTrades};
         }
 
         [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions")]

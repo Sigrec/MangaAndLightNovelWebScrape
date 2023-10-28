@@ -6,13 +6,20 @@ namespace Tests.Websites
     public class CrunchyrollTests
     {
         MasterScrape Scrape;
-        List<Website> WebsiteList;
+        HashSet<Website> WebsiteList;
 
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
             Scrape = new MasterScrape(Region.America, Browser.Chrome);
-            WebsiteList = new List<Website>() {Website.Crunchyroll};
+            WebsiteList = new HashSet<Website>() {Website.Crunchyroll};
+        }
+
+        [Test, Description("Test Title that contains a keyword to skip and contains ':'")]
+        public async Task Crunchyroll_AdventuresOfDai_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Dragon Quest: The Adventure of Dai", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollAdventuresOfDaiMangaData.txt")));
         }
 
         [Test, Description("Tests Manga book, Box Sets, Omnibus, & Manga w/ No Vol Number")]

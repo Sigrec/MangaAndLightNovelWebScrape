@@ -3,13 +3,13 @@ namespace Tests.Websites
     public class IndigoTests
     {
         MasterScrape Scrape;
-        List<Website> WebsiteList;
+        HashSet<Website> WebsiteList;
 
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
             Scrape = new MasterScrape(Region.Canada, Browser.Chrome);
-            WebsiteList = new List<Website>() {Website.Indigo};
+            WebsiteList = new HashSet<Website>() {Website.Indigo};
         }
 
         [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions")]

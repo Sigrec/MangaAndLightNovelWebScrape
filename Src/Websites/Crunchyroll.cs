@@ -13,7 +13,7 @@ namespace MangaLightNovelWebScrape.Websites
         private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[contains(@class, 'sash-content')]");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//a[@class='right-arrow']");
         
-        [GeneratedRegex(@"\(.*?\)| Manga|:|Comics|Hardcover")] private static partial Regex TitleParseRegex();
+        [GeneratedRegex(@",|\(.*?\)| Manga|:|Comics|Hardcover")] private static partial Regex TitleParseRegex();
         [GeneratedRegex(@"(?:3 in 1|2 in 1|Omnibus) Edition", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
 
         internal void ClearData()
@@ -47,7 +47,7 @@ namespace MangaLightNovelWebScrape.Websites
             return url;
         }
 
-        private static string TitleParse(string titleText, string baseTitleText, BookType bookType)
+        private static string TitleParse(string titleText, string baseTitleText, string bookTitle, BookType bookType)
         {
             StringBuilder curTitle;
             if (OmnibusRegex().IsMatch(titleText))
@@ -89,11 +89,8 @@ namespace MangaLightNovelWebScrape.Websites
                     curTitle.Insert(curTitle.Length, " Novel");
                 }
             }
-            if (!baseTitleText.Contains(','))
-            {
-                curTitle.Replace(",", "");
-            }
-            return curTitle.Replace("Hardcover", "").ToString().Trim();
+            MasterScrape.RemoveCharacterFromTitle(ref curTitle, bookTitle, '-');
+            return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.Replace("Hardcover", "").ToString(), " ").Trim();
         }
 
         private List<EntryModel> GetCrunchyrollData(string bookTitle, BookType bookType)
@@ -106,6 +103,7 @@ namespace MangaLightNovelWebScrape.Websites
                     OptionCheckSyntax = false,
                 };
                 int nextPage = 0;
+                bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
 
                 while (true)
                 {
@@ -123,34 +121,37 @@ namespace MangaLightNovelWebScrape.Websites
 
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        string titleText = titleData[x].InnerText;   
-                        if(
-                            MasterScrape.TitleContainsBookTitle(bookTitle, titleText)
-                            && !MasterScrape.EntryRemovalRegex().IsMatch(titleText)
+                        string titleText = titleData[x].InnerText;
+                        if (MasterScrape.TitleContainsBookTitle(bookTitle, titleText)
+                            && (!MasterScrape.EntryRemovalRegex().IsMatch(titleText) || BookTitleRemovalCheck)
                             && !(
-                                    bookType == BookType.Manga
-                                    && (
-                                            MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", titleText, "of Gluttony")
-                                            || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Boruto")
-                                        )
+                                bookType == BookType.Manga
+                                && (
+                                        MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", titleText, "of Gluttony")
+                                        || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Boruto")
+                                    )
                                 )
-                            )
+                            )        
                         {
                             CrunchyrollData.Add(
-                            new EntryModel
-                            (
-                                TitleParse(MasterScrape.FixVolumeRegex().Replace(TitleParseRegex().Replace(titleText, "").Trim(), "Vol"), titleText, bookType),
-                                priceData[x].InnerText.Trim(),
-                                stockStatusData[x].InnerText.Trim() switch
-                                {
-                                    "IN-STOCK" => StockStatus.IS,
-                                    "SOLD-OUT" => StockStatus.OOS,
-                                    "PRE-ORDER" => StockStatus.PO,
-                                    _ => StockStatus.NA,
-                                },
-                                WEBSITE_TITLE
-                            )
-                        );
+                                new EntryModel
+                                (
+                                    TitleParse(MasterScrape.FixVolumeRegex().Replace(TitleParseRegex().Replace(titleText, "").Trim(), "Vol"), titleText, bookTitle, bookType),
+                                    priceData[x].InnerText.Trim(),
+                                    stockStatusData[x].InnerText.Trim() switch
+                                    {
+                                        "IN-STOCK" => StockStatus.IS,
+                                        "SOLD-OUT" => StockStatus.OOS,
+                                        "PRE-ORDER" => StockStatus.PO,
+                                        _ => StockStatus.NA,
+                                    },
+                                    WEBSITE_TITLE
+                                )
+                            );
+                        }
+                        else
+                        {
+                            LOGGER.Debug($"Removed {titleText}");
                         }
                     }
 

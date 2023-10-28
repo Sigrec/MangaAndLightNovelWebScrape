@@ -6,13 +6,13 @@ namespace Tests.Websites
     public class SciFierTests
     {
         MasterScrape Scrape;
-        List<Website> WebsiteList;
+        HashSet<Website> WebsiteList;
 
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
             Scrape = new MasterScrape(Region.America, Browser.Chrome);
-            WebsiteList = new List<Website>() {Website.SciFier};
+            WebsiteList = new HashSet<Website>() {Website.SciFier};
         }
 
         [Test, Description("Tests Manga book, Box Sets, Omnibus, & Manga w/ No Vol Number")]

@@ -1,6 +1,6 @@
 using OpenQA.Selenium.Edge;
 
-namespace MangaLightNovelWebScrape.Websites.America
+namespace MangaLightNovelWebScrape.Websites
 {
     public partial class BooksAMillion
     {
@@ -16,14 +16,12 @@ namespace MangaLightNovelWebScrape.Websites.America
         private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='availability_search_results']");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//ul[@class='search-page-list']//a[@title='Next']");
 
-        
-        [GeneratedRegex(@"Vol\.|Volume")] private static partial Regex ParseTitleVolRegex();
-        [GeneratedRegex(@"(?<=Box Set).*|:|\!|,|Includes.*|--The Manga|\d+-\d+|\(Manga\) |\d+, \d+ \& \d+")] private static partial Regex MangaFilterTitleRegex();
-        [GeneratedRegex(@":|\!|,|Includes.*|\d+-\d+|\d+, \d+ \& \d+")] private static partial Regex NovelFilterTitleRegex();
-        [GeneratedRegex(@"(?<=Vol \d+)[^\d\.].*|\(.*?\)$|Manga ")] private static partial Regex CleanFilterTitleRegex();
-        [GeneratedRegex("Box Set (\\d+)")] private static partial Regex VolNumberRegex();
-        [GeneratedRegex(@"\(Omnibus Edition\)|\(3-In-1 Edition\)|\(2-In-1 Edition\)|3-In-1 V\d+|Vols\.|Vols|3-In-1")] private static partial Regex OmnibusRegex();
-        [GeneratedRegex(@"3-In-1 V(\d+)|\d+-(\d+)|\d+, \d+ \& (\d+)", RegexOptions.IgnoreCase)] private static partial Regex OmnibusMatchRegex();
+        [GeneratedRegex(@"(?<=Box Set).*|:|\!|,|Includes.*|--The Manga|The Manga|\d+-\d+|\(Manga\) |\d{1,3}\s+\d{1,3}\s+\&\s+(\d{1,3})|\d{1,3},\s+\d{1,3}\s+\&\s+(\d{1,3})", RegexOptions.IgnoreCase)] private static partial Regex MangaFilterTitleRegex();
+        [GeneratedRegex(@":|\!|,|Includes.*|\d+-\d+|\d+, \d+ \& \d+", RegexOptions.IgnoreCase)] private static partial Regex NovelFilterTitleRegex();
+        [GeneratedRegex(@"(?<=Vol\s+\d+)[^\d\.].*|\(.*?\)$|\[.*?\]|Manga ", RegexOptions.IgnoreCase)] private static partial Regex CleanFilterTitleRegex();
+        [GeneratedRegex(@"Box Set (\d+)", RegexOptions.IgnoreCase)] private static partial Regex VolNumberRegex();
+        [GeneratedRegex(@"\(Omnibus Edition\)|\(3-In-1 Edition\)|\(2-In-1 Edition\)|3-In-1 V\d+|Vols\.|Vols|3-In-1", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
+        [GeneratedRegex(@"3-In-1 V(\d+)|(?:\d{1,3}-(\d{1,3}))$|\d{1,3},\s+\d{1,3}\s+\&\s+(\d{1,3})|\d{1,3}\s+\d{1,3}\s+\&\s+(\d{1,3})", RegexOptions.IgnoreCase)] private static partial Regex OmnibusMatchRegex();
 
         internal async Task CreateBooksAMillionTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList, WebDriver driver)
         {
@@ -70,7 +68,6 @@ namespace MangaLightNovelWebScrape.Websites.America
 
         private static string TitleParse(string textTitle, BookType bookType, string inputTitle)
         {
-            string boxSetNum = string.Empty;
             StringBuilder curTitle;
             if (bookType == BookType.LightNovel)
             {
@@ -96,40 +93,66 @@ namespace MangaLightNovelWebScrape.Websites.America
             }
             else
             {
-                if (textTitle.Contains("Box Set"))
-                {
-                    boxSetNum = VolNumberRegex().Match(textTitle).Groups[1].Value;
-                }
                 curTitle = new StringBuilder(CleanFilterTitleRegex().Replace(MangaFilterTitleRegex().Replace(OmnibusRegex().Replace(textTitle, "Omnibus"), ""), ""));
                 string newTextTitle = curTitle.ToString().Trim();
 
-                if (newTextTitle.Contains("Box Set"))
+                if (newTextTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) || newTextTitle.Contains("BOXSET", StringComparison.OrdinalIgnoreCase))
                 {
-                    curTitle.Append(' ').Append(!string.IsNullOrWhiteSpace(boxSetNum) ? boxSetNum : '1');
+                    LOGGER.Debug(curTitle);
+                    if (newTextTitle.Equals(newTextTitle.ToUpper()))
+                    {
+                        curTitle.Replace("NARUTO BOXSET V01-V27", "Naruto Box Set 1");
+                    }
+                    else
+                    {
+                        string boxSetNum = VolNumberRegex().Match(textTitle).Groups[1].Value;
+                        curTitle.AppendFormat(" {0}", !string.IsNullOrWhiteSpace(boxSetNum) ? boxSetNum : '1');
+                    }
                 }
-                else if (OmnibusMatchRegex().IsMatch(textTitle) && !newTextTitle.Contains("Vol") && !char.IsDigit(newTextTitle[^1]))
+                else if (OmnibusMatchRegex().IsMatch(textTitle))
                 {
                     GroupCollection omnibusMatch = OmnibusMatchRegex().Match(textTitle).Groups;
                     string firstOmniNum = omnibusMatch[1].Value.TrimStart('0');
                     string secondOmniNum = omnibusMatch[2].Value;
                     string thirdOmniNum = omnibusMatch[3].Value;
-                    if (!string.IsNullOrWhiteSpace(firstOmniNum))
+                    LOGGER.Debug("{} {}", newTextTitle, textTitle);
+
+                    if (!newTextTitle.Contains("Omnibus"))
                     {
-                        curTitle.Append(" Vol ").Append(firstOmniNum);
+                        curTitle.Insert(newTextTitle.IndexOf("Vol"), "Omnibus ");
                     }
-                    else if (!string.IsNullOrWhiteSpace(secondOmniNum))
+                    
+                    if (!newTextTitle.Contains("Vol"))
                     {
-                        curTitle.Append(" Vol ").Append(Convert.ToUInt16(secondOmniNum) / 3);
+                        curTitle.Append("Vol ");
                     }
-                    else if (!string.IsNullOrWhiteSpace(thirdOmniNum))
+
+                    if (!char.IsDigit(curTitle.ToString().Trim()[^1]))
                     {
-                        curTitle.Append(" Vol ").Append(Convert.ToUInt16(thirdOmniNum) / 3);
+                        if (!string.IsNullOrWhiteSpace(firstOmniNum))
+                        {
+                            curTitle.Append(firstOmniNum);
+                        }
+                        else if (!string.IsNullOrWhiteSpace(secondOmniNum))
+                        {
+                            curTitle.Append(Convert.ToUInt16(secondOmniNum) / 3);
+                        }
+                        else if (!string.IsNullOrWhiteSpace(thirdOmniNum))
+                        {
+                            curTitle.Append(Convert.ToUInt16(thirdOmniNum) / 3);
+                        }
                     }
                 }
                 else if (!newTextTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !newTextTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) && MasterScrape.FindVolNumRegex().IsMatch(newTextTitle))
                 {
                     curTitle.Insert(MasterScrape.FindVolNumRegex().Match(newTextTitle).Index, "Vol ");
                 }
+            }
+
+            if (curTitle.ToString().Contains("vols.", StringComparison.OrdinalIgnoreCase))
+            {
+                int index = curTitle.ToString().IndexOf("vols.", StringComparison.OrdinalIgnoreCase);
+                curTitle.Remove(index, curTitle.Length - index);
             }
             return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString().Trim(), " ");
         }
@@ -142,6 +165,7 @@ namespace MangaLightNovelWebScrape.Websites.America
 
                 HtmlDocument doc = new HtmlDocument();
                 bool boxsetCheck = false, boxsetValidation = false;
+                bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
                 driver.Navigate().GoToUrl(GetUrl(bookTitle, boxsetCheck, bookType));
                 
                 while(true)
@@ -161,7 +185,7 @@ namespace MangaLightNovelWebScrape.Websites.America
                     for(int x = 0; x < titleData.Count; x++)
                     {
                         string curTitle = titleData[x].InnerText;
-                        if (curTitle.Contains("Box Set") && !boxsetCheck)
+                        if ((curTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) || curTitle.Contains("BOXSET", StringComparison.OrdinalIgnoreCase)) && !boxsetCheck)
                         {
                             boxsetValidation = true;
                             LOGGER.Debug("Found Boxset");
@@ -169,7 +193,7 @@ namespace MangaLightNovelWebScrape.Websites.America
                         }
 
                         if (
-                            !MasterScrape.EntryRemovalRegex().IsMatch(curTitle)
+                            (!MasterScrape.EntryRemovalRegex().IsMatch(curTitle) || BookTitleRemovalCheck)
                             && MasterScrape.TitleContainsBookTitle(bookTitle, curTitle.ToString())
                             && !bookQuality[x].InnerText.Contains("Library Binding")
                             && (
@@ -197,21 +221,25 @@ namespace MangaLightNovelWebScrape.Websites.America
                             )
                         )
                         {
-                            decimal priceVal = Convert.ToDecimal(priceData[x].InnerText.Trim()[1..]);
-                            BooksAMillionData.Add(
-                                new EntryModel
-                                (
-                                    TitleParse(ParseTitleVolRegex().Replace(System.Net.WebUtility.HtmlDecode(curTitle), "Vol"), bookType, bookTitle),
-                                    $"${(memberStatus ? EntryModel.ApplyDiscount(priceVal, MEMBERSHIP_DISCOUNT) : priceVal.ToString())}",
-                                    stockStatusData[x].InnerText switch
-                                    {
-                                        string curStatus when curStatus.Contains("In Stock", StringComparison.OrdinalIgnoreCase) => StockStatus.IS,
-                                        string curStatus when curStatus.Contains("Preorder", StringComparison.OrdinalIgnoreCase) => StockStatus.PO,
-                                        _ => StockStatus.OOS,
-                                    },
-                                    WEBSITE_TITLE
-                                )
-                            );
+                            curTitle = TitleParse(MasterScrape.FixVolumeRegex().Replace(System.Net.WebUtility.HtmlDecode(curTitle), "Vol $1"), bookType, bookTitle);
+                            if (!BooksAMillionData.Exists(entry => entry.Entry.Equals(curTitle)))
+                            {
+                                decimal priceVal = Convert.ToDecimal(priceData[x].InnerText.Trim()[1..]);
+                                BooksAMillionData.Add(
+                                    new EntryModel
+                                    (
+                                        curTitle,
+                                        $"${(memberStatus ? EntryModel.ApplyDiscount(priceVal, MEMBERSHIP_DISCOUNT) : priceVal.ToString())}",
+                                        stockStatusData[x].InnerText switch
+                                        {
+                                            string curStatus when curStatus.Contains("In Stock", StringComparison.OrdinalIgnoreCase) => StockStatus.IS,
+                                            string curStatus when curStatus.Contains("Preorder", StringComparison.OrdinalIgnoreCase) => StockStatus.PO,
+                                            _ => StockStatus.OOS,
+                                        },
+                                        WEBSITE_TITLE
+                                    )
+                                );
+                            }
                         }
                     }
 

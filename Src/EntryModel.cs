@@ -166,7 +166,7 @@ namespace MangaLightNovelWebScrape
             return other is not null &&
                    Entry == other.Entry &&
                    Price == other.Price &&
-                   StockStatus == other.StockStatus &&
+                //    StockStatus == other.StockStatus &&
                    Website == other.Website;
         }
 

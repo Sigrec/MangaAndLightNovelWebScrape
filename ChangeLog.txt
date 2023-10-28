@@ -1,0 +1,14 @@
+Legend
+✅ -> Completed new feature/update
+🔥 -> Completed bug/hot fix
+⌛ -> Completed performance/library update
+✍️ -> Additional Info about a Change
+📜 -> Higher level identifier for feature changes
+❌ -> Inprogress feature will be fixed in later release
+
+TODO:
+
+V1.1.0 - October 
+✅ Websites no longer behind region specific namespace
+❌ Changes to All Website Parsing for better filtering and to prevent certain keywords from preventing scrape
+❌ Completed Canada Websites

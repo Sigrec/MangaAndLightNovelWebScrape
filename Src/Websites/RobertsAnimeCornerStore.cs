@@ -1,4 +1,4 @@
-namespace MangaLightNovelWebScrape.Websites.America
+namespace MangaLightNovelWebScrape.Websites
 {
     public partial class RobertsAnimeCornerStore
     {
@@ -55,7 +55,7 @@ namespace MangaLightNovelWebScrape.Websites.America
                 }
             });
             RobertsAnimeCornerStoreLinks.Add(url);
-            LOGGER.Info(url);
+            LOGGER.Info($"Initial Url = {url}");
             return url;
         }
 
@@ -104,61 +104,65 @@ namespace MangaLightNovelWebScrape.Websites.America
                 HtmlDocument doc = web.Load(GetUrl(bookTitle));
                 string link = string.Empty;
 
-                foreach (HtmlNode series in doc.DocumentNode.SelectNodes(SeriesTitleXPath))
+                Parallel.ForEach(doc.DocumentNode.SelectNodes(SeriesTitleXPath), (series, state) =>
                 {
-                    string seriesText = series.InnerText;
-                    if (MasterScrape.TitleContainsBookTitle(bookTitle, seriesText))
+                    string seriesText = MasterScrape.MultipleWhiteSpaceRegex().Replace(series.InnerText.Replace("Graphic Novels", "").Replace("Novels", ""), " ").Trim();
+                    if (EntryModel.Similar(bookTitle, seriesText, string.IsNullOrWhiteSpace(seriesText) || bookTitle.Length > seriesText.Length ? bookTitle.Length / 6 : seriesText.Length / 6) != -1)
                     {
+                        LOGGER.Debug(seriesText);
                         link = $"https://www.animecornerstore.com/{series.GetAttributeValue("href", "Url Error")}";
-                        break;
+                        state.Stop();
                     }
-                }
+                });
 
                 if (!string.IsNullOrWhiteSpace(link))
                 {
-                    // driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.CssSelector($"[href='{link}']"))));
-                    // wait.Until(e => e.FindElement(By.CssSelector("tbody")));
+                    LOGGER.Info($"Final Url = {link}");
                     doc = web.Load(link);
-                    
-                    LOGGER.Info(link);
                     RobertsAnimeCornerStoreLinks.Add(link);
 
                     List<HtmlNode> titleData = doc.DocumentNode.SelectNodes(TitleXPath).Where(title => !string.IsNullOrWhiteSpace(title.InnerText)).ToList();
                     HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
+                    bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
 
                     for (int x = 0; x < titleData.Count; x++)
                     {
                         string titleText = titleData[x].InnerText;
-                        if (
-                                MasterScrape.EntryRemovalRegex().IsMatch(titleText)
-                                || string.IsNullOrWhiteSpace(titleText) 
-                                || titleText.Contains("Poster") 
-                                || (
-                                        (!titleText.Contains("Graphic Novel", StringComparison.OrdinalIgnoreCase))
-                                        && bookType == BookType.Manga
-                                    ) 
-                                || (
-                                        titleText.Contains("Graphic") 
-                                        && bookType == BookType.LightNovel
-                                    )
-                            ) // If the user is looking for manga and the page returned a novel data set and vice versa skip that data set
-                        {
-                            continue;
-                        }
-
-                        RobertsAnimeCornerStoreData.Add(
-                            new EntryModel(
-                                TitleParse(titleText, bookType),
-                                priceData[x].InnerText.Trim(),
-                                titleText switch
-                                {
-                                    string curTitle when curTitle.Contains("Pre Order") => StockStatus.PO,
-                                    string curTitle when curTitle.Contains("Backorder") => StockStatus.OOS,
-                                    _ => StockStatus.IS
-                                },
-                                WEBSITE_TITLE
+                        // If the user is looking for manga and the page returned a novel data set and vice versa skip that data set
+                        if ( string.IsNullOrWhiteSpace(titleText) 
+                            || titleText.Contains("Poster") 
+                            || (
+                                    (!titleText.Contains("Graphic Novel", StringComparison.OrdinalIgnoreCase))
+                                    && bookType == BookType.Manga
+                                ) 
+                            || (
+                                    titleText.Contains("Graphic") 
+                                    && bookType == BookType.LightNovel
+                                )
                             )
-                        );
+                        {
+                            LOGGER.Debug($"Removed {titleText}");
+                        }
+                        else if (!MasterScrape.EntryRemovalRegex().IsMatch(titleText) || BookTitleRemovalCheck)
+                        {
+                            RobertsAnimeCornerStoreData.Add(
+                                new EntryModel(
+                                    TitleParse(titleText, bookType),
+                                    priceData[x].InnerText.Trim(),
+                                    titleText switch
+                                    {
+                                        string curTitle when curTitle.Contains("Pre Order") => StockStatus.PO,
+                                        string curTitle when curTitle.Contains("Backorder") => StockStatus.OOS,
+                                        _ => StockStatus.IS
+                                    },
+                                    WEBSITE_TITLE
+                                )
+                            );
+                        }
+                        else
+                        {
+                            LOGGER.Debug($"Removed {titleText}");
+                        }
                     }
 
                     RobertsAnimeCornerStoreData.Sort(MasterScrape.VolumeSort);

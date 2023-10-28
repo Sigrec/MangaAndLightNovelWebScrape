@@ -1,4 +1,3 @@
-using MangaLightNovelWebScrape.Websites.Canada;
 using MangaLightNovelWebScrape.Websites.America;
 using OpenQA.Selenium.Firefox;
 using OpenQA.Selenium.Edge;
@@ -84,8 +83,9 @@ namespace MangaLightNovelWebScrape
         [GeneratedRegex(@"\d{1,3}$")] internal static partial Regex FindVolNumRegex();
         [GeneratedRegex(@"--|—|\s{2,}")] internal static partial Regex MultipleWhiteSpaceRegex();
         [GeneratedRegex(@";jsessionid=[^?]*")] internal static partial Regex RemoveJSessionIDRegex();
-        [GeneratedRegex(@"GN|Graphic Novel|:\s+Volumes|Volumes|:\s+Volume|Volume|Vol\.|:\s+Volumr|Volumr", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
-        [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character Book|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Special Edition|Compendium|Artbook|Error|Playing Cards|\(Osi\)|Advertising|Art Book", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
+        [GeneratedRegex(@"GN|Graphic Novel|:\s+Volumes|Volumes|:\s+Volume|Volume|Vol\.|:\s+Volumr|Volumr|Volume(\d{1,3})", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
+        [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character Book|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Special Edition|Compendium|Artbook|Error|Playing Cards|\(Osi\)|Advertising|Art Book|Adventure", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
+        [GeneratedRegex(@"Official|Guide|Adventure|Advertising", RegexOptions.IgnoreCase)] internal static partial Regex CheckEntryRemovalRegex();
 
         public MasterScrape(Region Region = Region.America, Browser Browser = Browser.Chrome)
         {
@@ -437,9 +437,9 @@ namespace MangaLightNovelWebScrape
         /// <param name="input">The input list of strings</param>
         /// <param name="curRegion">The region the user wants to create the list from</param>
         /// <returns></returns>
-        public List<Website> GenerateWebsiteList(IEnumerable<string> input)
+        public HashSet<Website> GenerateWebsiteList(IEnumerable<string> input)
         {
-            List<Website> WebsiteList = new List<Website>();
+            HashSet<Website> WebsiteList = new HashSet<Website>();
             if (input != null && input.Any())
             {
                 foreach (string website in input)
@@ -729,7 +729,7 @@ namespace MangaLightNovelWebScrape
         /// <param name="isKinokuniyaUSAMember">Whether the user is a Kinokuniya USA member</param>
         /// <param name="isIndigoMember">Whether the user is a Indigo member</param>
         /// <returns></returns>
-        public async Task InitializeScrapeAsync(string bookTitle, BookType book, StockStatus[] stockFilter, IEnumerable<Website> webScrapeList, bool isBarnesAndNobleMember = false, bool isBooksAMillionMember = false, bool isKinokuniyaUSAMember = false, bool isIndigoMember = false)
+        public async Task InitializeScrapeAsync(string bookTitle, BookType book, StockStatus[] stockFilter, HashSet<Website> webScrapeList, bool isBarnesAndNobleMember = false, bool isBooksAMillionMember = false, bool isKinokuniyaUSAMember = false, bool isIndigoMember = false)
         {
             await Task.Run(async () =>
             {
@@ -871,12 +871,13 @@ namespace MangaLightNovelWebScrape
 
         // Command to end all chrome.exe process -> taskkill /F /IM chrome.exe /T
         // Command to end all chromedriver.exe process -> taskkill /F /IM chromedriver.exe /T
+        // TODO Add checks for GenerateWebsiteList to 
         private static async Task Main(string[] args)
         {
             System.Diagnostics.Stopwatch watch = new();
             watch.Start();
-            MasterScrape scrape = new MasterScrape(Region.Canada, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("bleach", BookType.Manga, EXCLUDE_NONE_FILTER, scrape.GenerateWebsiteList(new List<string>() { Indigo.WEBSITE_TITLE }), false, false, false, false);
+            MasterScrape scrape = new MasterScrape(Region.America, Browser.Chrome).EnableDebugMode();
+            await scrape.InitializeScrapeAsync("fullmetal alchemist", BookType.Manga, EXCLUDE_NONE_FILTER, scrape.GenerateWebsiteList(new List<string>() { BooksAMillion.WEBSITE_TITLE }), false, false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
