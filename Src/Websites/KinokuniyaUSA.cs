@@ -1,4 +1,4 @@
-namespace MangaLightNovelWebScrape.Websites.America
+namespace MangaLightNovelWebScrape.Websites
 {
     public partial class KinokuniyaUSA
     {
@@ -15,9 +15,9 @@ namespace MangaLightNovelWebScrape.Websites.America
         private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//li[@class='status']");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//div[@class='categoryPager']/ul/li[last()]/a");
         
-        [GeneratedRegex(@"\((?:Omnibus |3In1 |2In1 )Edition\)", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
+        [GeneratedRegex(@"\((?:Omnibus |3\s*In\s*1 |2\s*In\s*1 )Edition\)", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
         [GeneratedRegex(@"\(Light Novel\)|Novel", RegexOptions.IgnoreCase)] private static partial Regex NovelRegex();
-        [GeneratedRegex(@"(Vol \d{1,3}\.\d{1})?(?(?<=Vol \d{1,3}\.\d{1})[^\d].*|(?<=Vol \d{1,3})[^\d].*)|(?<=Box Set \d{1,3}).*|\(+.*?\)+|(?<=\d{1,3} :).*|:|<.*?>", RegexOptions.IgnoreCase)] private static partial Regex TitleFixRegex();
+        [GeneratedRegex(@",|(Vol \d{1,3}\.\d{1})?(?(?<=Vol \d{1,3}\.\d{1})[^\d].*|(?<=Vol \d{1,3})[^\d].*)|(?<=Box Set \d{1,3}).*|\(+.*?\)+|(?<=\d{1,3} :).*|:|<.*?>|w/DVD", RegexOptions.IgnoreCase)] private static partial Regex TitleFixRegex();
 
         // Manga English Search
         //https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=world+trigger&taxon=2&x=39&y=4&page=1&per_page=100&form_taxon=109
@@ -60,10 +60,6 @@ namespace MangaLightNovelWebScrape.Websites.America
             {
                 titleText = titleText.Replace("-", " ");
             }
-            if (!bookTitle.Contains(','))
-            {
-                titleText = titleText.Replace(",", string.Empty);
-            }
 
             if (!oneShotCheck)
             {
@@ -71,17 +67,10 @@ namespace MangaLightNovelWebScrape.Websites.America
                 {
                     titleText = NovelRegex().Replace(titleText, "Novel");
                 }
-                // LOGGER.Debug(titleText);
-                // if (titleText.Contains("2-in-1 Edition"))
-                // {
-                //     LOGGER.Debug($"Check0 {MasterScrape.FixVolumeRegex().Replace(titleText, "Vol")}");
-                //     LOGGER.Debug($"Check1 {OmnibusRegex().Replace(MasterScrape.FixVolumeRegex().Replace(titleText, "Vol"), "Omnibus")}");
-                //     LOGGER.Debug($"Check2 {TitleFixRegex().Replace(OmnibusRegex().Replace(MasterScrape.FixVolumeRegex().Replace(titleText, "Vol"), "Omnibus"), "$1")}");
-                //     LOGGER.Debug($"Check3 {TitleFixRegex().Replace(titleText, "$1")}");
-                //     LOGGER.Debug($"Check4 {OmnibusRegex().Replace(titleText, "Omnibus")}");
-                // }
+
                 string newTitleText = TitleFixRegex().Replace(OmnibusRegex().Replace(MasterScrape.FixVolumeRegex().Replace(titleText, "Vol"), "Omnibus"), "$1");
                 StringBuilder curTitle = new StringBuilder(newTitleText);
+                curTitle.Replace(",", "");
 
                 if (bookType == BookType.LightNovel && !newTitleText.Contains("Novel"))
                 {
@@ -108,7 +97,7 @@ namespace MangaLightNovelWebScrape.Websites.America
                     }
                 }
 
-                if (titleText.AsParallel().Any(char.IsDigit) && !curTitle.ToString().Contains("Vol") && !titleText.Contains("Box Set"))
+                if (titleText.AsParallel().Any(char.IsDigit) && !curTitle.ToString().Contains("Vol") && !titleText.Contains("Box Set")  && !titleText.Contains("Anniversary"))
                 {
                     Regex findVolRegex = new Regex(@"\d+");
                     Match volNum = findVolRegex.Match(titleText);
@@ -122,6 +111,7 @@ namespace MangaLightNovelWebScrape.Websites.America
                     }
                     curTitle.AppendFormat(" Vol {0}", volNum.Value);
                 }
+                
                 return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.Replace("Manga", string.Empty).ToString().Trim(), " ");
             }
 
@@ -134,6 +124,8 @@ namespace MangaLightNovelWebScrape.Websites.America
             bool oneShotCheck = false;
             string titleText, entryDesc;
             StockStatus stockStatus;
+            HtmlDocument doc = new HtmlDocument();
+            bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
             try
             {
                 WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
@@ -154,12 +146,11 @@ namespace MangaLightNovelWebScrape.Websites.America
                 while(true)
                 {
                     // Initialize the html doc for crawling
-                    HtmlDocument doc = new HtmlDocument();
                     doc.LoadHtml(driver.PageSource);
 
                     // Get the page data from the HTML doc
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
-                    oneShotCheck = !titleData.AsParallel().Any(title => title.InnerText.Contains("Vol", StringComparison.OrdinalIgnoreCase)); // Determine if the series is a one shot or not
+                    oneShotCheck = titleData.Count == 1 && !titleData.AsParallel().Any(title => title.InnerText.Contains("Vol", StringComparison.OrdinalIgnoreCase)); // Determine if the series is a one shot or not
                     HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(memberStatus ? MemberPriceXPath : NonMemberPriceXPath);
                     HtmlNodeCollection descData = doc.DocumentNode.SelectNodes(DescXPath);
                     HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
@@ -174,8 +165,8 @@ namespace MangaLightNovelWebScrape.Websites.America
                         titleText = System.Net.WebUtility.HtmlDecode(titleData[x].InnerText);
                         entryDesc = descData[x].InnerText;
                         if (
-                            !MasterScrape.EntryRemovalRegex().IsMatch(titleText)
-                            && MasterScrape.TitleContainsBookTitle(bookTitle, titleText) 
+                            MasterScrape.TitleContainsBookTitle(bookTitle, titleText)
+                            && (!MasterScrape.EntryRemovalRegex().IsMatch(titleText) || BookTitleRemovalCheck)
                             && (
                                     (
                                         bookType == BookType.Manga
@@ -224,27 +215,26 @@ namespace MangaLightNovelWebScrape.Websites.America
                                 )
                             )
                         {
-                            stockStatus = stockStatusData[x].InnerText.Trim().AsSpan(STATUS_START_INDEX) switch
-                            {
-                                "In stock at the Fulfilment Center." or "Available for order from suppliers." => StockStatus.IS,
-                                "Available for Pre Order" => StockStatus.PO,
-                                "Out of stock." => StockStatus.OOS,
-                                _ => StockStatus.NA
-                            };
-                            if (stockStatus != StockStatus.NA)
-                            {
-                                KinokuniyaUSAData.Add(
-                                    new EntryModel(
-                                        TitleParse(titleText, bookType, bookTitle, entryDesc, oneShotCheck), 
-                                        priceData[x].InnerText.Trim(), 
-                                        stockStatus,
-                                        WEBSITE_TITLE
-                                    )
-                                );
-                            }
+                            KinokuniyaUSAData.Add(
+                                new EntryModel(
+                                    TitleParse(titleText, bookType, bookTitle, entryDesc, oneShotCheck), 
+                                    priceData[x].InnerText.Trim(), 
+                                    stockStatusData[x].InnerText.Trim().AsSpan(STATUS_START_INDEX) switch
+                                    {
+                                        "In stock at the Fulfilment Center." or "Available for order from suppliers." => StockStatus.IS,
+                                        "Available for Pre Order" => StockStatus.PO,
+                                        "Out of stock." => StockStatus.OOS,
+                                        _ => StockStatus.NA
+                                    },
+                                    WEBSITE_TITLE
+                                )
+                            );
+                        }
+                        else
+                        {
+                            LOGGER.Info("Removed {}", titleText);
                         }
                     }
-
                     if (curPageNum != maxPageCount)
                     {
                         curPageNum++;
@@ -264,7 +254,7 @@ namespace MangaLightNovelWebScrape.Websites.America
             {
                 driver.Close();
                 driver.Quit();
-                LOGGER.Error($"{bookTitle} Does Not Exist @ Kinokuniya USA \n{e}");
+                LOGGER.Error($"{bookTitle} Does Not Exist @ Kinokuniya USA \n{e.StackTrace}");
             }
 
             if (MasterScrape.IsDebugEnabled)

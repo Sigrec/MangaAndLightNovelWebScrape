@@ -1,4 +1,4 @@
-namespace MangaLightNovelWebScrape.Websites.Britain
+namespace MangaLightNovelWebScrape.Websites
 {
     public class Waterstones
     {

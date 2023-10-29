@@ -12,6 +12,13 @@ namespace Tests.Websites
             WebsiteList = new HashSet<Website>() {Website.KinokuniyaUSA};
         }
 
+        [Test, Description("Test Title that contains a keyword to skip and contains ':'")]
+        public async Task KinokuniyaUSA_AdventuresOfDai_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Dragon Quest: The Adventure of Dai", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\KinokuniyaUSA\KinokuniyaUSAAdventuresOfDaiMangaData.txt")));
+        }
+
         [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions")]
         public async Task KinokuniyaUSA_AttackOnTitan_Manga_Test()
         {

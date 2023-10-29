@@ -1,4 +1,4 @@
-namespace MangaLightNovelWebScrape.Websites.Japan
+namespace MangaLightNovelWebScrape.Websites
 {
     public partial class CDJapan
     {

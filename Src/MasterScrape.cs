@@ -1,11 +1,8 @@
-using MangaLightNovelWebScrape.Websites.America;
 using OpenQA.Selenium.Firefox;
 using OpenQA.Selenium.Edge;
 using OpenQA.Selenium.Chrome;
 using System.Collections.Concurrent;
-using MangaLightNovelWebScrape.Websites.Japan;
 using MangaLightNovelWebScrape.Websites;
-using MangaLightNovelWebScrape.Websites.Britain;
 
 namespace MangaLightNovelWebScrape
 {
@@ -16,23 +13,8 @@ namespace MangaLightNovelWebScrape
     { 
         internal List<List<EntryModel>> MasterDataList = new List<List<EntryModel>>();
         private ConcurrentBag<List<EntryModel>> ResultsList = new ConcurrentBag<List<EntryModel>>();
-        private List<Task> WebTasks = new List<Task>(11);
+        private List<Task> WebTasks = new List<Task>(13);
         private Dictionary<string, string> MasterUrls = new Dictionary<string, string>();
-        // {
-        //     { Crunchyroll.WEBSITE_TITLE, "" },
-        //     { BarnesAndNoble.WEBSITE_TITLE , "" },
-        //     { BooksAMillion.WEBSITE_TITLE , "" },
-        //     { AmazonUSA.WEBSITE_TITLE , "" },
-        //     { KinokuniyaUSA.WEBSITE_TITLE , "" },
-        //     { InStockTrades.WEBSITE_TITLE , "" },
-        //     { RobertsAnimeCornerStore.WEBSITE_TITLE , "" },
-        //     { SciFier.WEBSITE_TITLE, "" },
-        //     { ForbiddenPlanet.WEBSITE_TITLE, "" },
-        //     { Waterstones.WEBSITE_TITLE, "" },
-        //     { AmazonJapan.WEBSITE_TITLE, "" },
-        //     { CDJapan.WEBSITE_TITLE, "" },
-        //     { Indigo.WEBSITE_TITLE, "" }
-        // };
         private AmazonUSA AmazonUSA = new AmazonUSA();
         private BarnesAndNoble BarnesAndNoble = new BarnesAndNoble();
         private BooksAMillion BooksAMillion = new BooksAMillion();
@@ -84,7 +66,7 @@ namespace MangaLightNovelWebScrape
         [GeneratedRegex(@"--|—|\s{2,}")] internal static partial Regex MultipleWhiteSpaceRegex();
         [GeneratedRegex(@";jsessionid=[^?]*")] internal static partial Regex RemoveJSessionIDRegex();
         [GeneratedRegex(@"GN|Graphic Novel|:\s+Volumes|Volumes|:\s+Volume|Volume|Vol\.|:\s+Volumr|Volumr|Volume(\d{1,3})", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
-        [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character Book|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Special Edition|Compendium|Artbook|Error|Playing Cards|\(Osi\)|Advertising|Art Book|Adventure", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
+        [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character (?:Book|Bk)|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Compendium|Artbook|Error|\(Osi\)|Advertising|Art Book|Adventure|Artbook|Coloring Book|the Anime", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
         [GeneratedRegex(@"Official|Guide|Adventure|Advertising", RegexOptions.IgnoreCase)] internal static partial Regex CheckEntryRemovalRegex();
 
         public MasterScrape(Region Region = Region.America, Browser Browser = Browser.Chrome)
@@ -876,8 +858,8 @@ namespace MangaLightNovelWebScrape
         {
             System.Diagnostics.Stopwatch watch = new();
             watch.Start();
-            MasterScrape scrape = new MasterScrape(Region.America, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("fullmetal alchemist", BookType.Manga, EXCLUDE_NONE_FILTER, scrape.GenerateWebsiteList(new List<string>() { BooksAMillion.WEBSITE_TITLE }), false, false, false, false);
+            MasterScrape scrape = new MasterScrape(Region.Canada, Browser.Chrome).EnableDebugMode();
+            await scrape.InitializeScrapeAsync("one piece", BookType.Manga, EXCLUDE_NONE_FILTER, scrape.GenerateWebsiteList(new List<string>() { Indigo.WEBSITE_TITLE }), false, false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }

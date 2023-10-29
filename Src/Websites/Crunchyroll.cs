@@ -13,7 +13,7 @@ namespace MangaLightNovelWebScrape.Websites
         private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[contains(@class, 'sash-content')]");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//a[@class='right-arrow']");
         
-        [GeneratedRegex(@",|\(.*?\)| Manga|:|Comics|Hardcover")] private static partial Regex TitleParseRegex();
+        [GeneratedRegex(@",|\(.*?\)| Manga|:|Comics|Hardcover|(?<=Vol \d{1,3})[^\d{1,3}.]+.*|(?<=Vol \d{1,3}.\d{1})[^\d{1,3}.]+.*")] private static partial Regex TitleParseRegex();
         [GeneratedRegex(@"(?:3 in 1|2 in 1|Omnibus) Edition", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
 
         internal void ClearData()
@@ -66,7 +66,14 @@ namespace MangaLightNovelWebScrape.Websites
                     curTitle.Replace("Omnibus ", "").Replace("Deluxe Edition", "Deluxe");
                 }
 
-                if (!curTitle.ToString().Contains("Vol") && !titleText.Contains("Box Set"))
+                if (titleText.Contains("with Playing Cards", StringComparison.OrdinalIgnoreCase))
+                {
+                    curTitle.Replace(" with Playing Cards", "");
+                    curTitle.Insert(MasterScrape.FindVolNumRegex().Match(curTitle.ToString()).Index, "Special Edition Vol ");
+                }
+                titleText = curTitle.ToString();
+
+                if (!titleText.Contains("Vol") && !titleText.Contains("Box Set"))
                 {
                     if (MasterScrape.FindVolNumRegex().IsMatch(titleText))
                     {
@@ -136,7 +143,7 @@ namespace MangaLightNovelWebScrape.Websites
                             CrunchyrollData.Add(
                                 new EntryModel
                                 (
-                                    TitleParse(MasterScrape.FixVolumeRegex().Replace(TitleParseRegex().Replace(titleText, "").Trim(), "Vol"), titleText, bookTitle, bookType),
+                                    TitleParse(TitleParseRegex().Replace(MasterScrape.FixVolumeRegex().Replace(titleText, "Vol"), "").Trim(), titleText, bookTitle, bookType),
                                     priceData[x].InnerText.Trim(),
                                     stockStatusData[x].InnerText.Trim() switch
                                     {

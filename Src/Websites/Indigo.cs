@@ -9,7 +9,7 @@ namespace MangaLightNovelWebScrape.Websites
         private static readonly Logger LOGGER = LogManager.GetLogger("IndigoLogs");
         private const Region WEBSITE_REGION = Region.Canada;
 
-        [GeneratedRegex(@",|(?<=\d{1,3}): .*|—")] private static partial Regex TitleRegex();
+        [GeneratedRegex(@",| \(manga\)|(?<=\d{1,3}): .*|—", RegexOptions.IgnoreCase)] private static partial Regex TitleRegex();
         [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)")] private static partial Regex OmnibusRegex();
 
         protected internal async Task CreateIndigoTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList)
@@ -59,13 +59,20 @@ namespace MangaLightNovelWebScrape.Websites
                 curTitle.Replace("The Manga", "");
             }
 
-            if (!entryTitle.Contains("Vol"))
+            if (entryTitle.Contains("Deluxe"))
+            {
+                curTitle.Replace("Deluxe", "Deluxe Edition");
+            }
+
+            if (!entryTitle.Contains("Vol") && !entryTitle.Contains("Box Set") && !entryTitle.Contains("Anniversary Book") && curTitle.ToString().AsParallel().Any(char.IsDigit))
             {
                 curTitle.Insert(MasterScrape.FindVolNumRegex().Match(curTitle.ToString()).Index, "Vol ");
             }
 
             return curTitle.ToString();
         }
+
+        // TODO - Need to create the logic for oneshot series
         protected internal List<EntryModel> GetIndigoData(string bookTitle, BookType bookType, bool isMember)
         {
             try
@@ -74,7 +81,7 @@ namespace MangaLightNovelWebScrape.Websites
                 HtmlWeb web = new HtmlWeb();
                 doc = web.Load(GetUrl(bookTitle, bookType));
 
-                HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes("//a[@class='link secondary']/h3/text()");
+                HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes("//a[@class='link secondary']"); // data-adobe-tracking
                 HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes("//span[@class='price-wrapper']/span/span");
                 HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes("//div[@class='mb-0 product-tile-promotion mouse']");
 
@@ -86,22 +93,29 @@ namespace MangaLightNovelWebScrape.Websites
                     if ((!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
                         && MasterScrape.TitleContainsBookTitle(bookTitle, entryTitle)
                         && MasterScrape.TitleStartsWithCheck(bookTitle, entryTitle)
-                        && (
-                            (
+                        && ((
+                            bookType == BookType.Manga
+                            && !entryTitle.Contains("Light Novel", StringComparison.OrdinalIgnoreCase)
+                            && (
                                 entryTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase)
-                                && bookType == BookType.Manga
-                            )
-                            || !(
-                                    MasterScrape.RemoveUnintendedVolumes(bookTitle, "One Piece", entryTitle, "Ace's Story") 
-                                    || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear Your Own World") 
+                                || 
+                                !titleData[x].GetAttributeValue("data-adobe-tracking", "Book Type Error").Contains("novel", StringComparison.OrdinalIgnoreCase)
                                 )
                             )
+                            || bookType == BookType.LightNovel
                         )
+                        && 
+                        !(
+                            MasterScrape.RemoveUnintendedVolumes(bookTitle, "One Piece", entryTitle, "Ace's Story") 
+                            || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear Your Own World")
+                            || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony")
+                            || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "Flame Dragon Knight")
+                        ))
                     {
                         price = priceData[x].InnerText.Trim();
                         IndigoData.Add(
                             new EntryModel(
-                                ParseTitle(TitleRegex().Replace(entryTitle, ""), bookTitle, bookType),
+                                ParseTitle(TitleRegex().Replace(MasterScrape.FixVolumeRegex().Replace(entryTitle, "Vol"), ""), bookTitle, bookType),
                                 isMember ? EntryModel.ApplyDiscount(Convert.ToDecimal(price), PLUM_DISCOUNT) : price,
                                 !stockStatusData[x].InnerText.Contains("Pre-Order") ? StockStatus.IS : StockStatus.PO,
                                 WEBSITE_TITLE
@@ -110,7 +124,7 @@ namespace MangaLightNovelWebScrape.Websites
                     }
                     else
                     {
-                        LOGGER.Debug($"Removed {entryTitle}");
+                        LOGGER.Info("Removed {}", entryTitle);
                     }
                 }
 
@@ -130,13 +144,13 @@ namespace MangaLightNovelWebScrape.Websites
                     {
                         foreach (EntryModel data in IndigoData)
                         {
-                            LOGGER.Debug(data);
+                            LOGGER.Info(data);
                             outputFile.WriteLine(data);
                         }
                     }
                     else
                     {
-                        LOGGER.Debug($"{bookTitle} Does Not Exist at {WEBSITE_TITLE}");
+                        LOGGER.Info($"{bookTitle} Does Not Exist at {WEBSITE_TITLE}");
                         outputFile.WriteLine($"{bookTitle} Does Not Exist at {WEBSITE_TITLE}");
                     }
                 } 

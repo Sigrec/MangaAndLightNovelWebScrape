@@ -1,4 +1,4 @@
-namespace MangaLightNovelWebScrape.Websites.America
+namespace MangaLightNovelWebScrape.Websites
 {
     public partial class InStockTrades
     {
@@ -61,6 +61,11 @@ namespace MangaLightNovelWebScrape.Websites.America
                 {
                     volGroup = match.Groups[2].Value;
                 }
+
+                if (titleText.Contains("Season"))
+                {
+                    curTitle.Insert(curTitle.ToString().IndexOf("Box Set"), $"Part {volGroup.TrimStart('0')} ");
+                }
             }
             else
             {
@@ -68,15 +73,6 @@ namespace MangaLightNovelWebScrape.Websites.America
                 {
                     curTitle.Replace("Og", "Oh");
                 }
-
-                if (titleText.EndsWith(" Sc") || titleText.Contains(" Sc "))
-                {
-                    curTitle.Remove(titleText.LastIndexOf(" Sc"), 3);
-                }
-
-                curTitle.Replace(" Ann", " Anniversary");
-                curTitle.Replace("Light Novel", "Novel");
-                curTitle.Replace("Deluxe Edition", "Deluxe");
 
                 if (bookType == BookType.Manga && !titleText.Contains("Vol"))
                 {
@@ -89,12 +85,25 @@ namespace MangaLightNovelWebScrape.Websites.America
                 volGroup = VolNumberRegex().Match(curTitle.ToString()).Groups[1].Value;
             }
 
-            if (curTitle.ToString().Contains("One") && !bookTitle.Contains("One", StringComparison.OrdinalIgnoreCase))
+            if (curTitle.ToString().Contains("One", StringComparison.OrdinalIgnoreCase) && !bookTitle.Contains("One", StringComparison.OrdinalIgnoreCase))
             {
                 curTitle.Replace("One", "1");
             }
+            curTitle.Replace("Color HC Ed", "In Color");
+            curTitle.Replace(" Ann", " Anniversary");
+            curTitle.Replace("Light Novel", "Novel");
+            curTitle.Replace("Deluxe Edition", "Deluxe");
 
-            return System.Net.WebUtility.HtmlDecode($"{TitleRegex().Replace(OmnibusRegex().Replace(curTitle.ToString(), "Omnibus"), "")} {volGroup.TrimStart('0')}".Trim());
+            if (titleText.Contains("Special Ed") || titleText.Contains("Sp Ed"))
+            {
+                curTitle.Insert(curTitle.ToString().IndexOf("Vol"), "Special Edition ");
+            }
+            if (titleText.EndsWith(" Sc") || titleText.Contains(" Sc "))
+            {
+                curTitle.Remove(titleText.LastIndexOf(" Sc"), 3);
+            }
+
+            return System.Net.WebUtility.HtmlDecode($"{TitleRegex().Replace(OmnibusRegex().Replace(curTitle.ToString(), "Omnibus"), "")} {(!titleText.Contains("Season") ? volGroup.TrimStart('0') : "")}".Replace("Ed Vol", "Edition Vol").Trim());
         }
 
         private List<EntryModel> GetInStockTradesData(string bookTitle, BookType bookType, byte currPageNum)
@@ -105,6 +114,8 @@ namespace MangaLightNovelWebScrape.Websites.America
             {
                 HtmlWeb web = new HtmlWeb();
                 HtmlDocument doc = new HtmlDocument();
+                bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
+                
                 while (true)
                 {
                     doc = web.Load(GetUrl(currPageNum, bookTitle));
@@ -125,10 +136,17 @@ namespace MangaLightNovelWebScrape.Websites.America
                     string titleText;
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        titleText = titleData[x].InnerText;
+                        if (!bookTitle.Contains("Adv"))
+                        {
+                            titleText = titleData[x].InnerText.Replace(" Adv ", " Adventure ");
+                        }
+                        else
+                        {
+                            titleText = titleData[x].InnerText;
+                        }
+
                         if (
-                            !titleText.Contains("Artbook")
-                            && !titleText.Contains("Character Bk")
+                            (!MasterScrape.EntryRemovalRegex().IsMatch(titleText) || BookTitleRemovalCheck)
                             && (   
                                 (
                                     bookType == BookType.Manga 

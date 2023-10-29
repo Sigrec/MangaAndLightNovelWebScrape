@@ -1,4 +1,4 @@
-namespace Tests.Websites.Britain
+namespace Tests.Websites
 {
     public class ForbiddenPlanetTest
     {

@@ -12,7 +12,15 @@ namespace Tests.Websites
             WebsiteList = new HashSet<Website>() {Website.InStockTrades};
         }
 
-        [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions")]
+        [Ignore("IST Search is cancer")]
+        [Test, Description("Test Title that contains a keyword to skip and contains ':'")]
+        public async Task InStockTrades_AdventuresOfDai_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Dragon Quest: The Adventure of Dai", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\InStockTrades\InStockTradesAdventuresOfDaiMangaData.txt")));
+        }
+
+        [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions & Special Edition Volumes")]
         public async Task InStockTrades_AttackOnTitan_Manga_Test()
         {
             await Scrape.InitializeScrapeAsync("Attack on Titan", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);

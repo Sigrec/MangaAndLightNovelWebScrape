@@ -1,6 +1,6 @@
 using Helpers;
 
-namespace MangaLightNovelWebScrape.Websites.Britain
+namespace MangaLightNovelWebScrape.Websites
 {
     public partial class ForbiddenPlanet
     {
