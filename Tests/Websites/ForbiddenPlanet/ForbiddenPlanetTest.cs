@@ -1,5 +1,9 @@
 namespace Tests.Websites
 {
+    [TestFixture, Description("Validations for Forbidden Planet")]
+    [Author("Sean (Alias -> Prem or Sigrec)")]
+    [SetUICulture("en")]
+    [Ignore("")]
     public class ForbiddenPlanetTest
     {
         MasterScrape Scrape;

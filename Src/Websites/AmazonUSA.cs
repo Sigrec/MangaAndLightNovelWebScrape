@@ -64,7 +64,7 @@ namespace MangaLightNovelWebScrape.Websites
             if (omnibusFix.Success)
             {
                 parsedTitle = OmnibusParsedTitleRegex().Replace(bookTitle, "");
-                return parsedTitle.Insert(parsedTitle.Length, $" Omnibus Vol {int.Parse(omnibusFix.Groups[1].Value) / 3}");
+                return parsedTitle.Insert(parsedTitle.Length, $" Omnibus Vol {Math.Ceiling(decimal.Parse(omnibusFix.Groups[1].Value) / 3)}");
             }
   
             if (!inputTitle.Any(char.IsDigit))

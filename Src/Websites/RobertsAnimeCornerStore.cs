@@ -23,11 +23,11 @@ namespace MangaLightNovelWebScrape.Websites
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//form[@method='POST'][contains(text()[2], '$')]//font[@color='#ffcc33'][2]");
         private static readonly XPathExpression SeriesTitleXPath = XPathExpression.Compile("//b//a[1]");
 
-        [GeneratedRegex("-|\\s+")] private static partial Regex FilterBookTitleRegex();
-        [GeneratedRegex(",|#| Graphic Novel| :|\\(.*?\\)|\\[Novel\\]")] private static partial Regex TitleFilterRegex();
-        [GeneratedRegex(",| #\\d+-\\d+| #\\d+|Graphic Novel| :|\\(.*?\\)|\\[Novel\\]")] private static partial Regex OmnibusTitleFilterRegex();
-        [GeneratedRegex("-(\\d+)")] private static partial Regex OmnibusVolNumberRegex();
-        [GeneratedRegex("\\s+|[^a-zA-Z0-9]")] private static partial Regex FindTitleRegex();
+        [GeneratedRegex(@"-|\s+")] private static partial Regex FilterBookTitleRegex();
+        [GeneratedRegex(@",|#| Graphic Novel| :|\(.*?\)|\[Novel\]")] private static partial Regex TitleFilterRegex();
+        [GeneratedRegex(@",| #\d+-\d+| #\d+|Graphic Novel| :|\(.*?\)|\[Novel\]")] private static partial Regex OmnibusTitleFilterRegex();
+        [GeneratedRegex(@"-(\d+)")] private static partial Regex OmnibusVolNumberRegex();
+        [GeneratedRegex(@"\s+|[^a-zA-Z0-9]")] private static partial Regex FindTitleRegex();
 
         internal async Task CreateRobertsAnimeCornerStoreTask(string bookTitle, BookType book, List<List<EntryModel>> MasterDataList)
         {
@@ -68,18 +68,27 @@ namespace MangaLightNovelWebScrape.Websites
         private static string TitleParse(string titleText, BookType book)
         {
             StringBuilder curTitle;
+            bool specialEditionCheck = false;
+            if (titleText.Contains("Special Edition", StringComparison.OrdinalIgnoreCase))
+            {
+                specialEditionCheck = true;
+            }
+
             if (titleText.Contains("Omnibus"))
             {
+                LOGGER.Debug(titleText);
                 uint volNum = Convert.ToUInt32(OmnibusVolNumberRegex().Match(titleText).Groups[1].Value);
+                LOGGER.Debug(volNum);
                 curTitle = new StringBuilder(OmnibusTitleFilterRegex().Replace(titleText, "").Trim());
+                curTitle.Replace("Colossal Omnibus Edition", "Colossal Edition");
                 curTitle.Replace("Omnibus Edition", "Omnibus");
+                LOGGER.Debug(curTitle);
                 if (!curTitle.ToString().Contains(" Vol"))
                 {
-                    curTitle.Append(' ');
-                    curTitle.Append("Vol");
+                    curTitle.Append(" Vol");
                 }
-                curTitle.Append(' ');
-                curTitle.Append(volNum / 3);
+                curTitle.AppendFormat(" {0}", Math.Ceiling((decimal)volNum / 3));
+                LOGGER.Debug(curTitle);
             }
             else
             {
@@ -88,13 +97,19 @@ namespace MangaLightNovelWebScrape.Websites
                 curTitle.Replace("Deluxe Edition", "Deluxe Vol");
                 if (titleText.Contains("Box Set") && !titleText.Any(char.IsDigit))
                 {
-                    curTitle.Append(' ');
-                    curTitle.Append('1');
+                    curTitle.Append(" 1");
                 }
             }
+
+            if (specialEditionCheck)
+            {
+                curTitle.Insert(curTitle.ToString().IndexOf("Vol"), "Special Edition ");
+            }
+
             return book == BookType.Manga ? MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ") : MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.Replace("Vol", "Novel Vol").ToString(), " ");
         }
         
+        // TODO - Need to add special edition check (AoT)
         private List<EntryModel> GetRobertsAnimeCornerStoreData(string bookTitle, BookType bookType)
         {
             try

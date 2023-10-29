@@ -13,7 +13,6 @@ namespace Tests.Websites
         }
 
         [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions")]
-        [Ignore("")]
         public async Task Indigo_AttackOnTitan_Manga_Test()
         {
             await Scrape.InitializeScrapeAsync("Attack on Titan", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
@@ -28,7 +27,6 @@ namespace Tests.Websites
         }
 
         [Test]
-        [Ignore("")]
         public async Task Indigo_Naruto_Manga_Test()
         {
             await Scrape.InitializeScrapeAsync("Naruto", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
@@ -36,7 +34,6 @@ namespace Tests.Websites
         }
 
         [Test]
-        [Ignore("")]
         public async Task Indigo_Naruto_Novel_Test()
         {
             await Scrape.InitializeScrapeAsync("Naruto", BookType.LightNovel, Array.Empty<StockStatus>(), WebsiteList);
@@ -44,7 +41,6 @@ namespace Tests.Websites
         }
 
         [Test, Description("Validates Manga w/ Character Book and Novels")]
-        [Ignore("")]
         public async Task Indigo_Bleach_Manga_Test()
         {
             await Scrape.InitializeScrapeAsync("Bleach", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
@@ -52,7 +48,6 @@ namespace Tests.Websites
         }
 
         [Test, Description("Validates Novel w/ Manga Entries")]
-        [Ignore("")]
         public async Task Indigo_Overlord_Novel_Test()
         {
             await Scrape.InitializeScrapeAsync("Overlord", BookType.LightNovel, Array.Empty<StockStatus>(), WebsiteList);
@@ -81,7 +76,6 @@ namespace Tests.Websites
         }
 
         [Test, Description("Validates Novel Series w/ Novel that doesn't have LN identifier")]
-        [Ignore("")]
         public async Task Indigo_FMAB_Novel_Test()
         {
             await Scrape.InitializeScrapeAsync("fullmetal alchemist", BookType.LightNovel, Array.Empty<StockStatus>(), WebsiteList);
@@ -96,7 +90,6 @@ namespace Tests.Websites
         }
 
         [Test, Description("Validates Manga Series w/ Box Set w/ No Vol")]
-        [Ignore("")]
         public async Task Indigo_Toilet_Manga_Test()
         {
             await Scrape.InitializeScrapeAsync("Toilet-bound Hanako-kun", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
@@ -104,11 +97,24 @@ namespace Tests.Websites
         }
 
         [Test, Description("Validates One Shot Manga Series")]
-        [Ignore("")]
-        public async Task Indigo_GoodbyeEri_Manga_Test()
+        public async Task Indigo_Member_GoodbyeEri_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
+            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList, false, false, false, true);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Indigo\IndigoGoodbyeEriMangaData.txt")));
+        }
+
+        [Test, Description("Validates Novel w/ Manga Entries & Volume Numbers with Decimals")]
+        public async Task Indigo_COTE_Novel_Test()
+        {
+            await Scrape.InitializeScrapeAsync("classroom of the elite", BookType.LightNovel, Array.Empty<StockStatus>(), WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Indigo\IndigoCOTENovelData.txt")));
+        }
+
+        [Test, Description("Validates Manga w/ Novel Entries")]
+        public async Task Indigo_COTE_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("classroom of the elite", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\Indigo\IndigoCOTEMangaData.txt")));
         }
     }
 }

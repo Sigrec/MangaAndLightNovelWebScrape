@@ -45,6 +45,7 @@ namespace MangaLightNovelWebScrape.Websites
             InStockTradesData.Clear();
         }
 
+        // TODO Recheck Toilet Bound scrape
         private static string TitleParse(string bookTitle, string titleText, BookType bookType)
         {
             string volGroup;
@@ -93,6 +94,11 @@ namespace MangaLightNovelWebScrape.Websites
             curTitle.Replace(" Ann", " Anniversary");
             curTitle.Replace("Light Novel", "Novel");
             curTitle.Replace("Deluxe Edition", "Deluxe");
+
+            if (titleText.Contains("Toilet-Bound Hanako-Kun First Stall"))
+            {
+                curTitle.Replace(" Box Set", "");
+            }
 
             if (titleText.Contains("Special Ed") || titleText.Contains("Sp Ed"))
             {

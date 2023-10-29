@@ -66,8 +66,8 @@ namespace MangaLightNovelWebScrape
         [GeneratedRegex(@"--|—|\s{2,}")] internal static partial Regex MultipleWhiteSpaceRegex();
         [GeneratedRegex(@";jsessionid=[^?]*")] internal static partial Regex RemoveJSessionIDRegex();
         [GeneratedRegex(@"GN|Graphic Novel|:\s+Volumes|Volumes|:\s+Volume|Volume|Vol\.|:\s+Volumr|Volumr|Volume(\d{1,3})", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
-        [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character (?:Book|Bk)|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Compendium|Artbook|Error|\(Osi\)|Advertising|Art Book|Adventure|Artbook|Coloring Book|the Anime", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
-        [GeneratedRegex(@"Official|Guide|Adventure|Advertising", RegexOptions.IgnoreCase)] internal static partial Regex CheckEntryRemovalRegex();
+        [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Compendium|Artbook|Error|\(Osi\)|Advertising|Art Book|Adventure|Artbook|Coloring Book|the Anime|Calendar|Ani-manga|Anime", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
+        [GeneratedRegex(@"Official|Guide|Adventure|Advertising|Anime|Calendar|Error|Encyclopedia|Anthology|Character", RegexOptions.IgnoreCase)] internal static partial Regex CheckEntryRemovalRegex();
 
         public MasterScrape(Region Region = Region.America, Browser Browser = Browser.Chrome)
         {
@@ -853,13 +853,13 @@ namespace MangaLightNovelWebScrape
 
         // Command to end all chrome.exe process -> taskkill /F /IM chrome.exe /T
         // Command to end all chromedriver.exe process -> taskkill /F /IM chromedriver.exe /T
-        // TODO Add checks for GenerateWebsiteList to 
+        // TODO Add checks for 
         private static async Task Main(string[] args)
         {
             System.Diagnostics.Stopwatch watch = new();
             watch.Start();
-            MasterScrape scrape = new MasterScrape(Region.Canada, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("one piece", BookType.Manga, EXCLUDE_NONE_FILTER, scrape.GenerateWebsiteList(new List<string>() { Indigo.WEBSITE_TITLE }), false, false, false, false);
+            MasterScrape scrape = new MasterScrape(Region.America, Browser.Chrome).EnableDebugMode();
+            await scrape.InitializeScrapeAsync("bleach", BookType.Manga, EXCLUDE_NONE_FILTER, scrape.GenerateWebsiteList(new List<string>() { RobertsAnimeCornerStore.WEBSITE_TITLE }), false, false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }

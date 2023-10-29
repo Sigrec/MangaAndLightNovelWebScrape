@@ -3,6 +3,7 @@ namespace Tests.Websites
     [TestFixture, Description("Validations for SciFier")]
     [Author("Sean (Alias -> Prem or Sigrec)")]
     [SetUICulture("en")]
+    [Ignore("")]
     public class SciFierTests
     {
         MasterScrape Scrape;

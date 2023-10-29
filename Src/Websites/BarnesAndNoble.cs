@@ -100,10 +100,6 @@ namespace MangaLightNovelWebScrape.Websites
             {
                 curTitle.Replace('-', ' ');
             }
-            if (titleText.Contains("Toilet-bound Hanako-kun First Stall"))
-            {
-                curTitle.Append(" Box Set");
-            }
             titleText = curTitle.ToString();
 
             if (titleText.Contains("Special Edition", StringComparison.OrdinalIgnoreCase))
@@ -261,7 +257,7 @@ namespace MangaLightNovelWebScrape.Websites
                         if ((!MasterScrape.EntryRemovalRegex().IsMatch(curTitle) || BookTitleRemovalCheck) && (!hardcoverCheck || !BarnesAndNobleData.Exists(entry => entry.Entry.Equals(curTitle))))
                         {
                             decimal price = !oneShotCheck ? decimal.Parse(priceData[x].InnerText.Trim()[1..]) : decimal.Parse(WebUtility.HtmlDecode(priceData[x].InnerText).Trim()[1..]);
-                            LOGGER.Debug(stockStatusData[x].InnerText.Trim().Replace("\n", " "));
+                            LOGGER.Debug("{} | {}", curTitle, stockStatusData[x].InnerText.Trim().Replace("\n", " "));
                             BarnesAndNobleData.Add(
                                 new EntryModel
                                 (
@@ -271,7 +267,7 @@ namespace MangaLightNovelWebScrape.Websites
                                     {
                                         "Available Online" or "Qualifies for Free Shipping" => StockStatus.IS,
                                         "Unavailable Online" or"Temporarily Out of Stock Online" => StockStatus.OOS,
-                                        "Pre-order" => StockStatus.PO,
+                                        string status when status.Contains("Pre-order") => StockStatus.PO,
                                         _ => StockStatus.NA,
                                     },
                                     WEBSITE_TITLE

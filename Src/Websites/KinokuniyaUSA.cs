@@ -123,7 +123,6 @@ namespace MangaLightNovelWebScrape.Websites
             int maxPageCount = -1, curPageNum = 1;
             bool oneShotCheck = false;
             string titleText, entryDesc;
-            StockStatus stockStatus;
             HtmlDocument doc = new HtmlDocument();
             bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
             try

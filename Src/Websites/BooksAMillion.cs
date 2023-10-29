@@ -98,7 +98,6 @@ namespace MangaLightNovelWebScrape.Websites
 
                 if (newTextTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) || newTextTitle.Contains("BOXSET", StringComparison.OrdinalIgnoreCase))
                 {
-                    LOGGER.Debug(curTitle);
                     if (newTextTitle.Equals(newTextTitle.ToUpper()))
                     {
                         curTitle.Replace("NARUTO BOXSET V01-V27", "Naruto Box Set 1");
@@ -115,7 +114,6 @@ namespace MangaLightNovelWebScrape.Websites
                     string firstOmniNum = omnibusMatch[1].Value.TrimStart('0');
                     string secondOmniNum = omnibusMatch[2].Value;
                     string thirdOmniNum = omnibusMatch[3].Value;
-                    LOGGER.Debug("{} {}", newTextTitle, textTitle);
 
                     if (!newTextTitle.Contains("Omnibus"))
                     {
@@ -135,11 +133,11 @@ namespace MangaLightNovelWebScrape.Websites
                         }
                         else if (!string.IsNullOrWhiteSpace(secondOmniNum))
                         {
-                            curTitle.Append(Convert.ToUInt16(secondOmniNum) / 3);
+                            curTitle.Append(Math.Ceiling(Convert.ToDecimal(secondOmniNum) / 3));
                         }
                         else if (!string.IsNullOrWhiteSpace(thirdOmniNum))
                         {
-                            curTitle.Append(Convert.ToUInt16(thirdOmniNum) / 3);
+                            curTitle.Append(Math.Ceiling(Convert.ToDecimal(thirdOmniNum) / 3));
                         }
                     }
                 }
@@ -185,6 +183,7 @@ namespace MangaLightNovelWebScrape.Websites
                     for(int x = 0; x < titleData.Count; x++)
                     {
                         string curTitle = titleData[x].InnerText;
+                        LOGGER.Debug(curTitle);
                         if ((curTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) || curTitle.Contains("BOXSET", StringComparison.OrdinalIgnoreCase)) && !boxsetCheck)
                         {
                             boxsetValidation = true;
