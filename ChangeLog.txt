@@ -7,11 +7,12 @@ Legend
 ❌ -> Inprogress feature will be fixed in later release
 
 TODO:
+❌
 
-V1.1.0 - October 
+V1.1.0 - November
 ✅ Websites no longer behind region specific namespace
 🔥 Fixed B&N StockStatus issue where "Unavailable" entries would be marked as IS (In Stock)
 🔥 Fixed issue w/ RobertsAnimeCornerStore where Omnibus volumes would have incorrect vol number
-❌ Changes to All Website Parsing for better filtering and to prevent certain keywords from skipping entries
-❌ Completed Canada Websites
-❌ Properly scrapes Special & Exclusive Edition volumes (ex AoT has both)
+✅ Changes to All Website Parsing for better filtering and to prevent certain keywords from skipping entries
+✅ Completed Canada Websites
+✅ Properly scrapes Special & Exclusive Edition volumes (ex AoT has both)
