@@ -96,7 +96,7 @@ namespace MangaLightNovelWebScrape.Websites
                     curTitle.Insert(curTitle.Length, " Novel");
                 }
             }
-            MasterScrape.RemoveCharacterFromTitle(ref curTitle, bookTitle, '-');
+            WebsiteHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, '-');
             return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.Replace("Hardcover", "").ToString(), " ").Trim();
         }
 
@@ -115,9 +115,6 @@ namespace MangaLightNovelWebScrape.Websites
                 while (true)
                 {
                     // Initialize the html doc for crawling
-                    //driver.Navigate().GoToUrl(GetUrl(bookType, bookTitle, nextPage));
-                    //wait.Until(driver => driver.FindElement(By.Id("maincontent")));
-                    //doc.LoadHtml(driver.PageSource);
                     doc = web.Load(GetUrl(bookType, bookTitle, nextPage));
 
                     // Get the page data from the HTML doc

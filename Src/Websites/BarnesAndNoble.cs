@@ -19,11 +19,11 @@ namespace MangaLightNovelWebScrape.Websites
         private static readonly XPathExpression PaginationCheckXPath = XPathExpression.Compile("//li[@class='pagination__next ']");
         
 
-        [GeneratedRegex(@"Manga| Complete|(?:Vol).*|(?<=Box Set \d{1,3})[^\d{1,3}.]+.*|\,|:| \([^()]*\)")] private static partial Regex ParseBoxSetTitleRegex();
-        [GeneratedRegex(@"(?<=Vol \d{1,3})[^\d{1,3}.]+.*|\,|:| \([^()]*\)|Manga")]  private static partial Regex ParseTitleRegex();
-        [GeneratedRegex("\\(Omnibus Edition\\)|\\(3-in-1 Edition\\)|\\(2-in-1 Edition\\)")] private static partial Regex OmnibusTitleRegex();
+        [GeneratedRegex(@"Manga| Complete|(?:Vol).*|(?<=Box Set \d{1,3})[^\d{1,3}.]+.*|,| \([^()]*\)")] private static partial Regex ParseBoxSetTitleRegex();
+        [GeneratedRegex(@"(?<=Vol \d{1,3})[^\d{1,3}.]+.*|,| \([^()]*\)|Manga")]  private static partial Regex ParseTitleRegex();
+        [GeneratedRegex(@"\((?:Omnibus|\d{1}-in-\d{1}) Edition\)")] private static partial Regex OmnibusTitleRegex();
         [GeneratedRegex(@"\?Ns=.*")] private static partial Regex UrlFixRegex();
-        internal async Task CreateBarnesAndNobleTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList)
+        protected internal async Task CreateBarnesAndNobleTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList)
         {
             await Task.Run(() => 
             {
@@ -31,12 +31,12 @@ namespace MangaLightNovelWebScrape.Websites
             });
         }
 
-        internal string GetUrl()
+        protected internal string GetUrl()
         {
             return BarnesAndNobleLinks.Count != 0 ? BarnesAndNobleLinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
 
-        internal void ClearData()
+        protected internal void ClearData()
         {
             BarnesAndNobleLinks.Clear();
             BarnesAndNobleData.Clear();
@@ -70,9 +70,11 @@ namespace MangaLightNovelWebScrape.Websites
             return new Uri(url);
         }
 
-        private static string TitleParse(string titleText, BookType bookType, string inputTitle, bool oneShotCheck)
+        private static string TitleParse(string titleText, BookType bookType, string bookTitle, bool oneShotCheck)
         {
             titleText = MasterScrape.FixVolumeRegex().Replace(titleText, "Vol");
+            bool titleParseCheck = false;
+            string volNum = string.Empty;
             if (titleText.Contains("Box Set"))
             {
                 titleText = ParseBoxSetTitleRegex().Replace(titleText, "");
@@ -92,11 +94,26 @@ namespace MangaLightNovelWebScrape.Websites
                 {
                     titleText = titleText.Insert(titleText.IndexOf("Vol"), "B&N Exclusive Edition ");
                 }
+
+                volNum = ParseTitleRegex().Match(titleText).Groups[1].Value;
+                if (!string.IsNullOrWhiteSpace(volNum))
+                {
+                    titleParseCheck = true;
+                }
                 titleText = ParseTitleRegex().Replace(titleText, "");
             }
             
             StringBuilder curTitle = new StringBuilder(titleText);
-            if (!inputTitle.Contains('-'))
+            if (titleParseCheck)
+            {
+                curTitle.AppendFormat(" Vol {0}", volNum);
+            }
+            WebsiteHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
+            if (bookTitle.Equals("Boruto", StringComparison.OrdinalIgnoreCase))
+            {
+                WebsiteHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Naruto Next Generations", string.Empty);
+            }
+            if (!bookTitle.Contains('-'))
             {
                 curTitle.Replace('-', ' ');
             }
@@ -257,7 +274,6 @@ namespace MangaLightNovelWebScrape.Websites
                         if ((!MasterScrape.EntryRemovalRegex().IsMatch(curTitle) || BookTitleRemovalCheck) && (!hardcoverCheck || !BarnesAndNobleData.Exists(entry => entry.Entry.Equals(curTitle))))
                         {
                             decimal price = !oneShotCheck ? decimal.Parse(priceData[x].InnerText.Trim()[1..]) : decimal.Parse(WebUtility.HtmlDecode(priceData[x].InnerText).Trim()[1..]);
-                            LOGGER.Debug("{} | {}", curTitle, stockStatusData[x].InnerText.Trim().Replace("\n", " "));
                             BarnesAndNobleData.Add(
                                 new EntryModel
                                 (
@@ -276,7 +292,7 @@ namespace MangaLightNovelWebScrape.Websites
                         }
                         else
                         {
-                            LOGGER.Debug($"Removed {curTitle}");
+                            LOGGER.Debug("Removed {}", curTitle);
                         }
                     }
 

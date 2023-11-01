@@ -1,5 +1,3 @@
-using Helpers;
-
 namespace MangaLightNovelWebScrape.Websites
 {
     public partial class ForbiddenPlanet

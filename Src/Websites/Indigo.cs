@@ -76,8 +76,8 @@ namespace MangaLightNovelWebScrape.Websites
             
             // LOGGER.Debug("{} | {} | {} | {} | {}", curTitle, !entryTitle.Contains("Vol"), !entryTitle.Contains("Box Set"), !entryTitle.Contains("Anniversary Book"), char.IsDigit(curTitle.ToString()[curTitle.Length - 1]));
 
-            // MasterScrape.RemoveCharacterFromTitle(ref curTitle, bookTitle, '.');
-            MasterScrape.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
+            // WebsiteHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, '.');
+            WebsiteHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
 
             if (entryTitle.Contains("Deluxe") && !bookTitle.Contains("Deluxe"))
             {
@@ -113,7 +113,7 @@ namespace MangaLightNovelWebScrape.Websites
             return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ");
         }
 
-        protected internal List<EntryModel> GetIndigoData(string bookTitle, BookType bookType, bool isMember)
+        private List<EntryModel> GetIndigoData(string bookTitle, BookType bookType, bool isMember)
         {
             try
             {

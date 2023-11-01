@@ -41,6 +41,13 @@ namespace Tests.Websites
         }
 
         [Test]
+        public async Task BarnesAndNoble_Boruto_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Boruto", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleBorutoMangaData.txt")));
+        }
+
+        [Test]
         public async Task BarnesAndNoble_Naruto_Novel_Test()
         {
             await Scrape.InitializeScrapeAsync("Naruto", BookType.LightNovel, Array.Empty<StockStatus>(), WebsiteList);

@@ -245,6 +245,11 @@ namespace MangaLightNovelWebScrape
             SciFier?.ClearData();
         }
 
+        private void ClearEuropeWebsiteData()
+        {
+            SciFier?.ClearData();
+        }
+
         /// <summary>
         /// <br>Compares the prices of all the volumes that the two websites both have, and outputs the resulting list containing </br>
         /// <br>the lowest prices for each available volume between the websites. If one website does not have a volume that the other</br>
@@ -686,14 +691,6 @@ namespace MangaLightNovelWebScrape
                     break;
             }
         }
-
-        public static void RemoveCharacterFromTitle(ref StringBuilder title, string bookTitle, char charToRemove)
-        {
-            if (!bookTitle.Contains(charToRemove))
-            {
-                title.Replace(charToRemove.ToString(), "");
-            }
-        }
         
         // TODO Brit store https://travellingman.com/
         // TODO Remove "Location" Popup for BAM
@@ -805,6 +802,9 @@ namespace MangaLightNovelWebScrape
                         case Region.Britain:
                             ClearBritainWebsiteData();
                             break;
+                        case Region.Europe:
+                            ClearEuropeWebsiteData();
+                            break;
                     }
                 }
 
@@ -858,8 +858,8 @@ namespace MangaLightNovelWebScrape
         {
             System.Diagnostics.Stopwatch watch = new();
             watch.Start();
-            MasterScrape scrape = new MasterScrape(Region.America, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("bleach", BookType.Manga, EXCLUDE_NONE_FILTER, scrape.GenerateWebsiteList(new List<string>() { RobertsAnimeCornerStore.WEBSITE_TITLE }), false, false, false, false);
+            MasterScrape scrape = new MasterScrape(Region.Canada, Browser.Chrome).EnableDebugMode();
+            await scrape.InitializeScrapeAsync("jujutsu kaisen", BookType.Manga, EXCLUDE_PO_FILTER, scrape.GenerateWebsiteList(new List<string>() { SciFier.WEBSITE_TITLE, Indigo.WEBSITE_TITLE }), false, false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
