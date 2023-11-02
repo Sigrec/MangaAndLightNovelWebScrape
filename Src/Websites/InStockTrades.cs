@@ -91,7 +91,7 @@ namespace MangaLightNovelWebScrape.Websites
                 curTitle.Replace("One", "1");
             }
             curTitle.Replace("Color HC Ed", "In Color");
-            curTitle.Replace(" Ann", " Anniversary");
+            curTitle.Replace(" Ann", " Anniversary Edition");
             curTitle.Replace("Light Novel", "Novel");
             curTitle.Replace("Deluxe Edition", "Deluxe");
 

@@ -74,7 +74,7 @@ namespace MangaLightNovelWebScrape.Websites
                 for (int x = 0; x < titleData.Count; x++)
                 {
                     string titleText = titleData[x].InnerText;
-                    if (MasterScrape.TitleContainsBookTitle(bookTitle, titleText) && !titleText.Contains("Manga Set"))
+                    if (Helpers.TitleContainsBookTitle(bookTitle, titleText) && !titleText.Contains("Manga Set"))
                     {
                         CDJapanData.Add(
                             new EntryModel

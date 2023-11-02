@@ -108,10 +108,10 @@ namespace MangaLightNovelWebScrape.Websites
             {
                 curTitle.AppendFormat(" Vol {0}", volNum);
             }
-            WebsiteHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
+            Helpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
             if (bookTitle.Equals("Boruto", StringComparison.OrdinalIgnoreCase))
             {
-                WebsiteHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Naruto Next Generations", string.Empty);
+                Helpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Naruto Next Generations", string.Empty);
             }
             if (!bookTitle.Contains('-'))
             {
@@ -239,7 +239,7 @@ namespace MangaLightNovelWebScrape.Websites
                         string curTitle = !oneShotCheck ? titleData[x].GetAttributeValue("title", "Title Error") : titleData[x].InnerText;
                         
                         if (!oneShotCheck
-                            && (!MasterScrape.TitleContainsBookTitle(bookTitle, curTitle)
+                            && (!Helpers.TitleContainsBookTitle(bookTitle, curTitle)
                             || (
                                     bookType == BookType.Manga
                                     && (

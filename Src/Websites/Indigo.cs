@@ -76,8 +76,8 @@ namespace MangaLightNovelWebScrape.Websites
             
             // LOGGER.Debug("{} | {} | {} | {} | {}", curTitle, !entryTitle.Contains("Vol"), !entryTitle.Contains("Box Set"), !entryTitle.Contains("Anniversary Book"), char.IsDigit(curTitle.ToString()[curTitle.Length - 1]));
 
-            // WebsiteHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, '.');
-            WebsiteHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
+            // Helpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, '.');
+            Helpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
 
             if (entryTitle.Contains("Deluxe") && !bookTitle.Contains("Deluxe"))
             {
@@ -148,7 +148,7 @@ namespace MangaLightNovelWebScrape.Websites
                     string titleDesc = titleData[x].GetAttributeValue("data-adobe-tracking", "Book Type Error");
                     // LOGGER.Debug("{} {}", entryTitle, titleDesc);
                     if ((!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
-                        && (MasterScrape.TitleContainsBookTitle(bookTitle, entryTitle) || MasterScrape.TitleStartsWithCheck(bookTitle, entryTitle))
+                        && (Helpers.TitleContainsBookTitle(bookTitle, entryTitle) || Helpers.TitleStartsWithCheck(bookTitle, entryTitle))
                         && (
                             (
                                 bookType == BookType.Manga

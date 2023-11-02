@@ -10,4 +10,5 @@ global using NLog;
 global using System.Text;
 global using System.Xml.XPath;
 global using System.Threading.Tasks;
-global using static Src.Models.Constants;
+global using MangaLightNovelWebScrape.Websites;
+global using static MangaAndLightNovelWebScrape.Models.Constants;
