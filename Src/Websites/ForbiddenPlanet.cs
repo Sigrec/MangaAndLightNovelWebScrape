@@ -127,7 +127,7 @@ namespace MangaLightNovelWebScrape.Websites
                     curTitle.Replace("Three", "3");
                 }
 
-                if (Helpers.RemoveNonWordsRegex().Replace(bookTitle, "").Contains("Attackontitan", StringComparison.OrdinalIgnoreCase) && !titleText.Contains("The Final Season") && titleText.Contains("Final Season"))
+                if (InternalHelpers.RemoveNonWordsRegex().Replace(bookTitle, "").Contains("Attackontitan", StringComparison.OrdinalIgnoreCase) && !titleText.Contains("The Final Season") && titleText.Contains("Final Season"))
                 {   
                     curTitle.Insert("Attack On Titan".Length, " The");
                 }
@@ -182,7 +182,7 @@ namespace MangaLightNovelWebScrape.Websites
                         string bookFormat = stockStatusData[x].FirstChild.InnerText;
                         string titleText = titleData[x].GetDirectInnerText();
                         if (
-                            Helpers.TitleContainsBookTitle(bookTitle, titleText)
+                            InternalHelpers.TitleContainsBookTitle(bookTitle, titleText)
                             && !MasterScrape.EntryRemovalRegex().IsMatch(titleText)
                             &&  (
                                     (

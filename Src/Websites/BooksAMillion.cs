@@ -193,7 +193,7 @@ namespace MangaLightNovelWebScrape.Websites
 
                         if (
                             (!MasterScrape.EntryRemovalRegex().IsMatch(curTitle) || BookTitleRemovalCheck)
-                            && Helpers.TitleContainsBookTitle(bookTitle, curTitle.ToString())
+                            && InternalHelpers.TitleContainsBookTitle(bookTitle, curTitle.ToString())
                             && !bookQuality[x].InnerText.Contains("Library Binding")
                             && (
                                 (

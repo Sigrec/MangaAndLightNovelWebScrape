@@ -9,6 +9,9 @@ Legend
 TODO:
 ❌
 
+V1.1.2 - November 1st
+🔥 HotFix to fix Helper method issues
+
 V1.1.1 - November 1st
 🔥 HotFix to fix price comparison issue
 

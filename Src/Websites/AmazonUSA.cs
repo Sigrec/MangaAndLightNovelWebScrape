@@ -166,7 +166,7 @@ namespace MangaLightNovelWebScrape.Websites
                         if (titleData[x].InnerText.Contains("Vol", StringComparison.OrdinalIgnoreCase) || titleData[x].InnerText.Contains("Volume", StringComparison.OrdinalIgnoreCase) || titleData[x].InnerText.Contains("Box Set", StringComparison.OrdinalIgnoreCase) || VolNumMatchRegex().Match(titleData[x].InnerText).Success || SeriesBypass.Any(titleData[x].InnerText.Contains))
                         {
                             currTitle = TitleParse(titleData[x].InnerText.Trim(), bookType, bookTitle);
-                            if(Helpers.RemoveNonWordsRegex().Replace(currTitle, "").Contains(Helpers.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase))
+                            if(InternalHelpers.RemoveNonWordsRegex().Replace(currTitle, "").Contains(InternalHelpers.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase))
                             {
                                 AmazonUSAData.Add(
                                     new EntryModel(

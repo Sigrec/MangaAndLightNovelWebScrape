@@ -88,16 +88,16 @@ namespace MangaLightNovelWebScrape.Websites
             {
                 curTitle.AppendFormat(" Vol {0}", volNum);
             }
-            Helpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
-            Helpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Complete ", "");
-            Helpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Color Edition", "In Color");
+            InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
+            InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Complete ", "");
+            InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Color Edition", "In Color");
             if (entryTitle.Contains("Special Edition"))
             {
                 curTitle.Insert(MasterScrape.FindVolNumRegex().Match(curTitle.ToString()).Index - 4, "Special Edition ");
             }
             if (bookTitle.Equals("Boruto", StringComparison.OrdinalIgnoreCase))
             {
-                Helpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Naruto Next Generations", string.Empty);
+                InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Naruto Next Generations", string.Empty);
             }
             if (entryTitle.StartsWith("Vol "))
             {
@@ -147,7 +147,7 @@ namespace MangaLightNovelWebScrape.Websites
                         
                         if (
                             (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
-                            && Helpers.TitleContainsBookTitle(bookTitle, entryTitle)
+                            && InternalHelpers.TitleContainsBookTitle(bookTitle, entryTitle)
                             && (
                                     (
                                         bookType == BookType.Manga
@@ -174,7 +174,7 @@ namespace MangaLightNovelWebScrape.Websites
                             }
                             entryTitle = !IsSingleName ? RemoveAuthorAndIdRegex().Replace(entryTitle, "") : RemoveAuthorAndIdSingleRegex().Replace(entryTitle, "");
    
-                            if (Helpers.TitleContainsBookTitle(bookTitle, entryTitle))
+                            if (InternalHelpers.TitleContainsBookTitle(bookTitle, entryTitle))
                             {
                                 string price = priceData[x].InnerText.Trim();
                                 string priceCheck = PriceRangeRegex().Match(price).Groups[1].Value;

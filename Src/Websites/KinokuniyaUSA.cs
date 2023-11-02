@@ -164,7 +164,7 @@ namespace MangaLightNovelWebScrape.Websites
                         titleText = System.Net.WebUtility.HtmlDecode(titleData[x].InnerText);
                         entryDesc = descData[x].InnerText;
                         if (
-                            Helpers.TitleContainsBookTitle(bookTitle, titleText)
+                            InternalHelpers.TitleContainsBookTitle(bookTitle, titleText)
                             && (!MasterScrape.EntryRemovalRegex().IsMatch(titleText) || BookTitleRemovalCheck)
                             && (
                                     (
