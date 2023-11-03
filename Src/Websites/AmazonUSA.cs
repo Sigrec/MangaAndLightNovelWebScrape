@@ -1,4 +1,4 @@
-namespace MangaLightNovelWebScrape.Websites
+namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class AmazonUSA
     {

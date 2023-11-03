@@ -1,4 +1,4 @@
-namespace MangaLightNovelWebScrape.Websites
+namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class KinokuniyaUSA
     {
@@ -193,12 +193,12 @@ namespace MangaLightNovelWebScrape.Websites
                                                 )
                                             )
                                         && !(
-                                                MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", titleText, "of Gluttony") 
-                                                || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Bleach", titleText, "Can't Fear Your Own World") 
-                                                || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Itachi's Story") 
-                                                || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Boruto")
-                                                || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Attack on Titan", titleText, "Kuklo")
-                                                || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Attack on Titan", titleText, "end of the world")
+                                                InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", titleText, "of Gluttony") 
+                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", titleText, "Can't Fear Your Own World") 
+                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Itachi's Story") 
+                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Boruto")
+                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Attack on Titan", titleText, "Kuklo")
+                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Attack on Titan", titleText, "end of the world")
                                             )
                                     )
                                     || 

@@ -1,5 +1,4 @@
 [Boruto Vol 1, $6.77, IS, SciFier]
-[Boruto Vol 11 Vol 11, $7.83, IS, SciFier]
 [Boruto Vol 2, $7.83, IS, SciFier]
 [Boruto Vol 3, $7.83, IS, SciFier]
 [Boruto Vol 4, $7.08, IS, SciFier]
@@ -9,6 +8,7 @@
 [Boruto Vol 8, $7.08, IS, SciFier]
 [Boruto Vol 9, $7.83, IS, SciFier]
 [Boruto Vol 10, $8.86, IS, SciFier]
+[Boruto Vol 11, $7.83, IS, SciFier]
 [Boruto Vol 12, $7.83, IS, SciFier]
 [Boruto Vol 13, $7.83, IS, SciFier]
 [Boruto Vol 14, $7.83, IS, SciFier]

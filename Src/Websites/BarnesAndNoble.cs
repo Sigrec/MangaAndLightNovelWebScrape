@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace MangaLightNovelWebScrape.Websites
+namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class BarnesAndNoble
     {
@@ -259,8 +259,8 @@ namespace MangaLightNovelWebScrape.Websites
                                                         curTitle.Contains("Boruto") || curTitle.Contains("Itachi's Story")
                                                     )
                                             ) 
-                                            || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", curTitle, "Gluttony")
-                                            || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Attack On Titan", curTitle, "The Harsh Mistress of the City")
+                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", curTitle, "Gluttony")
+                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Attack On Titan", curTitle, "The Harsh Mistress of the City")
                                     )
                                 )
                             )

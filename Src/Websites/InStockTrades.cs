@@ -1,4 +1,4 @@
-namespace MangaLightNovelWebScrape.Websites
+namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class InStockTrades
     {
@@ -169,8 +169,8 @@ namespace MangaLightNovelWebScrape.Websites
                                         )
                                     && !titleText.Contains(" Novel", StringComparison.OrdinalIgnoreCase)
                                     && !( // Remove unintended volumes from specific series
-                                            MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", titleText.ToString(), "of Gluttony")
-                                            || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText.ToString(), "Boruto")
+                                            InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", titleText.ToString(), "of Gluttony")
+                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText.ToString(), "Boruto")
                                         )
                                 )
                                 || 

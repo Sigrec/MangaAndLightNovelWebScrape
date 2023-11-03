@@ -1,6 +1,6 @@
 using NLog.Common;
 
-namespace MangaLightNovelWebScrape
+namespace MangaAndLightNovelWebScrape
 {
     public partial class EntryModel : IEquatable<EntryModel>
     {

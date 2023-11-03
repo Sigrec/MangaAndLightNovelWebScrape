@@ -1,6 +1,6 @@
 using OpenQA.Selenium.Edge;
 
-namespace MangaLightNovelWebScrape.Websites
+namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class BooksAMillion
     {
@@ -211,10 +211,10 @@ namespace MangaLightNovelWebScrape.Websites
                                                         && !bookTitle.AsParallel().Any(char.IsDigit)
                                                     )
                                                 )
-                                            || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", curTitle.ToString(), "Boruto") 
-                                            || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", curTitle.ToString(), "Itachi's Story")
-                                            || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", curTitle.ToString(), "Team 7 Character") 
-                                            || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", curTitle.ToString(), "of Gluttony")
+                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", curTitle.ToString(), "Boruto") 
+                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", curTitle.ToString(), "Itachi's Story")
+                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", curTitle.ToString(), "Team 7 Character") 
+                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", curTitle.ToString(), "of Gluttony")
                                         )
                                 )
                             )

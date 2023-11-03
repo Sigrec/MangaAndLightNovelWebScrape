@@ -2,9 +2,9 @@ using OpenQA.Selenium.Firefox;
 using OpenQA.Selenium.Edge;
 using OpenQA.Selenium.Chrome;
 using System.Collections.Concurrent;
-using MangaLightNovelWebScrape.Websites;
+using MangaAndLightNovelWebScrape.Websites;
 
-namespace MangaLightNovelWebScrape
+namespace MangaAndLightNovelWebScrape
 {
     /// <summary>
     /// Debug mode is disabled by default
@@ -110,6 +110,73 @@ namespace MangaLightNovelWebScrape
         public Dictionary<string, string> GetResultUrls()
         {
             return MasterUrls;
+        }
+
+        /// <summary>
+        /// Prints the results of the scrape to the console
+        /// </summary>
+        public void PrintResultsToConsole()
+        {
+            GetResults().ForEach(Console.WriteLine);
+            foreach (KeyValuePair<string, string> url in GetResultUrls())
+            {
+                Console.WriteLine($"[{url.Key}, {url.Value}]");
+            }
+        }
+
+        /// <summary>
+        /// Prints the results of the scrape to a specified logger given a log level
+        /// </summary>
+        /// <param name="logger">The logger to print the reuslts to</param>
+        /// <param name="logLevel">The log level you want the results to be printed to</param>
+        public void PrintResultsToLogger(Logger logger, NLog.LogLevel logLevel)
+        {
+            switch (logLevel.Ordinal)
+            {
+                case 0:
+                    GetResults().ForEach(logger.Trace);
+                    foreach (KeyValuePair<string, string> url in GetResultUrls())
+                    {
+                        LOGGER.Trace($"[{url.Key}, {url.Value}]");
+                    }
+                    break;
+                case 1:
+                    GetResults().ForEach(logger.Debug);
+                    foreach (KeyValuePair<string, string> url in GetResultUrls())
+                    {
+                        LOGGER.Debug($"[{url.Key}, {url.Value}]");
+                    }
+                    break;
+                default:
+                case 2:
+                    GetResults().ForEach(logger.Info);
+                    foreach (KeyValuePair<string, string> url in GetResultUrls())
+                    {
+                        LOGGER.Info($"[{url.Key}, {url.Value}]");
+                    }
+                    break;
+                case 3:
+                    GetResults().ForEach(logger.Warn);
+                    foreach (KeyValuePair<string, string> url in GetResultUrls())
+                    {
+                        LOGGER.Warn($"[{url.Key}, {url.Value}]");
+                    }
+                    break;
+                case 4:
+                    GetResults().ForEach(logger.Error);
+                    foreach (KeyValuePair<string, string> url in GetResultUrls())
+                    {
+                        LOGGER.Error($"[{url.Key}, {url.Value}]");
+                    }
+                    break;
+                case 5:
+                    GetResults().ForEach(logger.Fatal);
+                    foreach (KeyValuePair<string, string> url in GetResultUrls())
+                    {
+                        LOGGER.Fatal($"[{url.Key}, {url.Value}]");
+                    }
+                    break;
+            }
         }
 
         private void ClearAmericaWebsiteData()
@@ -231,7 +298,7 @@ namespace MangaLightNovelWebScrape
         /// </summary>
         /// <param name="needsUserAgent">Whether the website needs a valid user-agent</param>
         /// <returns>Edge, Chrome, or FireFox WebDriver</returns>
-        internal WebDriver SetupBrowserDriver(bool needsUserAgent)
+        protected internal WebDriver SetupBrowserDriver(bool needsUserAgent)
         {
             switch (this.Browser)
             {
@@ -293,23 +360,10 @@ namespace MangaLightNovelWebScrape
         /// 
         /// </summary>
         /// <param name="bookTitle"></param>
-        /// <param name="searchTitle"></param>
-        /// <param name="curTitle"></param>
-        /// <param name="removeText"></param>
-        /// <returns>True if the curTitle should be removed</returns>
-        internal static bool RemoveUnintendedVolumes(string bookTitle, string searchTitle, string curTitle, string removeText)
-        {
-            return bookTitle.Contains(searchTitle, StringComparison.OrdinalIgnoreCase) && curTitle.Contains(removeText, StringComparison.OrdinalIgnoreCase);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="bookTitle"></param>
         /// <returns></returns>
         internal static string FilterBookTitle(string bookTitle)
         {
-            char[] trimedChars = {' ', '\'', '!', '-', ','};
+            char[] trimedChars = [' ', '\'', '!', '-', ','];
             foreach (char var in trimedChars){
                 bookTitle = bookTitle.Replace(var.ToString(), "%" + Convert.ToByte(var).ToString("x2"));
             }
@@ -756,8 +810,8 @@ namespace MangaLightNovelWebScrape
         {
             System.Diagnostics.Stopwatch watch = new();
             watch.Start();
-            MasterScrape scrape = new MasterScrape(Region.America, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("bleach", BookType.Manga, EXCLUDE_PO_FILTER, scrape.GenerateWebsiteList(new List<string>() { SciFier.WEBSITE_TITLE, RobertsAnimeCornerStore.WEBSITE_TITLE, Crunchyroll.WEBSITE_TITLE, InStockTrades.WEBSITE_TITLE }), false, false, false, false);
+            MasterScrape scrape = new MasterScrape(Region.Canada, Browser.Chrome).EnableDebugMode();
+            await scrape.InitializeScrapeAsync("one piece", BookType.Manga, EXCLUDE_PO_FILTER, scrape.GenerateWebsiteList(new List<string>() { SciFier.WEBSITE_TITLE }), false, false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }

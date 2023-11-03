@@ -36,6 +36,19 @@ namespace MangaAndLightNovelWebScrape
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="bookTitle"></param>
+        /// <param name="searchTitle"></param>
+        /// <param name="curTitle"></param>
+        /// <param name="removeText"></param>
+        /// <returns>True if the curTitle should be removed</returns>
+        internal static bool RemoveUnintendedVolumes(string bookTitle, string searchTitle, string curTitle, string removeText)
+        {
+            return bookTitle.Contains(searchTitle, StringComparison.OrdinalIgnoreCase) && curTitle.Contains(removeText, StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>
         /// Trims the end of the StingBuilder Content. On Default only the white space char is truncated.
         /// </summary>
         /// <param name="pTrimChars">Array of additional chars to be truncated. A little bit more efficient than using char[]</param>

@@ -1,4 +1,4 @@
-namespace MangaLightNovelWebScrape.Websites
+namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class Crunchyroll
     {
@@ -96,6 +96,14 @@ namespace MangaLightNovelWebScrape.Websites
                     curTitle.Insert(curTitle.Length, " Novel");
                 }
             }
+
+            Match volGroup = MasterScrape.FindVolNumRegex().Match(curTitle.ToString());
+            if (!string.IsNullOrWhiteSpace(volGroup.Value) && volGroup.Value[0] == '0')
+            {
+                curTitle.Remove(volGroup.Index, volGroup.Value.Length);
+                curTitle.Insert(volGroup.Index, volGroup.Value.TrimStart('0'));
+            }
+
             InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, '-');
             return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.Replace("Hardcover", "").ToString(), " ").Trim();
         }
@@ -125,14 +133,14 @@ namespace MangaLightNovelWebScrape.Websites
 
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        string titleText = titleData[x].InnerText;
+                        string titleText = titleData[x].InnerText.Trim();
                         if (InternalHelpers.TitleContainsBookTitle(bookTitle, titleText)
                             && (!MasterScrape.EntryRemovalRegex().IsMatch(titleText) || BookTitleRemovalCheck)
                             && !(
                                 bookType == BookType.Manga
                                 && (
-                                        MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", titleText, "of Gluttony")
-                                        || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Boruto")
+                                        InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", titleText, "of Gluttony")
+                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Boruto")
                                     )
                                 )
                             )        
@@ -155,7 +163,7 @@ namespace MangaLightNovelWebScrape.Websites
                         }
                         else
                         {
-                            LOGGER.Debug($"Removed {titleText}");
+                            LOGGER.Debug("Removed {}", titleText);
                         }
                     }
 
@@ -168,12 +176,12 @@ namespace MangaLightNovelWebScrape.Websites
                         break;
                     }
                 }
-                CrunchyrollData.Sort(MasterScrape.VolumeSort);
             }
             catch (Exception ex)
             {
                 LOGGER.Error($"{bookTitle} Does Not Exist @ Crunchyroll \n{ex}");
             }
+            CrunchyrollData.Sort(MasterScrape.VolumeSort);
 
             if (MasterScrape.IsDebugEnabled)
             {

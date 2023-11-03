@@ -1,4 +1,4 @@
-namespace MangaLightNovelWebScrape
+namespace MangaAndLightNovelWebScrape
 {
     public class Helpers
     {

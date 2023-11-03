@@ -1,4 +1,4 @@
-namespace MangaLightNovelWebScrape.Websites
+namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class ForbiddenPlanet
     {
@@ -195,10 +195,10 @@ namespace MangaLightNovelWebScrape.Websites
                                                     || (!titleText.AsParallel().Any(char.IsDigit) && titleText.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
                                                 )
                                             && !(
-                                                MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", titleText, "of Gluttony")
-                                                || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Boruto")
-                                                || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Itachi")
-                                                || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Bleach", titleText, "Can't Fear")
+                                                InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", titleText, "of Gluttony")
+                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Boruto")
+                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Itachi")
+                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", titleText, "Can't Fear")
                                             )
                                         )
                                     )

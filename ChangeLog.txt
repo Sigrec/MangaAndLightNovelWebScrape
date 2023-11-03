@@ -6,8 +6,13 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> Inprogress feature will be fixed in later release
 
-TODO:
-❌
+
+V1.1.3 - November 3rd
+✅ Added methods to print results to logger or console
+🔥 Changed namespace to MangaAndLightNovelWebScrape for cleaner naming conventions
+🔥 Crunchyroll volume numbers are nowtrimmed if there is a leading '0'
+🔥 Fixed issue w/ SciFier scrape where Vol # would be duplocated
+⌛ SciFier Scrape now uses the position of the first letter of the inputted title to determine how to sort the entries on the website to shrink processing time
 
 V1.1.2 - November 1st
 🔥 HotFix to fix Helper method issues

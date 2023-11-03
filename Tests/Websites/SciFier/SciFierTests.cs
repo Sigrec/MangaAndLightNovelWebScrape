@@ -20,7 +20,7 @@ namespace Tests.Websites
         {
             Scrape.Region = Region.Canada;
             await Scrape.InitializeScrapeAsync("one piece", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\SciFier\SciFierOnePieceMangaData.txt")));
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SciFier\SciFierOnePieceMangaData.txt")));
         }
 
         [Test]
@@ -28,7 +28,7 @@ namespace Tests.Websites
         {
             Scrape.Region = Region.Britain;
             await Scrape.InitializeScrapeAsync("Naruto", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\SciFier\SciFierNarutoMangaData.txt")));
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SciFier\SciFierNarutoMangaData.txt")));
         }
 
         [Test]
@@ -36,7 +36,7 @@ namespace Tests.Websites
         {
             Scrape.Region = Region.America;
             await Scrape.InitializeScrapeAsync("Boruto", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\SciFier\SciFierBorutoMangaData.txt")));
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SciFier\SciFierBorutoMangaData.txt")));
         }
 
         [Test]
@@ -45,7 +45,7 @@ namespace Tests.Websites
         {
             Scrape.Region = Region.America;
             await Scrape.InitializeScrapeAsync("Naruto", BookType.LightNovel, Array.Empty<StockStatus>(), WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\SciFier\SciFierNarutoNovelData.txt")));
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SciFier\SciFierNarutoNovelData.txt")));
         }
 
         [Test]
@@ -53,7 +53,7 @@ namespace Tests.Websites
         {
             Scrape.Region = Region.Europe;
             await Scrape.InitializeScrapeAsync("Bleach", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\SciFier\SciFierBleachMangaData.txt")));
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SciFier\SciFierBleachMangaData.txt")));
         }
 
         [Test, Description("Validates Novel w/ Manga Entries & Volume Numbers with Decimals")]
@@ -61,7 +61,7 @@ namespace Tests.Websites
         {
             Scrape.Region = Region.America;
             await Scrape.InitializeScrapeAsync("classroom of the elite", BookType.LightNovel, Array.Empty<StockStatus>(), WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\SciFier\SciFierCOTENovelData.txt")));
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SciFier\SciFierCOTENovelData.txt")));
         }
 
         [Test, Description("Validates Manga w/ Novel Entries")]
@@ -69,7 +69,7 @@ namespace Tests.Websites
         {
             Scrape.Region = Region.America;
             await Scrape.InitializeScrapeAsync("classroom of the elite", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\SciFier\SciFierCOTEMangaData.txt")));
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SciFier\SciFierCOTEMangaData.txt")));
         }
 
         [Test, Description("Validates Series w/ Number")]
@@ -77,7 +77,7 @@ namespace Tests.Websites
         {
             Scrape.Region = Region.America;
             await Scrape.InitializeScrapeAsync("2.5 Dimensional Seduction", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\SciFier\SciFierDimensionalSeductionMangaData.txt")));
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SciFier\SciFierDimensionalSeductionMangaData.txt")));
         }
 
         [Test, Description("Validates Series w/ Non Letter or Digit Char in Title")]
@@ -85,7 +85,7 @@ namespace Tests.Websites
         {
             Scrape.Region = Region.America;
             await Scrape.InitializeScrapeAsync("Akane-Banashi", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\SciFier\SciFierAkaneBanashiMangaData.txt")));
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SciFier\SciFierAkaneBanashiMangaData.txt")));
         }
 
         [Test, Description("Validates Series w/ Non Letter or Digit Char & Numbers in Title")]
@@ -93,7 +93,7 @@ namespace Tests.Websites
         {
             Scrape.Region = Region.America;
             await Scrape.InitializeScrapeAsync("07-ghost", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\SciFier\SciFier07GhostMangaData.txt")));
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SciFier\SciFier07GhostMangaData.txt")));
         }
 
         [Test, Description("Validates Manga Series w/ Deluxe Hardcover & Paperback Volumes")]
@@ -101,7 +101,7 @@ namespace Tests.Websites
         {
             Scrape.Region = Region.America;
             await Scrape.InitializeScrapeAsync("Berserk", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\SciFier\SciFierBerserkMangaData.txt")));
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SciFier\SciFierBerserkMangaData.txt")));
         }
 
         [Test, Description("Validates Manga Series w/ Hardcover & Paperback Volumes & Imperfect Volume")]
@@ -109,7 +109,7 @@ namespace Tests.Websites
         {
             Scrape.Region = Region.America;
             await Scrape.InitializeScrapeAsync("fullmetal alchemist", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\SciFier\SciFierFMABMangaData.txt")));
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SciFier\SciFierFMABMangaData.txt")));
         }
 
         [Test, Description("Validates One Shot Manga Series")]
@@ -117,7 +117,7 @@ namespace Tests.Websites
         {
             Scrape.Region = Region.America;
             await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\SciFier\SciFierGoodbyeEriMangaData.txt")));
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SciFier\SciFierGoodbyeEriMangaData.txt")));
         }
 
          [Test, Description("Validates Series w/ dif Types of Omnibus & Box Set Entries")]
@@ -125,7 +125,7 @@ namespace Tests.Websites
         {
             Scrape.Region = Region.America;
             await Scrape.InitializeScrapeAsync("attack on titan", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\SciFier\SciFierAttackOnTitanMangaData.txt")));
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SciFier\SciFierAttackOnTitanMangaData.txt")));
         }
 
         [Test, Description("Validates Manga Series w/ Illustration Entries & Vol 0")]
@@ -133,7 +133,7 @@ namespace Tests.Websites
         {
             Scrape.Region = Region.America;
             await Scrape.InitializeScrapeAsync("Toilet-bound Hanako-kun", BookType.Manga, Array.Empty<StockStatus>(), WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaLightNovelWebScrape\Tests\Websites\SciFier\SciFierToiletMangaData.txt")));
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SciFier\SciFierToiletMangaData.txt")));
         }
     }
 }

@@ -1,6 +1,6 @@
 using System.Security.Cryptography;
 
-namespace MangaLightNovelWebScrape.Websites
+namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class Indigo
     {
@@ -32,11 +32,8 @@ namespace MangaLightNovelWebScrape.Websites
 
         protected internal void ClearData()
         {
-            if (this != null)
-            {
-                IndigoLinks.Clear();
-                IndigoData.Clear();
-            }
+            IndigoLinks.Clear();
+            IndigoData.Clear();
         }
 
         protected internal string GetUrl()
@@ -159,13 +156,13 @@ namespace MangaLightNovelWebScrape.Websites
                                         !titleDesc.Contains("novel", StringComparison.OrdinalIgnoreCase)
                                     )
                                 && !(
-                                        MasterScrape.RemoveUnintendedVolumes(bookTitle, "One Piece", entryTitle, "Ace's Story") 
-                                        || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear Your Own World")
-                                        || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony")
-                                        || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "Flame Dragon Knight")
-                                        || MasterScrape.RemoveUnintendedVolumes(bookTitle, "attack on titan", entryTitle, "Kuklo Unbound")
-                                        || (MasterScrape.RemoveUnintendedVolumes(bookTitle, "attack on titan", entryTitle, "Lost Girls") && !entryTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase))
-                                        || MasterScrape.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
+                                        InternalHelpers.RemoveUnintendedVolumes(bookTitle, "One Piece", entryTitle, "Ace's Story") 
+                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear Your Own World")
+                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony")
+                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "Flame Dragon Knight")
+                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "attack on titan", entryTitle, "Kuklo Unbound")
+                                        || (InternalHelpers.RemoveUnintendedVolumes(bookTitle, "attack on titan", entryTitle, "Lost Girls") && !entryTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase))
+                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
                                 )   
                             )
                             ||

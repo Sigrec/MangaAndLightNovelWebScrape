@@ -1,5 +1,5 @@
 global using NUnit.Framework;
-global using MangaLightNovelWebScrape;
+global using MangaAndLightNovelWebScrape;
 global using System.Text.RegularExpressions;
 global using static Tests.Websites.WebsiteTestHelpers;
-global using static Src.Models.Constants;
+global using static MangaAndLightNovelWebScrape.Models.Constants;
