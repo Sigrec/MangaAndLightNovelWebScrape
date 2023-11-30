@@ -13,10 +13,9 @@ namespace MangaAndLightNovelWebScrape.Websites
         [GeneratedRegex("\\d+-\\d+-\\d+")] private static partial Regex VolNumMatchRegex();
         [GeneratedRegex("(?<=\\d{1,3})[^\\d{1,3}.]+.*|\\,|Manga ")] private static partial Regex ParsedTitleNoDigitRegex();
         [GeneratedRegex("(?<=\\d{1,3}.$)[^\\d{1,3}]+.*|\\,|Manga ")] private static partial Regex ParsedTitleWithDigitRegex();
-        [GeneratedRegex(":(?<=:).*")]private static partial Regex OmnibusParsedTitleRegex();
-        [GeneratedRegex(@"\d{1,3}")] private static partial Regex GetVolNumRegex(); 
+        [GeneratedRegex(":(?<=:).*")]private static partial Regex OmnibusParsedTitleRegex(); 
 
-        internal async Task CreateAmazonUSATask(string bookTitle, BookType book, List<List<EntryModel>> MasterDataList, WebDriver driver)
+        protected internal async Task CreateAmazonUSATask(string bookTitle, BookType book, List<List<EntryModel>> MasterDataList, WebDriver driver)
         {
             await Task.Run(() => 
             {
@@ -27,7 +26,6 @@ namespace MangaAndLightNovelWebScrape.Websites
         // Manga
         //https://www.amazon.com/s?k=world+trigger&i=stripbooks&rh=n%3A4367%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page=1&qid=1685551243&rnid=1294421011&ref=sr_pg_1
         //https://www.amazon.com/s?k=one+piece&i=stripbooks&rh=n%3A4367%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page=1&qid=1685551243&rnid=1294421011&ref=sr_pg_1
-        //https://www.amazon.com/s?k=fruits+basket&i=stripbooks&rh=n%3A4366%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page=2&qid=1685551123&rnid=1294421011&ref=sr_pg_2
         private string GetUrl(BookType bookType, byte currPageNum, string bookTitle)
         {
             // string url = $"https://www.amazon.com/s?k={bookTitle.Replace(" ", "+")}&i=stripbooks&rh=n%3A7421474011%2Cp_n_condition-type%3A1294423011%2Cp_n_feature_nine_browse-bin%3A3291437011&s=date-desc-rank&dc&page={currPageNum}&qid=1678483439&rnid=3291435011&ref=sr_pg_{currPageNum}";
@@ -37,18 +35,15 @@ namespace MangaAndLightNovelWebScrape.Websites
             return url;
         }
 
-        internal string GetUrl()
+        protected internal string GetUrl()
         {
             return AmazonUSALinks.Count != 0 ? AmazonUSALinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
         
-        internal void ClearData()
+        protected internal void ClearData()
         {
-            if (this != null)
-            {
-                AmazonUSALinks.Clear();
-                AmazonUSAData.Clear();
-            }
+            AmazonUSALinks.Clear();
+            AmazonUSAData.Clear();
         }
 
         private static string TitleParse(string bookTitle, BookType bookType, string inputTitle)
@@ -78,7 +73,7 @@ namespace MangaAndLightNovelWebScrape.Websites
 
             if (!parsedTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !parsedTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
             {
-                parsedTitle = parsedTitle.Insert(GetVolNumRegex().Match(parsedTitle).Index, "Vol ");
+                parsedTitle = parsedTitle.Insert(MasterScrape.FindVolNumRegex().Match(parsedTitle).Index, "Vol ");
             }
             return parsedTitle.Trim();
         }

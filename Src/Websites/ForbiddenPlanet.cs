@@ -25,7 +25,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         [GeneratedRegex(@"\((.*?Anniversary.*?)\)")] private static partial Regex AnniversaryMatchRegex();
 
 
-        internal async Task CreateForbiddenPlanetTask(string bookTitle, BookType bookType, List<List<EntryModel>> MasterDataList, WebDriver driver)
+        protected internal async Task CreateForbiddenPlanetTask(string bookTitle, BookType bookType, List<List<EntryModel>> MasterDataList, WebDriver driver)
         {
             await Task.Run(() => 
             {
@@ -33,12 +33,12 @@ namespace MangaAndLightNovelWebScrape.Websites
             });
         }
 
-        internal string GetUrl()
+        protected internal string GetUrl()
         {
             return ForbiddenPlanetLinks.Count != 0 ? ForbiddenPlanetLinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
         
-        internal void ClearData()
+        protected internal void ClearData()
         {
             ForbiddenPlanetLinks.Clear();
             ForbiddenPlanetData.Clear();
@@ -155,13 +155,10 @@ namespace MangaAndLightNovelWebScrape.Websites
             try
             {
                 WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
-                // {
-                //     PollingInterval = TimeSpan.FromMilliseconds(500),
-                // };
 
                 driver.Navigate().GoToUrl(GetUrl(bookType, bookTitle));
-                // wait.Until(e => e.FindElement(By.ClassName("full")));
-                driver.ExecuteScript("arguments[0].click();", driver.FindElement(By.XPath("//button[@class='button--brand button--lg brad mql mt']"))); // Get rid of cookies popup
+                wait.Until(e => e.FindElement(By.ClassName("full")));
+                driver.ExecuteScript("arguments[0].click();", driver.FindElement(By.XPath("//button[@class='load-all button--brand brad--sm']"))); // Get rid of cookies popup
                 //wait.Until(e => e.FindElement(By.ClassName("full")));
                 wait.Until(driver => driver.FindElement(By.XPath("//h3[@class='h4 clr-black mqt ord--03 one-whole txt-left dtb--fg owl-off']")));
 

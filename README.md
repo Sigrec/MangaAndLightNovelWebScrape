@@ -1,4 +1,4 @@
-# [MangaAndLightNovelWebScrape](https://www.nuget.org/packages/MangaAndLightNovelWebScrape/1.0.1#readme-body-tab)
+# [MangaAndLightNovelWebScrape](https://www.nuget.org/packages/MangaAndLightNovelWebScrape/1.1.3#versions-body-tab)
 ### *(Manga & Light Novel Web Scrape Framework for .NET) - [ChangeLog](https://github.com/Sigrec/MangaAndLightNovelWebScrape/blob/master/ChangeLog.txt)*
 .NET Framework that scrapes various websites for manga or light novel data for a specifc user inputted series. Then it compares the various prices for each available volume across the websites chosen and outputs a list of the volumes available and the website and price for the lowest volume.
 ***
@@ -56,13 +56,13 @@ private static async Task Main(string[] args)
         false // isIndigoMember
     );
 
-    // Get final result data
-    scrape.GetResults().ForEach(Console.WriteLine);
+    // Get Final data Results
+    List<EntryModel> finalData = scrape.GetResults();
+    Dictionary<string, string> finalUrls = scrape.GetResultsUrls();
 
-    // Get final url results
-    foreach (KeyValuePair<string, string> url in scrape.GetResultUrls())
-    {
-        Console.WriteLine($"[{url.Key}, {url.Value}]");
-    }
+    // Print final result data either to console, logger, or file
+    scrape.PrintResultsToConsole();
+    scrape.PrintResultToLogger(LOGGER, NLog.LogLevel.Info);
+    scrape.PrintResultsToFile("FinalData.txt");
 }
 ```

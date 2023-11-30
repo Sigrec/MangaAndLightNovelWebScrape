@@ -93,6 +93,10 @@ namespace MangaAndLightNovelWebScrape
             {
                 Directory.CreateDirectory(@"\Data");
             }
+            if (!Directory.Exists(@"\Logs"))
+            {
+                Directory.CreateDirectory(@"\Logs");
+            }
             return this;
         }
 
@@ -117,63 +121,141 @@ namespace MangaAndLightNovelWebScrape
         /// </summary>
         public void PrintResultsToConsole()
         {
-            GetResults().ForEach(Console.WriteLine);
-            foreach (KeyValuePair<string, string> url in GetResultUrls())
+            if (GetResults().Count > 0)
             {
-                Console.WriteLine($"[{url.Key}, {url.Value}]");
+                GetResults().ForEach(Console.WriteLine);
+                foreach (KeyValuePair<string, string> url in GetResultUrls())
+                {
+                    Console.WriteLine($"[{url.Key}, {url.Value}]");
+                }
+            }
+            else
+            {
+                Console.WriteLine("No MasterData Available");
+            }
+        }
+
+        /// <summary>
+        /// Prints the results of the scrape to a file
+        /// </summary>
+        public void PrintResultsToFile(string fileName)
+        {
+            using (StreamWriter outputFile = new(fileName))
+            {
+                if (GetResults().Count > 0)
+                {
+                    foreach (EntryModel data in GetResults())
+                    {
+                        outputFile.WriteLine(data.ToString());
+                    }
+
+                    foreach (KeyValuePair<string, string> website in GetResultUrls())
+                    {
+                        if (!string.IsNullOrWhiteSpace(website.Value))
+                        {
+                            outputFile.WriteLine(website);
+                        }
+                    }
+                }
+                else
+                {
+                    outputFile.WriteLine("No MasterData Available");
+                }
             }
         }
 
         /// <summary>
         /// Prints the results of the scrape to a specified logger given a log level
         /// </summary>
-        /// <param name="logger">The logger to print the reuslts to</param>
+        /// <param name="UserLogger">The logger to print the reuslts to</param>
         /// <param name="logLevel">The log level you want the results to be printed to</param>
-        public void PrintResultsToLogger(Logger logger, NLog.LogLevel logLevel)
+        public void PrintResultsToLogger(Logger UserLogger, NLog.LogLevel logLevel)
         {
             switch (logLevel.Ordinal)
             {
                 case 0:
-                    GetResults().ForEach(logger.Trace);
-                    foreach (KeyValuePair<string, string> url in GetResultUrls())
+                    if (GetResults().Count > 0)
                     {
-                        LOGGER.Trace($"[{url.Key}, {url.Value}]");
+                        GetResults().ForEach(UserLogger.Trace);
+                        foreach (KeyValuePair<string, string> url in GetResultUrls())
+                        {
+                            UserLogger.Trace($"[{url.Key}, {url.Value}]");
+                        }
+                    }
+                    else
+                    {
+                        UserLogger.Trace("No MasterData Available");
                     }
                     break;
                 case 1:
-                    GetResults().ForEach(logger.Debug);
-                    foreach (KeyValuePair<string, string> url in GetResultUrls())
+                    if (GetResults().Count > 0)
                     {
-                        LOGGER.Debug($"[{url.Key}, {url.Value}]");
+                        GetResults().ForEach(UserLogger.Debug);
+                        foreach (KeyValuePair<string, string> url in GetResultUrls())
+                        {
+                            UserLogger.Debug($"[{url.Key}, {url.Value}]");
+                        }
+                    }
+                    else
+                    {
+                        UserLogger.Debug("No MasterData Available");
                     }
                     break;
                 default:
                 case 2:
-                    GetResults().ForEach(logger.Info);
-                    foreach (KeyValuePair<string, string> url in GetResultUrls())
+                    if (GetResults().Count > 0)
                     {
-                        LOGGER.Info($"[{url.Key}, {url.Value}]");
+                        GetResults().ForEach(UserLogger.Info);
+                        foreach (KeyValuePair<string, string> url in GetResultUrls())
+                        {
+                            UserLogger.Info($"[{url.Key}, {url.Value}]");
+                        }
+                    }
+                    else
+                    {
+                        UserLogger.Info("No MasterData Available");
                     }
                     break;
                 case 3:
-                    GetResults().ForEach(logger.Warn);
-                    foreach (KeyValuePair<string, string> url in GetResultUrls())
+                    if (GetResults().Count > 0)
                     {
-                        LOGGER.Warn($"[{url.Key}, {url.Value}]");
+                        GetResults().ForEach(UserLogger.Warn);
+                        foreach (KeyValuePair<string, string> url in GetResultUrls())
+                        {
+                            UserLogger.Warn($"[{url.Key}, {url.Value}]");
+                        }
+                    }
+                    else
+                    {
+                        UserLogger.Warn("No MasterData Available");
                     }
                     break;
                 case 4:
-                    GetResults().ForEach(logger.Error);
-                    foreach (KeyValuePair<string, string> url in GetResultUrls())
+                    if (GetResults().Count > 0)
                     {
-                        LOGGER.Error($"[{url.Key}, {url.Value}]");
+                        GetResults().ForEach(UserLogger.Error);
+                        foreach (KeyValuePair<string, string> url in GetResultUrls())
+                        {
+                            UserLogger.Error($"[{url.Key}, {url.Value}]");
+                        }
+                    }
+                    else
+                    {
+                        UserLogger.Error("No MasterData Available");
                     }
                     break;
                 case 5:
-                    GetResults().ForEach(logger.Fatal);
-                    foreach (KeyValuePair<string, string> url in GetResultUrls())
+                    if (GetResults().Count > 0)
                     {
-                        LOGGER.Fatal($"[{url.Key}, {url.Value}]");
+                        GetResults().ForEach(UserLogger.Fatal);
+                        foreach (KeyValuePair<string, string> url in GetResultUrls())
+                        {
+                            UserLogger.Fatal($"[{url.Key}, {url.Value}]");
+                        }
+                    }
+                    else
+                    {
+                        UserLogger.Fatal("No MasterData Available");
                     }
                     break;
             }
@@ -361,7 +443,7 @@ namespace MangaAndLightNovelWebScrape
         /// </summary>
         /// <param name="bookTitle"></param>
         /// <returns></returns>
-        internal static string FilterBookTitle(string bookTitle)
+        protected internal static string FilterBookTitle(string bookTitle)
         {
             char[] trimedChars = [' ', '\'', '!', '-', ','];
             foreach (char var in trimedChars){
@@ -646,6 +728,7 @@ namespace MangaAndLightNovelWebScrape
         
         // TODO Brit store https://travellingman.com/
         // TODO Remove "Location" Popup for BAM
+        // TODO Create custom exceptions
 
         /// <summary>
         /// Initalizes the scrape and outputs the compared data
@@ -660,10 +743,11 @@ namespace MangaAndLightNovelWebScrape
         /// <param name="isKinokuniyaUSAMember">Whether the user is a Kinokuniya USA member</param>
         /// <param name="isIndigoMember">Whether the user is a Indigo member</param>
         /// <returns></returns>
-        public async Task InitializeScrapeAsync(string bookTitle, BookType book, StockStatus[] stockFilter, HashSet<Website> webScrapeList, bool isBarnesAndNobleMember = false, bool isBooksAMillionMember = false, bool isKinokuniyaUSAMember = false, bool isIndigoMember = false)
+        public async Task InitializeScrapeAsync(string bookTitle, BookType bookType, StockStatus[] stockFilter, HashSet<Website> webScrapeList, bool isBarnesAndNobleMember = false, bool isBooksAMillionMember = false, bool isKinokuniyaUSAMember = false, bool isIndigoMember = false)
         {
             await Task.Run(async () =>
             {
+                LOGGER.Info($"Region set to {this.Region}");
                 LOGGER.Info($"Running on {this.Browser} Browser");
 
                 // Clear the Data & Urls everytime there is a new run
@@ -674,7 +758,7 @@ namespace MangaAndLightNovelWebScrape
                 });
                 
                 // Generate List of Tasks to 
-                GenerateTaskList(webScrapeList, bookTitle, book, isBarnesAndNobleMember, isBooksAMillionMember, isKinokuniyaUSAMember, isIndigoMember);
+                GenerateTaskList(webScrapeList, bookTitle, bookType, isBarnesAndNobleMember, isBooksAMillionMember, isKinokuniyaUSAMember, isIndigoMember);
                 await Task.WhenAll(WebTasks);
 
                 MasterDataList.RemoveAll(x => x.Count == 0); // Clear all lists from websites that didn't have any data
@@ -810,8 +894,8 @@ namespace MangaAndLightNovelWebScrape
         {
             System.Diagnostics.Stopwatch watch = new();
             watch.Start();
-            MasterScrape scrape = new MasterScrape(Region.Canada, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("one piece", BookType.Manga, EXCLUDE_PO_FILTER, scrape.GenerateWebsiteList(new List<string>() { SciFier.WEBSITE_TITLE }), false, false, false, false);
+            MasterScrape scrape = new MasterScrape(Region.America, Browser.Chrome).EnableDebugMode();
+            await scrape.InitializeScrapeAsync("Attack On Titan", BookType.Manga, EXCLUDE_NONE_FILTER, [ Website.ForbiddenPlanet ], false, false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
