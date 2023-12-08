@@ -10,7 +10,7 @@ namespace MangaAndLightNovelWebScrape
         public string  Website { get; set; }
         private static readonly Logger Logger = LogManager.GetLogger("MasterScrapeLogs");
         [GeneratedRegex("[Vol|Box Set].*?(\\d+).*")]  private static partial Regex VolumeNumRegex();
-        [GeneratedRegex(".*(?<int> \\d+)$|.*(?<double> \\d+\\.\\d+)$")] private static partial Regex ExtractDoubleRegex();
+        [GeneratedRegex(@".*(?<int> \d+)$|.*(?<double> \d+\.\d+)$")] private static partial Regex ExtractDoubleRegex();
 
         /// <summary>
         /// Model for a series's book entry
@@ -33,7 +33,7 @@ namespace MangaAndLightNovelWebScrape
         /// <param name="initialPrice">The initial price of the entry</param>
         /// <param name="discount">THe discount to apply to the initial price</param>
         /// <returns>Returns the discounted price</returns>
-        public static string ApplyDiscount(decimal initialPrice, decimal discount)
+        internal static string ApplyDiscount(decimal initialPrice, decimal discount)
         {
             return decimal.Subtract(initialPrice, decimal.Multiply(initialPrice, discount)).ToString("0.00");
         }
@@ -44,11 +44,23 @@ namespace MangaAndLightNovelWebScrape
         }
 
         /// <summary>
+        /// Parses and returns the price as a decimal value
+        /// </summary>
+        public decimal ParsePrice()
+        {
+            if (!char.IsDigit(this.Price[0])) // Currency places the symbol at the front like USD
+            {
+                return decimal.Parse(this.Price[1..]);
+            }
+            return decimal.Parse(this.Price[..^1]); // Currency places the symbol at the end like with Japanese Yen
+        }
+
+        /// <summary>
         /// Gets the current volume num for a series unit entry givin its type (box set, omnibux, single, etc)
         /// </summary>
         /// <param name="title">The full title of the entry to get the volume number</param>
         /// <returns></returns>
-        public static double GetCurrentVolumeNum(string title)
+        internal static double GetCurrentVolumeNum(string title)
         {
             Match match = ExtractDoubleRegex().Match(title);
             if (match.Groups["int"].Success)

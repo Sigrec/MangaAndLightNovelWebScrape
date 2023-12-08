@@ -2,6 +2,7 @@ namespace MangaAndLightNovelWebScrape
 {
     internal static partial class InternalHelpers
     {
+        private static readonly Logger LOGGER = LogManager.GetLogger("CDJapanLogs");
         [GeneratedRegex(@"[^\w+]")] internal static partial Regex RemoveNonWordsRegex();
 
         /// <summary>
@@ -21,17 +22,17 @@ namespace MangaAndLightNovelWebScrape
 
         internal static void ReplaceTextInEntryTitle (ref StringBuilder curTitle, string bookTitle, string containsText, string replaceText)
         {
-            if (curTitle.ToString().Contains(containsText) && !bookTitle.Contains(containsText.Trim()))
+            if (curTitle.ToString().Contains(containsText, StringComparison.OrdinalIgnoreCase) && !bookTitle.Contains(containsText.Trim(), StringComparison.OrdinalIgnoreCase))
             {
                 curTitle.Replace(containsText, replaceText);
             }
         }
 
-        internal static void RemoveCharacterFromTitle(ref StringBuilder title, string bookTitle, char charToRemove)
+        internal static void RemoveCharacterFromTitle(ref StringBuilder curTitle, string bookTitle, char charToRemove)
         {
             if (!bookTitle.Contains(charToRemove))
             {
-                title.Replace(charToRemove.ToString(), "");
+                curTitle.Replace(charToRemove.ToString(), "");
             }
         }
 

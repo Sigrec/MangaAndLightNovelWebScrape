@@ -183,26 +183,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             CrunchyrollData.Sort(MasterScrape.VolumeSort);
 
-            if (MasterScrape.IsDebugEnabled)
-            {
-                using (StreamWriter outputFile = new(@"Data\CrunchyrollData.txt"))
-                {
-                    if (CrunchyrollData.Count != 0)
-                    {
-                        foreach (EntryModel data in CrunchyrollData)
-                        {
-                            LOGGER.Debug(data);
-                            outputFile.WriteLine(data);
-                        }
-                    }
-                    else
-                    {
-                        LOGGER.Error($"{bookTitle} Does Not Exist at {WEBSITE_TITLE}");
-                        outputFile.WriteLine($"{bookTitle} Does Not Exist at {WEBSITE_TITLE}");
-                    }
-                } 
-            }
-
+            MasterScrape.PrintWebsiteData(WEBSITE_TITLE, bookTitle, CrunchyrollData, LOGGER);
             return CrunchyrollData;
         }
     }

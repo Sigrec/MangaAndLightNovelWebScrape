@@ -9,6 +9,7 @@ Legend
 V1.1.4 - December
 ✅ Updated print methods to check if the data is empty and print corresponding message
 ✅ Added new print method to print to a file
+❌ Added CDJapan website to scrape from for Japan region
 
 V1.1.3 - November 3rd
 ✅ Added methods to print results to logger or console

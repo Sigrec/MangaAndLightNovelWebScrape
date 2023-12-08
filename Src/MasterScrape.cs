@@ -65,8 +65,8 @@ namespace MangaAndLightNovelWebScrape
         [GeneratedRegex(@"--|—|\s{2,}")] internal static partial Regex MultipleWhiteSpaceRegex();
         [GeneratedRegex(@";jsessionid=[^?]*")] internal static partial Regex RemoveJSessionIDRegex();
         [GeneratedRegex(@"GN|Graphic Novel|:\s+Volumes|Volumes|:\s+Volume|Volume|Vol\.|:\s+Volumr|Volumr|Volume(\d{1,3})", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
-        [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Compendium|Artbook|Error|\(Osi\)|Advertising|Art Book|Adventure|Artbook|Coloring Book|the Anime|Calendar|Ani-manga|Anime", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
-        [GeneratedRegex(@"Official|Guide|Adventure|Advertising|Anime|Calendar|Error|Encyclopedia|Anthology|Character", RegexOptions.IgnoreCase)] internal static partial Regex CheckEntryRemovalRegex();
+        [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Compendium|Artbook|Error|\(Osi\)|Advertising|Art Book|Adventure|Artbook|Coloring Book|the Anime|Calendar|Ani-manga|Anime|Bilingual|Game Book|Theatrical", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
+        [GeneratedRegex(@"Official|Guide|Adventure|Advertising|Anime|Calendar|Error|Encyclopedia|Anthology|Character|Bilingual|Game Book|Theatrical", RegexOptions.IgnoreCase)] internal static partial Regex CheckEntryRemovalRegex();
 
         public MasterScrape(Region Region = Region.America, Browser Browser = Browser.Chrome)
         {
@@ -334,9 +334,9 @@ namespace MangaAndLightNovelWebScrape
                         if (biggerListCurrentVolNum == EntryModel.GetCurrentVolumeNum(smallerList[y].Entry))
                         {
                             LOGGER.Debug($"Found Match for {biggerListData.Entry} {smallerList[y].Entry}");
-                            LOGGER.Debug($"PRICE COMPARISON ({float.Parse(biggerListData.Price[1..])} > {float.Parse(smallerList[y].Price[1..])}) -> {float.Parse(biggerListData.Price[1..]) > float.Parse(smallerList[y].Price[1..])}");
+                            LOGGER.Debug($"PRICE COMPARISON ({biggerListData.ParsePrice()} > {smallerList[y].ParsePrice()}) -> {biggerListData.ParsePrice() > smallerList[y].ParsePrice()}");
                             // Get the lowest price between the two then add the lowest dataset
-                            if (float.Parse(biggerListData.Price[1..]) > float.Parse(smallerList[y].Price[1..]))
+                            if (biggerListData.ParsePrice() > smallerList[y].ParsePrice())
                             {
                                 finalData.Add(smallerList[y]);
                                 LOGGER.Debug($"Add Match SmallerList {smallerList[y]}");
@@ -373,6 +373,29 @@ namespace MangaAndLightNovelWebScrape
             // finalData.ForEach(data => LOGGER.Info($"Final -> {data}"));
             finalData.Sort(VolumeSort);
             return finalData;
+        }
+
+        protected static internal void PrintWebsiteData(string website, string bookTitle, List<EntryModel> dataList, Logger WebsiteLogger)
+        {
+            if (IsDebugEnabled)
+            {
+                using (StreamWriter outputFile = new($@"Data\{website}Data.txt"))
+                {
+                    if (dataList.Count != 0)
+                    {
+                        foreach (EntryModel data in dataList)
+                        {
+                            WebsiteLogger.Info(data);
+                            outputFile.WriteLine(data);
+                        }
+                    }
+                    else
+                    {
+                        WebsiteLogger.Error($"{bookTitle} Does Not Exist at {website}");
+                        outputFile.WriteLine($"{bookTitle} Does Not Exist at {website}");
+                    }
+                } 
+            }
         }
     
         /// <summary>
@@ -702,7 +725,7 @@ namespace MangaAndLightNovelWebScrape
                                 break;
                             case Website.CDJapan:
                                 LOGGER.Info($"{CDJapan.WEBSITE_TITLE} Going");
-                                WebTasks.Add(CDJapan.CreateCDJapanTask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
+                                WebTasks.Add(CDJapan.CreateCDJapanTask(bookTitle, book, MasterDataList));
                                 break;
                             default:
                                 break;
@@ -747,8 +770,8 @@ namespace MangaAndLightNovelWebScrape
         {
             await Task.Run(async () =>
             {
-                LOGGER.Info($"Region set to {this.Region}");
-                LOGGER.Info($"Running on {this.Browser} Browser");
+                LOGGER.Info("Region set to {}", this.Region);
+                LOGGER.Info("Running on {} Browser", this.Browser);
 
                 // Clear the Data & Urls everytime there is a new run
                 MasterDataList.Clear();
@@ -889,13 +912,14 @@ namespace MangaAndLightNovelWebScrape
 
         // Command to end all chrome.exe process -> taskkill /F /IM chrome.exe /T
         // Command to end all chromedriver.exe process -> taskkill /F /IM chromedriver.exe /T
-        // TODO Add checks for 
+        // TODO Need to throw exception if user is querying against Japan region and text is not in JApanese
+        // TODO Add Merry Manga https://www.merrymanga.com/product-category/manga/
         private static async Task Main(string[] args)
         {
             System.Diagnostics.Stopwatch watch = new();
             watch.Start();
-            MasterScrape scrape = new MasterScrape(Region.America, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("Attack On Titan", BookType.Manga, EXCLUDE_NONE_FILTER, [ Website.ForbiddenPlanet ], false, false, false, false);
+            MasterScrape scrape = new MasterScrape(Region.Japan, Browser.Chrome).EnableDebugMode();
+            await scrape.InitializeScrapeAsync("ONE PIECE", BookType.Manga, EXCLUDE_NONE_FILTER, [ Website.CDJapan ], false, false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
