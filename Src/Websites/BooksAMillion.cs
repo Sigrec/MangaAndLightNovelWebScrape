@@ -9,7 +9,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         public const string WEBSITE_TITLE = "Books-A-Million";
         private static readonly Logger LOGGER = LogManager.GetLogger("BooksAMillionLogs");
         private const decimal MEMBERSHIP_DISCOUNT = 0.1M;
-        private const Region WEBSITE_REGION = Region.America;
+        public const Region REGION = Region.America;
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[@class='search-item-title']/a");
         private static readonly XPathExpression BookQualityXPath = XPathExpression.Compile("//div[@class='productInfoText']");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='our-price']");
@@ -47,19 +47,19 @@ namespace MangaAndLightNovelWebScrape.Websites
             if (bookType == BookType.LightNovel)
             {
                 // https://www.booksamillion.com/search?filter=product_type%3Abooks&query=naruto+novel&sort=date&page=1
-                url.AppendFormat("https://www.booksamillion.com/search?filter=product_type%3Abooks&query={0}{1}&sort=date", MasterScrape.FilterBookTitle(bookTitle), boxsetCheck ? "+novel+box+set" : "+novel");
+                url.AppendFormat("https://www.booksamillion.com/search?filter=product_type%3Abooks&query={0}{1}&sort=date", InternalHelpers.FilterBookTitle(bookTitle), boxsetCheck ? "+novel+box+set" : "+novel");
                 LOGGER.Info($"Initial Novel Url {url}");
             }
             else if (!boxsetCheck)
             {
                 // https://booksamillion.com/search?query=naruto;filter=product_type%3Abooks%7Cbook_categories%3ACGN;sort=date;page=1%7Clanguage%3AENG"
-                url.AppendFormat("https://booksamillion.com/search?query={0}&filter=product_type%3Abooks%7Cbook_categories%3ACGN&sort=date", MasterScrape.FilterBookTitle(bookTitle));
+                url.AppendFormat("https://booksamillion.com/search?query={0}&filter=product_type%3Abooks%7Cbook_categories%3ACGN&sort=date", InternalHelpers.FilterBookTitle(bookTitle));
                 LOGGER.Info($"Initial Manga Url {url}");
             }
             else
             {
                 // https://booksamillion.com/search?filter=product_type%3Abooks&query=bleach+box+set
-                url.AppendFormat("https://booksamillion.com/search?filter=product_type%3Abooks&query={0}{1}", MasterScrape.FilterBookTitle(bookTitle), boxsetCheck ? "+box+set" : "");
+                url.AppendFormat("https://booksamillion.com/search?filter=product_type%3Abooks&query={0}{1}", InternalHelpers.FilterBookTitle(bookTitle), boxsetCheck ? "+box+set" : string.Empty);
                 LOGGER.Info($"Initial Box Set Url {url}");
             }
             BooksAMillionLinks.Add(url.ToString());
@@ -71,7 +71,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             StringBuilder curTitle;
             if (bookType == BookType.LightNovel)
             {
-                textTitle = CleanFilterTitleRegex().Replace(NovelFilterTitleRegex().Replace(textTitle, ""), "");
+                textTitle = CleanFilterTitleRegex().Replace(NovelFilterTitleRegex().Replace(textTitle, string.Empty), string.Empty);
                 curTitle = new StringBuilder(textTitle).Replace("(Novel)", "Novel").Replace("(Light Novel)", "Novel");
                 if (!textTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase))
                 {
@@ -93,7 +93,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             else
             {
-                curTitle = new StringBuilder(CleanFilterTitleRegex().Replace(MangaFilterTitleRegex().Replace(OmnibusRegex().Replace(textTitle, "Omnibus"), ""), ""));
+                curTitle = new StringBuilder(CleanFilterTitleRegex().Replace(MangaFilterTitleRegex().Replace(OmnibusRegex().Replace(textTitle, "Omnibus"), string.Empty), string.Empty));
                 string newTextTitle = curTitle.ToString().Trim();
 
                 if (newTextTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) || newTextTitle.Contains("BOXSET", StringComparison.OrdinalIgnoreCase))
@@ -193,7 +193,7 @@ namespace MangaAndLightNovelWebScrape.Websites
 
                         if (
                             (!MasterScrape.EntryRemovalRegex().IsMatch(curTitle) || BookTitleRemovalCheck)
-                            && InternalHelpers.TitleContainsBookTitle(bookTitle, curTitle.ToString())
+                            && InternalHelpers.BookTitleContainsEntryTitle(bookTitle, curTitle.ToString())
                             && !bookQuality[x].InnerText.Contains("Library Binding")
                             && (
                                 (
@@ -257,18 +257,16 @@ namespace MangaAndLightNovelWebScrape.Websites
                         }
                         else
                         {
-                            driver.Close();
                             driver.Quit();
                             break;
                         }
                     }
                 }
-                BooksAMillionData.Sort(MasterScrape.VolumeSort);
+                BooksAMillionData.Sort(EntryModel.VolumeSort);
             }
             catch (Exception ex)
             {
-                driver.Close();
-                driver.Quit();
+                driver?.Quit();
                 LOGGER.Error($"{bookTitle} Does Not Exist @ BooksAMillion\n{ex}");
             }
 

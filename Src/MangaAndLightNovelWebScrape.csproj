@@ -9,9 +9,9 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>partial</TrimMode>
-    <PackageVersion>1.1.3</PackageVersion>
-    <Version>1.1.3</Version>
-	<FileVersion>1.1.3.0</FileVersion>
+    <PackageVersion>1.1.4</PackageVersion>
+    <Version>1.1.4</Version>
+	<FileVersion>1.1.4.0</FileVersion>
     <Authors>Prem</Authors>
     <Owners>Prem</Owners>
     <LangVersion>preview</LangVersion>
@@ -39,9 +39,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="HtmlAgilityPack" Version="1.11.54" />
-    <PackageReference Include="Selenium.WebDriver" Version="4.14.1" />
-    <PackageReference Include="NLog" Version="5.2.5" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.56" />
+    <PackageReference Include="Selenium.WebDriver" Version="4.16.2" />
+    <PackageReference Include="NLog" Version="5.2.7" />
     <PackageReference Include="GraphQL.Client" Version="6.0.2" />
     <PackageReference Include="GraphQL.Client.Serializer.SystemTextJson" Version="6.0.2" />
   </ItemGroup>

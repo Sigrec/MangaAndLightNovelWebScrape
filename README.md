@@ -11,21 +11,22 @@ If you want more websites just notify me and I will look into seeing if I can ad
 - [x] Barnes & Noble
 - [x] InStockTrades
 - [x] Kinokuniya USA
-- [ ] AmazonUSA
+- [ ] AmazonUSA (In Progress)
 - [x] SciFier
+- [x] MerryManga
 
 #### Canada
 - [x] Indigo
 - [x] SciFier
 
 #### Britain
-- [ ] ForBiddenPlanet
-- [ ] Waterstones
+- [ ] ForBiddenPlanet (In Progress)
+- [x] Waterstones
 - [x] SciFier
 
 #### Japan
 - [ ] AmazonJP
-- [ ] CDJapan
+- [ ] CDJapan (In Progress)
 
 #### Europe
 - [x] SciFier

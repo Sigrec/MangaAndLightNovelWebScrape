@@ -7,7 +7,8 @@ namespace MangaAndLightNovelWebScrape.Websites
         public const string WEBSITE_TITLE = "Kinokuniya USA";
         private static readonly Logger LOGGER = LogManager.GetLogger("KinokuniyaUSALogs");
         private static readonly int STATUS_START_INDEX = "Availability Status : ".Length;
-        private const Region WEBSITE_REGION = Region.America;
+        public const Region REGION = Region.America;
+        private static readonly string[] SkipBookTitles = { "Attack on Titan" };
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//span[@class='underline']");
         private static readonly XPathExpression MemberPriceXPath = XPathExpression.Compile("//li[@class='price'][2]/span");
         private static readonly XPathExpression NonMemberPriceXPath = XPathExpression.Compile("//li[@class='price'][1]/span");
@@ -16,8 +17,12 @@ namespace MangaAndLightNovelWebScrape.Websites
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//div[@class='categoryPager']/ul/li[last()]/a");
         
         [GeneratedRegex(@"\((?:Omnibus |3\s*In\s*1 |2\s*In\s*1 )Edition\)", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
-        [GeneratedRegex(@"\(Light Novel\)|Novel", RegexOptions.IgnoreCase)] private static partial Regex NovelRegex();
-        [GeneratedRegex(@",|(Vol \d{1,3}\.\d{1})?(?(?<=Vol \d{1,3}\.\d{1})[^\d].*|(?<=Vol \d{1,3})[^\d].*)|(?<=Box Set \d{1,3}).*|\(+.*?\)+|(?<=\d{1,3} :).*|:|<.*?>|w/DVD", RegexOptions.IgnoreCase)] private static partial Regex TitleFixRegex();
+        [GeneratedRegex(@"\(Light Novel\)|Light Novel|Novel", RegexOptions.IgnoreCase)] private static partial Regex NovelRegex();
+        [GeneratedRegex(@"\((.*?)\)+", RegexOptions.IgnoreCase)] private static partial Regex TitleCaptureRegex();
+        [GeneratedRegex(@"^[^\(]+", RegexOptions.IgnoreCase)] private static partial Regex CleanInFrontTitleRegex();
+        [GeneratedRegex(@"(?<=\d{1,3})[^\d{1,3}].*", RegexOptions.IgnoreCase)] private static partial Regex CleanBehindTitleRegex();
+        [GeneratedRegex(@"(Vol \d{1,3}\.\d{1})?(?(?<=Vol \d{1,3}\.\d{1})[^\d].*|(?<=Vol \d{1,3})[^\d].*)|(?<=Box Set \d{1,3}).*|\(.*?\).*|(?<=\d{1,3} :).*|<.*?[^\d+]>|w/DVD|<|>", RegexOptions.IgnoreCase)] private static partial Regex TitleFixRegex();
+        [GeneratedRegex(@"Vol\.|Volume", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
 
         // Manga English Search
         //https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=world+trigger&taxon=2&x=39&y=4&page=1&per_page=100&form_taxon=109
@@ -35,10 +40,10 @@ namespace MangaAndLightNovelWebScrape.Websites
             });
         }
 
-        private string GetUrl(BookType bookType, string titleText)
+        private string GetUrl(BookType bookType, string entryTitle)
         {
-            string url = $"https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords={titleText.Replace(" ", "+")}{(bookType == BookType.LightNovel ? "+novel" : "")}&taxon=2&x=39&y=11&page=1&per_page=100";
-            LOGGER.Debug(url);
+            string url = $"https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords={entryTitle.Replace(" ", "+")}{(bookType == BookType.LightNovel ? "+novel" : string.Empty)}&taxon=2&x=39&y=11&page=1&per_page=100";
+            LOGGER.Info($"Url = {url}");
             KinokuniyaUSALinks.Add(url);
             return url;
         }
@@ -54,42 +59,63 @@ namespace MangaAndLightNovelWebScrape.Websites
             KinokuniyaUSAData.Clear();
         }
 
-        private static string TitleParse(string titleText, BookType bookType, string bookTitle, string entryDesc, bool oneShotCheck)
+        private static string TitleParse(string entryTitle, BookType bookType, string bookTitle, string entryDesc, bool oneShotCheck)
         {
             if (!bookTitle.Contains('-'))
             {
-                titleText = titleText.Replace("-", " ");
+                entryTitle = entryTitle.Replace("-", " ");
+            }
+            
+            string parseCheckTitle = TitleCaptureRegex().Match(entryTitle).Groups[1].Value;
+            string checkBeforeText = CleanInFrontTitleRegex().Match(entryTitle).Value;
+            if (!SkipBookTitles.Contains(bookTitle, StringComparer.OrdinalIgnoreCase) && parseCheckTitle.Contains(bookTitle, StringComparison.OrdinalIgnoreCase) && !checkBeforeText.Contains(bookTitle, StringComparison.OrdinalIgnoreCase) && entryTitle.Any(char.IsDigit) && !bookTitle.Any(char.IsDigit))
+            {
+                LOGGER.Debug("{} | {} | {} | {} | {}", checkBeforeText, parseCheckTitle, entryTitle, CleanInFrontTitleRegex().Replace(entryTitle, string.Empty), CleanInFrontTitleRegex().Replace(entryTitle, string.Empty).Insert(0, $"{parseCheckTitle} "));
+                entryTitle = CleanInFrontTitleRegex().Replace(entryTitle, string.Empty).Insert(0, $"{parseCheckTitle} ");
             }
 
             if (!oneShotCheck)
             {
                 if (bookType == BookType.LightNovel)
                 {
-                    titleText = NovelRegex().Replace(titleText, "Novel");
+                    entryTitle = NovelRegex().Replace(entryTitle, "Novel");
                 }
 
-                string newTitleText = TitleFixRegex().Replace(OmnibusRegex().Replace(MasterScrape.FixVolumeRegex().Replace(titleText, "Vol"), "Omnibus"), "$1");
-                StringBuilder curTitle = new StringBuilder(newTitleText);
-                curTitle.Replace(",", "");
+                string newEntryTitle = TitleFixRegex().Replace(OmnibusRegex().Replace(FixVolumeRegex().Replace(entryTitle, "Vol"), "Omnibus"), "$1");
+                StringBuilder curTitle = new StringBuilder(newEntryTitle).Replace(",", string.Empty);
+                InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
+                newEntryTitle = curTitle.ToString();
 
-                if (bookType == BookType.LightNovel && !newTitleText.Contains("Novel"))
+                if (bookType == BookType.LightNovel)
                 {
-                    int index = newTitleText.IndexOf("Vol");
-                    if (index != -1)
+                    if (!newEntryTitle.Contains(bookTitle, StringComparison.OrdinalIgnoreCase))
                     {
-                        curTitle.Insert(index, "Novel ");
+                        curTitle.Insert(0, $"{char.ToUpper(bookTitle[0])}{bookTitle.AsSpan(1)} ");
                     }
-                    else
+                    if (!newEntryTitle.Contains("Novel") && !newEntryTitle.Contains("Vol"))
                     {
-                        curTitle.Insert(curTitle.Length - 1, " Novel");
+                        curTitle = new StringBuilder(CleanBehindTitleRegex().Replace(newEntryTitle, string.Empty));
+                    }
+                    else if (!newEntryTitle.Contains("Novel") && newEntryTitle.Contains("Vol"))
+                    {
+                        curTitle.Insert(newEntryTitle.IndexOf("Vol"), "Novel ");
+                    }
+                    else if (!newEntryTitle.Contains("Vol") && newEntryTitle.Contains("Novel"))
+                    {
+                        curTitle.Insert(newEntryTitle.IndexOf("Novel") + 5, " Vol ");
+                    }
+
+                    if (!newEntryTitle.Contains("Novel") && !newEntryTitle.Any(char.IsDigit) && !bookTitle.Any(char.IsDigit))
+                    {
+                        curTitle.Insert(curTitle.Length, " Novel");
                     }
                 }
-                else if (bookType == BookType.Manga && !newTitleText.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !newTitleText.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
+                else if (bookType == BookType.Manga && !newEntryTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !newEntryTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
                 {
-                    newTitleText = newTitleText.Trim();
-                    if (MasterScrape.FindVolNumRegex().IsMatch(newTitleText) && !bookTitle.AsParallel().Any(char.IsDigit))
+                    newEntryTitle = newEntryTitle.Trim();
+                    if (MasterScrape.FindVolNumRegex().IsMatch(newEntryTitle) && !bookTitle.AsParallel().Any(char.IsDigit))
                     {
-                        curTitle.Insert(MasterScrape.FindVolNumRegex().Match(newTitleText).Index, "Vol ");
+                        curTitle.Insert(MasterScrape.FindVolNumRegex().Match(newEntryTitle).Index, "Vol ");
                     }
                     else if (entryDesc.Contains("Collection", StringComparison.OrdinalIgnoreCase) && entryDesc.Contains("volumes", StringComparison.OrdinalIgnoreCase))
                     {
@@ -97,32 +123,37 @@ namespace MangaAndLightNovelWebScrape.Websites
                     }
                 }
 
-                if (titleText.AsParallel().Any(char.IsDigit) && !curTitle.ToString().Contains("Vol") && !titleText.Contains("Box Set")  && !titleText.Contains("Anniversary"))
+                if (bookTitle.Equals("Boruto", StringComparison.OrdinalIgnoreCase))
+                {
+                    curTitle.Replace("Naruto Next Generations", string.Empty);
+                }
+
+                if (entryTitle.AsParallel().Any(char.IsDigit) && !curTitle.ToString().Contains("Vol") && !entryTitle.Contains("Box Set")  && !entryTitle.Contains("Anniversary"))
                 {
                     Regex findVolRegex = new Regex(@"\d+");
-                    Match volNum = findVolRegex.Match(titleText);
+                    Match volNum = findVolRegex.Match(entryTitle);
                     if (string.IsNullOrWhiteSpace(volNum.Value))
                     {
-                        volNum = findVolRegex.Match(newTitleText);
+                        volNum = findVolRegex.Match(newEntryTitle);
                     }
                     if (volNum.Index < curTitle.Length)
                     {
                         curTitle.Remove(volNum.Index, volNum.Value.Length);
                     }
-                    curTitle.AppendFormat(" Vol {0}", volNum.Value);
+                    curTitle.AppendFormat("{0} Vol {1}", bookType == BookType.LightNovel && !curTitle.ToString().Contains("Novel") ? " Novel" : string.Empty,  volNum.Value);
                 }
                 
                 return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.Replace("Manga", string.Empty).ToString().Trim(), " ");
             }
 
-            return MasterScrape.MultipleWhiteSpaceRegex().Replace(TitleFixRegex().Replace(MasterScrape.FixVolumeRegex().Replace(titleText.Replace("Manga", string.Empty), "Vol"), "$1").Trim(), " ");
+            return MasterScrape.MultipleWhiteSpaceRegex().Replace(TitleFixRegex().Replace(FixVolumeRegex().Replace(entryTitle.Replace("Manga", string.Empty).Replace(",", string.Empty), "Vol"), "$1").Trim(), " ");
         }
         
         private List<EntryModel> GetKinokuniyaUSAData(string bookTitle, BookType bookType, bool memberStatus, WebDriver driver)
         {
             int maxPageCount = -1, curPageNum = 1;
             bool oneShotCheck = false;
-            string titleText, entryDesc;
+            string entryTitle, entryDesc;
             HtmlDocument doc = new HtmlDocument();
             bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
             try
@@ -140,12 +171,14 @@ namespace MangaAndLightNovelWebScrape.Websites
                 // Click the list display mode so it shows stock status data with entry
                 driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.LinkText("List"))));
                 wait.Until(driver => driver.FindElement(By.CssSelector("#loading[style='display: none;']")));
+                wait.Until(driver => driver.FindElement(By.Id("image_or_detail")));
                 LOGGER.Info("Clicked List Mode");
 
                 while(true)
                 {
                     // Initialize the html doc for crawling
                     doc.LoadHtml(driver.PageSource);
+                    //LOGGER.Debug(doc.Text);
 
                     // Get the page data from the HTML doc
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
@@ -153,85 +186,86 @@ namespace MangaAndLightNovelWebScrape.Websites
                     HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(memberStatus ? MemberPriceXPath : NonMemberPriceXPath);
                     HtmlNodeCollection descData = doc.DocumentNode.SelectNodes(DescXPath);
                     HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
-                    if (maxPageCount == -1)
-                    {
-                        maxPageCount = Convert.ToInt32(doc.DocumentNode.SelectSingleNode(PageCheckXPath).InnerText);
-                    }
+                    if (maxPageCount == -1) { maxPageCount = Convert.ToInt32(doc.DocumentNode.SelectSingleNode(PageCheckXPath).InnerText); }
+                    LOGGER.Debug("{} | {} | {} | {}", titleData.Count, priceData.Count, descData.Count, stockStatusData.Count);
 
                     // Remove all of the novels from the list if user is searching for manga
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        titleText = System.Net.WebUtility.HtmlDecode(titleData[x].InnerText);
+                        entryTitle = System.Net.WebUtility.HtmlDecode(titleData[x].InnerText);
                         entryDesc = descData[x].InnerText;
                         if (
-                            InternalHelpers.TitleContainsBookTitle(bookTitle, titleText)
-                            && (!MasterScrape.EntryRemovalRegex().IsMatch(titleText) || BookTitleRemovalCheck)
+                            InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
+                            && (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
                             && (
                                     (
                                         bookType == BookType.Manga
                                         && (
-                                            (!titleText.Contains("Novel", StringComparison.OrdinalIgnoreCase)
-                                            && !bookTitle.Contains("Novel"))
-                                            || titleText.Contains("graphic novel", StringComparison.OrdinalIgnoreCase)
+                                            InternalHelpers.RemoveEntryTitleCheck(bookTitle, entryTitle, "Novel")
+                                            || entryTitle.Contains("graphic novel", StringComparison.OrdinalIgnoreCase)
                                             )
-                                        && !titleText.Contains("Chapter Book" ,StringComparison.OrdinalIgnoreCase)
+                                        && !entryTitle.Contains("Chapter Book" ,StringComparison.OrdinalIgnoreCase)
                                         && ( // If it's not a one shot series check to see if it contains 'Vol' or has a volume number string if not skip
                                             oneShotCheck
                                             || (
                                                     !oneShotCheck
                                                     && (
-                                                            MasterScrape.FixVolumeRegex().IsMatch(titleText)
+                                                            FixVolumeRegex().IsMatch(entryTitle)
                                                             || (
                                                                     entryDesc.Contains("Collection", StringComparison.OrdinalIgnoreCase) 
                                                                     && entryDesc.Contains("volumes", StringComparison.OrdinalIgnoreCase)
                                                                 )
                                                             || (
-                                                                    titleText.AsParallel().Any(char.IsDigit)
+                                                                    entryTitle.AsParallel().Any(char.IsDigit)
                                                                     && !bookTitle.AsParallel().Any(char.IsDigit)
                                                                 )
                                                         )
                                                 )
                                             )
                                         && !(
-                                                InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", titleText, "of Gluttony") 
-                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", titleText, "Can't Fear Your Own World") 
-                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Itachi's Story") 
-                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", titleText, "Boruto")
-                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Attack on Titan", titleText, "Kuklo")
-                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Attack on Titan", titleText, "end of the world")
+                                                InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony") 
+                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear Your Own World") 
+                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Itachi's Story") 
+                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
+                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Attack on Titan", entryTitle, "Kuklo")
+                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Attack on Titan", entryTitle, "end of the world")
                                             )
                                     )
                                     || 
                                     (
                                         bookType == BookType.LightNovel
-                                        && !titleText.Contains("graphic novel", StringComparison.OrdinalIgnoreCase) 
-                                        && titleText.Contains("Novel", StringComparison.OrdinalIgnoreCase)
+                                        && !entryTitle.Contains("graphic novel", StringComparison.OrdinalIgnoreCase) 
+                                        && entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
                                     )
-                                )
-                            && !(
-                                    !bookTitle.Contains("Color", StringComparison.OrdinalIgnoreCase) 
-                                    && titleText.Contains("Color", StringComparison.OrdinalIgnoreCase)
                                 )
                             )
                         {
-                            KinokuniyaUSAData.Add(
-                                new EntryModel(
-                                    TitleParse(titleText, bookType, bookTitle, entryDesc, oneShotCheck), 
-                                    priceData[x].InnerText.Trim(), 
-                                    stockStatusData[x].InnerText.Trim().AsSpan(STATUS_START_INDEX) switch
-                                    {
-                                        "In stock at the Fulfilment Center." or "Available for order from suppliers." => StockStatus.IS,
-                                        "Available for Pre Order" => StockStatus.PO,
-                                        "Out of stock." => StockStatus.OOS,
-                                        _ => StockStatus.NA
-                                    },
-                                    WEBSITE_TITLE
-                                )
-                            );
+                            entryTitle = TitleParse(entryTitle, bookType, bookTitle, entryDesc, oneShotCheck);
+                            if (!KinokuniyaUSAData.AsParallel().Any(entry => entry.Entry.Equals(entryTitle, StringComparison.OrdinalIgnoreCase)))
+                            {
+                                KinokuniyaUSAData.Add(
+                                    new EntryModel(
+                                        entryTitle, 
+                                        priceData[x].InnerText.Trim(), 
+                                        stockStatusData[x].InnerText.Trim().AsSpan(STATUS_START_INDEX) switch
+                                        {
+                                            "In stock at the Fulfilment Center." or "Available for order from suppliers." => StockStatus.IS,
+                                            "Available for Pre Order" => StockStatus.PO,
+                                            "Out of stock." => StockStatus.OOS,
+                                            _ => StockStatus.NA
+                                        },
+                                        WEBSITE_TITLE
+                                    )
+                                );
+                            }
+                            else
+                            {
+                                LOGGER.Info("Removed (2) {}", entryTitle);
+                            }
                         }
                         else
                         {
-                            LOGGER.Info("Removed {}", titleText);
+                            LOGGER.Info("Removed {}", entryTitle);
                         }
                     }
                     if (curPageNum != maxPageCount)
@@ -242,39 +276,19 @@ namespace MangaAndLightNovelWebScrape.Websites
                     }
                     else
                     {
-                        driver.Close();
                         driver.Quit();
-                        KinokuniyaUSAData.Sort(MasterScrape.VolumeSort);
                         break;
                     }
                 }
             }
             catch (Exception e)
             {
-                driver.Close();
-                driver.Quit();
+                driver?.Quit();
                 LOGGER.Error($"{bookTitle} Does Not Exist @ Kinokuniya USA \n{e.StackTrace}");
             }
 
-            if (MasterScrape.IsDebugEnabled)
-            {
-                using (StreamWriter outputFile = new(@"Data\KinokuniyaUSAData.txt"))
-                {
-                    if (KinokuniyaUSAData.Count != 0)
-                    {
-                        foreach (EntryModel data in KinokuniyaUSAData)
-                        {
-                            outputFile.WriteLine(data);
-                            LOGGER.Debug(data);
-                        }
-                    }
-                    else
-                    {
-                        LOGGER.Error($"{bookTitle} Does Not Exist at {WEBSITE_TITLE}");
-                        outputFile.WriteLine($"{bookTitle} Does Not Exist at {WEBSITE_TITLE}");
-                    }
-                } 
-            }
+            KinokuniyaUSAData.Sort(EntryModel.VolumeSort);
+            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, KinokuniyaUSAData, LOGGER);
             return KinokuniyaUSAData;
         }
     }

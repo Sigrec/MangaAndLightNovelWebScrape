@@ -9,13 +9,13 @@ namespace MangaAndLightNovelWebScrape.Websites
         private List<EntryModel> SciFierData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "SciFier";
         private static readonly Logger LOGGER = LogManager.GetLogger("SciFierLogs");
-        private const Region WEBSITE_REGION = Region.America | Region.Europe | Region.Britain | Region.Canada;
+        public const Region REGION = Region.America | Region.Europe | Region.Britain | Region.Canada;
         private static readonly Dictionary<Region, ushort> CURRENCY_DICTIONARY = new Dictionary<Region, ushort>
         {
+            {Region.Britain, 1},
             {Region.America, 2},
-            {Region.Canada, 6},
             {Region.Europe, 5},
-            {Region.Britain, 1}
+            {Region.Canada, 6}
         };
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//h3[@class='card-title']");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='price price--withTax price--main _hasSale'] | //span[@class='price price--withTax price--main']");
@@ -31,6 +31,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         [GeneratedRegex(@"\d{1,3}(?!\d*th)")]private static partial Regex GetVolNumRegex();
         [GeneratedRegex(@"\((?:\d{1}-in-\d{1}|Omnibus) Edition\)|:[\w\s]+\d{1,3}-\d{1,3}-\d{1,3}|Omnibus (\d{1,3})")]private static partial Regex OmnibusRegex();
         [GeneratedRegex(@"[$£€]\d{1,3}\.\d{1,2} - ([$£€]\d{1,3}\.\d{1,2})")]private static partial Regex PriceRangeRegex();
+        [GeneratedRegex(@"Vol\.|Volume", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
 
         protected internal async Task CreateSciFierTask(string bookTitle, BookType bookType, List<List<EntryModel>> MasterDataList, Region curRegion)
         {
@@ -58,9 +59,10 @@ namespace MangaAndLightNovelWebScrape.Websites
 
             // https://scifier.com/search.php?setCurrencyId=6&section=product&search_query_adv=classroom+of+the+elite&searchsubs=ON&brand=&price_from=&price_to=&category=2060&limit=100&sort=alphaasc&mode=6
 
-            // https://scifier.com/search.php?setCurrencyId=6&search_query_adv=world+trigger&searchsubs=ON&brand=&price_from=&price_to=&category%5B%5D=2060&section=product&limit=100&sort=alphadesc&mode=6
+            // https://scifier.com/search.php?search_query_adv=overlord+novel&searchsubs=ON&brand=&price_from=&price_to=&featured=&category%5B%5D=2175&section=product&sort=alphadesc&limit=100&mode=6\
             string url = $"https://scifier.com/search.php?setCurrencyId={CURRENCY_DICTIONARY[curRegion]}&section=product&search_query_adv={bookTitle.Replace(' ', '+')}&searchsubs=ON&brand=&price_from=&price_to=&featured=&category%5B%5D=2060&section=product&limit=100&sort=alpha{(letterIsFrontHalf ? "asc" : "desc")}&mode=6";
-            LOGGER.Info($"Initial Url {url}");
+
+            LOGGER.Info($"Initial Url = {url}");
             SciFierLinks.Add(url);
             return url;
         }
@@ -91,7 +93,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 curTitle.AppendFormat(" Vol {0}", volNum);
             }
             InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
-            InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Complete ", "");
+            InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Complete ", string.Empty);
             InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Color Edition", "In Color");
             if (entryTitle.Contains("Special Edition"))
             {
@@ -131,40 +133,51 @@ namespace MangaAndLightNovelWebScrape.Websites
                 while (true)
                 {
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
-                    HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
-                    HtmlNodeCollection summaryData = doc.DocumentNode.SelectNodes(SummaryXPath);
-                    HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
+                    char firstEntryFirstChar = char.ToLowerInvariant(titleData.First().InnerText.TrimStart()[0]);
+                    char lastEntryFirstChar = char.ToLowerInvariant(titleData.Last().InnerText.TrimStart()[0]);
+                    char bookTitleFirstChar = char.ToLowerInvariant(bookTitle.TrimStart()[0]);
                     HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
-
-                    if ((letterIsFrontHalf && char.ToLowerInvariant(titleData[0].InnerText.TrimStart()[0]) > char.ToLowerInvariant(bookTitle.TrimStart()[0])) || (!letterIsFrontHalf && char.ToLowerInvariant(titleData[0].InnerText.TrimStart()[0]) < char.ToLowerInvariant(bookTitle.TrimStart()[0])))
+                    if ((letterIsFrontHalf && (firstEntryFirstChar > bookTitleFirstChar)) || (!letterIsFrontHalf && (firstEntryFirstChar < bookTitleFirstChar)))
                     {
-                        LOGGER.Info($"Ending Scrape Early -> '{char.ToLowerInvariant(titleData[^1].InnerText.TrimStart()[0])}' {(letterIsFrontHalf ? '>' : '<')} '{char.ToLowerInvariant(titleData[0].InnerText.TrimStart()[0])}'");
+                        LOGGER.Info($"Ending Scrape Early -> '{lastEntryFirstChar}' {(letterIsFrontHalf ? '>' : '<')} '{firstEntryFirstChar}'");
                         ShouldEndEarly = true;
                         goto EndEarly;
                     }
+                    else if ((letterIsFrontHalf && firstEntryFirstChar < bookTitleFirstChar && lastEntryFirstChar < bookTitleFirstChar) || (!letterIsFrontHalf && firstEntryFirstChar > bookTitleFirstChar && lastEntryFirstChar > bookTitleFirstChar))
+                    {
+                        LOGGER.Info($"Skipping Page -> '{firstEntryFirstChar}' {(letterIsFrontHalf ? '<' : '>')} '{bookTitleFirstChar}' && '{lastEntryFirstChar}' {(letterIsFrontHalf ? '<' : '>')} '{bookTitleFirstChar}'");
+                        goto EndEarly;
+                    }
+
+                    HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
+                    HtmlNodeCollection summaryData = doc.DocumentNode.SelectNodes(SummaryXPath);
+                    HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
 
                     int foundCheck = 0;
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        string entryTitle = MasterScrape.FixVolumeRegex().Replace(titleData[x].InnerText.Trim(), "Vol");
+                        string entryTitle = FixVolumeRegex().Replace(titleData[x].InnerText.Trim(), "Vol");
                         
                         if (
                             (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
-                            && InternalHelpers.TitleContainsBookTitle(bookTitle, entryTitle)
+                            && InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
                             && (
                                     (
                                         bookType == BookType.Manga
-                                        && !entryTitle.Contains("Novel)")
+                                        && !entryTitle.Contains("Novel)", StringComparison.OrdinalIgnoreCase)
                                         && (!summaryData[x].InnerText.Contains("novel", StringComparison.OrdinalIgnoreCase) || entryTitle.Contains("(Manga)") || entryTitle.Contains("Box Set"))
                                         && !(
                                             InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
                                             || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony")
+                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Funny Sports")
+                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Overlord", entryTitle, "Overlord Kugane Maruyama 9781975374785")
                                         )
                                     )
                                     ||
                                     (
                                         bookType == BookType.LightNovel
-                                        && !entryTitle.Contains("(Manga)")
+                                        && !entryTitle.Contains("(Manga)", StringComparison.OrdinalIgnoreCase)
+                                        && entryTitle.Contains("Novel)", StringComparison.OrdinalIgnoreCase)
                                     )
                                 )
                             )
@@ -191,16 +204,16 @@ namespace MangaAndLightNovelWebScrape.Websites
                                 }
                                 LOGGER.Debug("IsSingleName = {} | {}", IsSingleName, entryTitle);
                             }
-                            entryTitle = !IsSingleName ? RemoveAuthorAndIdRegex().Replace(entryTitle, "") : RemoveAuthorAndIdSingleRegex().Replace(entryTitle, "");
+                            entryTitle = !IsSingleName ? RemoveAuthorAndIdRegex().Replace(entryTitle, string.Empty) : RemoveAuthorAndIdSingleRegex().Replace(entryTitle, string.Empty);
    
-                            if (InternalHelpers.TitleContainsBookTitle(bookTitle, entryTitle))
+                            if (InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle))
                             {
                                 string price = priceData[x].InnerText.Trim();
                                 string priceCheck = PriceRangeRegex().Match(price).Groups[1].Value;
                                 SciFierData.Add(
                                     new EntryModel
                                     (
-                                        TitleParse(MasterScrape.FixVolumeRegex().Replace(WebUtility.HtmlDecode(entryTitle), "Vol"), bookTitle, bookType),
+                                        TitleParse(FixVolumeRegex().Replace(WebUtility.HtmlDecode(entryTitle), "Vol"), bookTitle, bookType),
                                         string.IsNullOrWhiteSpace(priceCheck) ? price : priceCheck,
                                         stockStatusData[x].InnerText.Contains("Pre-Order") ? StockStatus.PO : StockStatus.IS, 
                                         WEBSITE_TITLE
@@ -219,7 +232,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     }
                     
                     EndEarly:
-                    if (pageCheck != null && !ShouldEndEarly)
+                    if (!ShouldEndEarly && pageCheck != null)
                     {
                         url = $"https://scifier.com{WebUtility.HtmlDecode(pageCheck.GetAttributeValue("href", "Url Error"))}";
                         doc = web.Load(url);
@@ -228,7 +241,6 @@ namespace MangaAndLightNovelWebScrape.Websites
                     }
                     else
                     {
-                        SciFierData.Sort(MasterScrape.VolumeSort);
                         break;
                     }
                 }
@@ -238,26 +250,9 @@ namespace MangaAndLightNovelWebScrape.Websites
                 LOGGER.Debug($"{bookTitle} Does Not Exist @ {WEBSITE_TITLE} \n{e}");
                 ClearData();
             }
-
-            if (MasterScrape.IsDebugEnabled)
-            {
-                using (StreamWriter outputFile = new(@"Data\SciFierData.txt"))
-                {
-                    if (SciFierData.Count != 0)
-                    {
-                        foreach (EntryModel data in SciFierData)
-                        {
-                            LOGGER.Debug(data);
-                            outputFile.WriteLine(data.ToString());
-                        }
-                    }
-                    else
-                    {
-                        LOGGER.Debug($"{bookTitle} Does Not Exist at {WEBSITE_TITLE}");
-                        outputFile.WriteLine($"{bookTitle} Does Not Exist at {WEBSITE_TITLE}");
-                    }
-                }
-            }
+            
+            SciFierData.Sort(EntryModel.VolumeSort);
+            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, SciFierData, LOGGER); 
             return SciFierData;
         }
     }

@@ -7,14 +7,14 @@ namespace MangaAndLightNovelWebScrape.Websites
         private List<EntryModel> CrunchyrollData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "Crunchyroll";
         private const decimal MEMBERSHIP_DISCOUNT = 0.1M;
-        private const Region WEBSITE_REGION = Region.America | Region.Canada;
+        public const Region REGION = Region.America | Region.Canada;
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[@class='pdp-link']/a");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='sales']/span");
-        private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[contains(@class, 'sash-content')]");
+        private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='product-sashes']/div[1]/span");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//a[@class='right-arrow']");
-        
-        [GeneratedRegex(@",|\(.*?\)| Manga|:|Comics|Hardcover|(?<=Vol \d{1,3})[^\d{1,3}.]+.*|(?<=Vol \d{1,3}.\d{1})[^\d{1,3}.]+.*")] private static partial Regex TitleParseRegex();
-        [GeneratedRegex(@"(?:3 in 1|2 in 1|Omnibus) Edition", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
+        [GeneratedRegex(@"Volume", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
+        [GeneratedRegex(@",|\(.*?\)| Manga| Graphic Novel|:|Hardcover|(?<=Vol \d{1,3})[^\d{1,3}.]+.*|(?<=Vol \d{1,3}.\d{1})[^\d{1,3}.]+.*")] private static partial Regex TitleParseRegex();
+        [GeneratedRegex(@"(?:3-in-1|2-in-1|Omnibus) Edition", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
 
         internal void ClearData()
         {
@@ -35,13 +35,13 @@ namespace MangaAndLightNovelWebScrape.Websites
             return CrunchyrollLinks.Count != 0 ? CrunchyrollLinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
 
-        private string GetUrl(BookType bookType, string bookTitle, int nextPage)
+        private string GenerateWebsiteUrl(BookType bookType, string bookTitle, int nextPage)
         {
             // https://store.crunchyroll.com/search?q=jujutsu%20kaisen&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Manga
             // https://store.crunchyroll.com/search?q=overlord&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Manga
             // https://store.crunchyroll.com/search?q=overlord&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Novels
             
-            string url = $"https://store.crunchyroll.com/search?q={MasterScrape.FilterBookTitle(bookTitle)}&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2={(bookType == BookType.Manga ? "Manga" : "Novels")}&srule=Product%20Name%20(A-Z)&start={nextPage}&sz=100";
+            string url = $"https://store.crunchyroll.com/search?q={InternalHelpers.FilterBookTitle(bookTitle)}&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2={(bookType == BookType.Manga ? "Manga" : "Novels")}&srule=Product%20Name%20(A-Z)&start={nextPage}&sz=100";
             LOGGER.Debug(url);
             CrunchyrollLinks.Add(url);
             return url;
@@ -63,13 +63,13 @@ namespace MangaAndLightNovelWebScrape.Websites
             {
                 if (titleText.Contains("Deluxe Edition"))
                 {
-                    curTitle.Replace("Omnibus ", "").Replace("Deluxe Edition", "Deluxe");
+                    curTitle.Replace("Omnibus ", string.Empty).Replace("Deluxe Edition", "Deluxe");
                 }
 
                 if (titleText.Contains("with Playing Cards", StringComparison.OrdinalIgnoreCase))
                 {
-                    curTitle.Replace(" with Playing Cards", "");
-                    curTitle.Insert(MasterScrape.FindVolNumRegex().Match(curTitle.ToString()).Index, "Special Edition Vol ");
+                    curTitle.Replace(" with Playing Cards", string.Empty);
+                    curTitle.Insert(MasterScrape.FindVolNumRegex().Match(curTitle.ToString()).Index, "Special Edition Vol ");;
                 }
                 titleText = curTitle.ToString();
 
@@ -79,10 +79,15 @@ namespace MangaAndLightNovelWebScrape.Websites
                     {
                         curTitle.Insert(MasterScrape.FindVolNumRegex().Match(titleText).Index, "Vol ");
                     }
-                    else if (baseTitleText.Contains("(Hardcover)"))
-                    {
-                        return curTitle.Append(" Hardcover").ToString();
-                    }
+                    // else if (baseTitleText.Contains("(Hardcover)"))
+                    // {
+                    //     return curTitle.Append(" Hardcover").ToString();
+                    // }
+                }
+
+                if (bookTitle.Equals("attack on titan", StringComparison.OrdinalIgnoreCase) && baseTitleText.Contains("(Hardcover)") && !curTitle.ToString().Contains("In Color"))
+                {
+                    return curTitle.Append(" In Color").ToString();
                 }
             }
             else if (bookType == BookType.LightNovel && !titleText.Contains("Novel"))
@@ -97,15 +102,18 @@ namespace MangaAndLightNovelWebScrape.Websites
                 }
             }
 
-            Match volGroup = MasterScrape.FindVolNumRegex().Match(curTitle.ToString());
-            if (!string.IsNullOrWhiteSpace(volGroup.Value) && volGroup.Value[0] == '0')
-            {
-                curTitle.Remove(volGroup.Index, volGroup.Value.Length);
-                curTitle.Insert(volGroup.Index, volGroup.Value.TrimStart('0'));
-            }
+            // Match volGroup = MasterScrape.FindVolNumRegex().Match(curTitle.ToString());
+            // if (!string.IsNullOrWhiteSpace(volGroup.Value) && volGroup.Value[0] == '0')
+            // {
+            //     LOGGER.Debug(curTitle.ToString());
+            //     curTitle.Remove(volGroup.Index, volGroup.Value.Length);
+            //     curTitle.Insert(volGroup.Index, volGroup.Value.TrimStart('0'));
+            //     LOGGER.Debug(curTitle.ToString());
+            // }
 
             InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, '-');
-            return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.Replace("Hardcover", "").ToString(), " ").Trim();
+            InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
+            return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.Replace("Hardcover", string.Empty).ToString(), " ").Trim();
         }
 
         private List<EntryModel> GetCrunchyrollData(string bookTitle, BookType bookType)
@@ -123,7 +131,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 while (true)
                 {
                     // Initialize the html doc for crawling
-                    doc = web.Load(GetUrl(bookType, bookTitle, nextPage));
+                    doc = web.Load(GenerateWebsiteUrl(bookType, bookTitle, nextPage));
 
                     // Get the page data from the HTML doc
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
@@ -134,7 +142,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     for (int x = 0; x < titleData.Count; x++)
                     {
                         string titleText = titleData[x].InnerText.Trim();
-                        if (InternalHelpers.TitleContainsBookTitle(bookTitle, titleText)
+                        if (InternalHelpers.BookTitleContainsEntryTitle(bookTitle, titleText)
                             && (!MasterScrape.EntryRemovalRegex().IsMatch(titleText) || BookTitleRemovalCheck)
                             && !(
                                 bookType == BookType.Manga
@@ -145,10 +153,11 @@ namespace MangaAndLightNovelWebScrape.Websites
                                 )
                             )        
                         {
+                            LOGGER.Debug("{} | {}", titleText, stockStatusData[x].InnerText.Trim());
                             CrunchyrollData.Add(
                                 new EntryModel
                                 (
-                                    TitleParse(TitleParseRegex().Replace(MasterScrape.FixVolumeRegex().Replace(titleText, "Vol"), "").Trim(), titleText, bookTitle, bookType),
+                                    TitleParse(TitleParseRegex().Replace(FixVolumeRegex().Replace(titleText, "Vol"), string.Empty).Trim(), titleText, bookTitle, bookType),
                                     priceData[x].InnerText.Trim(),
                                     stockStatusData[x].InnerText.Trim() switch
                                     {
@@ -179,11 +188,11 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             catch (Exception ex)
             {
-                LOGGER.Error($"{bookTitle} Does Not Exist @ Crunchyroll \n{ex}");
+                LOGGER.Error("{} Does Not Exist @ {} \n{}", bookTitle, WEBSITE_TITLE, ex);
             }
-            CrunchyrollData.Sort(MasterScrape.VolumeSort);
-
-            MasterScrape.PrintWebsiteData(WEBSITE_TITLE, bookTitle, CrunchyrollData, LOGGER);
+            
+            CrunchyrollData.Sort(EntryModel.VolumeSort);
+            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, CrunchyrollData, LOGGER);
             return CrunchyrollData;
         }
     }

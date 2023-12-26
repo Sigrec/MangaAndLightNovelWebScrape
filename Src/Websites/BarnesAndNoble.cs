@@ -9,7 +9,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         public const string WEBSITE_TITLE = "Barnes & Noble";
         private const decimal MEMBERSHIP_DISCOUNT = 0.1M;
         private static readonly Logger LOGGER = LogManager.GetLogger("BarnesAndNobleLogs");
-        private const Region WEBSITE_REGION = Region.America;
+        public const Region REGION = Region.America;
         private static readonly XPathExpression NotOneShotTitleXPath = XPathExpression.Compile("//div[contains(@class, 'product-shelf-title product-info-title pt-xs')]/a");
         private static readonly XPathExpression OneShotTitleXPath = XPathExpression.Compile("//div[@id='commerce-zone']//h1[@itemprop='name']");
         private static readonly XPathExpression NotOneShotPriceXPath = XPathExpression.Compile("//div[@class='product-shelf-pricing mt-xs']//div//a//span[2]");
@@ -50,20 +50,20 @@ namespace MangaAndLightNovelWebScrape.Websites
                 if (!check)
                 {
                     // https://www.barnesandnoble.com/s/one+piece/_/N-8q8Z2y35/?Nrpp=40&Ns=P_Display_Name%7C0&page=1
-                    url = $"https://www.barnesandnoble.com/s/{MasterScrape.FilterBookTitle(bookTitle)}/_/N-8q8Z2y35/?Nrpp=40&Ns=P_Display_Name%7C0&page=1";
+                    url = $"https://www.barnesandnoble.com/s/{InternalHelpers.FilterBookTitle(bookTitle)}/_/N-8q8Z2y35/?Nrpp=40&Ns=P_Display_Name%7C0&page=1";
                     LOGGER.Info($"Initial Manga Url = {url}");
                 }
                 else
                 {
                     // https://www.barnesandnoble.com/s/classroom+of+the+elite+manga/_/N-8q8Z2y35/?Nrpp=40&Ns=P_Display_Name%7C0&page=1
-                    url = $"https://www.barnesandnoble.com/s/{MasterScrape.FilterBookTitle(bookTitle)}+manga/_/N-8q8Z2y35/?Nrpp=40&Ns=P_Display_Name%7C0&page=1";
+                    url = $"https://www.barnesandnoble.com/s/{InternalHelpers.FilterBookTitle(bookTitle)}+manga/_/N-8q8Z2y35/?Nrpp=40&Ns=P_Display_Name%7C0&page=1";
                     LOGGER.Info($"Dif Manga Url = {url}");
                 }
             }
             else if (bookType == BookType.LightNovel)
             {
                 // https://www.barnesandnoble.com/s/overlord+novel/_/N-1z141wbZ8q8/?Nrpp=40&page=1
-                url = $"https://www.barnesandnoble.com/s/{MasterScrape.FilterBookTitle(bookTitle)}+novel/_/N-1z141wbZ8q8/?Nrpp=40&Ns=P_Display_Name%7C0&page=1";
+                url = $"https://www.barnesandnoble.com/s/{InternalHelpers.FilterBookTitle(bookTitle)}+novel/_/N-1z141wbZ8q8/?Nrpp=40&Ns=P_Display_Name%7C0&page=1";
                 LOGGER.Info($"Initial Novel Url = {url}");
             }
             BarnesAndNobleLinks.Add(url);
@@ -77,7 +77,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             string volNum = string.Empty;
             if (titleText.Contains("Box Set"))
             {
-                titleText = ParseBoxSetTitleRegex().Replace(titleText, "");
+                titleText = ParseBoxSetTitleRegex().Replace(titleText, string.Empty);
             }
             else
             {
@@ -100,7 +100,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 {
                     titleParseCheck = true;
                 }
-                titleText = ParseTitleRegex().Replace(titleText, "");
+                titleText = ParseTitleRegex().Replace(titleText, string.Empty);
             }
             
             StringBuilder curTitle = new StringBuilder(titleText);
@@ -182,7 +182,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                             // LOGGER.Debug("{} Url -> {}", innerText, url);
                             if (!hardcoverCheck && innerText.Equals("Hardcover", StringComparison.OrdinalIgnoreCase))
                             {
-                                ValidUrls.Add(new KeyValuePair<Uri, string>(new Uri($"{UrlFixRegex().Replace(url, "")}/?Nrpp=40&Ns=P_Display_Name%7C0&page=1"), "Hardcover"));
+                                ValidUrls.Add(new KeyValuePair<Uri, string>(new Uri($"{UrlFixRegex().Replace(url, string.Empty)}/?Nrpp=40&Ns=P_Display_Name%7C0&page=1"), "Hardcover"));
                             }
                             else if (!hardcoverCheck && innerText.Equals("BN Exclusive", StringComparison.OrdinalIgnoreCase))
                             {
@@ -190,7 +190,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                             }
                             else
                             {
-                                ValidUrls.Add(new KeyValuePair<Uri, string>(new Uri($"{UrlFixRegex().Replace(url, "")}/?Nrpp=40&Ns=P_Display_Name%7C0&page=1"), "Paperback"));
+                                ValidUrls.Add(new KeyValuePair<Uri, string>(new Uri($"{UrlFixRegex().Replace(url, string.Empty)}/?Nrpp=40&Ns=P_Display_Name%7C0&page=1"), "Paperback"));
                             }
                         }
                     }
@@ -239,7 +239,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                         string curTitle = !oneShotCheck ? titleData[x].GetAttributeValue("title", "Title Error") : titleData[x].InnerText;
                         
                         if (!oneShotCheck
-                            && (!InternalHelpers.TitleContainsBookTitle(bookTitle, curTitle)
+                            && (!InternalHelpers.BookTitleContainsEntryTitle(bookTitle, curTitle)
                             || (
                                     bookType == BookType.Manga
                                     && (
@@ -320,27 +320,8 @@ namespace MangaAndLightNovelWebScrape.Websites
             {
                 LOGGER.Error($"{bookTitle} Does Not Exist @ Barnes & Noble \n{e.StackTrace}");
             }
-            BarnesAndNobleData.Sort(MasterScrape.VolumeSort);
-
-            if (MasterScrape.IsDebugEnabled)
-            {
-                using (StreamWriter outputFile = new(@"Data\BarnesAndNobleData.txt"))
-                {
-                    if (BarnesAndNobleData != null && BarnesAndNobleData.Any())
-                    {
-                        foreach (EntryModel data in BarnesAndNobleData)
-                        {
-                            LOGGER.Info(data.ToString());
-                            outputFile.WriteLine(data.ToString());
-                        }
-                    }
-                    else
-                    {
-                        LOGGER.Error(bookTitle + " Does Not Exist at BarnesAndNoble");
-                        outputFile.WriteLine(bookTitle + " Does Not Exist at BarnesAndNoble");
-                    }
-                }
-            }  
+            BarnesAndNobleData.Sort(EntryModel.VolumeSort);
+            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, BarnesAndNobleData, LOGGER);
 
             return BarnesAndNobleData;
         }

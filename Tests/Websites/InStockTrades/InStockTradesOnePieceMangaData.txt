@@ -1,6 +1,6 @@
 [One Piece Omnibus Vol 21, $10.49, IS, InStockTrades]
 [One Piece Omnibus Vol 31, $10.49, IS, InStockTrades]
-[One Piece Vol 6, $6.99, IS, InStockTrades]
+[One Piece Omnibus Vol 33, $10.49, IS, InStockTrades]
 [One Piece Vol 8, $6.99, IS, InStockTrades]
 [One Piece Vol 9, $6.99, IS, InStockTrades]
 [One Piece Vol 11, $6.99, IS, InStockTrades]
@@ -13,4 +13,4 @@
 [One Piece Vol 81, $6.99, IS, InStockTrades]
 [One Piece Vol 87, $6.99, IS, InStockTrades]
 [One Piece Vol 100, $6.99, IS, InStockTrades]
-[One Piece Vol 101, $6.99, IS, InStockTrades]
+[One Piece Vol 104, $8.39, IS, InStockTrades]

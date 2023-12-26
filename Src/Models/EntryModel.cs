@@ -9,6 +9,7 @@ namespace MangaAndLightNovelWebScrape
         public StockStatus StockStatus { get; set; }
         public string  Website { get; set; }
         private static readonly Logger Logger = LogManager.GetLogger("MasterScrapeLogs");
+        internal static VolumeSort VolumeSort = new VolumeSort();
         [GeneratedRegex("[Vol|Box Set].*?(\\d+).*")]  private static partial Regex VolumeNumRegex();
         [GeneratedRegex(@".*(?<int> \d+)$|.*(?<double> \d+\.\d+)$")] private static partial Regex ExtractDoubleRegex();
 
@@ -86,7 +87,7 @@ namespace MangaAndLightNovelWebScrape
         /// to transform one string to the other, or -1 if the distance is greater than the specified maxDistance.</returns>
         public static int Similar(string s, string t, int maxDistance)
         {
-            if (string.IsNullOrWhiteSpace(s)) return ((t ?? "").Length <= maxDistance) ? (t ?? "").Length : -1;
+            if (string.IsNullOrWhiteSpace(s)) return ((t ?? string.Empty).Length <= maxDistance) ? (t ?? string.Empty).Length : -1;
             if (string.IsNullOrWhiteSpace(t)) return (s.Length <= maxDistance) ? s.Length : -1;
             s = s.ToLower();
             t = t.ToLower(); 
@@ -220,7 +221,7 @@ namespace MangaAndLightNovelWebScrape
             {
                 double val1 = EntryModel.GetCurrentVolumeNum(entry1.Entry);
                 double val2 = EntryModel.GetCurrentVolumeNum(entry2.Entry);
-                if (val1 != -1 && val2 != -1 && string.Equals(ExtractVolNameRegex().Replace(entry1.Entry, ""), ExtractVolNameRegex().Replace(entry2.Entry, ""), StringComparison.OrdinalIgnoreCase))
+                if (val1 != -1 && val2 != -1 && string.Equals(ExtractVolNameRegex().Replace(entry1.Entry, string.Empty), ExtractVolNameRegex().Replace(entry2.Entry, string.Empty), StringComparison.OrdinalIgnoreCase))
                 {
                     if (val1 > val2)
                     {

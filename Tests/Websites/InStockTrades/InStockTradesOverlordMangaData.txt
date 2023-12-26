@@ -11,6 +11,8 @@
 [Overlord Undead King Oh Vol 8, $9.75, IS, InStockTrades]
 [Overlord Undead King Oh Vol 9, $9.75, IS, InStockTrades]
 [Overlord Undead King Oh Vol 10, $9.75, IS, InStockTrades]
+[Overlord Undead King Oh Vol 11, $9.75, IS, InStockTrades]
+[Overlord Vol 3, $9.75, IS, InStockTrades]
 [Overlord Vol 4, $9.75, IS, InStockTrades]
 [Overlord Vol 6, $9.75, IS, InStockTrades]
 [Overlord Vol 7, $9.75, IS, InStockTrades]

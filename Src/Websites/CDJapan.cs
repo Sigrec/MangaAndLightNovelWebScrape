@@ -49,7 +49,7 @@ namespace MangaAndLightNovelWebScrape.Websites
 
         private static string TitleParse(string bookTitle, string entryTitle, string altTitle, BookType bookType)
         {
-            entryTitle = TitleRemovalRegex().Replace(TitleParseVolRegex().Replace(entryTitle, $"{(bookType == BookType.LightNovel ? "Novel " : "")}Vol $1"), "");
+            entryTitle = TitleRemovalRegex().Replace(TitleParseVolRegex().Replace(entryTitle, $"{(bookType == BookType.LightNovel ? "Novel " : string.Empty)}Vol $1"), string.Empty);
 
             StringBuilder curTitle = new StringBuilder(entryTitle);
             InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
@@ -90,7 +90,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     for (int x = 0; x < titleData.Count; x++)
                     {
                         string titleText = titleData[x].InnerText.Replace(altTitle, bookTitle, StringComparison.OrdinalIgnoreCase);
-                        if (InternalHelpers.TitleContainsBookTitle(bookTitle, titleText) 
+                        if (InternalHelpers.BookTitleContainsEntryTitle(bookTitle, titleText) 
                         && (!MasterScrape.EntryRemovalRegex().IsMatch(titleText) || BookTitleRemovalCheck) 
                         && !titleText.Contains("Manga Set"))
                         {
@@ -127,14 +127,14 @@ namespace MangaAndLightNovelWebScrape.Websites
                     }
                 }
 
-                CDJapanData.Sort(MasterScrape.VolumeSort);
+                CDJapanData.Sort(EntryModel.VolumeSort);
             }
             catch (Exception e)
             {
                 LOGGER.Error($"{bookTitle} Does Not Exist @ {WEBSITE_TITLE} \n{e}");
             }
             
-            MasterScrape.PrintWebsiteData(WEBSITE_TITLE, bookTitle, CDJapanData, LOGGER);
+            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, CDJapanData, LOGGER);
             return CDJapanData;
         }
     }

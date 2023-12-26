@@ -12,7 +12,7 @@ namespace Tests.Websites
             {
                 if (!string.IsNullOrWhiteSpace(line))
                 {
-                    lineSplit = RemoveBracketsRegex().Replace(line, "").Split(',', StringSplitOptions.TrimEntries);
+                    lineSplit = RemoveBracketsRegex().Replace(line, string.Empty).Split(',', StringSplitOptions.TrimEntries);
                     dataList.Add(new EntryModel(lineSplit[0], lineSplit[1], Helpers.GetStockStatusFromString(lineSplit[2]), lineSplit[3]));
                 }
             }

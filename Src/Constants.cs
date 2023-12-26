@@ -22,7 +22,8 @@ namespace MangaAndLightNovelWebScrape.Models
             Crunchyroll,
             RobertsAnimeCornerStore,
             Waterstones,
-            SciFier
+            SciFier,
+            MerryManga
         }
 
         public enum BookType
@@ -61,7 +62,11 @@ namespace MangaAndLightNovelWebScrape.Models
             /// <summary>
             /// Not Available
             /// </summary>
-            NA
+            NA,
+            /// <summary>
+            /// Backorder
+            /// </summary>
+            BO,
         }
     }
 }

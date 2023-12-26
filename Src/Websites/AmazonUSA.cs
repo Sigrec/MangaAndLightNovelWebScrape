@@ -5,7 +5,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         private List<string> AmazonUSALinks = new List<string>();
         private List<EntryModel> AmazonUSAData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "Amazon USA";
-        private const Region WEBSITE_REGION = Region.America;
+        public const Region REGION = Region.America;
         private static readonly Logger Logger = LogManager.GetLogger("AmazonUSALogs");
         private static readonly List<string> SeriesBypass = new List<string>(){ "Jujutsu Kaisen" };
         
@@ -58,17 +58,17 @@ namespace MangaAndLightNovelWebScrape.Websites
             Match omnibusFix = OmnibusFixRegex().Match(bookTitle);
             if (omnibusFix.Success)
             {
-                parsedTitle = OmnibusParsedTitleRegex().Replace(bookTitle, "");
+                parsedTitle = OmnibusParsedTitleRegex().Replace(bookTitle, string.Empty);
                 return parsedTitle.Insert(parsedTitle.Length, $" Omnibus Vol {Math.Ceiling(decimal.Parse(omnibusFix.Groups[1].Value) / 3)}");
             }
   
             if (!inputTitle.Any(char.IsDigit))
             {
-                parsedTitle = ParsedTitleNoDigitRegex().Replace(bookTitle.Replace("Vol.", "Vol").Replace("(Omnibus Edition)", "Omnibus"), "");
+                parsedTitle = ParsedTitleNoDigitRegex().Replace(bookTitle.Replace("Vol.", "Vol").Replace("(Omnibus Edition)", "Omnibus"), string.Empty);
             }
             else
             {
-                parsedTitle = ParsedTitleWithDigitRegex().Replace(bookTitle.Replace("Vol.", "Vol").Replace("(Omnibus Edition)", "Omnibus"), "");
+                parsedTitle = ParsedTitleWithDigitRegex().Replace(bookTitle.Replace("Vol.", "Vol").Replace("(Omnibus Edition)", "Omnibus"), string.Empty);
             }
 
             if (!parsedTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase) && !parsedTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
@@ -161,7 +161,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                         if (titleData[x].InnerText.Contains("Vol", StringComparison.OrdinalIgnoreCase) || titleData[x].InnerText.Contains("Volume", StringComparison.OrdinalIgnoreCase) || titleData[x].InnerText.Contains("Box Set", StringComparison.OrdinalIgnoreCase) || VolNumMatchRegex().Match(titleData[x].InnerText).Success || SeriesBypass.Any(titleData[x].InnerText.Contains))
                         {
                             currTitle = TitleParse(titleData[x].InnerText.Trim(), bookType, bookTitle);
-                            if(InternalHelpers.RemoveNonWordsRegex().Replace(currTitle, "").Contains(InternalHelpers.RemoveNonWordsRegex().Replace(bookTitle, ""), StringComparison.OrdinalIgnoreCase))
+                            if(InternalHelpers.RemoveNonWordsRegex().Replace(currTitle, string.Empty).Contains(InternalHelpers.RemoveNonWordsRegex().Replace(bookTitle, string.Empty), StringComparison.OrdinalIgnoreCase))
                             {
                                 AmazonUSAData.Add(
                                     new EntryModel(
@@ -193,8 +193,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                             AmazonUSALinks.Add(driver.Url);
                             foundHardcover = true;
                             goto HardcoverRestart;
-                        } 
-                        driver.Close();
+                        }
                         driver.Quit();
                         break;
                     }
@@ -202,12 +201,11 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             catch (Exception ex)
             {
-                driver.Close();
-                driver.Quit();
+                driver?.Quit();
                 Logger.Error($"{bookTitle} Does Not Exist @ AmazonUSA {ex}");
             }
 
-            AmazonUSAData.Sort(MasterScrape.VolumeSort);
+            AmazonUSAData.Sort(EntryModel.VolumeSort);
 
             if (MasterScrape.IsDebugEnabled)
             {

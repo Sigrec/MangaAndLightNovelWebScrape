@@ -9,7 +9,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         public const string WEBSITE_TITLE = "Indigo";
         private const decimal PLUM_DISCOUNT = 0.1M;
         private static readonly Logger LOGGER = LogManager.GetLogger("IndigoLogs");
-        private const Region WEBSITE_REGION = Region.Canada;
+        public const Region REGION = Region.Canada;
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//a[@class='link secondary']");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='price-wrapper']/span/span");
         private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='mb-0 product-tile-promotion mouse']");
@@ -59,15 +59,15 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             else if (entryTitle.Contains("Box Set"))
             {
-                entryTitle = BoxSetTitleRegex().Replace(entryTitle, "");
+                entryTitle = BoxSetTitleRegex().Replace(entryTitle, string.Empty);
             }
             
             if (bookType == BookType.LightNovel)
             {
-                entryTitle = NovelitleRegex().Replace(entryTitle, "");
+                entryTitle = NovelitleRegex().Replace(entryTitle, string.Empty);
             }
 
-            StringBuilder curTitle = new StringBuilder(TitleRegex().Replace(entryTitle, ""));
+            StringBuilder curTitle = new StringBuilder(TitleRegex().Replace(entryTitle, string.Empty));
             curTitle.Replace("Vols.", "Vol");
             curTitle.Replace(" Color Edition", "In Color");
             
@@ -145,7 +145,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     string titleDesc = titleData[x].GetAttributeValue("data-adobe-tracking", "Book Type Error");
                     // LOGGER.Debug("{} {}", entryTitle, titleDesc);
                     if ((!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
-                        && (InternalHelpers.TitleContainsBookTitle(bookTitle, entryTitle) || InternalHelpers.TitleStartsWithCheck(bookTitle, entryTitle))
+                        && (InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle) || InternalHelpers.TitleStartsWithCheck(bookTitle, entryTitle))
                         && (
                             (
                                 bookType == BookType.Manga
@@ -198,7 +198,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 LOGGER.Error($"{bookTitle} Does Not Exist @ Indigo {ex}");
             }
 
-            IndigoData.Sort(MasterScrape.VolumeSort);
+            IndigoData.Sort(EntryModel.VolumeSort);
 
             if (MasterScrape.IsDebugEnabled)
             {
