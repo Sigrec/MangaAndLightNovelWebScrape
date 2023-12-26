@@ -134,5 +134,12 @@ namespace Tests.Websites
             await Scrape.InitializeScrapeAsync("classroom of the elite", BookType.LightNovel, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollCOTENovelData.txt")));
         }
+
+        [Test, Description("Ensure consistency")]
+        public async Task Crunchyroll_Boruto_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Boruto", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollBorutoMangaData.txt")));
+        }
     }
 }
