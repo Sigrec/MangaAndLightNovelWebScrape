@@ -14,7 +14,8 @@ namespace MangaAndLightNovelWebScrape.Websites
         private static readonly XPathExpression BookTypeXPath = XPathExpression.Compile("//li[@class='block right crsr-txt pa--tr pa pqr pql mq type-tag inline-list__item']");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("(//a[@class='product-list__pagination__next'])[1]");
 
-        [GeneratedRegex(@"\(Hardcover\)|:(?:.*):|:", RegexOptions.IgnoreCase)] internal static partial Regex TitleParseRegex();
+        [GeneratedRegex(@"\(Hardcover\)|:(?:.*):", RegexOptions.IgnoreCase)] internal static partial Regex TitleParseRegex();
+        [GeneratedRegex(@"\(Hardcover\)", RegexOptions.IgnoreCase)] internal static partial Regex ColonTitleParseRegex();
         [GeneratedRegex(@"(?:3-In-1|3 In 1) Edition|Omnibus:|\(Omnibus Edition\):|Omni 3-In-1|(?:3-In-1|3 In 1)", RegexOptions.IgnoreCase)] private static partial Regex OmnibusFixRegex();
         [GeneratedRegex(@"(?:3-In-1|3 In 1)|\(.*\)|(?<=Omnibus \d{1,3})[^\d].*", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRemovalRegex();
         [GeneratedRegex(@"Omnibus (\d{1,3})", RegexOptions.IgnoreCase)] private static partial Regex OmnibusMissingVolRegex();
@@ -49,10 +50,16 @@ namespace MangaAndLightNovelWebScrape.Websites
         {
             // https://forbiddenplanet.com/catalog/comics-and-graphic-novels/?q=Naruto&show_out_of_stock=on&sort=release-date-asc&page=1
             // https://forbiddenplanet.com/catalog/comics-and-graphic-novels/?q=classroom%20of%20the%20elite%20light%20novel&sort=release-date-asc&page=1
-            string url = $"https://forbiddenplanet.com/catalog/comics-and-graphic-novels/?q={(bookType == BookType.Manga ? InternalHelpers.FilterBookTitle(entryTitle) : $"{InternalHelpers.FilterBookTitle(entryTitle)}%20light%20novel")}&show_out_of_stock=on&sort=release-date-asc&page=1";
+            string url = $"https://forbiddenplanet.com/catalog/{(bookType == BookType.Manga ? "manga" : string.Empty)}/?q={(bookType == BookType.Manga ? InternalHelpers.FilterBookTitle(entryTitle) : $"{InternalHelpers.FilterBookTitle(entryTitle)}%20light%20novel")}&show_out_of_stock=on&sort=release-date-asc&page=1";
             ForbiddenPlanetLinks.Add(url);
-            LOGGER.Info(url);
+            LOGGER.Info($"Url = {url}");
             return url;
+        }
+
+        private static void RemoveCookiePopup(WebDriver driver, WebDriverWait wait)
+        {
+            driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.CssSelector("button[class='button--brand button--lg brad mql mt'")))); // Get rid of cookies popup
+            wait.Until(driver => driver.FindElement(By.ClassName("full")));
         }
 
         // TODO Refactor this so AoT is like CR "Attack on Titan Season 3 Part 2 Box Set"
@@ -143,12 +150,20 @@ namespace MangaAndLightNovelWebScrape.Websites
                 curTitle.Replace("(Light Novel)", "Novel");
             }
 
-            if (curTitle.ToString().Contains("Anniversary"))
+            if (curTitle.ToString().Contains("Anniversary") && curTitle.ToString().Contains("Vol"))
             {
                 curTitle.Insert(curTitle.ToString().IndexOf("Vol"), $"{AnniversaryMatchRegex().Match(curTitle.ToString()).Groups[1].Value} ");
             }
 
-            return MasterScrape.MultipleWhiteSpaceRegex().Replace(TitleParseRegex().Replace(RemoveAfterVolNumRegex().Replace(curTitle.ToString(), string.Empty), string.Empty), " ").Trim();
+            if (!bookTitle.Contains(':'))
+            {
+                curTitle.Replace(":", string.Empty);
+                return MasterScrape.MultipleWhiteSpaceRegex().Replace(TitleParseRegex().Replace(RemoveAfterVolNumRegex().Replace(curTitle.ToString(), string.Empty), string.Empty), " ").Trim();
+            }
+            else
+            {
+                return MasterScrape.MultipleWhiteSpaceRegex().Replace(ColonTitleParseRegex().Replace(RemoveAfterVolNumRegex().Replace(curTitle.ToString(), string.Empty), string.Empty), " ").Trim();
+            }
         }
 
         private List<EntryModel> GetForbiddenPlanetData(string bookTitle, BookType bookType, WebDriver driver)
@@ -156,15 +171,13 @@ namespace MangaAndLightNovelWebScrape.Websites
             try
             {
                 WebDriverWait wait = new(driver, TimeSpan.FromSeconds(10));
-                // HtmlWeb web = new HtmlWeb { UserAgent = string.Empty };
+                HtmlDocument doc = new HtmlDocument();
+                bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
 
                 driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookType, bookTitle));
-                // wait.Until(e => e.FindElement(By.CssSelector(".clr-price")));
-                // driver.ExecuteScript("arguments[0].click();", driver.FindElement(By.XPath("//button[@class='load-all button--brand brad--sm']"))); // Get rid of cookies popup
-                //wait.Until(e => e.FindElement(By.ClassName("full")));
-                // wait.Until(driver => driver.FindElement(By.XPath(PriceXPath.Expression)));
-
-                HtmlDocument doc = new HtmlDocument();
+                RemoveCookiePopup(driver, wait);
+                doc.LoadHtml(driver.PageSource);
+                // LOGGER.Debug(doc.Text);
                 while (true)
                 {
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
@@ -173,7 +186,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     HtmlNodeCollection bookFormatData = doc.DocumentNode.SelectNodes(BookTypeXPath);
                     HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
                     HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
-                    // LOGGER.Debug("{} | {} | {} | {} | {}", titleData == null, priceData == null, minorPriceData == null, bookFormatData == null, stockStatusData == null);
+                    LOGGER.Debug("{} | {} | {} | {} | {}", titleData.Count, priceData.Count, minorPriceData.Count, bookFormatData.Count, stockStatusData.Count);
 
                     for (int x = 0; x < titleData.Count; x++)
                     {
@@ -181,7 +194,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                         string entryTitle = titleData[x].GetDirectInnerText();
                         if (
                             InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
-                            && !MasterScrape.EntryRemovalRegex().IsMatch(entryTitle)
+                            && (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
                             &&  (
                                     (
                                     bookType == BookType.Manga 
@@ -200,36 +213,42 @@ namespace MangaAndLightNovelWebScrape.Websites
                                             )
                                         )
                                     )
-                                || bookType == BookType.LightNovel
+                                    || bookType == BookType.LightNovel
                                 )
                             )
                         {
                             entryTitle = TitleParse(bookTitle, entryTitle, bookType);
                             if (!ForbiddenPlanetData.Exists(entry => entry.Entry.Equals(entryTitle)))
-                            ForbiddenPlanetData.Add(
-                                new EntryModel(
-                                    entryTitle,
-                                    $"{priceData[x].GetDirectInnerText()}{minorPriceData[x].InnerText}", 
-                                    stockStatusData[x].LastChild.InnerText switch
-                                    {
-                                        "Pre-Order" => StockStatus.PO,
-                                        "Currently Unavailable" => StockStatus.OOS,
-                                        _ => StockStatus.IS
-                                    },
-                                    WEBSITE_TITLE
-                                )
-                            );
+                            {
+                                ForbiddenPlanetData.Add(
+                                    new EntryModel(
+                                        entryTitle,
+                                        $"{priceData[x].GetDirectInnerText()}{minorPriceData[x].InnerText}", 
+                                        stockStatusData[x].LastChild.InnerText switch
+                                        {
+                                            "Pre-Order" => StockStatus.PO,
+                                            "Currently Unavailable" => StockStatus.OOS,
+                                            _ => StockStatus.IS
+                                        },
+                                        WEBSITE_TITLE
+                                    )
+                                );
+                            }
+                            else { LOGGER.Info("Removed {}", entryTitle); }
                         }
+                        else { LOGGER.Info("Removed {}", entryTitle); }
                     }
 
                     if (pageCheck != null)
                     {
-                        // driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("(//a[@class='product-list__pagination__next'])[1]"))));
-                        // wait.Until(driver => driver.FindElement(By.XPath("//form[@class='product-list main__content centered one-whole']")));
-                        LOGGER.Info(driver.Url);
+                        driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("(//a[@class='product-list__pagination__next'])[1]"))));
+                        RemoveCookiePopup(driver, wait);
+                        doc.LoadHtml(driver.PageSource);
+                        LOGGER.Info($"Url = {driver.Url}");
                     }
                     else
                     {
+                        // driver.Quit();
                         break;
                     }
                 }
@@ -239,7 +258,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             catch (Exception e)
             {
-                driver?.Quit();
+                // driver?.Quit();
                 LOGGER.Error($"{bookTitle} Does Not Exist @ {WEBSITE_TITLE} \n{e}");
             }
             return ForbiddenPlanetData;

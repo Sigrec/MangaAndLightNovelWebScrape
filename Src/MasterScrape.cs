@@ -38,7 +38,7 @@ namespace MangaAndLightNovelWebScrape
         public Browser Browser { get; set; }
         private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
         // "--headless=new", 
-        internal static readonly string[] CHROME_BROWSER_ARGUMENTS = ["--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent"];
+        internal static readonly string[] CHROME_BROWSER_ARGUMENTS = ["--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent"];
         private static readonly string[] FIREFOX_BROWSER_ARGUMENTS = ["-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3"];
         /// <summary>
         /// Excludes nothing or include OOS (Out of Stock) & PO (Pre Order) Entries
@@ -893,7 +893,7 @@ namespace MangaAndLightNovelWebScrape
             System.Diagnostics.Stopwatch watch = new();
             watch.Start();
             MasterScrape scrape = new MasterScrape(Region.Britain, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("Boruto", BookType.Manga, EXCLUDE_NONE_FILTER, [ Website.ForbiddenPlanet ], false, false, false, false);
+            await scrape.InitializeScrapeAsync("fullmetal alchemist", BookType.Manga, EXCLUDE_NONE_FILTER, [ Website.ForbiddenPlanet ], false, false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
