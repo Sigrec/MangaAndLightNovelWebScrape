@@ -47,20 +47,6 @@ namespace Tests.Websites
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleNarutoMangaData.txt")));
         }
 
-        [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions")]
-        public async Task BarnesAndNoble_AttackOnTitan_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("Attack on Titan", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleAttackOnTitanMangaData.txt")));
-        }
-
-        [Test]
-        public async Task BarnesAndNoble_Boruto_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("Boruto", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleBorutoMangaData.txt")));
-        }
-
         [Test]
         public async Task BarnesAndNoble_Naruto_Novel_Test()
         {
@@ -75,26 +61,25 @@ namespace Tests.Websites
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleBleachMangaData.txt")));
         }
 
-        [Test, Description("Validates Manga w/ Based on Series that is a Novel")]
-        public async Task BarnesAndNoble_COTE_Manga_Test()
+        [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions")]
+        public async Task BarnesAndNoble_AttackOnTitan_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("classroom of the elite", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleCOTEMangaData.txt")));
+            await Scrape.InitializeScrapeAsync("Attack on Titan", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleAttackOnTitanMangaData.txt")));
         }
 
-        [Test, Description("Validates Novel w/ Manga Entries & Volume Numbers with Decimals")]
-        public async Task BarnesAndNoble_COTE_Novel_Test()
+        [Test, Description("Validates One Shot Manga Series")]
+        public async Task BarnesAndNoble_Member_GoodbyeEri_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("classroom of the elite", BookType.LightNovel, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleCOTENovelData.txt")));
+            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList, true);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleGoodbyeEriMangaData.txt")));
         }
 
-        // Not done, is having issues
-        [Test, Description("Validates Novel w/ Novel after Volume and lowercase")]
-        public async Task BarnesAndNoble_Overlord_Novel_Test()
+        [Test, Description("Validates Series w/ number & '.' in book title")]
+        public async Task BarnesAndNoble_DimensionalSeduction_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("Overlord", BookType.LightNovel, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleOverlordNovelData.txt")));
+            await Scrape.InitializeScrapeAsync("2.5 Dimensional Seduction", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleDimensionalSeductionMangaData.txt")));
         }
 
         // Currently there A La Carte are under Subject Comic and not Manga so theyh aren't grabbed
@@ -105,11 +90,11 @@ namespace Tests.Websites
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleOverlordMangaData.txt")));
         }
 
-        [Test, Description("Validates Series w/ Number")]
-        public async Task BarnesAndNoble_DimensionalSeduction_Manga_Test()
+        [Test, Description("Validates Novel w/ Novel after Volume and lowercase")]
+        public async Task BarnesAndNoble_Overlord_Novel_Test()
         {
-            await Scrape.InitializeScrapeAsync("2.5 Dimensional Seduction", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleDimensionalSeductionMangaData.txt")));
+            await Scrape.InitializeScrapeAsync("Overlord", BookType.LightNovel, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleOverlordNovelData.txt")));
         }
 
         [Test, Description("Validates Series w/ Non Letter or Digit Char & Numbers in Title")]
@@ -140,11 +125,18 @@ namespace Tests.Websites
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleToiletMangaData.txt")));
         }
 
-        [Test, Description("Validates One Shot Manga Series")]
-        public async Task BarnesAndNoble_Member_GoodbyeEri_Manga_Test()
+        [Test, Description("Validates Novel w/ Manga Entries & Volume Numbers with Decimals")]
+        public async Task BarnesAndNoble_COTE_Novel_Test()
         {
-            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList, true);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleGoodbyeEriMangaData.txt")));
+            await Scrape.InitializeScrapeAsync("classroom of the elite", BookType.LightNovel, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleCOTENovelData.txt")));
+        }
+
+        [Test]
+        public async Task BarnesAndNoble_Boruto_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Boruto", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleBorutoMangaData.txt")));
         }
     }
 }

@@ -12,7 +12,7 @@ V1.1.4 - December
 ✅ Added "Backorder (BO)" as a StockStatus
 ✅ Updated print methods to check if the data is empty and print corresponding message
 ✅ Added new print method to print to a file
-✅ Added & Completed MerryManga website for America Region
+✅ Completed MerryManga website for America Region
 ✅ Completed Waterstones website for Britain Region
 🔥 Website const variiable region is now public instead of private
 📜Crunchyroll Fixes
@@ -47,6 +47,7 @@ V1.1.4 - December
 📜Books-A-Million
  -🔥Fix issue where boxsets would append vol 1 if they have no number sometimes
 📜Barnes & Noble
+ -🔥Fix parsing issue with manga entries that are adaptations of novels
 
 V1.1.3 - November 3rd
 ✅ Added methods to print results to logger or console
