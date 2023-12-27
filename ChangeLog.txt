@@ -6,7 +6,7 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> Inprogress feature will be fixed in later release
 
-V1.1.4 - December
+V1.1.4 - December 27th
 ⌛ Updated to .NET 8.0
 ❌ Integrated StockStatus as it's own class and is now part of the MasterScrape
 ✅ Added "Backorder (BO)" as a StockStatus
@@ -14,6 +14,8 @@ V1.1.4 - December
 ✅ Added new print method to print to a file
 ✅ Completed MerryManga website for America Region
 ✅ Completed Waterstones website for Britain Region
+✅ Moved filter to its own object class and moved it up to the MasterScrape object variable level instead of method variable
+✅ Added 3 new stock status filters
 🔥 Website const variiable region is now public instead of private
 📜Crunchyroll Fixes
  -🔥"Volume 0's" the "0" is no longer cutoff

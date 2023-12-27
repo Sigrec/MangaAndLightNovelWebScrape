@@ -36,20 +36,19 @@ If you want more websites just notify me and I will look into seeing if I can ad
 ```cs
 private static async Task Main(string[] args)
 {
-    // Create the MasterScrape object it defaults to America Region and Chrome Browser but can still change them outside of the constructor & debug mode disabled by default
-    MasterScrape scrape = new MasterScrape();
+    // Create the MasterScrape object it defaults to America Region & Chrome Browser but you can still change them outside of the constructor & debug mode is disabled by default. There is no default StockStatusFilter
+    MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_OOS_FILTER);
     scrape.Region = Region.America;
     scrape.Browser = Browser.FireFox;
 
     // Alternativly you can do everything in the constructor and enable debug mode which will print to log and txt files
     // Chaining Regions like so Region.America | Region.Britain will not work
-    MasterScrape scrape = new MasterScrape(Region.Britain, Browser.Edge).EnableDebugMode();
+    MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_ALL_FILTER, Region.Britain, Browser.Edge).EnableDebugMode();
 
     // Initialize the Scrape
     await scrape.InitializeScrapeAsync(
         "one piece", // Title
         BookType.Manga, // BookType
-        MasterScrape.EXCLUDE_NONE_FILTER, // StockStatus Array
         scrape.GenerateWebsiteList(new List<string>() { InStockTrades.WEBSITE_TITLE }), // Website List
         false, // isBarnesAndNobleMember
         false, // isBooksAMillionMember
