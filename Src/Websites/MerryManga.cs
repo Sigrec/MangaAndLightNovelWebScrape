@@ -15,6 +15,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)|Omnibus( \d{1,2})(?:, |\s{1})Vol \d{1,3}-\d{1,3}", RegexOptions.IgnoreCase)] private static partial Regex FixOmnibusRegex();
         [GeneratedRegex(@"(?<=Box Set \d{1}).*", RegexOptions.IgnoreCase)] private static partial Regex FixBoxSetRegex();
         [GeneratedRegex(@" \(.*\)|,")] private static partial Regex FixTitleRegex();
+        [GeneratedRegex(@"Vol\.", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
 
         internal async Task CreateMerryMangaTask(string bookTitle, BookType bookType, List<List<EntryModel>> MasterDataList, WebDriver driver)
         {
@@ -118,7 +119,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
                 HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
                 HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
-                LOGGER.Debug("Check #1 {} | {} | {}", titleData.Count, priceData.Count, stockStatusData.Count);
+                // LOGGER.Debug("Check #1 {} | {} | {}", titleData.Count, priceData.Count, stockStatusData.Count);
 
                 for (int x = 0; x < titleData.Count; x++)
                 {
@@ -138,7 +139,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                         MerryMangaData.Add(
                             new EntryModel
                             (
-                                ParseTitle(MasterScrape.FixVolumeRegex().Replace(entryTitle, "Vol").Trim(), bookTitle, bookType),
+                                ParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol").Trim(), bookTitle, bookType),
                                 $"${priceData[x].InnerText.Trim()}",
                                 stockStatusData[x].GetAttributeValue("class", "Unknown").Trim() switch
                                 {

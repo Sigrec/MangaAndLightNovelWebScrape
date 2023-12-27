@@ -68,7 +68,6 @@ namespace MangaAndLightNovelWebScrape
         [GeneratedRegex(@"\d{1,3}$")] internal static partial Regex FindVolNumRegex();
         [GeneratedRegex(@"\s{2,}|--|—")] internal static partial Regex MultipleWhiteSpaceRegex();
         [GeneratedRegex(@";jsessionid=[^?]*")] internal static partial Regex RemoveJSessionIDRegex();
-        [GeneratedRegex(@"GN|Graphic Novel|:\s+Volumes|Volumes|:\s+Volume|Volume|Vol\.|:\s+Volumr|Volumr|Volume(\d{1,3})", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
         [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Compendium|Artbook|Error|\(Osi\)|Advertising|Art Book|Adventure|Artbook|Coloring Book|the Anime|Calendar|Ani-manga|Anime|Bilingual|Game Book|Theatrical", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
         [GeneratedRegex(@"Official|Guide|Adventure|Advertising|Anime|Calendar|Error|Encyclopedia|Anthology|Character|Bilingual|Game Book|Theatrical", RegexOptions.IgnoreCase)] internal static partial Regex CheckEntryRemovalRegex();
 

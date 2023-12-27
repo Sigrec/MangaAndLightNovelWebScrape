@@ -16,6 +16,7 @@ namespace MangaAndLightNovelWebScrape.Websites
 
         [GeneratedRegex(@"(\d{1,3}|\d{1,3}.\d{1})\s+(?:\(.*?\).*|\[.*?\])")] private static partial Regex TitleParseVolRegex();
         [GeneratedRegex(@" \(.*?\)| \[.*?\]")] private static partial Regex TitleRemovalRegex();
+        // [GeneratedRegex(@"GN|Graphic Novel|:\s+Volumes|Volumes|:\s+Volume|Volume|Vol\.|:\s+Volumr|Volumr|Volume(\d{1,3})", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
 
         internal async Task CreateCDJapanTask(string bookTitle, BookType bookType, List<List<EntryModel>> MasterDataList)
         {
