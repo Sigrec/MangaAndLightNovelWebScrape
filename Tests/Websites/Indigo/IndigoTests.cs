@@ -12,11 +12,25 @@ namespace Tests.Websites
             WebsiteList = new HashSet<Website>() {Website.Indigo};
         }
 
-        [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions")]
-        public async Task Indigo_AttackOnTitan_Manga_Test()
+        [Test, Description("Validates Series w/ Non Letter or Digit Char in Title")]
+        public async Task Indigo_AkaneBanashi_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("Attack on Titan", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoAttackOnTitanMangaData.txt")));
+            await Scrape.InitializeScrapeAsync("Akane-Banashi", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoAkaneBanashiMangaData.txt")));
+        }
+
+        [Test, Description("Validates Series w/ Vol 0 that does not contain 'Vol' stirng & Novel entries")]
+        public async Task Indigo_JujutsuKaisen_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("jujutsu kaisen", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoJujutsuKaisenMangaData.txt")));
+        }
+
+        [Test, Description("Test Title that contains a keyword to skip and contains ':'")]
+        public async Task Indigo_AdventuresOfDai_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Dragon Quest: The Adventure of Dai", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoAdventuresOfDaiMangaData.txt")));
         }
 
         [Test, Description("Tests Manga book, Box Sets, Omnibus, & Manga w/ No Vol Number")]
@@ -47,11 +61,25 @@ namespace Tests.Websites
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoBleachMangaData.txt")));
         }
 
-        [Test, Description("Validates Novel w/ Manga Entries")]
-        public async Task Indigo_Overlord_Novel_Test()
+        [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions")]
+        public async Task Indigo_AttackOnTitan_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("Overlord", BookType.LightNovel, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoOverlordNovelData.txt")));
+            await Scrape.InitializeScrapeAsync("Attack on Titan", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoAttackOnTitanMangaData.txt")));
+        }
+
+        [Test, Description("Validates One Shot Manga Series")]
+        public async Task Indigo_Member_GoodbyeEri_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList, false, false, false, true);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoGoodbyeEriMangaData.txt")));
+        }
+
+        [Test, Description("Validates Series w/ number & '.' in book title & Duplicate Entries")]
+        public async Task Indigo_DimensionalSeduction_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("2.5 Dimensional Seduction", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoDimensionalSeductionMangaData.txt")));
         }
 
         [Test, Description("Validates Manga w/ Novel Entries & Damaged Entry not Included in Final Data Set")]
@@ -61,11 +89,18 @@ namespace Tests.Websites
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoOverlordMangaData.txt")));
         }
 
-        [Test, Description("Validates Series w/ Non Letter or Digit Char in Title")]
-        public async Task Indigo_AkaneBanashi_Manga_Test()
+        [Test, Description("Validates Novel w/ Manga Entries")]
+        public async Task Indigo_Overlord_Novel_Test()
         {
-            await Scrape.InitializeScrapeAsync("Akane-Banashi", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoAkaneBanashiMangaData.txt")));
+            await Scrape.InitializeScrapeAsync("Overlord", BookType.LightNovel, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoOverlordNovelData.txt")));
+        }
+
+         [Test, Description("Validates Series w/ '-' in book title")]
+        public async Task Indigo_07Ghost_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("07-ghost", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\Indigo07GhostMangaData.txt")));
         }
 
         [Test, Description("Validates Manga Series w/ Novel that doesn't have LN identifier")]
@@ -96,13 +131,6 @@ namespace Tests.Websites
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoToiletMangaData.txt")));
         }
 
-        [Test, Description("Validates One Shot Manga Series")]
-        public async Task Indigo_Member_GoodbyeEri_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList, false, false, false, true);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoGoodbyeEriMangaData.txt")));
-        }
-
         [Test, Description("Validates Novel w/ Manga Entries & Volume Numbers with Decimals")]
         public async Task Indigo_COTE_Novel_Test()
         {
@@ -110,11 +138,11 @@ namespace Tests.Websites
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoCOTENovelData.txt")));
         }
 
-        [Test, Description("Validates Manga w/ Novel Entries")]
-        public async Task Indigo_COTE_Manga_Test()
+        [Test, Description("Ensure consistency")]
+        public async Task Indigo_Boruto_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("classroom of the elite", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoCOTEMangaData.txt")));
+            await Scrape.InitializeScrapeAsync("Boruto", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoBorutoMangaData.txt")));
         }
     }
 }

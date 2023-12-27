@@ -875,7 +875,6 @@ namespace MangaAndLightNovelWebScrape
             });
         }
         
-        // Need to Add AoT tests for all websites and make fixes
         //In the UK there's 
         // Wordery https://wordery.com/
         // Books Etc https://www.books-etc.com/
@@ -889,14 +888,13 @@ namespace MangaAndLightNovelWebScrape
 
         // Command to end all chrome.exe process -> taskkill /F /IM chrome.exe /T
         // Command to end all chromedriver.exe process -> taskkill /F /IM chromedriver.exe /T
-        // TODO Need to throw exception if user is querying against Japan region and text is not in JApanese
-        // TODO Add Merry Manga https://www.merrymanga.com/product-category/manga/
+        // TODO Need to throw exception if user is querying against Japan region and text is not in Japanese
         private static async Task Main(string[] args)
         {
             System.Diagnostics.Stopwatch watch = new();
             watch.Start();
             MasterScrape scrape = new MasterScrape(Region.America, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("Soichi", BookType.Manga, EXCLUDE_NONE_FILTER, [ Website.InStockTrades ], false, false, false, false);
+            await scrape.InitializeScrapeAsync("Naruto", BookType.LightNovel, EXCLUDE_NONE_FILTER, [ Website.BooksAMillion ], false, false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }

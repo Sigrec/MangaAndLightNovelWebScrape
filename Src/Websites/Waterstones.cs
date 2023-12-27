@@ -22,7 +22,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         [GeneratedRegex(@"(?<=Box Set \d{1}).*", RegexOptions.IgnoreCase)] private static partial Regex FixBoxSetRegex();
         [GeneratedRegex(@"\(.*\)", RegexOptions.IgnoreCase)] private static partial Regex FixTitleTwoRegex();
         [GeneratedRegex(@"(?:Vol \d{1,3})$", RegexOptions.IgnoreCase)] private static partial Regex FullTitleCheckRegex();
-        [GeneratedRegex(@"Vol\.|Volume|v\.", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
+        [GeneratedRegex(@"Vol\.|Volume|v\.", RegexOptions.IgnoreCase)] private static partial Regex FixVolumeRegex();
 
         internal async Task CreateWaterstonesTask(string bookTitle, BookType bookType, List<List<EntryModel>> MasterDataList, WebDriver driver)
         {

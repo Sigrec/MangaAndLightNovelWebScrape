@@ -12,18 +12,25 @@ namespace Tests.Websites
             WebsiteList = new HashSet<Website>() {Website.BooksAMillion};
         }
 
+        [Test, Description("Validates Series w/ Non Letter or Digit Char in Title")]
+        public async Task BooksAMillion_AkaneBanashi_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Akane-Banashi", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionAkaneBanashiMangaData.txt")));
+        }
+
+        [Test, Description("Validates Manga Series w/ Volumes that does not contain Vol type string but is valid")]
+        public async Task BooksAMillion_JujutsuKaisen_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("jujutsu kaisen", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionJujutsuKaisenMangaData.txt")));
+        }
+
         [Test, Description("Test Title that contains a keyword to skip and contains ':'")]
         public async Task BooksAMillion_AdventuresOfDai_Manga_Test()
         {
             await Scrape.InitializeScrapeAsync("Dragon Quest: The Adventure of Dai", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionAdventuresOfDaiMangaData.txt")));
-        }
-
-        [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions")]
-        public async Task BooksAMillion_AttackOnTitan_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("Attack on Titan", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionAttackOnTitanMangaData.txt")));
         }
 
         [Test, Description("Tests Manga book, Box Sets, Omnibus, & Manga w/ No Vol Number")]
@@ -54,18 +61,25 @@ namespace Tests.Websites
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionBleachMangaData.txt")));
         }
 
-        [Test, Description("Validates Manga w/ Novel Entries")]
-        public async Task BooksAMillion_COTE_Manga_Test()
+        [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions")]
+        public async Task BooksAMillion_AttackOnTitan_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("classroom of the elite", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionCOTEMangaData.txt")));
+            await Scrape.InitializeScrapeAsync("Attack on Titan", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionAttackOnTitanMangaData.txt")));
         }
 
-        [Test, Description("Validates Novel w/ Manga Entries")]
-        public async Task BooksAMillion_COTE_Novel_Test()
+        [Test, Description("Validates One Shot Manga Series")]
+        public async Task BooksAMillion_Member_GoodbyeEri_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("classroom of the elite", BookType.LightNovel, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionCOTENovelData.txt")));
+            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList, false, true);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionGoodbyeEriMangaData.txt")));
+        }
+
+        [Test, Description("Validates Series w/ number & '.' in book title")]
+        public async Task BooksAMillion_DimensionalSeduction_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("2.5 Dimensional Seduction", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionDimensionalSeductionMangaData.txt")));
         }
 
         [Test, Description("Validates Novel w/ Novel after Volume and lowercase")]
@@ -82,33 +96,6 @@ namespace Tests.Websites
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionOverlordMangaData.txt")));
         }
 
-        [Test, Description("Validates Series w/ Number")]
-        public async Task BooksAMillion_DimensionalSeduction_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("2.5 Dimensional Seduction", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionDimensionalSeductionMangaData.txt")));
-        }
-
-        [Test, Description("Validates Series w/ Non Letter or Digit Char in Title")]
-        public async Task BooksAMillion_AkaneBanashi_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("Akane-Banashi", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionAkaneBanashiMangaData.txt")));
-        }
-
-        // [Test, Description("Validates Series w/ Non Letter or Digit Char & Numbers in Title")]
-        // public async Task BooksAMillion_07Ghost_Manga_Test()
-        // {
-        //     Assert.That(BooksAMillion.GetBooksAMillionData("07-ghost", Book.Manga, false), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillion07GhostMangaData.txt")));
-        // }
-
-        [Test, Description("Validates Manga Series w/ Volumes that does not contain Vol type string but is valid")]
-        public async Task BooksAMillion_JujutsuKaisen_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("jujutsu kaisen", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionJujutsuKaisenMangaData.txt")));
-        }
-
         [Test, Description("Validates Manga Series w/ Hardcover & Paperback Volumes")]
         public async Task BooksAMillion_FMAB_Manga_Test()
         {
@@ -123,17 +110,25 @@ namespace Tests.Websites
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionBerserkMangaData.txt")));
         }
 
-        // [Test, Description("Validates Manga Series w/ Illustration Entries & Vol 0")]
-        // public async Task BooksAMillion_Toilet_Manga_Test()
-        // {
-        //     Assert.That(BooksAMillion.GetBooksAMillionData("Toilet-bound Hanako-kun", Book.Manga, false), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionToiletMangaData.txt")));
-        // }
-
-        [Test, Description("Validates One Shot Manga Series")]
-        public async Task BooksAMillion_Member_GoodbyeEri_Manga_Test()
+        [Test, Description("Validates Manga Series w/ Box Set with Specific name")]
+        public async Task BooksAMillion_ToiletBound_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList, false, true);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionGoodbyeEriMangaData.txt")));
+            await Scrape.InitializeScrapeAsync("Toilet-bound Hanako-kun", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionToiletMangaData.txt")));
+        }
+
+        [Test, Description("Validates Novel w/ Manga Entries")]
+        public async Task BooksAMillion_COTE_Novel_Test()
+        {
+            await Scrape.InitializeScrapeAsync("classroom of the elite", BookType.LightNovel, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionCOTENovelData.txt")));
+        }
+
+        [Test, Description("Ensure consistency")]
+        public async Task BooksAMillion_Boruto_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Boruto", BookType.Manga, MasterScrape.EXCLUDE_NONE_FILTER, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionBorutoMangaData.txt")));
         }
     }
 }

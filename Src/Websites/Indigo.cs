@@ -12,15 +12,18 @@ namespace MangaAndLightNovelWebScrape.Websites
         public const Region REGION = Region.Canada;
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//a[@class='link secondary']");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='price-wrapper']/span/span");
-        private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='mb-0 product-tile-promotion mouse']");
+        private static readonly XPathExpression EntryLinkXPath = XPathExpression.Compile("//a[@class='link secondary']");
         private static readonly XPathExpression OneShotTitleXPath = XPathExpression.Compile("//h1[@class='product-name font-weight-mid']");
         private static readonly XPathExpression OneShotPriceXPath = XPathExpression.Compile("//span[@class='value']");
         private static readonly XPathExpression OneShotCheckXPath = XPathExpression.Compile("//span[@class='search-result-count' and contains(text(), 'Results for')]");
+        private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='col-12 pdp-checkout-button']/button[2]/text()");
+        private static readonly XPathExpression FormatCheckXPath = XPathExpression.Compile("//tr[@class='format-spec ']/td");
 
         [GeneratedRegex(@",| \(manga\)|(?<=\d{1,3}): .*| Manga|\s+\(.*?\)| The Manga|", RegexOptions.IgnoreCase)] private static partial Regex TitleRegex();
         [GeneratedRegex(@"(?<=Box Set \d{1}).*|\s+Complete", RegexOptions.IgnoreCase)] private static partial Regex BoxSetTitleRegex();
         [GeneratedRegex(@"(?<=Vol \d{1,3})[^\d{1,3}.]+.*", RegexOptions.IgnoreCase)] private static partial Regex NovelitleRegex();
         [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)")] private static partial Regex OmnibusRegex();
+        [GeneratedRegex(@"Vol\.|Vols\.|Volume", RegexOptions.IgnoreCase)] private static partial Regex FixVolumeRegex();
 
         protected internal async Task CreateIndigoTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList)
         {
@@ -41,59 +44,58 @@ namespace MangaAndLightNovelWebScrape.Websites
             return IndigoLinks.Count != 0 ? IndigoLinks[0] : $"{WEBSITE_TITLE} Has no Link"; 
         }
 
-        // https://www.indigo.ca/en-ca/search?q=one+piece+Manga&prefn1=BISACBindingTypeID&prefv1=Paperback%7CHardcover&prefn2=Language&prefv2=English&start=0&sz=1000
-        private string GetUrl(string bookTitle, BookType bookType)
+        private string GenerateWebsiteUrl(string bookTitle, BookType bookType)
         {
-            string url = $"https://www.indigo.ca/en-ca/search?q={bookTitle.Replace(' ', '+')}+{(bookType == BookType.Manga ? "manga" : "novel")}&prefn1=BISACBindingTypeID&prefv1=Paperback%7CHardcover&prefn2=Language&prefv2=English&start=0&sz=1000";
-            LOGGER.Debug(url);
+            // https://www.indigo.ca/en-ca/books/?q=One+Piece+manga&prefn1=Language&prefv1=English&start=0&sz=1000
+            // https://www.indigo.ca/en-ca/books/?q=fullmetal+alchemist+novel&prefn1=Language&prefv1=English&start=0&sz=1000
+            string url = $"https://www.indigo.ca/en-ca/books/?q={bookTitle.Replace(' ', '+')}+{(bookType == BookType.Manga ? "manga" : "novel")}&prefn1=Language&prefv1=English&start=0&sz=1000";
+            LOGGER.Info(url);
             IndigoLinks.Add(url);
             return url;
         }
 
         private string ParseTitle(string entryTitle, string bookTitle, BookType bookType)
         {
+            if (bookType == BookType.LightNovel)
+            {
+                entryTitle = NovelitleRegex().Replace(entryTitle, string.Empty);
+            }
+
             if (OmnibusRegex().IsMatch(entryTitle))
             {
-                LOGGER.Debug(entryTitle);
                 entryTitle = OmnibusRegex().Replace(entryTitle, "Omnibus");
             }
             else if (entryTitle.Contains("Box Set"))
             {
                 entryTitle = BoxSetTitleRegex().Replace(entryTitle, string.Empty);
             }
-            
-            if (bookType == BookType.LightNovel)
-            {
-                entryTitle = NovelitleRegex().Replace(entryTitle, string.Empty);
-            }
 
             StringBuilder curTitle = new StringBuilder(TitleRegex().Replace(entryTitle, string.Empty));
-            curTitle.Replace("Vols.", "Vol");
-            curTitle.Replace(" Color Edition", "In Color");
+            if (bookTitle.Contains("Boruto", StringComparison.OrdinalIgnoreCase))
+            {
+                curTitle.Replace(" Naruto Next Generations", string.Empty);
+            }
+
+            if (entryTitle.Contains("Collector's Edition"))
+            {
+                curTitle.Insert(curTitle.ToString().IndexOf("Vol"), "Collectors Edition ");
+            }
             
             // LOGGER.Debug("{} | {} | {} | {} | {}", curTitle, !entryTitle.Contains("Vol"), !entryTitle.Contains("Box Set"), !entryTitle.Contains("Anniversary Book"), char.IsDigit(curTitle.ToString()[curTitle.Length - 1]));
 
             // InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, '.');
             InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
-
-            if (entryTitle.Contains("Deluxe") && !bookTitle.Contains("Deluxe"))
-            {
-                curTitle.Replace("Deluxe", "Deluxe Edition");
-            }
-            if (entryTitle.Contains("Complete") && !bookTitle.Contains("Complete"))
-            {
-                curTitle.Replace(" Complete", " ");
-            }
-            if (entryTitle.Contains('-') && !bookTitle.Contains('-'))
-            {
-                curTitle.Replace("-", " ");
-            }
+            InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Deluxe", "Deluxe Edition");
+            InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, " Complete", " ");
+            InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, " Color Edition", "In Color");
+            InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "-", " ");
+            // InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, '-');
 
             if (entryTitle.Contains("Special Edition", StringComparison.OrdinalIgnoreCase))
             {
                 int startIndex = curTitle.ToString().IndexOf(" Special Edition");
                 curTitle.Remove(startIndex, curTitle.Length - startIndex);
-                curTitle.Insert(MasterScrape.FindVolNumRegex().Match(curTitle.ToString()).Index, "Special Edition Vol ");
+                curTitle.Insert(MasterScrape.FindVolNumRegex().Match(curTitle.ToString()).Index, "Special Edition ");
             }
 
             if ((!entryTitle.Contains("Vol") || !curTitle.ToString().Contains("Vol")) && !entryTitle.Contains("Box Set") && !entryTitle.Contains("Anniversary Book") && char.IsDigit(curTitle.ToString()[curTitle.Length - 1]))
@@ -114,21 +116,19 @@ namespace MangaAndLightNovelWebScrape.Websites
         {
             try
             {
-                HtmlDocument doc = new();
                 HtmlWeb web = new HtmlWeb();
+                HtmlDocument doc = web.Load(GenerateWebsiteUrl(bookTitle, bookType));
                 HtmlNodeCollection titleData = null;
                 HtmlNodeCollection priceData = null;
-                HtmlNodeCollection stockStatusData = null;
+                HtmlNodeCollection entryLinkData = doc.DocumentNode.SelectNodes(EntryLinkXPath);
                 HtmlNode oneShotStockCheck = null;
                 bool isOneShot = false;
-                doc = web.Load(GetUrl(bookTitle, bookType));
                 bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
 
                 if (doc.DocumentNode.SelectSingleNode(OneShotCheckXPath) != null)
                 {
                     titleData = doc.DocumentNode.SelectNodes(TitleXPath);
                     priceData = doc.DocumentNode.SelectNodes(PriceXPath);
-                    stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
                 }
                 else
                 {
@@ -143,9 +143,10 @@ namespace MangaAndLightNovelWebScrape.Websites
                 {
                     string entryTitle = System.Net.WebUtility.HtmlDecode(titleData[x].InnerText);
                     string titleDesc = titleData[x].GetAttributeValue("data-adobe-tracking", "Book Type Error");
-                    // LOGGER.Debug("{} {}", entryTitle, titleDesc);
+                    // LOGGER.Debug("{} {}", entryTitle, titleDesc.Contains("novel", StringComparison.OrdinalIgnoreCase));
                     if ((!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
                         && (InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle) || InternalHelpers.TitleStartsWithCheck(bookTitle, entryTitle))
+                        && !entryTitle.Contains("library edition", StringComparison.OrdinalIgnoreCase)
                         && (
                             (
                                 bookType == BookType.Manga
@@ -176,20 +177,32 @@ namespace MangaAndLightNovelWebScrape.Websites
                             )
                         )
                     {
-                        price = priceData[x].InnerText.Trim();
-                        IndigoData.Add(
-                            new EntryModel(
-                                ParseTitle(MasterScrape.FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType),
-                                isMember ? $"${EntryModel.ApplyDiscount(Convert.ToDecimal(price[1..]), PLUM_DISCOUNT)}" : price,
-                                !isOneShot ? (!stockStatusData[x].InnerText.Contains("Pre-Order") ? StockStatus.IS : StockStatus.PO) : (oneShotStockCheck == null ? StockStatus.IS : StockStatus.PO),
-                                WEBSITE_TITLE
-                            )
-                        );
+                        if (!isOneShot) { doc = web.Load($"https://www.indigo.ca{entryLinkData[x].GetAttributeValue("href", "error")}"); }
+                        // LOGGER.Debug("{} | {} | {}", entryTitle, doc.DocumentNode.SelectSingleNode(StockStatusXPath).InnerText.Trim(), $"https://www.indigo.ca{entryLinkData[x].GetAttributeValue("href", "error")}");
+                        string format = doc.DocumentNode.SelectSingleNode(FormatCheckXPath).InnerText;
+                        // LOGGER.Debug("{} | {}", entryTitle, eBookCheckNode == null);
+
+                        if (!format.EndsWith("eBook", StringComparison.OrdinalIgnoreCase) && !format.EndsWith("Binding", StringComparison.OrdinalIgnoreCase))
+                        {
+                            price = priceData[x].InnerText.Trim();
+                            IndigoData.Add(
+                                new EntryModel(
+                                    ParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType),
+                                    isMember ? $"${EntryModel.ApplyDiscount(Convert.ToDecimal(price[1..]), PLUM_DISCOUNT)}" : price,
+                                    doc.DocumentNode.SelectSingleNode(StockStatusXPath).InnerText.Trim() switch
+                                    {
+                                        "Add to Bag" => StockStatus.IS,
+                                        "Pre-Order" => StockStatus.PO,
+                                        "Coming Soon" => StockStatus.OOS,
+                                        _ => StockStatus.NA
+                                    },
+                                    WEBSITE_TITLE
+                                )
+                            );
+                        }
+                        else { LOGGER.Info("Removed {}", entryTitle); }
                     }
-                    else
-                    {
-                        LOGGER.Info("Removed {}", entryTitle);
-                    }
+                    else { LOGGER.Info("Removed {}", entryTitle); }
                 }
 
             }
@@ -198,27 +211,9 @@ namespace MangaAndLightNovelWebScrape.Websites
                 LOGGER.Error($"{bookTitle} Does Not Exist @ Indigo {ex}");
             }
 
+            IndigoData = IndigoData.Distinct().ToList();
             IndigoData.Sort(EntryModel.VolumeSort);
-
-            if (MasterScrape.IsDebugEnabled)
-            {
-                using (StreamWriter outputFile = new(@"Data\IndigoData.txt"))
-                {
-                    if (IndigoData.Count != 0)
-                    {
-                        foreach (EntryModel data in IndigoData)
-                        {
-                            LOGGER.Info(data);
-                            outputFile.WriteLine(data);
-                        }
-                    }
-                    else
-                    {
-                        LOGGER.Info($"{bookTitle} Does Not Exist at {WEBSITE_TITLE}");
-                        outputFile.WriteLine($"{bookTitle} Does Not Exist at {WEBSITE_TITLE}");
-                    }
-                } 
-            }
+            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, IndigoData, LOGGER);
 
             return IndigoData;
         }
