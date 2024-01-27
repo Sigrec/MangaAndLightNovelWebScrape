@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using System.Net;
 
 namespace MangaAndLightNovelWebScrape.Websites
@@ -9,11 +8,12 @@ namespace MangaAndLightNovelWebScrape.Websites
         private List<EntryModel> SciFierData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "SciFier";
         private static readonly Logger LOGGER = LogManager.GetLogger("SciFierLogs");
-        public const Region REGION = Region.America | Region.Europe | Region.Britain | Region.Canada;
+        public const Region REGION = Region.America | Region.Europe | Region.Britain | Region.Canada | Region.Australia;
         private static readonly Dictionary<Region, ushort> CURRENCY_DICTIONARY = new Dictionary<Region, ushort>
         {
             {Region.Britain, 1},
             {Region.America, 2},
+            {Region.Australia, 3},
             {Region.Europe, 5},
             {Region.Canada, 6}
         };

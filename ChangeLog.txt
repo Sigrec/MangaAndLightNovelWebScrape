@@ -6,9 +6,16 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> Inprogress feature will be fixed in later release
 
+v1.1.5 - 
+✅ Added new Region "Australia"
+❌ Added Australia Region to SciFier website
+❌ Completed Wordery website for America, Britain, Canada, Europe, & Australia Regions
+🔥 StockStatus is now a Struct instead of a Class
+🔥 Fixed tests to accomdate changes
+
 V1.1.4 - December 27th
 ⌛ Updated to .NET 8.0
-❌ Integrated StockStatus as it's own class and is now part of the MasterScrape
+✅ Integrated StockStatus as it's own class and is now part of the MasterScrape
 ✅ Added "Backorder (BO)" as a StockStatus
 ✅ Updated print methods to check if the data is empty and print corresponding message
 ✅ Added new print method to print to a file

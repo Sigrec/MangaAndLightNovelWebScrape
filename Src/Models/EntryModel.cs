@@ -81,7 +81,7 @@ namespace MangaAndLightNovelWebScrape
         }
 
         /// <summary>
-        /// http://blog.softwx.net/2015/01/optimizing-damerau-levenshtein_15.html
+        ///  The Damerau–Levenshtein distance between two words is the minimum number of operations (consisting of insertions, deletions or substitutions of a single character, or transposition of two adjacent characters) required to change one word into the other (http://blog.softwx.net/2015/01/optimizing-damerau-levenshtein_15.html)
         /// </summary>
         /// <returns>distance, >= 0 representing the number of edits required
         /// to transform one string to the other, or -1 if the distance is greater than the specified maxDistance.</returns>

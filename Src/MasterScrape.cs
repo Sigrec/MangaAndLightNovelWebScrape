@@ -3,7 +3,6 @@ using OpenQA.Selenium.Edge;
 using OpenQA.Selenium.Chrome;
 using System.Collections.Concurrent;
 using Src.Models;
-using NLog.Filters;
 
 namespace MangaAndLightNovelWebScrape
 {
@@ -30,6 +29,7 @@ namespace MangaAndLightNovelWebScrape
         private Waterstones Waterstones = null;
         private ForbiddenPlanet ForbiddenPlanet = null;
         private MerryManga MerryManga = null;
+        private Wordery Wordery = null;
         /// <summary>
         /// The current region of the Scrape
         /// </summary>
@@ -44,7 +44,7 @@ namespace MangaAndLightNovelWebScrape
         public StockStatus[] Filter { get; set; }
         private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
         // "--headless=new", 
-        internal static readonly string[] CHROME_BROWSER_ARGUMENTS = ["--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent"];
+        internal static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent" ];
         private static readonly string[] FIREFOX_BROWSER_ARGUMENTS = ["-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3"];
         /// <summary>
         /// Determines whether debug mode is enabled (Disabled by default)
@@ -262,12 +262,14 @@ namespace MangaAndLightNovelWebScrape
             AmazonUSA?.ClearData();
             SciFier?.ClearData();
             MerryManga?.ClearData();
+            Wordery?.ClearData();
         }
 
         private void ClearCanadaWebsiteData()
         {
             Indigo?.ClearData();
             SciFier?.ClearData();
+            Wordery?.ClearData();
         }
 
         private void ClearJapanWebsiteData()
@@ -281,11 +283,19 @@ namespace MangaAndLightNovelWebScrape
             ForbiddenPlanet?.ClearData();
             Waterstones?.ClearData();
             SciFier?.ClearData();
+            Wordery?.ClearData();
         }
 
         private void ClearEuropeWebsiteData()
         {
             SciFier?.ClearData();
+            Wordery?.ClearData();
+        }
+
+        private void ClearAustraliaWebsiteData()
+        {
+            SciFier?.ClearData();
+            Wordery?.ClearData();
         }
 
         /// <summary>
@@ -321,11 +331,11 @@ namespace MangaAndLightNovelWebScrape
                         }
                         // If the vol numbers are the same and the titles are similar or the same from the if check above, add the lowest price volume to the list
                         
-                        LOGGER.Debug($"MATCH? ({biggerListCurrentVolNum} = {(biggerListData.Entry.Contains("Box Set") ? EntryModel.GetCurrentVolumeNum(smallerList[y].Entry) : EntryModel.GetCurrentVolumeNum(smallerList[y].Entry))}) -> {biggerListCurrentVolNum == EntryModel.GetCurrentVolumeNum(smallerList[y].Entry)}");
+                        // LOGGER.Debug($"MATCH? ({biggerListCurrentVolNum} = {(biggerListData.Entry.Contains("Box Set") ? EntryModel.GetCurrentVolumeNum(smallerList[y].Entry) : EntryModel.GetCurrentVolumeNum(smallerList[y].Entry))}) -> {biggerListCurrentVolNum == EntryModel.GetCurrentVolumeNum(smallerList[y].Entry)}");
                         if (biggerListCurrentVolNum == EntryModel.GetCurrentVolumeNum(smallerList[y].Entry))
                         {
-                            LOGGER.Debug($"Found Match for {biggerListData.Entry} {smallerList[y].Entry}");
-                            LOGGER.Debug($"PRICE COMPARISON ({biggerListData.ParsePrice()} > {smallerList[y].ParsePrice()}) -> {biggerListData.ParsePrice() > smallerList[y].ParsePrice()}");
+                            // LOGGER.Debug($"Found Match for {biggerListData.Entry} {smallerList[y].Entry}");
+                            // LOGGER.Debug($"PRICE COMPARISON ({biggerListData.ParsePrice()} > {smallerList[y].ParsePrice()}) -> {biggerListData.ParsePrice() > smallerList[y].ParsePrice()}");
                             // Get the lowest price between the two then add the lowest dataset
                             if (biggerListData.ParsePrice() > smallerList[y].ParsePrice())
                             {
@@ -349,16 +359,16 @@ namespace MangaAndLightNovelWebScrape
 
                 if (!sameVolumeCheck) // If the current volume number in the bigger list has no match in the smaller list (same volume number and name) then add it
                 {
-                    LOGGER.Debug($"Add No Match {biggerListData}");
+                    // LOGGER.Debug($"Add No Match {biggerListData}");
                     finalData.Add(biggerListData);
                 }
             }
 
-            LOGGER.Debug("SmallerList Size = " + smallerList.Count);
+            // LOGGER.Debug("SmallerList Size = " + smallerList.Count);
             // Smaller list has volumes that are not present in the bigger list and are volumes that have a volume # greater than the greatest volume # in the bigger lis
             for (int x = 0; x < smallerList.Count; x++)
             {
-                LOGGER.Debug($"Add SmallerList Leftovers {smallerList[x]}");
+                // LOGGER.Debug($"Add SmallerList Leftovers {smallerList[x]}");
                 finalData.Add(smallerList[x]);
             }
             // finalData.ForEach(data => LOGGER.Info($"Final -> {data}"));
@@ -471,12 +481,21 @@ namespace MangaAndLightNovelWebScrape
                                     WebsiteList.Add(Website.AmazonUSA);
                                     break;
                                 case SciFier.WEBSITE_TITLE:
+                                case "scifier":
                                     WebsiteList.Add(Website.SciFier);
                                     break;
                                 case MerryManga.WEBSITE_TITLE:
                                 case "merrymanga":
                                     WebsiteList.Add(Website.MerryManga);
                                     break;
+                                case Wordery.WEBSITE_TITLE:
+                                case "wordery":
+                                    WebsiteList.Add(Website.Wordery);
+                                    break;
+                                // case Target.WEBSITE_TITLE:
+                                // case "target":
+                                //     WebsiteList.Add(Website.Target);
+                                //     break;
                             }
                             break;
                         case Region.Britain:
@@ -489,7 +508,12 @@ namespace MangaAndLightNovelWebScrape
                                     WebsiteList.Add(Website.Waterstones);
                                     break;
                                 case SciFier.WEBSITE_TITLE:
+                                case "scifier":
                                     WebsiteList.Add(Website.SciFier);
+                                    break;
+                                case Wordery.WEBSITE_TITLE:
+                                case "wordery":
+                                    WebsiteList.Add(Website.Wordery);
                                     break;
                             }
                             break;
@@ -500,7 +524,12 @@ namespace MangaAndLightNovelWebScrape
                                     WebsiteList.Add(Website.Indigo);
                                     break;
                                 case SciFier.WEBSITE_TITLE:
+                                case "scifier":
                                     WebsiteList.Add(Website.SciFier);
+                                    break;
+                                case Wordery.WEBSITE_TITLE:
+                                case "wordery":
+                                    WebsiteList.Add(Website.Wordery);
                                     break;
                             }
                             break;
@@ -508,7 +537,25 @@ namespace MangaAndLightNovelWebScrape
                             switch (website)
                             {
                                 case SciFier.WEBSITE_TITLE:
+                                case "scifier":
                                     WebsiteList.Add(Website.SciFier);
+                                    break;
+                                case Wordery.WEBSITE_TITLE:
+                                case "wordery":
+                                    WebsiteList.Add(Website.Wordery);
+                                    break;
+                            }
+                            break;
+                        case Region.Australia:
+                            switch (website)
+                            {
+                                case SciFier.WEBSITE_TITLE:
+                                case "scifier":
+                                    WebsiteList.Add(Website.SciFier);
+                                    break;
+                                case Wordery.WEBSITE_TITLE:
+                                case "wordery":
+                                    WebsiteList.Add(Website.Wordery);
                                     break;
                             }
                             break;
@@ -579,6 +626,12 @@ namespace MangaAndLightNovelWebScrape
                     case MerryManga.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = MerryManga.GetUrl();
                         break;
+                    case Wordery.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = Wordery.GetUrl();
+                        break;
+                    // case Target.WEBSITE_TITLE:
+                    //     MasterUrls[entry.Website] = Target.GetUrl();
+                    //     break;
                 }
             }
         }
@@ -637,6 +690,11 @@ namespace MangaAndLightNovelWebScrape
                                 LOGGER.Info($"{MerryManga.WEBSITE_TITLE} Going");
                                 WebTasks.Add(MerryManga.CreateMerryMangaTask(bookTitle, book, MasterDataList, SetupBrowserDriver()));
                                 break;
+                            case Website.Wordery:
+                                Wordery ??= new Wordery();
+                                LOGGER.Info($"{Wordery.WEBSITE_TITLE} Going");
+                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(false)));
+                                break;
                             default:
                                 break;
                         }
@@ -662,6 +720,11 @@ namespace MangaAndLightNovelWebScrape
                                 LOGGER.Info($"{SciFier.WEBSITE_TITLE} Going");
                                 WebTasks.Add(SciFier.CreateSciFierTask(bookTitle, book, MasterDataList, this.Region));
                                 break;
+                            case Website.Wordery:
+                                Wordery ??= new Wordery();
+                                LOGGER.Info($"{Wordery.WEBSITE_TITLE} Going");
+                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(false)));
+                                break;
                             default:
                                 break;
                         }
@@ -685,6 +748,11 @@ namespace MangaAndLightNovelWebScrape
                                 SciFier ??= new SciFier();
                                 LOGGER.Info($"{SciFier.WEBSITE_TITLE} Going");
                                 WebTasks.Add(SciFier.CreateSciFierTask(bookTitle, book, MasterDataList, this.Region));
+                                break;
+                            case Website.Wordery:
+                                Wordery ??= new Wordery();
+                                LOGGER.Info($"{Wordery.WEBSITE_TITLE} Going");
+                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(false)));
                                 break;
                             default:
                                 break;
@@ -720,6 +788,31 @@ namespace MangaAndLightNovelWebScrape
                                 SciFier ??= new SciFier();
                                 LOGGER.Info($"{SciFier.WEBSITE_TITLE} Going");
                                 WebTasks.Add(SciFier.CreateSciFierTask(bookTitle, book, MasterDataList, this.Region));
+                                break;
+                            case Website.Wordery:
+                                Wordery ??= new Wordery();
+                                LOGGER.Info($"{Wordery.WEBSITE_TITLE} Going");
+                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(false)));
+                                break;
+                            default:
+                                break;
+                        }
+                    });
+                    break;
+                case Region.Australia:
+                    Parallel.ForEach(webScrapeList, (site) =>
+                    {
+                        switch (site)
+                        {
+                            case Website.SciFier:
+                                SciFier ??= new SciFier();
+                                LOGGER.Info($"{SciFier.WEBSITE_TITLE} Going");
+                                WebTasks.Add(SciFier.CreateSciFierTask(bookTitle, book, MasterDataList, this.Region));
+                                break;
+                            case Website.Wordery:
+                                Wordery ??= new Wordery();
+                                LOGGER.Info($"{Wordery.WEBSITE_TITLE} Going");
+                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(false)));
                                 break;
                             default:
                                 break;
@@ -844,6 +937,9 @@ namespace MangaAndLightNovelWebScrape
                         case Region.Europe:
                             ClearEuropeWebsiteData();
                             break;
+                        case Region.Australia:
+                            ClearAustraliaWebsiteData();
+                            break;
                     }
                 }
 
@@ -892,19 +988,19 @@ namespace MangaAndLightNovelWebScrape
         // Command to end all chrome.exe process -> taskkill /F /IM chrome.exe /T
         // Command to end all chromedriver.exe process -> taskkill /F /IM chromedriver.exe /T
         // TODO Need to throw exception if user is querying against Japan region and text is not in Japanese
-        // private static async Task Main(string[] args)
-        // {
-        //     System.Diagnostics.Stopwatch watch = new();
-        //     watch.Start();
-        //     MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain, Browser.Chrome).EnableDebugMode();
-        //     await scrape.InitializeScrapeAsync("jujutsu kaisen", BookType.Manga, [ Website.SciFier, Website.Waterstones ], false, false, false, false);
-        //     watch.Stop();
-        //     LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
-        // }
-
-        private static void Main()
+        private static async Task Main()
         {
-
+            System.Diagnostics.Stopwatch watch = new();
+            watch.Start();
+            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain, Browser.Chrome).EnableDebugMode();
+            await scrape.InitializeScrapeAsync("Naruto", BookType.Manga, [ Website.Wordery ], false, false, false, false);
+            watch.Stop();
+            LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
+
+        // private static void Main()
+        // {
+
+        // }
     }
 }

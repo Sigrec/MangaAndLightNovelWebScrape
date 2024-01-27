@@ -15,15 +15,17 @@ namespace MangaAndLightNovelWebScrape.Models
             BarnesAndNoble,
             BooksAMillion,
             CDJapan,
+            Crunchyroll,
             ForbiddenPlanet,
             Indigo,
             InStockTrades,
             KinokuniyaUSA,
-            Crunchyroll,
+            MerryManga,
             RobertsAnimeCornerStore,
-            Waterstones,
             SciFier,
-            MerryManga
+            Target,
+            Waterstones,
+            Wordery
         }
 
         public enum BookType
@@ -39,7 +41,8 @@ namespace MangaAndLightNovelWebScrape.Models
             Britain,
             Canada,
             Europe,
-            Japan
+            Japan,
+            Australia
         }
 
         /// <summary>

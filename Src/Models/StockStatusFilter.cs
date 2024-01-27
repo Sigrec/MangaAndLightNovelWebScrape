@@ -1,6 +1,6 @@
 namespace Src.Models
 {
-    public class StockStatusFilter
+    public readonly struct StockStatusFilter
     {
         /// <summary>
         /// Default filter, excludes no stock status

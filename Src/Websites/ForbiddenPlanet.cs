@@ -248,7 +248,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     }
                     else
                     {
-                        // driver.Quit();
+                        driver.Quit();
                         break;
                     }
                 }

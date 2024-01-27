@@ -1,4 +1,4 @@
-# [MangaAndLightNovelWebScrape](https://www.nuget.org/packages/MangaAndLightNovelWebScrape/1.1.3#versions-body-tab)
+# [MangaAndLightNovelWebScrape](https://www.nuget.org/packages/MangaAndLightNovelWebScrape/1.1.4#readme-body-tab)
 ### *(Manga & Light Novel Web Scrape Framework for .NET) - [ChangeLog](https://github.com/Sigrec/MangaAndLightNovelWebScrape/blob/master/ChangeLog.txt)*
 .NET Framework that scrapes various websites for manga or light novel data for a specifc user inputted series. Then it compares the various prices for each available volume across the websites chosen and outputs a list of the volumes available and the website and price for the lowest volume.
 ***
@@ -11,25 +11,35 @@ If you want more websites just notify me and I will look into seeing if I can ad
 - [x] Barnes & Noble
 - [x] InStockTrades
 - [x] Kinokuniya USA
-- [ ] AmazonUSA (In Progress)
+- [ ] AmazonUSA (Paused)
+- [ ] Target (Not Started)
+- [ ] Wordery (In Progress)
 - [x] SciFier
 - [x] MerryManga
 
 #### Canada
+- [ ] Wordery (In Progress)
 - [x] Indigo
 - [x] SciFier
 
 #### Britain
+- [ ] Wordery (In Progress)
 - [ ] ForBiddenPlanet (In Progress)
 - [x] Waterstones
 - [x] SciFier
 
 #### Japan
-- [ ] AmazonJP
-- [ ] CDJapan (In Progress)
+- [ ] AmazonJP (Not Started)
+- [ ] CDJapan (Paused)
 
 #### Europe
+- [ ] Wordery (In Progress)
 - [x] SciFier
+
+#### Australia
+- [ ] Wordery (In Progress)
+- [x] SciFier
+- [ ] MangaMate (Not Started)
  
 ***
 #### Demo
@@ -37,13 +47,14 @@ If you want more websites just notify me and I will look into seeing if I can ad
 private static async Task Main(string[] args)
 {
     // Create the MasterScrape object it defaults to America Region & Chrome Browser but you can still change them outside of the constructor & debug mode is disabled by default. There is no default StockStatusFilter
-    MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_OOS_FILTER);
+    MasterScrape Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, StockStatusFilter.EXCLUDE_OOS_FILTER);
     scrape.Region = Region.America;
     scrape.Browser = Browser.FireFox;
+    scrape.Filter = StockstatusFilter.EXCLUDE_OOS_AND_PO_FILTER;
 
     // Alternativly you can do everything in the constructor and enable debug mode which will print to log and txt files
     // Chaining Regions like so Region.America | Region.Britain will not work
-    MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_ALL_FILTER, Region.Britain, Browser.Edge).EnableDebugMode();
+    MasterScrape Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, StockStatusFilter.EXCLUDE_ALL_FILTER, Region.Britain, Browser.Edge).EnableDebugMode();
 
     // Initialize the Scrape
     await scrape.InitializeScrapeAsync(
