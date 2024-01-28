@@ -44,7 +44,7 @@ namespace MangaAndLightNovelWebScrape
         public StockStatus[] Filter { get; set; }
         private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
         // "--headless=new", 
-        internal static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent" ];
+        internal static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent" ];
         private static readonly string[] FIREFOX_BROWSER_ARGUMENTS = ["-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3"];
         /// <summary>
         /// Determines whether debug mode is enabled (Disabled by default)
@@ -52,6 +52,7 @@ namespace MangaAndLightNovelWebScrape
         internal static bool IsDebugEnabled { get; set; } = false;
         
         [GeneratedRegex(@"\d{1,3}$")] internal static partial Regex FindVolNumRegex();
+        [GeneratedRegex(@"Vol \d{1,3}$")] internal static partial Regex FindVolWithNumRegex();
         [GeneratedRegex(@"\s{2,}|--|—")] internal static partial Regex MultipleWhiteSpaceRegex();
         [GeneratedRegex(@";jsessionid=[^?]*")] internal static partial Regex RemoveJSessionIDRegex();
         [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Compendium|Artbook|Error|\(Osi\)|Advertising|Art Book|Adventure|Artbook|Coloring Book|the Anime|Calendar|Ani-manga|Anime|Bilingual|Game Book|Theatrical", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
@@ -693,7 +694,7 @@ namespace MangaAndLightNovelWebScrape
                             case Website.Wordery:
                                 Wordery ??= new Wordery();
                                 LOGGER.Info($"{Wordery.WEBSITE_TITLE} Going");
-                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(false)));
+                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(true)));
                                 break;
                             default:
                                 break;
@@ -723,7 +724,7 @@ namespace MangaAndLightNovelWebScrape
                             case Website.Wordery:
                                 Wordery ??= new Wordery();
                                 LOGGER.Info($"{Wordery.WEBSITE_TITLE} Going");
-                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(false)));
+                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(true)));
                                 break;
                             default:
                                 break;
@@ -752,7 +753,7 @@ namespace MangaAndLightNovelWebScrape
                             case Website.Wordery:
                                 Wordery ??= new Wordery();
                                 LOGGER.Info($"{Wordery.WEBSITE_TITLE} Going");
-                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(false)));
+                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(true)));
                                 break;
                             default:
                                 break;
@@ -792,7 +793,7 @@ namespace MangaAndLightNovelWebScrape
                             case Website.Wordery:
                                 Wordery ??= new Wordery();
                                 LOGGER.Info($"{Wordery.WEBSITE_TITLE} Going");
-                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(false)));
+                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(true)));
                                 break;
                             default:
                                 break;
@@ -812,7 +813,7 @@ namespace MangaAndLightNovelWebScrape
                             case Website.Wordery:
                                 Wordery ??= new Wordery();
                                 LOGGER.Info($"{Wordery.WEBSITE_TITLE} Going");
-                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(false)));
+                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(true)));
                                 break;
                             default:
                                 break;
@@ -854,7 +855,7 @@ namespace MangaAndLightNovelWebScrape
                 });
                 
                 // Generate List of Tasks to 
-                GenerateTaskList(webScrapeList, bookTitle, bookType, isBarnesAndNobleMember, isBooksAMillionMember, isKinokuniyaUSAMember, isIndigoMember);
+                GenerateTaskList(webScrapeList, bookTitle.Trim(), bookType, isBarnesAndNobleMember, isBooksAMillionMember, isKinokuniyaUSAMember, isIndigoMember);
                 await Task.WhenAll(WebTasks);
 
                 MasterDataList.RemoveAll(x => x.Count == 0); // Clear all lists from websites that didn't have any data
@@ -992,8 +993,8 @@ namespace MangaAndLightNovelWebScrape
         {
             System.Diagnostics.Stopwatch watch = new();
             watch.Start();
-            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("Naruto", BookType.Manga, [ Website.Wordery ], false, false, false, false);
+            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.America, Browser.Chrome).EnableDebugMode();
+            await scrape.InitializeScrapeAsync("fullmetal alchemist", BookType.Manga, [ Website.Wordery ], false, false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
