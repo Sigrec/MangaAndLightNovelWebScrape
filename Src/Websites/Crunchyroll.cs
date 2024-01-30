@@ -7,7 +7,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         private List<EntryModel> CrunchyrollData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "Crunchyroll";
         // private const decimal MEMBERSHIP_DISCOUNT = 0.1M;
-        public const Region REGION = Region.America | Region.Canada;
+        public const Region REGION = Region.America;
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[@class='pdp-link']/a");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='sales']/span");
         private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='product-sashes']/div[1]/span");

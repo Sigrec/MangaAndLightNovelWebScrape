@@ -97,7 +97,6 @@ namespace Tests.Websites
         }
 
         [Test, Description("Validates Novel w/ Novel after Volume and lowercase")]
-        [Ignore("")]
         public async Task Wordery_Overlord_Novel_Britain_Test()
         {
             Scrape.Region = Region.Britain;
@@ -147,9 +146,9 @@ namespace Tests.Websites
         }
 
         [Test, Description("Validates Novel w/ Manga Entries & Volume Numbers with Decimals")]
-        public async Task Wordery_COTE_Novel_America_Test()
+        public async Task Wordery_COTE_Novel_Canada_Test()
         {
-            Scrape.Region = Region.America;
+            Scrape.Region = Region.Canada;
             await Scrape.InitializeScrapeAsync("classroom of the elite", BookType.LightNovel, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Wordery\WorderyCOTENovelData.txt")));
         }
@@ -158,7 +157,7 @@ namespace Tests.Websites
         public async Task Wordery_Boruto_Manga_America_Test()
         {
             Scrape.Region = Region.America;
-            await Scrape.InitializeScrapeAsync("Boruto", BookType.Manga, WebsiteList);
+            await Scrape.InitializeScrapeAsync("Boruto: Naruto Next Generations", BookType.Manga, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Wordery\WorderyBorutoMangaData.txt")));
         }
     }

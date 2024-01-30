@@ -51,7 +51,7 @@ namespace MangaAndLightNovelWebScrape
         /// </summary>
         internal static bool IsDebugEnabled { get; set; } = false;
         
-        [GeneratedRegex(@"\d{1,3}$")] internal static partial Regex FindVolNumRegex();
+        [GeneratedRegex(@"(?:\d{1,3}|\d{1,3}.\d{1})$")] internal static partial Regex FindVolNumRegex();
         [GeneratedRegex(@"Vol \d{1,3}$")] internal static partial Regex FindVolWithNumRegex();
         [GeneratedRegex(@"\s{2,}|--|—")] internal static partial Regex MultipleWhiteSpaceRegex();
         [GeneratedRegex(@";jsessionid=[^?]*")] internal static partial Regex RemoveJSessionIDRegex();
@@ -694,7 +694,7 @@ namespace MangaAndLightNovelWebScrape
                             case Website.Wordery:
                                 Wordery ??= new Wordery();
                                 LOGGER.Info($"{Wordery.WEBSITE_TITLE} Going");
-                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(true)));
+                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region, SetupBrowserDriver(true)));
                                 break;
                             default:
                                 break;
@@ -724,7 +724,7 @@ namespace MangaAndLightNovelWebScrape
                             case Website.Wordery:
                                 Wordery ??= new Wordery();
                                 LOGGER.Info($"{Wordery.WEBSITE_TITLE} Going");
-                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(true)));
+                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region, SetupBrowserDriver(true)));
                                 break;
                             default:
                                 break;
@@ -753,7 +753,7 @@ namespace MangaAndLightNovelWebScrape
                             case Website.Wordery:
                                 Wordery ??= new Wordery();
                                 LOGGER.Info($"{Wordery.WEBSITE_TITLE} Going");
-                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(true)));
+                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region, SetupBrowserDriver(true)));
                                 break;
                             default:
                                 break;
@@ -793,7 +793,7 @@ namespace MangaAndLightNovelWebScrape
                             case Website.Wordery:
                                 Wordery ??= new Wordery();
                                 LOGGER.Info($"{Wordery.WEBSITE_TITLE} Going");
-                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(true)));
+                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region, SetupBrowserDriver(true)));
                                 break;
                             default:
                                 break;
@@ -813,7 +813,7 @@ namespace MangaAndLightNovelWebScrape
                             case Website.Wordery:
                                 Wordery ??= new Wordery();
                                 LOGGER.Info($"{Wordery.WEBSITE_TITLE} Going");
-                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region,  SetupBrowserDriver(true)));
+                                WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region, SetupBrowserDriver(true)));
                                 break;
                             default:
                                 break;
@@ -823,7 +823,6 @@ namespace MangaAndLightNovelWebScrape
             }
         }
         
-        // TODO Brit store https://travellingman.com/
         // TODO Remove "Location" Popup for BAM
         // TODO Create custom exceptions
 
@@ -976,7 +975,6 @@ namespace MangaAndLightNovelWebScrape
         }
         
         //In the UK there's 
-        // Wordery https://wordery.com/
         // Books Etc https://www.books-etc.com/
         // Speedyhen https://www.speedyhen.com/
         // Booksplease https://booksplea.se/index.php
@@ -984,7 +982,6 @@ namespace MangaAndLightNovelWebScrape
         // Blackwells https://blackwells.co.uk/bookshop/home
         // Travelling Man https://travellingman.com/
         // Awesome Books https://www.awesomebooks.com/
-        // Alibris https://m.alibris.co.uk/
 
         // Command to end all chrome.exe process -> taskkill /F /IM chrome.exe /T
         // Command to end all chromedriver.exe process -> taskkill /F /IM chromedriver.exe /T

@@ -12,7 +12,6 @@ If you want more websites just notify me and I will look into seeing if I can ad
 - [x] InStockTrades
 - [x] Kinokuniya USA
 - [ ] AmazonUSA (Paused)
-- [ ] Target (Not Started)
 - [ ] Wordery (In Progress)
 - [x] SciFier
 - [x] MerryManga
