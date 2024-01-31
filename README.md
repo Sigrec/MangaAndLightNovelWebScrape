@@ -12,17 +12,17 @@ If you want more websites just notify me and I will look into seeing if I can ad
 - [x] InStockTrades
 - [x] Kinokuniya USA
 - [ ] AmazonUSA (Paused)
-- [ ] Wordery (In Progress)
+- [x] Wordery
 - [x] SciFier
 - [x] MerryManga
 
 #### Canada
-- [ ] Wordery (In Progress)
+- [x] Wordery
 - [x] Indigo
 - [x] SciFier
 
 #### Britain
-- [ ] Wordery (In Progress)
+- [x] Wordery
 - [ ] ForBiddenPlanet (In Progress)
 - [x] Waterstones
 - [x] SciFier
@@ -32,11 +32,11 @@ If you want more websites just notify me and I will look into seeing if I can ad
 - [ ] CDJapan (Paused)
 
 #### Europe
-- [ ] Wordery (In Progress)
+- [x] Wordery
 - [x] SciFier
 
 #### Australia
-- [ ] Wordery (In Progress)
+- [x] Wordery
 - [x] SciFier
 - [ ] MangaMate (Not Started)
  

@@ -984,14 +984,14 @@ namespace MangaAndLightNovelWebScrape
         // Awesome Books https://www.awesomebooks.com/
 
         // Command to end all chrome.exe process -> taskkill /F /IM chrome.exe /T
-        // Command to end all chromedriver.exe process -> taskkill /F /IM chromedriver.exe /T
+        // Command to end all chrome.exe process -> taskkill /F /IM msedge.exe /T
         // TODO Need to throw exception if user is querying against Japan region and text is not in Japanese
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
             watch.Start();
-            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.America, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("fullmetal alchemist", BookType.Manga, [ Website.Wordery ], false, false, false, false);
+            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain, Browser.Chrome).EnableDebugMode();
+            await scrape.InitializeScrapeAsync("Overlord", BookType.LightNovel, [ Website.Wordery ], false, false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }

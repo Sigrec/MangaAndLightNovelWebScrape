@@ -55,8 +55,7 @@ namespace Tests.Websites
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Wordery\WorderyNarutoMangaData.txt")));
         }
 
-        [Test]
-        [Ignore("Hard")]
+        [Test, Description("Validates Series w/out volumes numbers")]
         public async Task Wordery_Naruto_Novel_America_Test()
         {
             Scrape.Region = Region.America;
