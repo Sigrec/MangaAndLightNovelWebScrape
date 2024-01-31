@@ -27,6 +27,7 @@ namespace MangaAndLightNovelWebScrape
                 string curBrowser when curBrowser.Equals("Japan", StringComparison.OrdinalIgnoreCase) => Region.Japan,
                 string curBrowser when curBrowser.Equals("Canada", StringComparison.OrdinalIgnoreCase) => Region.Canada,
                 string curBrowser when curBrowser.Equals("Europe", StringComparison.OrdinalIgnoreCase) => Region.Europe,
+                string curBrowser when curBrowser.Equals("Australia", StringComparison.OrdinalIgnoreCase) => Region.Australia,
                 _ => throw new Exception(),
             };
         }
@@ -56,10 +57,11 @@ namespace MangaAndLightNovelWebScrape
         {
             return region switch
             {
-                Region.America => [ AmazonUSA.WEBSITE_TITLE, BarnesAndNoble.WEBSITE_TITLE, BooksAMillion.WEBSITE_TITLE, InStockTrades.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE, Crunchyroll.WEBSITE_TITLE, RobertsAnimeCornerStore.WEBSITE_TITLE, SciFier.WEBSITE_TITLE ],
-                Region.Britain => [ ForbiddenPlanet.WEBSITE_TITLE, Waterstones.WEBSITE_TITLE, SciFier.WEBSITE_TITLE ],
-                Region.Canada => [ Indigo.WEBSITE_TITLE, SciFier.WEBSITE_TITLE ],
-                Region.Europe => [ SciFier.WEBSITE_TITLE ],
+                Region.America => [ AmazonUSA.WEBSITE_TITLE, BarnesAndNoble.WEBSITE_TITLE, BooksAMillion.WEBSITE_TITLE, InStockTrades.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE, Crunchyroll.WEBSITE_TITLE, RobertsAnimeCornerStore.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, Wordery.WEBSITE_TITLE ],
+                Region.Australia => [ SciFier.WEBSITE_TITLE, Wordery.WEBSITE_TITLE ],
+                Region.Britain => [ ForbiddenPlanet.WEBSITE_TITLE, Waterstones.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, Wordery.WEBSITE_TITLE ],
+                Region.Canada => [ Indigo.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, Wordery.WEBSITE_TITLE ],
+                Region.Europe => [ SciFier.WEBSITE_TITLE, Wordery.WEBSITE_TITLE, Wordery.WEBSITE_TITLE ],
                 Region.Japan => [ AmazonJapan.WEBSITE_TITLE, CDJapan.WEBSITE_TITLE ],
                 _ => []
             };
@@ -74,10 +76,11 @@ namespace MangaAndLightNovelWebScrape
         {
             return region switch
             {
-                Region.America => [ Website.AmazonUSA, Website.BarnesAndNoble, Website.BooksAMillion, Website.InStockTrades, Website.KinokuniyaUSA, Website.Crunchyroll, Website.RobertsAnimeCornerStore, Website.SciFier ],
-                Region.Britain => [ Website.ForbiddenPlanet, Website.Waterstones, Website.SciFier ],
-                Region.Canada => [ Website.Indigo, Website.SciFier ],
-                Region.Europe => [ Website.SciFier ],
+                Region.America => [ Website.AmazonUSA, Website.BarnesAndNoble, Website.BooksAMillion, Website.InStockTrades, Website.KinokuniyaUSA, Website.Crunchyroll, Website.RobertsAnimeCornerStore, Website.SciFier, Website.Wordery ],
+                Region.Australia => [ Website.SciFier, Website.Wordery ],
+                Region.Britain => [ Website.ForbiddenPlanet, Website.Waterstones, Website.SciFier, Website.Wordery ],
+                Region.Canada => [ Website.Indigo, Website.SciFier, Website.Wordery ],
+                Region.Europe => [ Website.SciFier, Website.Wordery ],
                 Region.Japan => [ Website.AmazonJapan, Website.CDJapan ],
                 _ => [ ],
             };

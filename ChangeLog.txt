@@ -6,7 +6,10 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> Inprogress feature will be fixed in later release
 
-v1.1.5 - 
+v1.1.6 - January 31st
+🔥 Update Helper Methods, fixes issue from v1.1.5
+
+v1.1.5 - January 31st (Has Major Bug where Helpers Methods are not Updated)
 ✅ Added new Region "Australia"
 ✅ Added Australia Region to SciFier website
 ✅ Completed Wordery website for America, Britain, Canada, Europe, & Australia Regions
