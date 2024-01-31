@@ -1,4 +1,5 @@
 using System.Net;
+using System.Security.Cryptography;
 
 namespace MangaAndLightNovelWebScrape.Websites
 {
@@ -21,7 +22,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='price price--withTax price--main _hasSale'] | //span[@class='price price--withTax price--main']");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//a[@aria-label='Next']");
         private static readonly XPathExpression SummaryXPath = XPathExpression.Compile("//div[@class='card-text card-text--summary']");
-        private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//a[@class='button button--primary card-figcaption-button']");
+        private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='card-buttons']");
 
         [GeneratedRegex(@"(?<=Vol\s+(?:\d{1,3}|\d{1,3}\.\d{1}))[^\d.].+|(?<=Box Set \d{1,3}).*|\(Manga\)|The Manga|Manga", RegexOptions.IgnoreCase)] private static partial Regex TitleFixRegex();
         [GeneratedRegex(@"\s{1}[a-zA-Z]+\s{1}[a-zA-Z]+\s{1}\d{13}|,")] private static partial Regex RemoveAuthorAndIdRegex();
@@ -133,10 +134,11 @@ namespace MangaAndLightNovelWebScrape.Websites
                 while (true)
                 {
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
-                    char firstEntryFirstChar = char.ToLowerInvariant(titleData.First().InnerText.TrimStart()[0]);
-                    char lastEntryFirstChar = char.ToLowerInvariant(titleData.Last().InnerText.TrimStart()[0]);
+                    char firstEntryFirstChar = char.ToLowerInvariant(titleData[0].InnerText.TrimStart()[0]);
+                    char lastEntryFirstChar = char.ToLowerInvariant(titleData[titleData.Count - 1].InnerText.TrimStart()[0]);
                     char bookTitleFirstChar = char.ToLowerInvariant(bookTitle.TrimStart()[0]);
                     HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
+
                     if ((letterIsFrontHalf && (firstEntryFirstChar > bookTitleFirstChar)) || (!letterIsFrontHalf && (firstEntryFirstChar < bookTitleFirstChar)))
                     {
                         LOGGER.Info($"Ending Scrape Early -> '{lastEntryFirstChar}' {(letterIsFrontHalf ? '>' : '<')} '{firstEntryFirstChar}'");
@@ -215,7 +217,12 @@ namespace MangaAndLightNovelWebScrape.Websites
                                     (
                                         TitleParse(FixVolumeRegex().Replace(WebUtility.HtmlDecode(entryTitle), "Vol"), bookTitle, bookType),
                                         string.IsNullOrWhiteSpace(priceCheck) ? price : priceCheck,
-                                        stockStatusData[x].InnerText.Contains("Pre-Order") ? StockStatus.PO : StockStatus.IS, 
+                                        stockStatusData[x].InnerText switch
+                                        {
+                                            string status when status.Contains("Pre-Order", StringComparison.OrdinalIgnoreCase) => StockStatus.PO,
+                                            string status when status.Contains("Add to Cart", StringComparison.OrdinalIgnoreCase) => StockStatus.IS,
+                                            _ => StockStatus.OOS
+                                        }, 
                                         WEBSITE_TITLE
                                     )
                                 );
@@ -236,7 +243,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     {
                         url = $"https://scifier.com{WebUtility.HtmlDecode(pageCheck.GetAttributeValue("href", "Url Error"))}";
                         doc = web.Load(url);
-                        LOGGER.Info($"Next Page {url}");
+                        LOGGER.Info($"Next Page => {url}");
                         SciFierLinks.Add(url);
                     }
                     else
@@ -247,8 +254,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             catch (Exception e)
             {
-                LOGGER.Debug($"{bookTitle} Does Not Exist @ {WEBSITE_TITLE} \n{e}");
-                ClearData();
+                LOGGER.Error($"{bookTitle} Does Not Exist @ {WEBSITE_TITLE} \n{e}");
             }
             
             SciFierData.Sort(EntryModel.VolumeSort);

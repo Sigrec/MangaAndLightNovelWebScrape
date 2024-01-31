@@ -270,7 +270,6 @@ namespace MangaAndLightNovelWebScrape.Websites
                         }
                         else
                         {
-                            driver.Quit();
                             break;
                         }
                     }
@@ -279,8 +278,12 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             catch (Exception ex)
             {
-                driver?.Quit();
                 LOGGER.Error($"{bookTitle} Does Not Exist @ BooksAMillion\n{ex}");
+            }
+            finally
+            {
+                driver?.Close();
+                driver?.Quit();
             }
 
             InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, BooksAMillionData, LOGGER);

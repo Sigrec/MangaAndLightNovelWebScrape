@@ -194,7 +194,6 @@ namespace MangaAndLightNovelWebScrape.Websites
                     HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
                     HtmlNodeCollection staffData = doc.DocumentNode.SelectNodes(StaffXPath);
                     HtmlNodeCollection bookFormatAndLangData = doc.DocumentNode.SelectNodes(BookFormatXPath);
-                    LOGGER.Debug("{} | {} | {} | {} | {}", titleData.Count, priceData.Count, stockStatusData.Count, staffData.Count, bookFormatAndLangData.Count);
 
                     bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle); 
                     OneShotRetry:
@@ -295,7 +294,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             finally
             {
-                // driver?.Close();
+                driver?.Close();
                 driver?.Quit();
             }
             return WorderyData;

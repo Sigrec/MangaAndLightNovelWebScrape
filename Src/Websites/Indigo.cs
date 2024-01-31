@@ -54,7 +54,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             return url;
         }
 
-        private string ParseTitle(string entryTitle, string bookTitle, BookType bookType)
+        private static string ParseTitle(string entryTitle, string bookTitle, BookType bookType)
         {
             if (bookType == BookType.LightNovel)
             {

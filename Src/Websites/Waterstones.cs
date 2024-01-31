@@ -228,15 +228,18 @@ namespace MangaAndLightNovelWebScrape.Websites
                     }
                     else
                     {
-                        driver.Quit();
                         break;
                     }
                 }
             }
             catch (Exception ex)
             {
-                driver?.Quit();
                 LOGGER.Error("{} Does Not Exist @ {} \n{}", bookTitle, WEBSITE_TITLE, ex);
+            }
+            finally
+            {
+                driver?.Close();
+                driver?.Quit();
             }
 
             WaterstonesData.Sort(EntryModel.VolumeSort);

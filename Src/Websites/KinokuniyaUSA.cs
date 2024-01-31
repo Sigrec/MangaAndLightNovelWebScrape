@@ -276,15 +276,18 @@ namespace MangaAndLightNovelWebScrape.Websites
                     }
                     else
                     {
-                        driver.Quit();
                         break;
                     }
                 }
             }
             catch (Exception e)
             {
-                driver?.Quit();
                 LOGGER.Error($"{bookTitle} Does Not Exist @ Kinokuniya USA \n{e.StackTrace}");
+            }
+            finally
+            {
+                driver?.Close();
+                driver?.Quit();
             }
 
             KinokuniyaUSAData.Sort(EntryModel.VolumeSort);

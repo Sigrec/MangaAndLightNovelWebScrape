@@ -1,4 +1,4 @@
-# [MangaAndLightNovelWebScrape](https://www.nuget.org/packages/MangaAndLightNovelWebScrape/1.1.4#readme-body-tab)
+# [MangaAndLightNovelWebScrape](https://www.nuget.org/packages/MangaAndLightNovelWebScrape/1.1.5#readme-body-tab)
 ### *(Manga & Light Novel Web Scrape Framework for .NET) - [ChangeLog](https://github.com/Sigrec/MangaAndLightNovelWebScrape/blob/master/ChangeLog.txt)*
 .NET Framework that scrapes various websites for manga or light novel data for a specifc user inputted series. Then it compares the various prices for each available volume across the websites chosen and outputs a list of the volumes available and the website and price for the lowest volume.
 ***
@@ -46,8 +46,8 @@ If you want more websites just notify me and I will look into seeing if I can ad
 private static async Task Main(string[] args)
 {
     // Create the MasterScrape object it defaults to America Region & Chrome Browser but you can still change them outside of the constructor & debug mode is disabled by default. There is no default StockStatusFilter
-    MasterScrape Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, StockStatusFilter.EXCLUDE_OOS_FILTER);
-    scrape.Region = Region.America;
+    MasterScrape Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER);
+    scrape.Region = Region.Canada;
     scrape.Browser = Browser.FireFox;
     scrape.Filter = StockstatusFilter.EXCLUDE_OOS_AND_PO_FILTER;
 

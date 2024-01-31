@@ -8,10 +8,11 @@ Legend
 
 v1.1.5 - 
 ✅ Added new Region "Australia"
-❌ Added Australia Region to SciFier website
-❌ Completed Wordery website for America, Britain, Canada, Europe, & Australia Regions
-🔥 StockStatus is now a Struct instead of a Class
-🔥 Fixed tests to accomdate changes
+✅ Added Australia Region to SciFier website
+✅ Completed Wordery website for America, Britain, Canada, Europe, & Australia Regions
+✍️ Fixed tests to accomdate changes
+📜SciFier
+ -🔥Fixed issue where StockStatus would not be picked up if it was OOS
 
 V1.1.4 - December 27th
 ⌛ Updated to .NET 8.0

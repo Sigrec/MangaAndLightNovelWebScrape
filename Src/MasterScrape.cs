@@ -990,8 +990,8 @@ namespace MangaAndLightNovelWebScrape
         {
             System.Diagnostics.Stopwatch watch = new();
             watch.Start();
-            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("Overlord", BookType.LightNovel, [ Website.Wordery ], false, false, false, false);
+            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Australia, Browser.Chrome).EnableDebugMode();
+            await scrape.InitializeScrapeAsync("jujutsu kaisen", BookType.Manga, [ Website.Wordery ], false, false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
