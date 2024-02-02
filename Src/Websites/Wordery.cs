@@ -89,6 +89,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "-", " ");
             InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "?", " ");
             InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
+            if (bookTitle.Equals("boruto", StringComparison.OrdinalIgnoreCase)) { curTitle.Replace(" : Naruto Next Generations", string.Empty); }
             if (!MultiVolNumCheck().IsMatch(entryTitle))
             {
                 InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, '.');
@@ -159,7 +160,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             {
                 ushort pageNum = 1;
                 bool secondNovelCheck = false;
-                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(10));
+                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
                 HtmlDocument doc = new HtmlDocument
                 {
                     OptionCheckSyntax = false,
@@ -195,7 +196,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     HtmlNodeCollection staffData = doc.DocumentNode.SelectNodes(StaffXPath);
                     HtmlNodeCollection bookFormatAndLangData = doc.DocumentNode.SelectNodes(BookFormatXPath);
 
-                    bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle); 
+                    bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle); 
                     OneShotRetry:
                     for (int x = 0; x < titleData.Count; x++)
                     {

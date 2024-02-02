@@ -44,6 +44,7 @@ namespace MangaAndLightNovelWebScrape
                 "IS" or "In Stock" => StockStatus.IS,
                 "PO" or "Pre-Order" => StockStatus.PO,
                 "OOS" or "Out of Stock" => StockStatus.OOS,
+                "BO" or "Backorder" => StockStatus.BO,
                 _ => StockStatus.NA
             };
         }
@@ -58,7 +59,7 @@ namespace MangaAndLightNovelWebScrape
             return region switch
             {
                 Region.America => [ AmazonUSA.WEBSITE_TITLE, BarnesAndNoble.WEBSITE_TITLE, BooksAMillion.WEBSITE_TITLE, InStockTrades.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE, Crunchyroll.WEBSITE_TITLE, RobertsAnimeCornerStore.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, Wordery.WEBSITE_TITLE ],
-                Region.Australia => [ SciFier.WEBSITE_TITLE, Wordery.WEBSITE_TITLE ],
+                Region.Australia => [ SciFier.WEBSITE_TITLE, Wordery.WEBSITE_TITLE, MangaMate.WEBSITE_TITLE ],
                 Region.Britain => [ ForbiddenPlanet.WEBSITE_TITLE, Waterstones.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, Wordery.WEBSITE_TITLE ],
                 Region.Canada => [ Indigo.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, Wordery.WEBSITE_TITLE ],
                 Region.Europe => [ SciFier.WEBSITE_TITLE, Wordery.WEBSITE_TITLE, Wordery.WEBSITE_TITLE ],
@@ -77,7 +78,7 @@ namespace MangaAndLightNovelWebScrape
             return region switch
             {
                 Region.America => [ Website.AmazonUSA, Website.BarnesAndNoble, Website.BooksAMillion, Website.InStockTrades, Website.KinokuniyaUSA, Website.Crunchyroll, Website.RobertsAnimeCornerStore, Website.SciFier, Website.Wordery ],
-                Region.Australia => [ Website.SciFier, Website.Wordery ],
+                Region.Australia => [ Website.SciFier, Website.Wordery, Website.MangaMate ],
                 Region.Britain => [ Website.ForbiddenPlanet, Website.Waterstones, Website.SciFier, Website.Wordery ],
                 Region.Canada => [ Website.Indigo, Website.SciFier, Website.Wordery ],
                 Region.Europe => [ Website.SciFier, Website.Wordery ],

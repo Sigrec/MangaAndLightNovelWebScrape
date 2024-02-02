@@ -161,7 +161,7 @@ namespace MangaAndLightNovelWebScrape.Websites
 
                     List<HtmlNode> titleData = doc.DocumentNode.SelectNodes(TitleXPath).Where(title => !string.IsNullOrWhiteSpace(title.InnerText)).ToList();
                     HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
-                    bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
+                    bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
 
                     for (int x = 0; x < titleData.Count; x++)
                     {

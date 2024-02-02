@@ -21,6 +21,7 @@ namespace MangaAndLightNovelWebScrape.Models
             InStockTrades,
             KinokuniyaUSA,
             MerryManga,
+            MangaMate,
             RobertsAnimeCornerStore,
             SciFier,
             Target,
@@ -38,11 +39,11 @@ namespace MangaAndLightNovelWebScrape.Models
         public enum Region
         {
             America,
+            Australia,
             Britain,
             Canada,
             Europe,
             Japan,
-            Australia
         }
 
         /// <summary>

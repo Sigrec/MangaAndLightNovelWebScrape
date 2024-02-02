@@ -6,6 +6,19 @@ namespace MangaAndLightNovelWebScrape
         internal static char[] trimedChars = [' ', '\'', '!', '-', ',', ':'];
         [GeneratedRegex(@"[^\w+]")] internal static partial Regex RemoveNonWordsRegex();
 
+        internal static List<EntryModel> RemoveDuplicateEntries(List<EntryModel> entries)
+        {
+            List<EntryModel> output = new List<EntryModel>();
+            foreach (EntryModel entry in entries)
+            {
+                if (!output.Contains(entry))
+                {
+                    output.Add(entry);
+                }
+            }
+            return output;
+        }
+
         /// <summary>
         /// Determines if the book title inputted by the user is contained within the current title scraped from the website
         /// </summary>

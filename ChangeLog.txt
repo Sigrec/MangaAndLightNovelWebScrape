@@ -6,6 +6,11 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> Inprogress feature will be fixed in later release
 
+v1.1.7 - 
+✅ Updated "GetStockStatusFromString" to include "Backorder" stock status
+❌ Completed MangaMate website for Australia Region
+❌ Fix issue where selenium browser executables would not terminate
+
 v1.1.6 - January 31st
 🔥 Update Helper Methods, fixes issue from v1.1.5
 

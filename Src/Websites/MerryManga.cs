@@ -113,7 +113,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 }
                 driver.Quit();
 
-                bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);   
+                bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);   
 
                 // Get the page data from the HTML doc
                 HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);

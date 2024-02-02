@@ -193,7 +193,7 @@ namespace MangaAndLightNovelWebScrape.Websites
 
                 HtmlNode pageCheck = null;
                 Uri nextPage = !oneShotCheck ? ValidUrls[validUrlCount].Key : originalUrl;
-                bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
+                bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
                 while (oneShotCheck || (validUrlCount <= ValidUrls.Count))
                 {
                     if (!oneShotCheck && pageCheck == null)

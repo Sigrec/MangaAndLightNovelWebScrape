@@ -152,7 +152,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     LOGGER.Debug("Entry has {} Page(s)", maxPageNum);
                 }
 
-                bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
+                bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
                 while (true)
                 {
                     // Get page data

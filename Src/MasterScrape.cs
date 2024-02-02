@@ -30,6 +30,7 @@ namespace MangaAndLightNovelWebScrape
         private ForbiddenPlanet ForbiddenPlanet = null;
         private MerryManga MerryManga = null;
         private Wordery Wordery = null;
+        private MangaMate MangaMate = null;
         /// <summary>
         /// The current region of the Scrape
         /// </summary>
@@ -44,7 +45,7 @@ namespace MangaAndLightNovelWebScrape
         public StockStatus[] Filter { get; set; }
         private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
         // "--headless=new", 
-        internal static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent" ];
+        private static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent" ];
         private static readonly string[] FIREFOX_BROWSER_ARGUMENTS = ["-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3"];
         /// <summary>
         /// Determines whether debug mode is enabled (Disabled by default)
@@ -55,8 +56,8 @@ namespace MangaAndLightNovelWebScrape
         [GeneratedRegex(@"Vol \d{1,3}$")] internal static partial Regex FindVolWithNumRegex();
         [GeneratedRegex(@"\s{2,}|--|—")] internal static partial Regex MultipleWhiteSpaceRegex();
         [GeneratedRegex(@";jsessionid=[^?]*")] internal static partial Regex RemoveJSessionIDRegex();
-        [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Compendium|Artbook|Error|\(Osi\)|Advertising|Art Book|Adventure|Artbook|Coloring Book|the Anime|Calendar|Ani-manga|Anime|Bilingual|Game Book|Theatrical", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
-        [GeneratedRegex(@"Official|Guide|Adventure|Advertising|Anime|Calendar|Error|Encyclopedia|Anthology|Character|Bilingual|Game Book|Theatrical", RegexOptions.IgnoreCase)] internal static partial Regex CheckEntryRemovalRegex();
+        [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Compendium|Artbook|Error|\(Osi\)|Advertising|Art Book|Adventure|Artbook|Coloring Book|the Anime|Calendar|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
+        // [GeneratedRegex(@"Official|Guide|Adventure|Advertising|Anime|Calendar|Error|Encyclopedia|Anthology|Character|Bilingual|Game Book|Theatrical|SEGA", RegexOptions.IgnoreCase)] internal static partial Regex CheckEntryRemovalRegex();
 
         public MasterScrape(StockStatus[] Filter, Region Region = Region.America, Browser Browser = Browser.Chrome)
         {
@@ -297,6 +298,7 @@ namespace MangaAndLightNovelWebScrape
         {
             SciFier?.ClearData();
             Wordery?.ClearData();
+            MangaMate?.ClearData();
         }
 
         /// <summary>
@@ -558,6 +560,10 @@ namespace MangaAndLightNovelWebScrape
                                 case "wordery":
                                     WebsiteList.Add(Website.Wordery);
                                     break;
+                                case MangaMate.WEBSITE_TITLE:
+                                case "mangamate":
+                                    WebsiteList.Add(Website.MangaMate);
+                                    break;
                             }
                             break;
                         case Region.Japan:
@@ -630,9 +636,9 @@ namespace MangaAndLightNovelWebScrape
                     case Wordery.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = Wordery.GetUrl();
                         break;
-                    // case Target.WEBSITE_TITLE:
-                    //     MasterUrls[entry.Website] = Target.GetUrl();
-                    //     break;
+                    case MangaMate.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = MangaMate.GetUrl();
+                        break;
                 }
             }
         }
@@ -815,7 +821,10 @@ namespace MangaAndLightNovelWebScrape
                                 LOGGER.Info($"{Wordery.WEBSITE_TITLE} Going");
                                 WebTasks.Add(Wordery.CreateWorderyTask(bookTitle, book, MasterDataList, this.Region, SetupBrowserDriver(true)));
                                 break;
-                            default:
+                            case Website.MangaMate:
+                                MangaMate ??= new MangaMate();
+                                LOGGER.Info($"{MangaMate.WEBSITE_TITLE} Going");
+                                WebTasks.Add(MangaMate.CreateMangaMateTask(bookTitle, book, MasterDataList, SetupBrowserDriver()));
                                 break;
                         }
                     });
@@ -991,7 +1000,7 @@ namespace MangaAndLightNovelWebScrape
             System.Diagnostics.Stopwatch watch = new();
             watch.Start();
             MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Australia, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("jujutsu kaisen", BookType.Manga, [ Website.Wordery ], false, false, false, false);
+            await scrape.InitializeScrapeAsync("fullmetal alchemist", BookType.Manga, [ Website.MangaMate ], false, false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }

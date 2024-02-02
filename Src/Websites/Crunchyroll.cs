@@ -102,15 +102,6 @@ namespace MangaAndLightNovelWebScrape.Websites
                 }
             }
 
-            // Match volGroup = MasterScrape.FindVolNumRegex().Match(curTitle.ToString());
-            // if (!string.IsNullOrWhiteSpace(volGroup.Value) && volGroup.Value[0] == '0')
-            // {
-            //     LOGGER.Debug(curTitle.ToString());
-            //     curTitle.Remove(volGroup.Index, volGroup.Value.Length);
-            //     curTitle.Insert(volGroup.Index, volGroup.Value.TrimStart('0'));
-            //     LOGGER.Debug(curTitle.ToString());
-            // }
-
             InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, '-');
             InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
             return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.Replace("Hardcover", string.Empty).ToString(), " ").Trim();
@@ -126,7 +117,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     OptionCheckSyntax = false,
                 };
                 int nextPage = 0;
-                bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
+                bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
 
                 while (true)
                 {
@@ -153,7 +144,6 @@ namespace MangaAndLightNovelWebScrape.Websites
                                 )
                             )        
                         {
-                            LOGGER.Debug("{} | {}", titleText, stockStatusData[x].InnerText.Trim());
                             CrunchyrollData.Add(
                                 new EntryModel
                                 (
@@ -172,7 +162,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                         }
                         else
                         {
-                            LOGGER.Debug("Removed {}", titleText);
+                            LOGGER.Info("Removed {}", titleText);
                         }
                     }
 

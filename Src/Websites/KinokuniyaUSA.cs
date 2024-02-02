@@ -155,7 +155,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             bool oneShotCheck = false;
             string entryTitle, entryDesc;
             HtmlDocument doc = new HtmlDocument();
-            bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
+            bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
             try
             {
                 WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));

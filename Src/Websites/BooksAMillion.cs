@@ -175,7 +175,7 @@ namespace MangaAndLightNovelWebScrape.Websites
 
                 HtmlDocument doc = new HtmlDocument();
                 bool boxsetCheck = false, boxsetValidation = false;
-                bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
+                bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
                 driver.Navigate().GoToUrl(GetUrl(bookTitle, boxsetCheck, bookType));
                 
                 while(true)

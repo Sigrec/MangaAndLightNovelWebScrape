@@ -123,7 +123,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 HtmlNodeCollection entryLinkData = doc.DocumentNode.SelectNodes(EntryLinkXPath);
                 HtmlNode oneShotStockCheck = null;
                 bool isOneShot = false;
-                bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
+                bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
 
                 if (doc.DocumentNode.SelectSingleNode(OneShotCheckXPath) != null)
                 {

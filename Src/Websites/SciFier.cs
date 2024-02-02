@@ -129,7 +129,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 string url = GetUrl(bookTitle, bookType, curRegion, letterIsFrontHalf);
                 bool ShouldEndEarly = false, IsSingleName = true;
                 HtmlDocument doc = web.Load(url);
-                bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
+                bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
 
                 while (true)
                 {

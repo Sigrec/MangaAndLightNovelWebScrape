@@ -172,7 +172,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             {
                 WebDriverWait wait = new(driver, TimeSpan.FromSeconds(10));
                 HtmlDocument doc = new HtmlDocument();
-                bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
+                bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
 
                 driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookType, bookTitle));
                 RemoveCookiePopup(driver, wait);

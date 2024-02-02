@@ -76,7 +76,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 HtmlWeb web = new HtmlWeb();
                 HtmlDocument doc = new HtmlDocument();
                 int currPageNum = 1;
-                bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
+                bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
 
                 while (true)
                 {

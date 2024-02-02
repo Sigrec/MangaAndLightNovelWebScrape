@@ -123,7 +123,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             {
                 HtmlWeb web = new HtmlWeb();
                 HtmlDocument doc = new HtmlDocument();
-                bool BookTitleRemovalCheck = MasterScrape.CheckEntryRemovalRegex().IsMatch(bookTitle);
+                bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
                 
                 while (true)
                 {
