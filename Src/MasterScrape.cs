@@ -284,10 +284,10 @@ namespace MangaAndLightNovelWebScrape
         private void ClearBritainWebsiteData()
         {
             ForbiddenPlanet?.ClearData();
-            Waterstones?.ClearData();
             SciFier?.ClearData();
-            Wordery?.ClearData();
             SpeedyHen?.ClearData();
+            Waterstones?.ClearData();
+            Wordery?.ClearData();
         }
 
         private void ClearEuropeWebsiteData()
@@ -509,12 +509,16 @@ namespace MangaAndLightNovelWebScrape
                                 case ForbiddenPlanet.WEBSITE_TITLE:
                                     WebsiteList.Add(Website.ForbiddenPlanet);
                                     break;
-                                case Waterstones.WEBSITE_TITLE:
-                                    WebsiteList.Add(Website.Waterstones);
-                                    break;
                                 case SciFier.WEBSITE_TITLE:
                                 case "scifier":
                                     WebsiteList.Add(Website.SciFier);
+                                    break;
+                                case SpeedyHen.WEBSITE_TITLE:
+                                case "speedyhen":
+                                    WebsiteList.Add(Website.SpeedyHen);
+                                    break;
+                                case Waterstones.WEBSITE_TITLE:
+                                    WebsiteList.Add(Website.Waterstones);
                                     break;
                                 case Wordery.WEBSITE_TITLE:
                                 case "wordery":
@@ -554,6 +558,11 @@ namespace MangaAndLightNovelWebScrape
                         case Region.Australia:
                             switch (website)
                             {
+                                
+                                case MangaMate.WEBSITE_TITLE:
+                                case "mangamate":
+                                    WebsiteList.Add(Website.MangaMate);
+                                    break;
                                 case SciFier.WEBSITE_TITLE:
                                 case "scifier":
                                     WebsiteList.Add(Website.SciFier);
@@ -561,10 +570,6 @@ namespace MangaAndLightNovelWebScrape
                                 case Wordery.WEBSITE_TITLE:
                                 case "wordery":
                                     WebsiteList.Add(Website.Wordery);
-                                    break;
-                                case MangaMate.WEBSITE_TITLE:
-                                case "mangamate":
-                                    WebsiteList.Add(Website.MangaMate);
                                     break;
                             }
                             break;
@@ -999,19 +1004,19 @@ namespace MangaAndLightNovelWebScrape
         // Command to end all chrome.exe process -> taskkill /F /IM chrome.exe /T
         // Command to end all chrome.exe process -> taskkill /F /IM chromedriver.exe /T
         // TODO Need to throw exception if user is querying against Japan region and text is not in Japanese
-        // private static async Task Main()
-        // {
-        //     System.Diagnostics.Stopwatch watch = new();
-        //     watch.Start();
-        //     MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain, Browser.Chrome).EnableDebugMode();
-        //     await scrape.InitializeScrapeAsync("Overlord", BookType.Manga, [ Website.SpeedyHen ], false, false, false, false);
-        //     watch.Stop();
-        //     LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
-        // }
-
-        private static void Main()
+        private static async Task Main()
         {
-
+            System.Diagnostics.Stopwatch watch = new();
+            watch.Start();
+            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain, Browser.Chrome).EnableDebugMode();
+            await scrape.InitializeScrapeAsync("world trigger", BookType.Manga, [ Website.SpeedyHen ], false, false, false, false);
+            watch.Stop();
+            LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
+
+        // private static void Main()
+        // {
+
+        // }
     }
 }

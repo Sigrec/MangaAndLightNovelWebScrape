@@ -6,7 +6,10 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> Inprogress feature will be fixed in later release
 
-v1.2.0 - 
+v1.2.1 - February 3rd
+🔥 Fixed issue where SpeedyHen would not be added as a website when calling "GenerateWebsiteList"
+
+v1.2.0 - February 3rd
 ✅ Updated "GetStockStatusFromString" to include "Backorder" stock status
 ✅ Completed MangaMate website for Australia Region
 ✅ Completed SpeedyHen website for Britain Region
