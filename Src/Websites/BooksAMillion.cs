@@ -275,6 +275,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     }
                 }
                 BooksAMillionData.Sort(EntryModel.VolumeSort);
+                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, BooksAMillionData, LOGGER);
             }
             catch (Exception ex)
             {
@@ -282,11 +283,8 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             finally
             {
-                driver?.Close();
                 driver?.Quit();
             }
-
-            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, BooksAMillionData, LOGGER);
             return BooksAMillionData;
         }
     }

@@ -111,7 +111,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 {
                     LOGGER.Info("Single Page Entry (No Additional Loading Required)");
                 }
-                driver.Quit();
+                driver?.Quit();
 
                 bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);   
 
@@ -164,8 +164,11 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             catch (Exception ex)
             {
-                driver?.Quit();
                 LOGGER.Error("{} Does Not Exist @ {} \n{}", bookTitle, WEBSITE_TITLE, ex);
+            }
+            finally
+            {
+                driver?.Quit();
             }
 
             return MerryMangaData;

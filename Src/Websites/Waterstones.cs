@@ -159,19 +159,15 @@ namespace MangaAndLightNovelWebScrape.Websites
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(!isOneShot ? TitleXPath : OneShotTitleXPath);
                     HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(!isOneShot ? PriceXPath : OneShotPriceXPath);
                     HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(!isOneShot ? StockStatusXPath : OneShotStockStatusXPath);
-                    // LOGGER.Debug("{} | {} | {}", titleData == null, priceData == null, stockStatusData == null);
-                    // LOGGER.Debug("{} | {} | {}", titleData.Count, priceData.Count, stockStatusData.Count);
 
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        // LOGGER.Debug("{} | {}", titleData[x].InnerText, FixVolumeRegex().Replace(titleData[x].InnerText, " Vol").Trim());
                         string entryTitle = FixVolumeRegex().Replace(titleData[x].InnerText, " Vol").Trim();
                         if (!isOneShot && ((entryTitle.EndsWith('…') && !FullTitleCheckRegex().IsMatch(entryTitle[..entryTitle.IndexOf('…')])) || !entryTitle.Contains("Vol"))) // Check to see if title is cutoff
                         {
                             string oldTitle = entryTitle;
                             driver.Navigate().GoToUrl($"https://www.waterstones.com/{titleData[x].GetAttributeValue("href", "Error")}");
                             entryTitle = FixVolumeRegex().Replace(wait.Until(driver => driver.FindElement(By.Id("scope_book_title"))).Text, " Vol");
-                            // LOGGER.Debug("Replaced {} w/ {}", oldTitle, entryTitle);
                         }
 
                         if (
@@ -238,7 +234,6 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             finally
             {
-                driver?.Close();
                 driver?.Quit();
             }
 

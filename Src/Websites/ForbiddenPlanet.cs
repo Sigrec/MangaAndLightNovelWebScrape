@@ -248,7 +248,6 @@ namespace MangaAndLightNovelWebScrape.Websites
                     }
                     else
                     {
-                        driver.Quit();
                         break;
                     }
                 }
@@ -258,8 +257,11 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             catch (Exception e)
             {
-                // driver?.Quit();
                 LOGGER.Error($"{bookTitle} Does Not Exist @ {WEBSITE_TITLE} \n{e}");
+            }
+            finally
+            {
+                driver?.Quit();
             }
             return ForbiddenPlanetData;
         }

@@ -295,7 +295,6 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             finally
             {
-                driver?.Close();
                 driver?.Quit();
             }
             return WorderyData;

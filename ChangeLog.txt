@@ -10,7 +10,6 @@ v1.2.0 -
 ✅ Updated "GetStockStatusFromString" to include "Backorder" stock status
 ✅ Completed MangaMate website for Australia Region
 ✅ Completed SpeedyHen website for Britain Region
-❌ Fix issue where selenium browser executables would not terminate
 🔥 Fix issue where MerryManga is not returned from website helper methods for America
 ✍️ Fixing my versioning strategy to comply with .NET standards (https://learn.microsoft.com/en-us/dotnet/csharp/versioning)
 

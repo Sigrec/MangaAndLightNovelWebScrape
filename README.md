@@ -1,4 +1,4 @@
-# [MangaAndLightNovelWebScrape](https://www.nuget.org/packages/MangaAndLightNovelWebScrape/1.1.6#readme-body-tab)
+# [MangaAndLightNovelWebScrape](https://www.nuget.org/packages/MangaAndLightNovelWebScrape/1.2.0#readme-body-tab)
 ### *(Manga & Light Novel Web Scrape Framework for .NET) - [ChangeLog](https://github.com/Sigrec/MangaAndLightNovelWebScrape/blob/master/ChangeLog.txt)*
 .NET Framework that scrapes various websites for manga or light novel data for a specifc user inputted series. Then it compares the various prices for each available volume across the websites chosen and outputs a list of the volumes available and the website and price for the lowest volume.
 ***
@@ -16,8 +16,8 @@ If you want more websites just notify me and I will look into seeing if I can ad
 - [x] SciFier
 - [x] Wordery
 
-#### Canada
-- [x] Indigo
+#### Australia
+- [x] MangaMate
 - [x] SciFier
 - [x] Wordery
 
@@ -25,21 +25,21 @@ If you want more websites just notify me and I will look into seeing if I can ad
 - [ ] ForBiddenPlanet (Paused)
 - [x] SciFier
 - [x] SpeedyHen
-- [x] Wordery
 - [x] Waterstones
+- [x] Wordery
 
-#### Japan
-- [ ] AmazonJP (Not Started)
-- [ ] CDJapan (Paused)
+#### Canada
+- [x] Indigo
+- [x] SciFier
+- [x] Wordery
 
 #### Europe
 - [x] SciFier
 - [x] Wordery
 
-#### Australia
-- [x] MangaMate
-- [x] SciFier
-- [x] Wordery
+#### Japan
+- [ ] AmazonJapan (Not Started)
+- [ ] CDJapan (Paused)
  
 ***
 #### Demo

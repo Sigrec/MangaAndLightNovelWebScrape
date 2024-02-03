@@ -95,7 +95,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 int index = MasterScrape.FindVolWithNumRegex().Match(entryTitle).Index;
                 curTitle.Insert(index > 0 ? index : curTitle.Length, " Novel ");
             }
-            
+
             return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
         }
 
@@ -152,8 +152,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                                 formatCheck = formatCheckData != null ? string.Join(" ", formatCheckData.Select(item => item.InnerText.Trim())) : string.Empty;
                             }
 
-                            LOGGER.Debug("{} | {} | {}", System.Net.WebUtility.HtmlDecode(entryTitle), priceData[x].InnerText.Trim().Replace("&#163;", "£"), formatCheck);
-                            // && (entryTitle.Contains("Comics") || entryTitle.Contains("Box Set") || entryTitle.AsParallel().Any(char.IsDigit))
+                            // LOGGER.Debug("{} | {} | {}", System.Net.WebUtility.HtmlDecode(entryTitle), priceData[x].InnerText.Trim().Replace("&#163;", "£"), formatCheck);
                             if (
                                 (bookType == BookType.LightNovel 
                                     && (entryTitle.Contains("Light Novel", StringComparison.OrdinalIgnoreCase) || formatCheck.Contains("Novel"))) 

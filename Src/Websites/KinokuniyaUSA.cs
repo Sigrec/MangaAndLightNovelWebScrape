@@ -151,14 +151,15 @@ namespace MangaAndLightNovelWebScrape.Websites
         
         private List<EntryModel> GetKinokuniyaUSAData(string bookTitle, BookType bookType, bool memberStatus, WebDriver driver)
         {
-            int maxPageCount = -1, curPageNum = 1;
-            bool oneShotCheck = false;
-            string entryTitle, entryDesc;
-            HtmlDocument doc = new HtmlDocument();
-            bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
             try
             {
+                int maxPageCount = -1, curPageNum = 1;
+                bool oneShotCheck = false;
+                string entryTitle, entryDesc;
+                HtmlDocument doc = new HtmlDocument();
+                bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
                 WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
+                
                 driver.Navigate().GoToUrl(GetUrl(bookType, bookTitle));
                 wait.Until(driver => driver.FindElement(By.CssSelector("#loading[style='display: none;']")));
                 if (bookType == BookType.Manga)
@@ -279,6 +280,9 @@ namespace MangaAndLightNovelWebScrape.Websites
                         break;
                     }
                 }
+
+                KinokuniyaUSAData.Sort(EntryModel.VolumeSort);
+                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, KinokuniyaUSAData, LOGGER);
             }
             catch (Exception e)
             {
@@ -286,12 +290,9 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             finally
             {
-                driver?.Close();
                 driver?.Quit();
             }
 
-            KinokuniyaUSAData.Sort(EntryModel.VolumeSort);
-            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, KinokuniyaUSAData, LOGGER);
             return KinokuniyaUSAData;
         }
     }
