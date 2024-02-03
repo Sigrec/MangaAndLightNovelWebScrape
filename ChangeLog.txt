@@ -6,10 +6,13 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> Inprogress feature will be fixed in later release
 
-v1.1.7 - 
+v1.2.0 - 
 ✅ Updated "GetStockStatusFromString" to include "Backorder" stock status
-❌ Completed MangaMate website for Australia Region
+✅ Completed MangaMate website for Australia Region
+✅ Completed SpeedyHen website for Britain Region
 ❌ Fix issue where selenium browser executables would not terminate
+🔥 Fix issue where MerryManga is not returned from website helper methods for America
+✍️ Fixing my versioning strategy to comply with .NET standards (https://learn.microsoft.com/en-us/dotnet/csharp/versioning)
 
 v1.1.6 - January 31st
 🔥 Update Helper Methods, fixes issue from v1.1.5

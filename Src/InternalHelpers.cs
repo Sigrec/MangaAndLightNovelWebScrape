@@ -54,6 +54,14 @@ namespace MangaAndLightNovelWebScrape
             }
         }
 
+        internal static void ReplaceTextInEntryTitle (ref StringBuilder curTitle, string bookTitle, char containsText, char replaceText)
+        {
+            if (!bookTitle.Contains(containsText))
+            {
+                curTitle.Replace(containsText, replaceText);
+            }
+        }
+
         internal static void RemoveCharacterFromTitle(ref StringBuilder curTitle, string bookTitle, char charToRemove)
         {
             if (!bookTitle.Contains(charToRemove))

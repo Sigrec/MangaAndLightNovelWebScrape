@@ -20,11 +20,11 @@ namespace MangaAndLightNovelWebScrape.Models
             Indigo,
             InStockTrades,
             KinokuniyaUSA,
-            MerryManga,
             MangaMate,
+            MerryManga,
             RobertsAnimeCornerStore,
             SciFier,
-            Target,
+            SpeedyHen,
             Waterstones,
             Wordery
         }

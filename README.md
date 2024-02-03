@@ -5,40 +5,41 @@
 ### *Website Completion List*
 If you want more websites just notify me and I will look into seeing if I can add them
 #### America
-- [x] Crunchyroll
-- [x] RobertsAnimeCornerStore
-- [x] Books-A-Million
+- [ ] AmazonUSA (Paused)
 - [x] Barnes & Noble
+- [x] Books-A-Million
+- [x] Crunchyroll
 - [x] InStockTrades
 - [x] Kinokuniya USA
-- [ ] AmazonUSA (Paused)
-- [x] Wordery
-- [x] SciFier
 - [x] MerryManga
+- [x] RobertsAnimeCornerStore
+- [x] SciFier
+- [x] Wordery
 
 #### Canada
-- [x] Wordery
 - [x] Indigo
 - [x] SciFier
+- [x] Wordery
 
 #### Britain
-- [x] Wordery
-- [ ] ForBiddenPlanet (In Progress)
-- [x] Waterstones
+- [ ] ForBiddenPlanet (Paused)
 - [x] SciFier
+- [x] SpeedyHen
+- [x] Wordery
+- [x] Waterstones
 
 #### Japan
 - [ ] AmazonJP (Not Started)
 - [ ] CDJapan (Paused)
 
 #### Europe
-- [x] Wordery
 - [x] SciFier
+- [x] Wordery
 
 #### Australia
-- [x] Wordery
+- [x] MangaMate
 - [x] SciFier
-- [ ] MangaMate (Not Started)
+- [x] Wordery
  
 ***
 #### Demo

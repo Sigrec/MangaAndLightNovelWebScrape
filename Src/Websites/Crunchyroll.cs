@@ -42,7 +42,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             // https://store.crunchyroll.com/search?q=overlord&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Novels
             
             string url = $"https://store.crunchyroll.com/search?q={InternalHelpers.FilterBookTitle(bookTitle)}&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2={(bookType == BookType.Manga ? "Manga" : "Novels")}&srule=Product%20Name%20(A-Z)&start={nextPage}&sz=100";
-            LOGGER.Debug(url);
+            LOGGER.Info(url);
             CrunchyrollLinks.Add(url);
             return url;
         }

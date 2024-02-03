@@ -31,6 +31,7 @@ namespace MangaAndLightNovelWebScrape
         private MerryManga MerryManga = null;
         private Wordery Wordery = null;
         private MangaMate MangaMate = null;
+        private SpeedyHen SpeedyHen = null;
         /// <summary>
         /// The current region of the Scrape
         /// </summary>
@@ -53,8 +54,8 @@ namespace MangaAndLightNovelWebScrape
         internal static bool IsDebugEnabled { get; set; } = false;
         
         [GeneratedRegex(@"(?:\d{1,3}|\d{1,3}.\d{1})$")] internal static partial Regex FindVolNumRegex();
-        [GeneratedRegex(@"Vol \d{1,3}$")] internal static partial Regex FindVolWithNumRegex();
-        [GeneratedRegex(@"\s{2,}|--|—")] internal static partial Regex MultipleWhiteSpaceRegex();
+        [GeneratedRegex(@"Vol (?:\d{1,3}|\d{1,3}.\d{1})$")] internal static partial Regex FindVolWithNumRegex();
+        [GeneratedRegex(@"\s{2,}|\s{0,}--\s{0,}|\s{0,}—\s{0,}")] internal static partial Regex MultipleWhiteSpaceRegex();
         [GeneratedRegex(@";jsessionid=[^?]*")] internal static partial Regex RemoveJSessionIDRegex();
         [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Compendium|Artbook|Error|\(Osi\)|Advertising|Art Book|Adventure|Artbook|Coloring Book|the Anime|Calendar|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
         // [GeneratedRegex(@"Official|Guide|Adventure|Advertising|Anime|Calendar|Error|Encyclopedia|Anthology|Character|Bilingual|Game Book|Theatrical|SEGA", RegexOptions.IgnoreCase)] internal static partial Regex CheckEntryRemovalRegex();
@@ -286,6 +287,7 @@ namespace MangaAndLightNovelWebScrape
             Waterstones?.ClearData();
             SciFier?.ClearData();
             Wordery?.ClearData();
+            SpeedyHen?.ClearData();
         }
 
         private void ClearEuropeWebsiteData()
@@ -591,53 +593,56 @@ namespace MangaAndLightNovelWebScrape
             {
                 switch (entry.Website)
                 {
-                    case Crunchyroll.WEBSITE_TITLE:
-                        MasterUrls[entry.Website] = Crunchyroll.GetUrl();
-                        break;
-                    case RobertsAnimeCornerStore.WEBSITE_TITLE:
-                        MasterUrls[entry.Website] = RobertsAnimeCornerStore.GetUrl();
-                        break;
-                    case InStockTrades.WEBSITE_TITLE:
-                        MasterUrls[entry.Website] = InStockTrades.GetUrl();
-                        break;
-                    case BarnesAndNoble.WEBSITE_TITLE:
-                        MasterUrls[entry.Website] = BarnesAndNoble.GetUrl();
-                        break;
-                    case KinokuniyaUSA.WEBSITE_TITLE:
-                        MasterUrls[entry.Website] = KinokuniyaUSA.GetUrl();
-                        break;
-                    case BooksAMillion.WEBSITE_TITLE:
-                        MasterUrls[entry.Website] = BooksAMillion.GetUrl();
+                    case AmazonJapan.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = AmazonJapan.GetUrl();
                         break;
                     case AmazonUSA.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = AmazonUSA.GetUrl();
                         break;
-                    case SciFier.WEBSITE_TITLE:
-                        MasterUrls[entry.Website] = SciFier.GetUrl();
+                    case BarnesAndNoble.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = BarnesAndNoble.GetUrl();
                         break;
-                    case ForbiddenPlanet.WEBSITE_TITLE:
-                        MasterUrls[entry.Website] = ForbiddenPlanet.GetUrl();
-                        break;
-                    case Waterstones.WEBSITE_TITLE:
-                        MasterUrls[entry.Website] = Waterstones.GetUrl();
-                        break;
-                    case Indigo.WEBSITE_TITLE:
-                        MasterUrls[entry.Website] = Indigo.GetUrl();
-                        break;
-                    case AmazonJapan.WEBSITE_TITLE:
-                        MasterUrls[entry.Website] = AmazonJapan.GetUrl();
+                    case BooksAMillion.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = BooksAMillion.GetUrl();
                         break;
                     case CDJapan.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = CDJapan.GetUrl();
                         break;
-                    case MerryManga.WEBSITE_TITLE:
-                        MasterUrls[entry.Website] = MerryManga.GetUrl();
+                    case Crunchyroll.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = Crunchyroll.GetUrl();
                         break;
-                    case Wordery.WEBSITE_TITLE:
-                        MasterUrls[entry.Website] = Wordery.GetUrl();
+                    case ForbiddenPlanet.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = ForbiddenPlanet.GetUrl();
+                        break;
+                    case Indigo.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = Indigo.GetUrl();
+                        break;
+                    case InStockTrades.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = InStockTrades.GetUrl();
+                        break;
+                    case KinokuniyaUSA.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = KinokuniyaUSA.GetUrl();
                         break;
                     case MangaMate.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = MangaMate.GetUrl();
+                        break;
+                    case MerryManga.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = MerryManga.GetUrl();
+                        break;
+                    case RobertsAnimeCornerStore.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = RobertsAnimeCornerStore.GetUrl();
+                        break;
+                    case SciFier.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = SciFier.GetUrl();
+                        break;
+                    case SpeedyHen.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = SpeedyHen.GetUrl();
+                        break;
+                    case Waterstones.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = Waterstones.GetUrl();
+                        break;
+                    case Wordery.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = Wordery.GetUrl();
                         break;
                 }
             }
@@ -717,15 +722,20 @@ namespace MangaAndLightNovelWebScrape
                                 LOGGER.Info($"{ForbiddenPlanet.WEBSITE_TITLE} Going");
                                 WebTasks.Add(ForbiddenPlanet.CreateForbiddenPlanetTask(bookTitle, book, MasterDataList, SetupBrowserDriver()));
                                 break;
-                            case Website.Waterstones:
-                                Waterstones ??= new Waterstones();
-                                LOGGER.Info($"{Waterstones.WEBSITE_TITLE} Going");
-                                WebTasks.Add(Waterstones.CreateWaterstonesTask(bookTitle, book, MasterDataList, SetupBrowserDriver(true)));
-                                break;
                             case Website.SciFier:
                                 SciFier ??= new SciFier();
                                 LOGGER.Info($"{SciFier.WEBSITE_TITLE} Going");
                                 WebTasks.Add(SciFier.CreateSciFierTask(bookTitle, book, MasterDataList, this.Region));
+                                break;
+                            case Website.SpeedyHen:
+                                SpeedyHen ??= new SpeedyHen();
+                                LOGGER.Info($"{SpeedyHen.WEBSITE_TITLE} Going");
+                                WebTasks.Add(SpeedyHen.CreateSpeedyHenTask(bookTitle, book, MasterDataList));
+                                break;
+                            case Website.Waterstones:
+                                Waterstones ??= new Waterstones();
+                                LOGGER.Info($"{Waterstones.WEBSITE_TITLE} Going");
+                                WebTasks.Add(Waterstones.CreateWaterstonesTask(bookTitle, book, MasterDataList, SetupBrowserDriver(true)));
                                 break;
                             case Website.Wordery:
                                 Wordery ??= new Wordery();
@@ -984,23 +994,17 @@ namespace MangaAndLightNovelWebScrape
         }
         
         //In the UK there's 
-        // Books Etc https://www.books-etc.com/
-        // Speedyhen https://www.speedyhen.com/
-        // Booksplease https://booksplea.se/index.php
         // Hive https://www.hive.co.uk/WhatsHiveallabout
-        // Blackwells https://blackwells.co.uk/bookshop/home
-        // Travelling Man https://travellingman.com/
-        // Awesome Books https://www.awesomebooks.com/
 
         // Command to end all chrome.exe process -> taskkill /F /IM chrome.exe /T
-        // Command to end all chrome.exe process -> taskkill /F /IM msedge.exe /T
+        // Command to end all chrome.exe process -> taskkill /F /IM chromedriver.exe /T
         // TODO Need to throw exception if user is querying against Japan region and text is not in Japanese
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
             watch.Start();
-            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Australia, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("fullmetal alchemist", BookType.Manga, [ Website.MangaMate ], false, false, false, false);
+            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain, Browser.Chrome).EnableDebugMode();
+            await scrape.InitializeScrapeAsync("One Piece", BookType.Manga, [ Website.SpeedyHen ], false, false, false, false);
             watch.Stop();
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
