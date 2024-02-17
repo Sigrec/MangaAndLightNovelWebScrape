@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
@@ -11,35 +11,32 @@
     <TrimMode>partial</TrimMode>
     <PackageVersion>1.2.1</PackageVersion>
     <Version>1.2.1</Version>
-	<FileVersion>1.2.1.0</FileVersion>
+    <FileVersion>1.2.1.0</FileVersion>
     <Authors>Prem</Authors>
     <Owners>Prem</Owners>
     <LangVersion>preview</LangVersion>
-	<ReleaseNotes>https://github.com/Sigrec/MangaAndLightNovelWebScrape/releases</ReleaseNotes>
+    <ReleaseNotes>https://github.com/Sigrec/MangaAndLightNovelWebScrape/releases</ReleaseNotes>
     <Description>.NET Framework that scrapes various websites for manga or light novel data for a specifc user inputted series. Then it compares the various prices for each available volume across the websites chosen and outputs a list of the volumes available and the website and price for the lowest volume.</Description>
     <Title>MangaAndLightNovelWebScrape</Title>
     <RepositoryUrl>https://github.com/Sigrec/MangaAndLightNovelWebScrape</RepositoryUrl>
     <PackageProjectUrl>https://github.com/Sigrec/MangaAndLightNovelWebScrape</PackageProjectUrl>
     <!-- <PackageLicenseExpression>MIT</PackageLicenseExpression> -->
-	<PackageReadmeFile>README.md</PackageReadmeFile>
-	<PackageLicenseFile>LICENSE.md</PackageLicenseFile>
-	<!--  <GeneratePackageOnBuild>True</GeneratePackageOnBuild> -->
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
+    <!--  <GeneratePackageOnBuild>True</GeneratePackageOnBuild> -->
     <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
-
-	<ItemGroup>
-		<None Include="README.md" Pack="true" PackagePath="\" />
-		<None Include="LICENSE.md" Pack="true" PackagePath="\" />
-	</ItemGroup>
-
   <ItemGroup>
-	  <Content Include="NLog.config">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  </Content>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+    <None Include="LICENSE.md" Pack="true" PackagePath="\" />
   </ItemGroup>
-
   <ItemGroup>
-    <PackageReference Include="HtmlAgilityPack" Version="1.11.58" />
+    <Content Include="NLog.config">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="HtmlAgilityPack" Version="1.11.59" />
     <PackageReference Include="Selenium.WebDriver" Version="4.17.0" />
     <PackageReference Include="NLog" Version="5.2.8" />
     <PackageReference Include="GraphQL.Client" Version="6.0.2" />

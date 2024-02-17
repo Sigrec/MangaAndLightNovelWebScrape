@@ -12,7 +12,6 @@ Notes.txt
 *.sln.docstates
 *.vscode/
 Data/
-release.ps1
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
