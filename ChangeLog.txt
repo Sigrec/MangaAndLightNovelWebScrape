@@ -6,10 +6,12 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> Inprogress feature will be fixed in later release
 
+v1.3.1 - February 24th
+🔥 Fixed Region enum flags for Region
+
 v1.3.0 - February 24th
 ✅ Added helper method to validate a list against a given region
 ✅ Added helper method to get a StockStatusFilter from a given string
-🔥 Fixed Region enum flags
 
 v1.2.1 - February 3rd
 🔥 Fixed issue where SpeedyHen would not be added as a website when calling "GenerateWebsiteList"
