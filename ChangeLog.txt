@@ -6,6 +6,10 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> Inprogress feature will be fixed in later release
 
+v1.3.2 - February 24th
+✅ Added unit test for region check
+🔥 Fixed Region for SpeedyHen
+
 v1.3.1 - February 24th
 🔥 Fixed Region enum flags for Region
 

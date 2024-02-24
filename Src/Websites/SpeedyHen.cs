@@ -6,7 +6,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         private List<string> SpeedyHenLinks = new List<string>();
         private List<EntryModel> SpeedyHenData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "SpeedyHen";
-        public const Region REGION = Region.America;
+        public const Region REGION = Region.Britain;
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//h3[@class='search-item__title']/a");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//p[@class='price search-item__purchase-price']/text()");
         private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='search-item__availability']/p/span[1]/text() | //div[@class='search-item__availability']/p[@class='availabilityLink comingSoon' or @class='availabilityLink unavailable']/text()");
