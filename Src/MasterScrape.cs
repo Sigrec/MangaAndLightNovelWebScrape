@@ -1004,19 +1004,19 @@ namespace MangaAndLightNovelWebScrape
         // Command to end all chrome.exe process -> taskkill /F /IM chrome.exe /T
         // Command to end all chrome.exe process -> taskkill /F /IM chromedriver.exe /T
         // TODO Need to throw exception if user is querying against Japan region and text is not in Japanese
-        // private static async Task Main()
-        // {
-        //     System.Diagnostics.Stopwatch watch = new();
-        //     watch.Start();
-        //     MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain, Browser.Chrome).EnableDebugMode();
-        //     await scrape.InitializeScrapeAsync("world trigger", BookType.Manga, [ Website.SpeedyHen ], false, false, false, false);
-        //     watch.Stop();
-        //     LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
-        // }
-
-        private static void Main()
+        private static async Task Main()
         {
-            
+            System.Diagnostics.Stopwatch watch = new();
+            watch.Start();
+            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain, Browser.Chrome).EnableDebugMode();
+            await scrape.InitializeScrapeAsync("world trigger", BookType.Manga, [ Website.SpeedyHen ], false, false, false, false);
+            watch.Stop();
+            LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
+
+        // private static void Main()
+        // {
+            
+        // }
     }
 }
