@@ -3,7 +3,7 @@ param (
     [ValidatePattern('\d{1,}\.\d{1,}\.\d{1,}')]
     [Parameter(Position=0,
                mandatory=$true,
-               HelpMessage = "https://learn.microsoft.com/en-us/dotnet/csharp/versioning")])]
+               HelpMessage="https://learn.microsoft.com/en-us/dotnet/csharp/versioning")]
     [String]$version
 )
 

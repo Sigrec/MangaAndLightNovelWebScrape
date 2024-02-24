@@ -1,4 +1,5 @@
 using GraphQL.Client.Abstractions.Utilities;
+using Src.Models;
 
 namespace MangaAndLightNovelWebScrape
 {
@@ -52,6 +53,26 @@ namespace MangaAndLightNovelWebScrape
         }
 
         /// <summary>
+        /// Gets the StockStatusFilter from a given string
+        /// </summary>
+        /// <param name="stockStatusFilter">Stockstatus as a string</param>
+        /// <returns></returns>
+        public static StockStatus[] GetStockStatusFilterFromString(string stockStatusFilter)
+        {
+            return stockStatusFilter switch
+            {
+                "Exclude All" or "all"=> StockStatusFilter.EXCLUDE_ALL_FILTER,
+                "Exclude OOS & PO" => StockStatusFilter.EXCLUDE_OOS_AND_PO_FILTER,
+                "Exclude OOS & BO" => StockStatusFilter.EXCLUDE_OOS_AND_BO_FILTER,
+                "Exclude PO & BO" => StockStatusFilter.EXCLUDE_PO_AND_BO_FILTER,
+                "Exclude OOS" or "OOS" or "oos"=> StockStatusFilter.EXCLUDE_OOS_FILTER,
+                "Exclude PO" or "PO" or "po"=> StockStatusFilter.EXCLUDE_PO_FILTER,
+                "Exclude BO" or "BO" or "bo"=> StockStatusFilter.EXCLUDE_BO_FILTER,
+                _ => StockStatusFilter.EXCLUDE_NONE_FILTER
+            };
+        }
+
+        /// <summary>
         /// Gets the array of Websites available for a specific region as strings
         /// </summary>
         /// <param name="region">The region to get</param>
@@ -87,6 +108,42 @@ namespace MangaAndLightNovelWebScrape
                 Region.Japan => [ Website.AmazonJapan, Website.CDJapan ],
                 _ => [ ],
             };
+        }
+
+        /// <summary>
+        /// Checks whether a given website list contains valid websites for a given region based on the websites WEBSITE_TITLE
+        /// </summary>
+        /// <param name="region">The region to check against</param>
+        /// <param name="input">The list of websites </param>
+        /// <returns>True if the given list is a valid list for the region, false otherwise</returns>
+        public static bool IsWebsiteListValid(Region region, IEnumerable<string> input)
+        {
+            foreach (string website in input)
+            {
+                bool isValid = website.ToString() switch
+                {
+                    AmazonJapan.WEBSITE_TITLE => !AmazonJapan.REGION.HasFlag(region),
+                    AmazonUSA.WEBSITE_TITLE => !AmazonUSA.REGION.HasFlag(region),
+                    BarnesAndNoble.WEBSITE_TITLE => !BarnesAndNoble.REGION.HasFlag(region),
+                    BooksAMillion.WEBSITE_TITLE => !BooksAMillion.REGION.HasFlag(region),
+                    CDJapan.WEBSITE_TITLE => !CDJapan.REGION.HasFlag(region),
+                    Crunchyroll.WEBSITE_TITLE => !Crunchyroll.REGION.HasFlag(region),
+                    ForbiddenPlanet.WEBSITE_TITLE => !ForbiddenPlanet.REGION.HasFlag(region),
+                    Indigo.WEBSITE_TITLE => !Indigo.REGION.HasFlag(region),
+                    InStockTrades.WEBSITE_TITLE => !InStockTrades.REGION.HasFlag(region),
+                    KinokuniyaUSA.WEBSITE_TITLE => !KinokuniyaUSA.REGION.HasFlag(region),
+                    MangaMate.WEBSITE_TITLE => !MangaMate.REGION.HasFlag(region),
+                    MerryManga.WEBSITE_TITLE => !MerryManga.REGION.HasFlag(region),
+                    RobertsAnimeCornerStore.WEBSITE_TITLE => !RobertsAnimeCornerStore.REGION.HasFlag(region),
+                    SciFier.WEBSITE_TITLE => !SciFier.REGION.HasFlag(region),
+                    SpeedyHen.WEBSITE_TITLE => !SpeedyHen.REGION.HasFlag(region),
+                    Waterstones.WEBSITE_TITLE => !Waterstones.REGION.HasFlag(region),
+                    Wordery.WEBSITE_TITLE => !Wordery.REGION.HasFlag(region),
+                    _ => throw new NotImplementedException(),
+                };
+                if (!isValid) { return false; }
+            }
+            return true;
         }
     }
 }

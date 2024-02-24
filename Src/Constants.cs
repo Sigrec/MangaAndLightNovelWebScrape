@@ -38,12 +38,12 @@ namespace MangaAndLightNovelWebScrape.Models
         [Flags]
         public enum Region
         {
-            America,
-            Australia,
-            Britain,
-            Canada,
-            Europe,
-            Japan,
+            America = 0,
+            Australia = 1,
+            Britain = 2,
+            Canada = 3,
+            Europe = 4,
+            Japan = 5,
         }
 
         /// <summary>
