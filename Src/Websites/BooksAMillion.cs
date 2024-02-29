@@ -1,5 +1,3 @@
-using OpenQA.Selenium.Edge;
-
 namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class BooksAMillion

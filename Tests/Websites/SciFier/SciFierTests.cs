@@ -6,13 +6,12 @@ namespace Tests.Websites
     public class SciFierTests
     {
         MasterScrape Scrape;
-        HashSet<Website> WebsiteList;
+        HashSet<Website> WebsiteList = new HashSet<Website>() { Website.SciFier };
 
-        [OneTimeSetUp]
+        [SetUp]
         public void OneTimeSetUp()
         {
             Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER);
-            WebsiteList = new HashSet<Website>() { Website.SciFier };
         }
 
         [Test, Description("Validates Series w/ Non Letter or Digit Char in Title")]

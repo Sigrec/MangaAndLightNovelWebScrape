@@ -3,13 +3,18 @@ namespace Tests.Websites
     public class IndigoTests
     {
         MasterScrape Scrape;
-        HashSet<Website> WebsiteList;
+        HashSet<Website> WebsiteList = new HashSet<Website>() {Website.Indigo};
 
-        [OneTimeSetUp]
+        [SetUp]
         public void OneTimeSetUp()
         {
             Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Canada);
-            WebsiteList = new HashSet<Website>() {Website.Indigo};
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Scrape.IsIndigoMember = false;
         }
 
         [Test, Description("Validates Series w/ Non Letter or Digit Char in Title")]
@@ -71,7 +76,8 @@ namespace Tests.Websites
         [Test, Description("Validates One Shot Manga Series")]
         public async Task Indigo_Member_GoodbyeEri_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, WebsiteList, false, false, false, true);
+            Scrape.IsIndigoMember = true;
+            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoGoodbyeEriMangaData.txt")));
         }
 

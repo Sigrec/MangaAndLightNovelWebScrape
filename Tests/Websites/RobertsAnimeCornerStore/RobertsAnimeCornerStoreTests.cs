@@ -6,13 +6,12 @@ namespace Tests.Websites
     public class RobertsAnimeCornerStoreTests
     {
         MasterScrape Scrape;
-        HashSet<Website> WebsiteList;
+        HashSet<Website> WebsiteList = new HashSet<Website>() {Website.RobertsAnimeCornerStore};
         
-        [OneTimeSetUp]
+        [SetUp]
         public void OneTimeSetUp()
         {
             Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER);
-            WebsiteList = new HashSet<Website>() {Website.RobertsAnimeCornerStore};
         }
 
         [Test, Description("Validates Series w/ Non Letter or Digit Char in Title")]
@@ -140,6 +139,13 @@ namespace Tests.Websites
         {
             await Scrape.InitializeScrapeAsync("Boruto", BookType.Manga, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\RobertsAnimeCornerStore\RobertsAnimeCornerStoreBorutoMangaData.txt")));
+        }
+
+        [Test, Description("Series where the title initially is dif & has other Similar Titles")]
+        public async Task RobertsAnimeCornerStore_Persona4_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Persona 4", BookType.Manga, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\RobertsAnimeCornerStore\RobertsAnimeCornerStorePersona4MangaData.txt")));
         }
     }
 }

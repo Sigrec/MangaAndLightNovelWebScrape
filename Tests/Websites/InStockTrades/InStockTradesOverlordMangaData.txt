@@ -23,6 +23,6 @@
 [Overlord Vol 12, $9.75, IS, InStockTrades]
 [Overlord Vol 13, $9.75, IS, InStockTrades]
 [Overlord Vol 14, $9.75, IS, InStockTrades]
-[Overlord Vol 15, $9.75, IS, InStockTrades]
 [Overlord Vol 16, $9.75, IS, InStockTrades]
 [Overlord Vol 17, $9.75, IS, InStockTrades]
+[Overlord Vol 18, $9.75, IS, InStockTrades]

@@ -11,5 +11,4 @@ global using System.Text;
 global using System.Xml.XPath;
 global using System.Threading.Tasks;
 global using MangaAndLightNovelWebScrape.Websites;
-global using MangaAndLightNovelWebScrape;
-global using static MangaAndLightNovelWebScrape.Models.Constants;
+global using MangaLightNovelWebScrape.Enums;

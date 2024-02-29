@@ -6,13 +6,12 @@ namespace Tests.Websites
     public class WorderyTests
     {
         MasterScrape Scrape;
-        HashSet<Website> WebsiteList;
+        HashSet<Website> WebsiteList = new HashSet<Website>() { Website.Wordery };
 
-        [OneTimeSetUp]
+        [SetUp]
         public void OneTimeSetUp()
         {
             Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER);
-            WebsiteList = new HashSet<Website>() { Website.Wordery };
         }
 
         [Test, Description("Validates Series w/ Non Letter or Digit Char in Title")]

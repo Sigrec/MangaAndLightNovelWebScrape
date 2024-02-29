@@ -5,6 +5,9 @@ namespace MangaAndLightNovelWebScrape
 {
     public class Helpers
     {
+        /// <summary>
+        /// Gets the Browser Enum (Chrome, Edge, or FireFox) based on a string (ignores case)
+        /// </summary>
         public static Browser GetBrowserFromString(string browser)
         {
             return browser switch
@@ -17,10 +20,8 @@ namespace MangaAndLightNovelWebScrape
         }
 
         /// <summary>
-        /// Gets Region Enum from string
+        /// Gets Region Enum from a string (ignores case)
         /// </summary>
-        /// <param name="region"></param>
-        /// <returns></returns>
         public static Region GetRegionFromString(string region)
         {
             return region switch
@@ -36,10 +37,8 @@ namespace MangaAndLightNovelWebScrape
         }
 
         /// <summary>
-        /// Gets StockStatus Enum from string
+        /// Gets StockStatus Enum from a string (ignores case)
         /// </summary>
-        /// <param name="stockStatus"></param>
-        /// <returns></returns>
         public static StockStatus GetStockStatusFromString(string stockStatus)
         {
             return stockStatus.ToLowerCase() switch
@@ -56,15 +55,14 @@ namespace MangaAndLightNovelWebScrape
         /// Gets the StockStatusFilter from a given string
         /// </summary>
         /// <param name="stockStatusFilter">Stockstatus as a string</param>
-        /// <returns></returns>
         public static StockStatus[] GetStockStatusFilterFromString(string stockStatusFilter)
         {
             return stockStatusFilter switch
             {
                 "Exclude All" or "all"=> StockStatusFilter.EXCLUDE_ALL_FILTER,
-                "Exclude OOS & PO" => StockStatusFilter.EXCLUDE_OOS_AND_PO_FILTER,
-                "Exclude OOS & BO" => StockStatusFilter.EXCLUDE_OOS_AND_BO_FILTER,
-                "Exclude PO & BO" => StockStatusFilter.EXCLUDE_PO_AND_BO_FILTER,
+                "Exclude OOS & PO" or "OOS & PO" => StockStatusFilter.EXCLUDE_OOS_AND_PO_FILTER,
+                "Exclude OOS & BO" or "OOS & BO" => StockStatusFilter.EXCLUDE_OOS_AND_BO_FILTER,
+                "Exclude PO & BO" or "PO & BO" => StockStatusFilter.EXCLUDE_PO_AND_BO_FILTER,
                 "Exclude OOS" or "OOS" or "oos"=> StockStatusFilter.EXCLUDE_OOS_FILTER,
                 "Exclude PO" or "PO" or "po"=> StockStatusFilter.EXCLUDE_PO_FILTER,
                 "Exclude BO" or "BO" or "bo"=> StockStatusFilter.EXCLUDE_BO_FILTER,
@@ -73,10 +71,8 @@ namespace MangaAndLightNovelWebScrape
         }
 
         /// <summary>
-        /// Gets the array of Websites available for a specific region as strings
+        /// Gets the array of Websites available for a specific region as strings where the strings are the const WEBSITE_TITLE of a Website class
         /// </summary>
-        /// <param name="region">The region to get</param>
-        /// <returns></returns>
         public static string[] GetRegionWebsiteListAsString(Region region)
         {
             return region switch
@@ -86,7 +82,7 @@ namespace MangaAndLightNovelWebScrape
                 Region.Britain => [ /*ForbiddenPlanet.WEBSITE_TITLE,*/ SciFier.WEBSITE_TITLE, SpeedyHen.WEBSITE_TITLE, Waterstones.WEBSITE_TITLE, Wordery.WEBSITE_TITLE ],
                 Region.Canada => [ Indigo.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, Wordery.WEBSITE_TITLE ],
                 Region.Europe => [ SciFier.WEBSITE_TITLE, Wordery.WEBSITE_TITLE ],
-                Region.Japan => [ AmazonJapan.WEBSITE_TITLE, CDJapan.WEBSITE_TITLE ],
+                Region.Japan => [ /*mazonJapan.WEBSITE_TITLE, CDJapan.WEBSITE_TITLE*/ ],
                 _ => [ ]
             };
         }
@@ -94,9 +90,7 @@ namespace MangaAndLightNovelWebScrape
         /// <summary>
         /// Gets the array of Websites available for a specific region as Website Enums
         /// </summary>
-        /// <param name="region"></param>
-        /// <returns></returns>
-        public static Website[] GetRegionWebsiteList(Region region)
+        public static HashSet<Website> GetRegionWebsiteList(Region region)
         {
             return region switch
             {
@@ -105,7 +99,7 @@ namespace MangaAndLightNovelWebScrape
                 Region.Britain => [ /*Website.ForbiddenPlanet,*/ Website.SciFier, Website.SpeedyHen, Website.Waterstones, Website.Wordery ],
                 Region.Canada => [ Website.Indigo, Website.SciFier, Website.Wordery ],
                 Region.Europe => [ Website.SciFier, Website.Wordery ],
-                Region.Japan => [ Website.AmazonJapan, Website.CDJapan ],
+                Region.Japan => [ /*Website.AmazonJapan, Website.CDJapan*/ ],
                 _ => [ ],
             };
         }

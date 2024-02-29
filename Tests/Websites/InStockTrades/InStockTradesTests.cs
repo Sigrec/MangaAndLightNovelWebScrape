@@ -3,14 +3,13 @@ namespace Tests.Websites
     public class InStockTradesTests
     {
         MasterScrape Scrape;
-        HashSet<Website> WebsiteList;
+        HashSet<Website> WebsiteList = new HashSet<Website>() {Website.InStockTrades};
 
         // Look to add Classroom of the Elite LN Check
-        [OneTimeSetUp]
-        public void OneTimeSetUp()
+        [SetUp]
+        public void SetUp()
         {
             Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER);
-            WebsiteList = new HashSet<Website>() {Website.InStockTrades};
         }
 
         [Test, Description("Validates Series w/ Non Letter or Digit Char in Title")]
@@ -20,6 +19,7 @@ namespace Tests.Websites
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\InStockTrades\InStockTradesAkaneBanashiMangaData.txt")));
         }
 
+        [Ignore("Currently no JJK manga")]
         [Test, Description("Validates Series w/ Vol 0 that does not contain 'Vol' stirng & Novel entries")]
         public async Task InStockTrades_JujutsuKaisen_Manga_Test()
         {
@@ -132,6 +132,13 @@ namespace Tests.Websites
         {
             await Scrape.InitializeScrapeAsync("Soichi", BookType.Manga, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\InStockTrades\InStockTradesSoichiMangaData.txt")));
+        }
+
+        [Test, Description("Validates One Shot Manga Series")]
+        public async Task InStockTrades_Persona4_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Persona 4", BookType.Manga, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\InStockTrades\InStockTradesPersona4MangaData.txt")));
         }
     }
 }

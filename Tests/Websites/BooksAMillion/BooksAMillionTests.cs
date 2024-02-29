@@ -3,13 +3,18 @@ namespace Tests.Websites
     public class BooksAMillionTests
     {
         MasterScrape Scrape;
-        HashSet<Website> WebsiteList;
-        
-        [OneTimeSetUp]
+        HashSet<Website> WebsiteList = new HashSet<Website>() {Website.BooksAMillion};
+
+        [SetUp]
         public void OneTimeSetUp()
         {
             Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER);
-            WebsiteList = new HashSet<Website>() {Website.BooksAMillion};
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Scrape.IsBooksAMillionMember = false;
         }
 
         [Test, Description("Validates Series w/ Non Letter or Digit Char in Title")]
@@ -71,7 +76,8 @@ namespace Tests.Websites
         [Test, Description("Validates One Shot Manga Series")]
         public async Task BooksAMillion_Member_GoodbyeEri_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, WebsiteList, false, true);
+            Scrape.IsBooksAMillionMember = true;
+            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionGoodbyeEriMangaData.txt")));
         }
 

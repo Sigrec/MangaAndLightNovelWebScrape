@@ -7,13 +7,13 @@ namespace Tests.Websites
     public class ForbiddenPlanetTest
     {
         MasterScrape Scrape;
-        HashSet<Website> WebsiteList;
+        HashSet<Website> WebsiteList = new HashSet<Website>() { Website.ForbiddenPlanet };
         
-        [OneTimeSetUp]
+        [SetUp]
         public void OneTimeSetUp()
         {
             Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain);
-            WebsiteList = new HashSet<Website>() { Website.ForbiddenPlanet };
+            
         }
 
         [Test, Description("Validates Series w/ Non Letter or Digit Char in Title")]
@@ -77,7 +77,7 @@ namespace Tests.Websites
         [Ignore("One Shots Not Working")]
         public async Task ForbiddenPlanet_Member_GoodbyeEri_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, WebsiteList, true);
+            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetGoodbyeEriMangaData.txt")));
         }
 

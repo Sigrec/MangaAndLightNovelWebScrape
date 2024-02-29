@@ -6,13 +6,13 @@ namespace Tests.Websites
     public class CrunchyrollTests
     {
         MasterScrape Scrape;
-        HashSet<Website> WebsiteList;
+        HashSet<Website> WebsiteList = new HashSet<Website>() {Website.Crunchyroll};
 
-        [OneTimeSetUp]
+        [SetUp]
         public void OneTimeSetUp()
         {
             Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER);
-            WebsiteList = new HashSet<Website>() {Website.Crunchyroll};
+            
         }
 
         [Test, Description("Validates Series w/ Non Letter or Digit Char in Title")]

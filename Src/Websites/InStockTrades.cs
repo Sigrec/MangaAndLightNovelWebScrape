@@ -31,7 +31,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         {
             string url = $"https://www.instocktrades.com/search?pg={currPageNum}&title={bookTitle.Replace(' ', '+')}&publisher=&writer=&artist=&cover=&ps=true";
             InStockTradesLinks.Add(url);
-            LOGGER.Debug(url);
+            LOGGER.Info(url);
             return url;
         }
 
@@ -131,7 +131,7 @@ namespace MangaAndLightNovelWebScrape.Websites
 
                     // Get the page data from the HTML doc
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
-                    oneShotCheck = !titleData.AsParallel().Any(title => title.InnerText.Contains("Vol") || title.InnerText.Contains("Box Set") || title.InnerText.Contains("Manga"));
+                    oneShotCheck = titleData.Count == 1 && !titleData.AsParallel().Any(title => title.InnerText.Contains("Vol") || title.InnerText.Contains("Box Set") || title.InnerText.Contains("Manga"));
                     HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
                     if (maxPages == 0)
                     {
@@ -145,31 +145,27 @@ namespace MangaAndLightNovelWebScrape.Websites
                     string entryTitle;
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        if (!bookTitle.Contains("Adv"))
-                        {
-                            entryTitle = titleData[x].InnerText.Replace(" Adv ", " Adventure ");
-                        }
-                        else
-                        {
-                            entryTitle = titleData[x].InnerText;
-                        }
+                        entryTitle = !bookTitle.Contains("Adv") ? entryTitle = titleData[x].InnerText.Replace(" Adv ", " Adventure ") : titleData[x].InnerText;
+                        LOGGER.Debug("{} | {}", entryTitle, oneShotCheck);
 
                         if (
-                            (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
+                            (InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
+                            && !MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
                             && (   
                                 (
                                     bookType == BookType.Manga 
                                     && ( // Ensure manga entry contains valid indentifier
                                             oneShotCheck
-                                            || (
-                                                    !oneShotCheck
-                                                    && (
-                                                            entryTitle.Contains("Vol") 
-                                                            || entryTitle.Contains("Box Set") 
-                                                            || entryTitle.Contains("Manga")
-                                                            || entryTitle.Contains("Special Ed")
-                                                        )
+                                            || 
+                                            (!oneShotCheck
+                                                && 
+                                                (
+                                                    entryTitle.Contains("Vol") 
+                                                    || entryTitle.Contains("Box Set") 
+                                                    || entryTitle.Contains("Manga")
+                                                    || entryTitle.Contains("Special Ed")
                                                 )
+                                            )
                                         )
                                     && !entryTitle.Contains(" Novel", StringComparison.OrdinalIgnoreCase)
                                     && !( // Remove unintended volumes from specific series

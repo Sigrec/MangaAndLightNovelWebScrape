@@ -44,6 +44,10 @@ namespace MangaAndLightNovelWebScrape
         /// The current stock filter of the scrape
         /// </summary>
         public StockStatus[] Filter { get; set; }
+        public bool IsBarnesAndNobleMember { get; set; }
+        public bool IsBooksAMillionMember { get; set; }
+        public bool IsKinokuniyaUSAMember { get; set; }
+        public bool IsIndigoMember { get; set; }
         private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
         // "--headless=new", 
         private static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent" ];
@@ -57,14 +61,19 @@ namespace MangaAndLightNovelWebScrape
         [GeneratedRegex(@"Vol (?:\d{1,3}|\d{1,3}.\d{1})$")] internal static partial Regex FindVolWithNumRegex();
         [GeneratedRegex(@"\s{2,}|\s{0,}--\s{0,}|\s{0,}—\s{0,}")] internal static partial Regex MultipleWhiteSpaceRegex();
         [GeneratedRegex(@";jsessionid=[^?]*")] internal static partial Regex RemoveJSessionIDRegex();
-        [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Compendium|Artbook|Error|\(Osi\)|Advertising|Art Book|Adventure|Artbook|Coloring Book|the Anime|Calendar|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
+        [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Compendium|Artbook|Error|\(Osi\)|Advertising|Art Book|Adventure|Artbook|Coloring Book|the Anime|Calendar|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA|Poster", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
         // [GeneratedRegex(@"Official|Guide|Adventure|Advertising|Anime|Calendar|Error|Encyclopedia|Anthology|Character|Bilingual|Game Book|Theatrical|SEGA", RegexOptions.IgnoreCase)] internal static partial Regex CheckEntryRemovalRegex();
 
-        public MasterScrape(StockStatus[] Filter, Region Region = Region.America, Browser Browser = Browser.Chrome)
+        public MasterScrape(StockStatus[] Filter, Region Region = Region.America, Browser Browser = Browser.Chrome, bool IsBarnesAndNobleMember = false, bool IsBooksAMillionMember = false, bool IsKinokuniyaUSAMember = false, bool IsIndigoMember = false)
         {
             this.Filter = Filter;
             this.Region = Region;
+            if (this.Region.IsMultiRegion()) { throw new NotSupportedException("Multi Region input is not Supported"); }
             this.Browser = Browser;
+            this.IsBarnesAndNobleMember = IsBarnesAndNobleMember;
+            this.IsBooksAMillionMember = IsBooksAMillionMember;
+            this.IsKinokuniyaUSAMember = IsKinokuniyaUSAMember;
+            this.IsIndigoMember = IsIndigoMember;
         }
 
         /// <summary>
@@ -108,18 +117,83 @@ namespace MangaAndLightNovelWebScrape
         {
             return MasterUrls;
         }
+        public List<string> GetMembershipList()
+        {
+            List<string> output = new List<string>();
+            if (IsBarnesAndNobleMember) { output.Add(BarnesAndNoble.WEBSITE_TITLE); }
+            if (IsBooksAMillionMember) { output.Add(BooksAMillion.WEBSITE_TITLE); }
+            if (IsKinokuniyaUSAMember) { output.Add(KinokuniyaUSA.WEBSITE_TITLE); }
+            if (IsIndigoMember) { output.Add(Indigo.WEBSITE_TITLE); }
+            return output;
+        }
+
+        public string GetResultsAsAsciiTable(string bookTitle, BookType bookType)
+        {
+            if (string.IsNullOrWhiteSpace(bookTitle)) { throw new ArgumentException("Title Can't be Empty"); }
+
+            int longestTitle = "Title".Length;
+            int longestPrice = "Price".Length;
+            int longestStockStatus = "Status".Length;
+            int longestWebsite = "Website".Length;
+            foreach (EntryModel entry in GetResults())
+            {
+                longestTitle = Math.Max(longestTitle, entry.Entry.Length);
+                longestPrice = Math.Max(longestPrice, entry.Price.Length);
+                longestWebsite = Math.Max(longestWebsite, entry.Website.Length);
+            }
+
+            string titleLinePadding = "━".PadRight(longestTitle + 2, '━');
+            string priceLinePadding = "━".PadRight(longestPrice + 2, '━');
+            string stockStatusLinePadding = "━".PadRight(longestStockStatus + 2, '━');
+            string websiteLinePadding = "━".PadRight(longestWebsite + 2, '━');
+
+            StringBuilder asciiTableResults = new StringBuilder();
+            asciiTableResults.AppendFormat("Title: \"{0}\"", bookTitle).AppendLine();
+            asciiTableResults.AppendFormat("BookType: {0}", bookType.ToString()).AppendLine();
+            asciiTableResults.AppendFormat("Region: {0}", this.Region).AppendLine();
+            List<string> membershipList = GetMembershipList();
+            if (membershipList.Count != 0)
+            {
+                asciiTableResults.AppendFormat("Memberships: {0}", string.Join(" & ", membershipList)).AppendLine();
+            }
+            asciiTableResults.AppendFormat("┏{0}┳{1}┳{2}┳{3}┓", titleLinePadding, priceLinePadding, stockStatusLinePadding, websiteLinePadding).AppendLine();
+            asciiTableResults.AppendFormat("┃ {0} ┃ {1} ┃ {2} ┃ {3} ┃", "Title".PadRight(longestTitle), "Price".PadRight(longestPrice), "Status".PadRight(longestStockStatus), "Website".PadRight(longestWebsite)).AppendLine();
+            asciiTableResults.AppendFormat("┣{0}╋{1}╋{2}╋{3}┫", titleLinePadding, priceLinePadding, stockStatusLinePadding, websiteLinePadding).AppendLine();
+            foreach (EntryModel entry in GetResults())
+            { 
+                asciiTableResults.AppendFormat("┃ {0} ┃ {1} ┃ {2} ┃ {3} ┃", entry.Entry.PadRight(longestTitle), entry.Price.PadRight(longestPrice), entry.StockStatus.ToString().PadRight(longestStockStatus), entry.Website.PadRight(longestWebsite)).AppendLine(); 
+            }
+            asciiTableResults.AppendFormat("┗{0}┻{1}┻{2}┻{3}┛", titleLinePadding, priceLinePadding, stockStatusLinePadding, websiteLinePadding).AppendLine();
+            asciiTableResults.AppendLine("Links:");
+
+            foreach (KeyValuePair<string, string> url in GetResultUrls())
+            {
+                asciiTableResults.AppendFormat("{0} => {1}", url.Key, url.Value).AppendLine();
+            }
+            return asciiTableResults.ToString();
+        }
 
         /// <summary>
         /// Prints the results of the scrape to the console
         /// </summary>
-        public void PrintResultsToConsole()
+        /// <param name="isAsciiTable">Whether to print it in AsciiTable Format</param>
+        /// <param name="title">The title of the inputted series</param>
+        /// <param name="bookType">The book used for this scrape</param>
+        public void PrintResultsToConsole(bool isAsciiTable = false, string title = "", BookType bookType = BookType.Manga)
         {
             if (GetResults().Count > 0)
             {
-                GetResults().ForEach(Console.WriteLine);
-                foreach (KeyValuePair<string, string> url in GetResultUrls())
+                if (!isAsciiTable)
                 {
-                    Console.WriteLine($"[{url.Key}, {url.Value}]");
+                    GetResults().ForEach(Console.WriteLine);
+                    foreach (KeyValuePair<string, string> url in GetResultUrls())
+                    {
+                        Console.WriteLine($"[{url.Key}, {url.Value}]");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine(GetResultsAsAsciiTable(title, bookType));
                 }
             }
             else
@@ -131,29 +205,40 @@ namespace MangaAndLightNovelWebScrape
         /// <summary>
         /// Prints the results of the scrape to a file
         /// </summary>
-        public void PrintResultsToFile(string fileName)
+        /// <param name="file">Path to the file where this will be printed</param>
+        /// <param name="isAsciiTable">Whether to print it in AsciiTable Format</param>
+        /// <param name="title">The title of the inputted series</param>
+        /// <param name="bookType">The book used for this scrape</param>
+        public void PrintResultsToFile(string file, bool isAsciiTable = false, string title = "", BookType bookType = BookType.Manga)
         {
-            using (StreamWriter outputFile = new(fileName))
+            if (!isAsciiTable)
             {
-                if (GetResults().Count > 0)
+                using (StreamWriter outputFile = new(file))
                 {
-                    foreach (EntryModel data in GetResults())
+                    if (GetResults().Count > 0)
                     {
-                        outputFile.WriteLine(data.ToString());
-                    }
-
-                    foreach (KeyValuePair<string, string> website in GetResultUrls())
-                    {
-                        if (!string.IsNullOrWhiteSpace(website.Value))
+                        foreach (EntryModel data in GetResults())
                         {
-                            outputFile.WriteLine(website);
+                            outputFile.WriteLine(data.ToString());
+                        }
+
+                        foreach (KeyValuePair<string, string> website in GetResultUrls())
+                        {
+                            if (!string.IsNullOrWhiteSpace(website.Value))
+                            {
+                                outputFile.WriteLine(website);
+                            }
                         }
                     }
+                    else
+                    {
+                        outputFile.WriteLine("No MasterData Available");
+                    }
                 }
-                else
-                {
-                    outputFile.WriteLine("No MasterData Available");
-                }
+            }
+            else
+            {
+                File.WriteAllText(file, GetResultsAsAsciiTable(title, bookType));
             }
         }
 
@@ -162,94 +247,121 @@ namespace MangaAndLightNovelWebScrape
         /// </summary>
         /// <param name="UserLogger">The logger to print the reuslts to</param>
         /// <param name="logLevel">The log level you want the results to be printed to</param>
-        public void PrintResultsToLogger(Logger UserLogger, NLog.LogLevel logLevel)
+        /// <param name="isAsciiTable">Whether to print it in AsciiTable Format</param>
+        /// <param name="title">The title of the inputted series</param>
+        /// <param name="bookType">The book used for this scrape</param> 
+        public void PrintResultsToLogger(Logger UserLogger, NLog.LogLevel logLevel, bool isAsciiTable = false, string title = "", BookType bookType = BookType.Manga)
         {
             switch (logLevel.Ordinal)
             {
                 case 0:
-                    if (GetResults().Count > 0)
+                    if (!isAsciiTable)
                     {
-                        GetResults().ForEach(UserLogger.Trace);
-                        foreach (KeyValuePair<string, string> url in GetResultUrls())
+                        if (GetResults().Count > 0)
                         {
-                            UserLogger.Trace($"[{url.Key}, {url.Value}]");
+                            GetResults().ForEach(UserLogger.Trace);
+                            foreach (KeyValuePair<string, string> url in GetResultUrls())
+                            {
+                                UserLogger.Trace($"[{url.Key}, {url.Value}]");
+                            }
+                        }
+                        else
+                        {
+                            UserLogger.Trace("No MasterData Available");
                         }
                     }
-                    else
-                    {
-                        UserLogger.Trace("No MasterData Available");
-                    }
+                    else { UserLogger.Trace($"\n{GetResultsAsAsciiTable(title, bookType)}"); }
                     break;
                 case 1:
-                    if (GetResults().Count > 0)
+                    if (!isAsciiTable)
                     {
-                        GetResults().ForEach(UserLogger.Debug);
-                        foreach (KeyValuePair<string, string> url in GetResultUrls())
+                        if (GetResults().Count > 0)
                         {
-                            UserLogger.Debug($"[{url.Key}, {url.Value}]");
+                            GetResults().ForEach(UserLogger.Debug);
+                            foreach (KeyValuePair<string, string> url in GetResultUrls())
+                            {
+                                UserLogger.Debug($"[{url.Key}, {url.Value}]");
+                            }
+                        }
+                        else
+                        {
+                            UserLogger.Debug("No MasterData Available");
                         }
                     }
-                    else
-                    {
-                        UserLogger.Debug("No MasterData Available");
-                    }
+                    else { UserLogger.Debug($"\n{GetResultsAsAsciiTable(title, bookType)}"); }
                     break;
                 default:
                 case 2:
-                    if (GetResults().Count > 0)
+                    if (!isAsciiTable)
                     {
-                        GetResults().ForEach(UserLogger.Info);
-                        foreach (KeyValuePair<string, string> url in GetResultUrls())
+                        if (GetResults().Count > 0)
                         {
-                            UserLogger.Info($"[{url.Key}, {url.Value}]");
+                            GetResults().ForEach(UserLogger.Info);
+                            foreach (KeyValuePair<string, string> url in GetResultUrls())
+                            {
+                                UserLogger.Info($"[{url.Key}, {url.Value}]");
+                            }
+                        }
+                        else
+                        {
+                            UserLogger.Info("No MasterData Available");
                         }
                     }
-                    else
-                    {
-                        UserLogger.Info("No MasterData Available");
-                    }
+                    else { UserLogger.Info($"\n{GetResultsAsAsciiTable(title, bookType)}"); }
                     break;
                 case 3:
-                    if (GetResults().Count > 0)
+                    if (!isAsciiTable)
                     {
-                        GetResults().ForEach(UserLogger.Warn);
-                        foreach (KeyValuePair<string, string> url in GetResultUrls())
+                        if (GetResults().Count > 0)
                         {
-                            UserLogger.Warn($"[{url.Key}, {url.Value}]");
+                            GetResults().ForEach(UserLogger.Warn);
+                            foreach (KeyValuePair<string, string> url in GetResultUrls())
+                            {
+                                UserLogger.Warn($"[{url.Key}, {url.Value}]");
+                            }
+                        }
+                        else
+                        {
+                            UserLogger.Warn("No MasterData Available");
                         }
                     }
-                    else
-                    {
-                        UserLogger.Warn("No MasterData Available");
-                    }
+                    else { UserLogger.Warn($"\n{GetResultsAsAsciiTable(title, bookType)}"); }
                     break;
                 case 4:
-                    if (GetResults().Count > 0)
+                    if (!isAsciiTable)
                     {
-                        GetResults().ForEach(UserLogger.Error);
-                        foreach (KeyValuePair<string, string> url in GetResultUrls())
+                        if (GetResults().Count > 0)
                         {
-                            UserLogger.Error($"[{url.Key}, {url.Value}]");
+                            GetResults().ForEach(UserLogger.Error);
+                            foreach (KeyValuePair<string, string> url in GetResultUrls())
+                            {
+                                UserLogger.Error($"[{url.Key}, {url.Value}]");
+                            }
+                        }
+                        else
+                        {
+                            UserLogger.Error("No MasterData Available");
                         }
                     }
-                    else
-                    {
-                        UserLogger.Error("No MasterData Available");
-                    }
+                    else { UserLogger.Error($"\n{GetResultsAsAsciiTable(title, bookType)}"); }
                     break;
                 case 5:
-                    if (GetResults().Count > 0)
+                    if (!isAsciiTable)
                     {
-                        GetResults().ForEach(UserLogger.Fatal);
-                        foreach (KeyValuePair<string, string> url in GetResultUrls())
+                        if (GetResults().Count > 0)
                         {
-                            UserLogger.Fatal($"[{url.Key}, {url.Value}]");
+                            GetResults().ForEach(UserLogger.Fatal);
+                            foreach (KeyValuePair<string, string> url in GetResultUrls())
+                            {
+                                UserLogger.Fatal($"[{url.Key}, {url.Value}]");
+                            }
+                        }
+                        else
+                        {
+                            UserLogger.Fatal("No MasterData Available");
                         }
                     }
-                    else
-                    {
-                        UserLogger.Fatal("No MasterData Available");
-                    }
+                    else { UserLogger.Fatal(GetResultsAsAsciiTable(title, bookType)); }
                     break;
             }
         }
@@ -312,7 +424,7 @@ namespace MangaAndLightNovelWebScrape
         /// <param name="biggerList">The bigger list of data sets between the two websites</param>
         /// <param name="bookTitle">The initial title inputted by the user used to determine if the titles in the lists "match"</param>
         /// <returns>The final list of data containing all available lowest price volumes between the two websites</returns>
-        private static List<EntryModel> PriceComparison(List<EntryModel> smallerList, List<EntryModel> biggerList, string bookTitle)
+        private static List<EntryModel> PriceComparison(List<EntryModel> smallerList, List<EntryModel> biggerList)
         {
             List<EntryModel> finalData = new List<EntryModel>(); // The final list of data containing all available volumes for the series from the website with the lowest price
             bool sameVolumeCheck; // Determines whether a match has been found where the 2 volumes are the same to compare prices for
@@ -635,7 +747,12 @@ namespace MangaAndLightNovelWebScrape
                         MasterUrls[entry.Website] = MerryManga.GetUrl();
                         break;
                     case RobertsAnimeCornerStore.WEBSITE_TITLE:
-                        MasterUrls[entry.Website] = RobertsAnimeCornerStore.GetUrl();
+                        int count = 0;
+                        foreach (string url in RobertsAnimeCornerStore.GetUrls())
+                        {
+                            MasterUrls[entry.Website + (count != 0 ? $" {count}" : string.Empty)] = url;
+                            count++;
+                        }
                         break;
                     case SciFier.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = SciFier.GetUrl();
@@ -757,10 +874,6 @@ namespace MangaAndLightNovelWebScrape
                     {
                         switch (site)
                         {
-                            // case Website.Crunchyroll:
-                            //     LOGGER.Info($"{Crunchyroll.WEBSITE_TITLE} Going");
-                            //     WebTasks.Add(Crunchyroll.CreateCrunchyrollTask(bookTitle, book, MasterDataList));
-                            //     break;
                             case Website.Indigo:
                                 Indigo ??= new Indigo();
                                 LOGGER.Info($"{Indigo.WEBSITE_TITLE} Going");
@@ -848,7 +961,6 @@ namespace MangaAndLightNovelWebScrape
         }
         
         // TODO Remove "Location" Popup for BAM
-        // TODO Create custom exceptions
 
         /// <summary>
         /// Initalizes the scrape and outputs the compared data
@@ -863,7 +975,7 @@ namespace MangaAndLightNovelWebScrape
         /// <param name="isKinokuniyaUSAMember">Whether the user is a Kinokuniya USA member</param>
         /// <param name="isIndigoMember">Whether the user is a Indigo member</param>
         /// <returns></returns>
-        public async Task InitializeScrapeAsync(string bookTitle, BookType bookType, HashSet<Website> webScrapeList, bool isBarnesAndNobleMember = false, bool isBooksAMillionMember = false, bool isKinokuniyaUSAMember = false, bool isIndigoMember = false)
+        public async Task InitializeScrapeAsync(string bookTitle, BookType bookType, HashSet<Website> webScrapeList)
         {
             await Task.Run(async () =>
             {
@@ -878,7 +990,7 @@ namespace MangaAndLightNovelWebScrape
                 });
                 
                 // Generate List of Tasks to 
-                GenerateTaskList(webScrapeList, bookTitle.Trim(), bookType, isBarnesAndNobleMember, isBooksAMillionMember, isKinokuniyaUSAMember, isIndigoMember);
+                GenerateTaskList(webScrapeList, bookTitle.Trim(), bookType, this.IsBarnesAndNobleMember, this.IsBooksAMillionMember, this.IsKinokuniyaUSAMember, this.IsIndigoMember);
                 await Task.WhenAll(WebTasks);
 
                 MasterDataList.RemoveAll(x => x.Count == 0); // Clear all lists from websites that didn't have any data
@@ -925,7 +1037,7 @@ namespace MangaAndLightNovelWebScrape
                             List<EntryModel> biggerList = MasterDataList[curTask + 1];
                             ComparisonTaskList[pos] = Task.Run(() => 
                             {
-                                ResultsList.Add(PriceComparison(smallerList, biggerList, bookTitle));
+                                ResultsList.Add(PriceComparison(smallerList, biggerList));
                             });
                             pos++;
                         }
@@ -966,35 +1078,7 @@ namespace MangaAndLightNovelWebScrape
                             break;
                     }
                 }
-
-                if (IsDebugEnabled)
-                {
-                    using (StreamWriter outputFile = new(@"Data\MasterData.txt"))
-                    {
-                        if (MasterDataList.Count > 0)
-                        {
-                            foreach (EntryModel data in GetResults())
-                            {
-                                LOGGER.Info(data.ToString());
-                                outputFile.WriteLine(data.ToString());
-                            }
-
-                            foreach (KeyValuePair<string, string> website in GetResultUrls())
-                            {
-                                if (!string.IsNullOrWhiteSpace(website.Value))
-                                {
-                                    LOGGER.Info(website);
-                                    outputFile.WriteLine(website);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            outputFile.WriteLine("No MasterData Available");
-                            LOGGER.Warn("No MasterData Available");
-                        }
-                    }
-                }
+                if (IsDebugEnabled) { this.PrintResultsToLogger(LOGGER, NLog.LogLevel.Info, true, bookTitle, bookType); }
             });
         }
         
@@ -1007,10 +1091,13 @@ namespace MangaAndLightNovelWebScrape
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
+            string title = "world trigger";
+            BookType bookType = BookType.Manga;
             watch.Start();
-            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync("world trigger", BookType.Manga, [ Website.SpeedyHen ], false, false, false, false);
+            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.America, Browser.Chrome, false, false, false, false).EnableDebugMode();
+            await scrape.InitializeScrapeAsync(title, bookType, [ Website.RobertsAnimeCornerStore ]);
             watch.Stop();
+            scrape.PrintResultsToConsole(true, title, bookType);
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
 

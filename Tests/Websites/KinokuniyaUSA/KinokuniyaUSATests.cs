@@ -3,19 +3,25 @@ namespace Tests.Websites
     public class KinokuniyaUSATests
     {
         MasterScrape Scrape;
-        HashSet<Website> WebsiteList;
+        HashSet<Website> WebsiteList = new HashSet<Website>() {Website.KinokuniyaUSA};
         
-        [OneTimeSetUp]
+        [SetUp]
         public void OneTimeSetUp()
         {
             Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER);
-            WebsiteList = new HashSet<Website>() {Website.KinokuniyaUSA};
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Scrape.IsKinokuniyaUSAMember = false;
         }
 
         [Test, Description("Validates Member Status & Series w/ Non Letter or Digit Char in Title")]
         public async Task KinokuniyaUSA_Member_AkaneBanashi_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("Akane-Banashi", BookType.Manga, WebsiteList, false, false, true);
+            Scrape.IsKinokuniyaUSAMember = true;
+            await Scrape.InitializeScrapeAsync("Akane-Banashi", BookType.Manga, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\KinokuniyaUSA\KinokuniyaUSAAkaneBanashiMangaData.txt")));
         }
 

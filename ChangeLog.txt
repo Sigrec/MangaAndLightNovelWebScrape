@@ -6,49 +6,62 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> Inprogress feature will be fixed in later release
 
+v2.0.0 - February 29th 
+✅Memberships are now bound to the MasterScrape object instead of the method
+✅Moved Enums out of constants into it's own namespace
+✅Added new method to get the results of a scrape formatted in a Ascii table, and options to print it as a ascii table to all print result methods
+🔥Helper methods that return website list not return correctly as a HashSet
+🔥Correctly throws error when user inputs a multi-flag Region
+✍️Removed all websites from GetWebsite Helper methods that are not in a complete state
+📜RobertsAnimeCornerStore Fixes
+ -🔥Correctly filters out unintended volumes like Coloring Books
+ -🔥Now checks all possible matching series lists on Rob's & prints all links
+📜InStockTrades Fixes
+ -🔥Correctly filteres out entries that contain a # in the inputted title that corresponds to the vol # and not the # in the title of the inputted series
+
 v1.3.2 - February 24th
-✅ Added unit test for region check
-🔥 Fixed Region for SpeedyHen
+✅Added unit test for region check
+🔥Fixed Region for SpeedyHen
 
 v1.3.1 - February 24th
-🔥 Fixed Region enum flags for Region
+🔥Fixed Region enum flags for Region
 
 v1.3.0 - February 24th
-✅ Added helper method to validate a list against a given region
-✅ Added helper method to get a StockStatusFilter from a given string
+✅Added helper method to validate a list against a given region
+✅Added helper method to get a StockStatusFilter from a given string
 
 v1.2.1 - February 3rd
-🔥 Fixed issue where SpeedyHen would not be added as a website when calling "GenerateWebsiteList"
+🔥Fixed issue where SpeedyHen would not be added as a website when calling "GenerateWebsiteList"
 
 v1.2.0 - February 3rd
-✅ Updated "GetStockStatusFromString" to include "Backorder" stock status
-✅ Completed MangaMate website for Australia Region
-✅ Completed SpeedyHen website for Britain Region
-🔥 Fix issue where MerryManga is not returned from website helper methods for America
-✍️ Fixing my versioning strategy to comply with .NET standards (https://learn.microsoft.com/en-us/dotnet/csharp/versioning)
+✅Updated "GetStockStatusFromString" to include "Backorder" stock status
+✅Completed MangaMate website for Australia Region
+✅Completed SpeedyHen website for Britain Region
+🔥Fix issue where MerryManga is not returned from website helper methods for America
+✍️Fixing my versioning strategy to comply with .NET standards (https://learn.microsoft.com/en-us/dotnet/csharp/versioning)
 
 v1.1.6 - January 31st
-🔥 Update Helper Methods, fixes issue from v1.1.5
+🔥Update Helper Methods, fixes issue from v1.1.5
 
 v1.1.5 - January 31st (Has Major Bug where Helpers Methods are not Updated)
-✅ Added new Region "Australia"
-✅ Added Australia Region to SciFier website
-✅ Completed Wordery website for America, Britain, Canada, Europe, & Australia Regions
-✍️ Fixed tests to accomdate changes
+✅Added new Region "Australia"
+✅Added Australia Region to SciFier website
+✅Completed Wordery website for America, Britain, Canada, Europe, & Australia Regions
+✍️Fixed tests to accomdate changes
 📜SciFier
  -🔥Fixed issue where StockStatus would not be picked up if it was OOS
 
 V1.1.4 - December 27th
-⌛ Updated to .NET 8.0
-✅ Integrated StockStatus as it's own class and is now part of the MasterScrape
-✅ Added "Backorder (BO)" as a StockStatus
-✅ Updated print methods to check if the data is empty and print corresponding message
-✅ Added new print method to print to a file
-✅ Completed MerryManga website for America Region
-✅ Completed Waterstones website for Britain Region
-✅ Moved filter to its own object class and moved it up to the MasterScrape object variable level instead of method variable
-✅ Added 3 new stock status filters
-🔥 Website const variiable region is now public instead of private
+⌛Updated to .NET 8.0
+✅Integrated StockStatus as it's own class and is now part of the MasterScrape
+✅Added "Backorder (BO)" as a StockStatus
+✅Updated print methods to check if the data is empty and print corresponding message
+✅Added new print method to print to a file
+✅Completed MerryManga website for America Region
+✅Completed Waterstones website for Britain Region
+✅Moved filter to its own object class and moved it up to the MasterScrape object variable level instead of method variable
+✅Added 3 new stock status filters
+🔥Website const variiable region is now public instead of private
 📜Crunchyroll Fixes
  -🔥"Volume 0's" the "0" is no longer cutoff
  -🔥Omnibus parsing fixed for 2in1 and 2in1
@@ -84,22 +97,22 @@ V1.1.4 - December 27th
  -🔥Fix parsing issue with manga entries that are adaptations of novels
 
 V1.1.3 - November 3rd
-✅ Added methods to print results to logger or console
-🔥 Changed namespace to MangaAndLightNovelWebScrape for cleaner naming conventions
-🔥 Crunchyroll volume numbers are nowtrimmed if there is a leading '0'
-🔥 Fixed issue w/ SciFier scrape where Vol # would be duplocated
-⌛ SciFier Scrape now uses the position of the first letter of the inputted title to determine how to sort the entries on the website to shrink processing time
+✅Added methods to print results to logger or console
+🔥Changed namespace to MangaAndLightNovelWebScrape for cleaner naming conventions
+🔥Crunchyroll volume numbers are nowtrimmed if there is a leading '0'
+🔥Fixed issue w/ SciFier scrape where Vol # would be duplocated
+⌛SciFier Scrape now uses the position of the first letter of the inputted title to determine how to sort the entries on the website to shrink processing time
 
 V1.1.2 - November 1st
-🔥 HotFix to fix Helper method issues
+🔥HotFix to fix Helper method issues
 
 V1.1.1 - November 1st
-🔥 HotFix to fix price comparison issue
+🔥HotFix to fix price comparison issue
 
 V1.1.0 - November 1st
-✅ Websites no longer behind region specific namespace
-🔥 Fixed B&N StockStatus issue where "Unavailable" entries would be marked as IS (In Stock)
-🔥 Fixed issue w/ RobertsAnimeCornerStore where Omnibus volumes would have incorrect vol number
-✅ Changes to All Website Parsing for better filtering and to prevent certain keywords from skipping entries
-✅ Completed Canada Websites
-✅ Properly scrapes Special & Exclusive Edition volumes (ex AoT has both)
+✅Websites no longer behind region specific namespace
+🔥Fixed B&N StockStatus issue where "Unavailable" entries would be marked as IS (In Stock)
+🔥Fixed issue w/ RobertsAnimeCornerStore where Omnibus volumes would have incorrect vol number
+✅Changes to All Website Parsing for better filtering and to prevent certain keywords from skipping entries
+✅Completed Canada Websites
+✅Properly scrapes Special & Exclusive Edition volumes (ex AoT has both)

@@ -1,5 +1,3 @@
-using System.Security.Cryptography;
-
 namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class Indigo

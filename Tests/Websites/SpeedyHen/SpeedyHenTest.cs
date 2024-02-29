@@ -6,13 +6,12 @@ namespace Tests.Websites
     public class SpeedyHenTests
     {
         MasterScrape Scrape;
-        HashSet<Website> WebsiteList;
+        HashSet<Website> WebsiteList = new HashSet<Website>() {Website.SpeedyHen};
 
-        [OneTimeSetUp]
+        [SetUp]
         public void OneTimeSetUp()
         {
             Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain);
-            WebsiteList = new HashSet<Website>() {Website.SpeedyHen};
         }
 
         [Test, Description("Validates Series w/ '-' in title")]

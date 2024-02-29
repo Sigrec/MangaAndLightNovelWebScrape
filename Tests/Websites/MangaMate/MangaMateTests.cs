@@ -6,13 +6,12 @@ namespace Tests.Websites
     public class MangaMateTests
     {
         MasterScrape Scrape;
-        HashSet<Website> WebsiteList;
+        HashSet<Website> WebsiteList = new HashSet<Website>() {Website.MangaMate};
 
-        [OneTimeSetUp]
+        [SetUp]
         public void OneTimeSetUp()
         {
             Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Australia);
-            WebsiteList = new HashSet<Website>() {Website.MangaMate};
         }
 
         [Test, Description("Validates Series w/ '-' Title")]

@@ -3,13 +3,13 @@ namespace Tests.Websites
     public class CDJapanTests
     {
         MasterScrape Scrape;
-        HashSet<Website> WebsiteList;
+        HashSet<Website> WebsiteList = new HashSet<Website>() {Website.CDJapan};
     
         [SetUp]
         public void Setup()
         {
-            Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Japan, Browser.Chrome);
-            WebsiteList = new HashSet<Website>() {Website.CDJapan};
+            Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Japan);
+            
         }
 
         [Test, Description("Test Manga Series w/ Box Set & Omnibus in Dif Formats & Color Editions")]
@@ -122,7 +122,7 @@ namespace Tests.Websites
         [Test, Description("Validates One Shot Manga Series")]
         public async Task CDJapan_Member_GoodbyeEri_Manga_Test()
         {
-            await Scrape.InitializeScrapeAsync("さよなら絵梨", BookType.Manga, WebsiteList, true);
+            await Scrape.InitializeScrapeAsync("さよなら絵梨", BookType.Manga, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\CDJapan\CDJapanGoodbyeEriMangaData.txt")));
         }
     }
