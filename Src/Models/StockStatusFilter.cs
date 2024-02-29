@@ -1,4 +1,4 @@
-namespace Src.Models
+namespace MangaAndLightNovelWebScrape.Models
 {
     public readonly struct StockStatusFilter
     {

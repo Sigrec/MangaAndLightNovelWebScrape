@@ -9,14 +9,14 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>partial</TrimMode>
-    <PackageVersion>2.0.0</PackageVersion>
-    <Version>2.0.0</Version>
-    <FileVersion>2.0.0.0</FileVersion>
+    <PackageVersion>2.1.0</PackageVersion>
+    <Version>2.1.0</Version>
+    <FileVersion>2.1.0.0</FileVersion>
     <Authors>Prem</Authors>
     <Owners>Prem</Owners>
     <LangVersion>preview</LangVersion>
     <ReleaseNotes>https://github.com/Sigrec/MangaAndLightNovelWebScrape/releases</ReleaseNotes>
-    <Description>.NET Framework that scrapes various websites for manga or light novel data for a specifc user inputted series. Then it compares the various prices for each available volume across the websites chosen and outputs a list of the volumes available and the website and price for the lowest volume.</Description>
+    <Description>.NET Library that scrapes various websites based on a region for manga or light novel data for a specifc user inputted series. Then it compares the various prices for each available entry across the websites chosen and outputs a list of the entries available and the website and price for the cheapest entry.</Description>
     <Title>MangaAndLightNovelWebScrape</Title>
     <RepositoryUrl>https://github.com/Sigrec/MangaAndLightNovelWebScrape</RepositoryUrl>
     <PackageProjectUrl>https://github.com/Sigrec/MangaAndLightNovelWebScrape</PackageProjectUrl>

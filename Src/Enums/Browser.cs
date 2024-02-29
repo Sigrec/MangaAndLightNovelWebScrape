@@ -1,4 +1,4 @@
-namespace MangaLightNovelWebScrape.Enums
+namespace MangaAndLightNovelWebScrape.Enums
 {
     public enum Browser
     {

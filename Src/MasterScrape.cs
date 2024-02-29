@@ -2,7 +2,7 @@ using OpenQA.Selenium.Firefox;
 using OpenQA.Selenium.Edge;
 using OpenQA.Selenium.Chrome;
 using System.Collections.Concurrent;
-using Src.Models;
+using MangaAndLightNovelWebScrape.Models;
 
 namespace MangaAndLightNovelWebScrape
 {
@@ -64,6 +64,7 @@ namespace MangaAndLightNovelWebScrape
         [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Compendium|Artbook|Error|\(Osi\)|Advertising|Art Book|Adventure|Artbook|Coloring Book|the Anime|Calendar|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA|Poster", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
         // [GeneratedRegex(@"Official|Guide|Adventure|Advertising|Anime|Calendar|Error|Encyclopedia|Anthology|Character|Bilingual|Game Book|Theatrical|SEGA", RegexOptions.IgnoreCase)] internal static partial Regex CheckEntryRemovalRegex();
 
+        // TODO - Add MasterScrape method WithMemberships() that takes in a list and sets the memberships
         public MasterScrape(StockStatus[] Filter, Region Region = Region.America, Browser Browser = Browser.Chrome, bool IsBarnesAndNobleMember = false, bool IsBooksAMillionMember = false, bool IsKinokuniyaUSAMember = false, bool IsIndigoMember = false)
         {
             this.Filter = Filter;
@@ -127,7 +128,7 @@ namespace MangaAndLightNovelWebScrape
             return output;
         }
 
-        public string GetResultsAsAsciiTable(string bookTitle, BookType bookType)
+        public string GetResultsAsAsciiTable(string bookTitle, BookType bookType, bool includeLinks = true)
         {
             if (string.IsNullOrWhiteSpace(bookTitle)) { throw new ArgumentException("Title Can't be Empty"); }
 
@@ -163,12 +164,16 @@ namespace MangaAndLightNovelWebScrape
             { 
                 asciiTableResults.AppendFormat("┃ {0} ┃ {1} ┃ {2} ┃ {3} ┃", entry.Entry.PadRight(longestTitle), entry.Price.PadRight(longestPrice), entry.StockStatus.ToString().PadRight(longestStockStatus), entry.Website.PadRight(longestWebsite)).AppendLine(); 
             }
-            asciiTableResults.AppendFormat("┗{0}┻{1}┻{2}┻{3}┛", titleLinePadding, priceLinePadding, stockStatusLinePadding, websiteLinePadding).AppendLine();
-            asciiTableResults.AppendLine("Links:");
+            asciiTableResults.AppendFormat("┗{0}┻{1}┻{2}┻{3}┛", titleLinePadding, priceLinePadding, stockStatusLinePadding, websiteLinePadding);
 
-            foreach (KeyValuePair<string, string> url in GetResultUrls())
+            if (includeLinks)
             {
-                asciiTableResults.AppendFormat("{0} => {1}", url.Key, url.Value).AppendLine();
+                asciiTableResults.AppendLine();
+                asciiTableResults.AppendLine("Links:");
+                foreach (KeyValuePair<string, string> url in GetResultUrls())
+                {
+                    asciiTableResults.AppendFormat("{0} => {1}", url.Key, url.Value).AppendLine();
+                }
             }
             return asciiTableResults.ToString();
         }
@@ -179,7 +184,7 @@ namespace MangaAndLightNovelWebScrape
         /// <param name="isAsciiTable">Whether to print it in AsciiTable Format</param>
         /// <param name="title">The title of the inputted series</param>
         /// <param name="bookType">The book used for this scrape</param>
-        public void PrintResultsToConsole(bool isAsciiTable = false, string title = "", BookType bookType = BookType.Manga)
+        public void PrintResultsToConsole(bool isAsciiTable = false, string title = "", BookType bookType = BookType.Manga, bool includeLinks = true)
         {
             if (GetResults().Count > 0)
             {
@@ -193,7 +198,7 @@ namespace MangaAndLightNovelWebScrape
                 }
                 else
                 {
-                    Console.WriteLine(GetResultsAsAsciiTable(title, bookType));
+                    Console.WriteLine(GetResultsAsAsciiTable(title, bookType, includeLinks));
                 }
             }
             else
@@ -209,7 +214,7 @@ namespace MangaAndLightNovelWebScrape
         /// <param name="isAsciiTable">Whether to print it in AsciiTable Format</param>
         /// <param name="title">The title of the inputted series</param>
         /// <param name="bookType">The book used for this scrape</param>
-        public void PrintResultsToFile(string file, bool isAsciiTable = false, string title = "", BookType bookType = BookType.Manga)
+        public void PrintResultsToFile(string file, bool isAsciiTable = false, string title = "", BookType bookType = BookType.Manga, bool includeLinks = true)
         {
             if (!isAsciiTable)
             {
@@ -238,7 +243,7 @@ namespace MangaAndLightNovelWebScrape
             }
             else
             {
-                File.WriteAllText(file, GetResultsAsAsciiTable(title, bookType));
+                File.WriteAllText(file, GetResultsAsAsciiTable(title, bookType, includeLinks));
             }
         }
 
@@ -250,7 +255,7 @@ namespace MangaAndLightNovelWebScrape
         /// <param name="isAsciiTable">Whether to print it in AsciiTable Format</param>
         /// <param name="title">The title of the inputted series</param>
         /// <param name="bookType">The book used for this scrape</param> 
-        public void PrintResultsToLogger(Logger UserLogger, NLog.LogLevel logLevel, bool isAsciiTable = false, string title = "", BookType bookType = BookType.Manga)
+        public void PrintResultsToLogger(Logger UserLogger, NLog.LogLevel logLevel, bool isAsciiTable = false, string title = "", BookType bookType = BookType.Manga, bool includeLinks = true)
         {
             switch (logLevel.Ordinal)
             {
@@ -270,7 +275,7 @@ namespace MangaAndLightNovelWebScrape
                             UserLogger.Trace("No MasterData Available");
                         }
                     }
-                    else { UserLogger.Trace($"\n{GetResultsAsAsciiTable(title, bookType)}"); }
+                    else { UserLogger.Trace($"\n{GetResultsAsAsciiTable(title, bookType, includeLinks)}"); }
                     break;
                 case 1:
                     if (!isAsciiTable)
@@ -288,7 +293,7 @@ namespace MangaAndLightNovelWebScrape
                             UserLogger.Debug("No MasterData Available");
                         }
                     }
-                    else { UserLogger.Debug($"\n{GetResultsAsAsciiTable(title, bookType)}"); }
+                    else { UserLogger.Debug($"\n{GetResultsAsAsciiTable(title, bookType, includeLinks)}"); }
                     break;
                 default:
                 case 2:
@@ -307,7 +312,7 @@ namespace MangaAndLightNovelWebScrape
                             UserLogger.Info("No MasterData Available");
                         }
                     }
-                    else { UserLogger.Info($"\n{GetResultsAsAsciiTable(title, bookType)}"); }
+                    else { UserLogger.Info($"\n{GetResultsAsAsciiTable(title, bookType, includeLinks)}"); }
                     break;
                 case 3:
                     if (!isAsciiTable)
@@ -325,7 +330,7 @@ namespace MangaAndLightNovelWebScrape
                             UserLogger.Warn("No MasterData Available");
                         }
                     }
-                    else { UserLogger.Warn($"\n{GetResultsAsAsciiTable(title, bookType)}"); }
+                    else { UserLogger.Warn($"\n{GetResultsAsAsciiTable(title, bookType, includeLinks)}"); }
                     break;
                 case 4:
                     if (!isAsciiTable)
@@ -343,7 +348,7 @@ namespace MangaAndLightNovelWebScrape
                             UserLogger.Error("No MasterData Available");
                         }
                     }
-                    else { UserLogger.Error($"\n{GetResultsAsAsciiTable(title, bookType)}"); }
+                    else { UserLogger.Error($"\n{GetResultsAsAsciiTable(title, bookType, includeLinks)}"); }
                     break;
                 case 5:
                     if (!isAsciiTable)
@@ -361,7 +366,7 @@ namespace MangaAndLightNovelWebScrape
                             UserLogger.Fatal("No MasterData Available");
                         }
                     }
-                    else { UserLogger.Fatal(GetResultsAsAsciiTable(title, bookType)); }
+                    else { UserLogger.Fatal(GetResultsAsAsciiTable(title, bookType, includeLinks)); }
                     break;
             }
         }

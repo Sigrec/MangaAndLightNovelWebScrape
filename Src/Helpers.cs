@@ -1,5 +1,5 @@
 using GraphQL.Client.Abstractions.Utilities;
-using Src.Models;
+using MangaAndLightNovelWebScrape.Models;
 
 namespace MangaAndLightNovelWebScrape
 {
