@@ -6,7 +6,7 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> Inprogress feature will be fixed in later release
 
-v2.1.1 - February 29th
+v2.1.2 - February 29th
 ✅Added new method to get websites that have a membership for a specific region
 
 v2.1.0 - February 29th
