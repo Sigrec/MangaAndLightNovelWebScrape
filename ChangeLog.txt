@@ -6,6 +6,9 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> Inprogress feature will be fixed in later release
 
+v2.1.1 - February 29th
+✅Added new method to get websites that have a membership for a specific region
+
 v2.1.0 - February 29th
 ✅Updated NuGet package desc
 ✅Added new param to Ascii Format table method and prints to determine whether to include links at the bottom

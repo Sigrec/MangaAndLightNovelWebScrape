@@ -20,6 +20,29 @@ namespace MangaAndLightNovelWebScrape
         }
 
         /// <summary>
+        /// Gets the list of websites that have a membership for a given region
+        /// </summary>
+        public static string[] GetMembershipWebsitesForRegionAsString(Region region)
+        {
+            return region switch
+            {
+                Region.America => [ BarnesAndNoble.WEBSITE_TITLE, BooksAMillion.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE ],
+                Region.Canada => [ Indigo.WEBSITE_TITLE ],
+                Region.Australia or Region.Britain or Region.Canada or Region.Japan or  _ => [ ]
+            };
+        }
+
+        public static Website[] GetMembershipWebsitesForRegion(Region region)
+        {
+            return region switch
+            {
+                Region.America => [ Website.BarnesAndNoble, Website.BooksAMillion, Website.InStockTrades, Website.KinokuniyaUSA ],
+                Region.Canada => [ Website.Indigo ],
+                Region.Australia or Region.Britain or Region.Canada or Region.Japan or  _ => [ ]
+            };
+        }
+
+        /// <summary>
         /// Gets Region Enum from a string (ignores case)
         /// </summary>
         public static Region GetRegionFromString(string region)
