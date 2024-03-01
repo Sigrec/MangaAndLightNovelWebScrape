@@ -20,7 +20,7 @@ namespace MangaAndLightNovelWebScrape
         }
 
         /// <summary>
-        /// Gets the list of websites that have a membership for a given region
+        /// Gets the array of websites that have a membership for a given region as strings
         /// </summary>
         public static string[] GetMembershipWebsitesForRegionAsString(Region region)
         {
@@ -32,6 +32,9 @@ namespace MangaAndLightNovelWebScrape
             };
         }
 
+        /// <summary>
+        /// Gets the array of websites that have a membership for a given region
+        /// </summary>
         public static Website[] GetMembershipWebsitesForRegion(Region region)
         {
             return region switch
