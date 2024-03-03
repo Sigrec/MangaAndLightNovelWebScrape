@@ -9,11 +9,10 @@ namespace Tests.Websites
         MasterScrape Scrape;
         HashSet<Website> WebsiteList = new HashSet<Website>() { Website.ForbiddenPlanet };
         
-        [SetUp]
+        [OneTimeSetUp]
         public void OneTimeSetUp()
         {
-            Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain);
-            
+            Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain);    
         }
 
         [Test, Description("Validates Series w/ Non Letter or Digit Char in Title")]
