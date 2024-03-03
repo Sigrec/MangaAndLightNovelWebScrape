@@ -141,9 +141,9 @@ namespace MangaAndLightNovelWebScrape.Websites
                 {
                     string entryTitle = System.Net.WebUtility.HtmlDecode(titleData[x].InnerText);
                     string titleDesc = titleData[x].GetAttributeValue("data-adobe-tracking", "Book Type Error");
-                    // LOGGER.Debug("{} {}", entryTitle, titleDesc.Contains("novel", StringComparison.OrdinalIgnoreCase));
+                    // LOGGER.Debug("{} | {} | {} | {}", bookTitle, entryTitle, !MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck, InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle));
                     if ((!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
-                        && (InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle) || InternalHelpers.TitleStartsWithCheck(bookTitle, entryTitle))
+                        && InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
                         && !entryTitle.Contains("library edition", StringComparison.OrdinalIgnoreCase)
                         && (
                             (
@@ -198,9 +198,9 @@ namespace MangaAndLightNovelWebScrape.Websites
                                 )
                             );
                         }
-                        else { LOGGER.Info("Removed {}", entryTitle); }
+                        else { LOGGER.Info("Removed (2) {}", entryTitle); }
                     }
-                    else { LOGGER.Info("Removed {}", entryTitle); }
+                    else { LOGGER.Info("Removed (1) {}", entryTitle); }
                 }
 
             }

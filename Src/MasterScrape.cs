@@ -155,7 +155,7 @@ namespace MangaAndLightNovelWebScrape
             List<string> membershipList = GetMembershipList();
             if (membershipList.Count != 0)
             {
-                asciiTableResults.AppendFormat("Memberships: {0}", string.Join(" & ", membershipList)).AppendLine();
+                asciiTableResults.AppendFormat("Memberships: {0}", string.Join(", ", membershipList)).AppendLine();
             }
             asciiTableResults.AppendFormat("┏{0}┳{1}┳{2}┳{3}┓", titleLinePadding, priceLinePadding, stockStatusLinePadding, websiteLinePadding).AppendLine();
             asciiTableResults.AppendFormat("┃ {0} ┃ {1} ┃ {2} ┃ {3} ┃", "Title".PadRight(longestTitle), "Price".PadRight(longestPrice), "Status".PadRight(longestStockStatus), "Website".PadRight(longestWebsite)).AppendLine();
@@ -1093,14 +1093,15 @@ namespace MangaAndLightNovelWebScrape
         // Command to end all chrome.exe process -> taskkill /F /IM chrome.exe /T
         // Command to end all chrome.exe process -> taskkill /F /IM chromedriver.exe /T
         // TODO Need to throw exception if user is querying against Japan region and text is not in Japanese
+        // TODO Issue w/ Berserk on Indigo (Canada), maybe Wordery but current run no issues
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string title = "world trigger";
+            string title = "berserk";
             BookType bookType = BookType.Manga;
             watch.Start();
-            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.America, Browser.Chrome, false, false, false, false).EnableDebugMode();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.RobertsAnimeCornerStore ]);
+            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Canada, Browser.Chrome, false, false, false, false).EnableDebugMode();
+            await scrape.InitializeScrapeAsync(title, bookType, [ Website.Indigo ]);
             watch.Stop();
             scrape.PrintResultsToConsole(true, title, bookType);
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");

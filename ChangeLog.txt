@@ -6,6 +6,10 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> Inprogress feature will be fixed in later release
 
+v2.1.3 - March 1st
+✅Fix membership list output in AsciiTable
+✍️Added website and region request issue templates
+
 v2.1.2 - February 29th
 ✅Added new method to get websites that have a membership for a specific region
 
