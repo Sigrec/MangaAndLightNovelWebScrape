@@ -144,5 +144,14 @@ namespace MangaAndLightNovelWebScrape
                 } 
             }
         }
+
+        internal static bool ContainsAny(this string input, List<string> values)
+        {
+            foreach (string val in values)
+            {
+                if (input.Contains(val, StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            return false;
+        }
     }
 }

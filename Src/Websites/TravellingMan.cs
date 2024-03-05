@@ -6,14 +6,15 @@ namespace MangaAndLightNovelWebScrape.Websites
         private List<string> TravellingManLinks = new List<string>();
         private List<EntryModel> TravellingManData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "TravellingMan";
-        // private const decimal MEMBERSHIP_DISCOUNT = 0.1M;
         public const Region REGION = Region.Britain;
+        private static readonly List<string> MangaDescRemovalStrings = ["novel", "figure", "sculpture", "collection of", "figurine", "statue", "miniature"];
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//li[@class='list-view-item']/div/a/span");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//li[@class='list-view-item']/div/div/div[3]/dl/div[2]/dd[2]/span[1]");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//ul[@class='list--inline pagination']/li[3]/a");
-        [GeneratedRegex(@"Volume", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
-        [GeneratedRegex(@",|\(.*?\)| Manga| Graphic Novel|:|Hardcover|(?<=Vol \d{1,3})[^\d{1,3}.]+.*|(?<=Vol \d{1,3}.\d{1})[^\d{1,3}.]+.*")] private static partial Regex TitleParseRegex();
-        [GeneratedRegex(@"(?:3-in-1|2-in-1|Omnibus) Edition", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
+        [GeneratedRegex(@"Volume|Vol\.", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
+        [GeneratedRegex(@",| The Manga| Manga|\(.*?\)", RegexOptions.IgnoreCase)] private static partial Regex TitleParseRegex(); // ,|\(.*?\)| Manga| Graphic Novel|:|Hardcover|(?<=Vol \d{1,3})[^\d{1,3}.]+.*|(?<=Vol \d{1,3}.\d{1})[^\d{1,3}.]+.*
+        [GeneratedRegex(@"(?:3-in-1|2-in-1)", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
+        [GeneratedRegex(@"(?<=Box Set \d{1,3})[^\d{1,3}.]+.*|Box Set Vol")] private static partial Regex BoxSetRegex();
 
         internal void ClearData()
         {
@@ -46,8 +47,60 @@ namespace MangaAndLightNovelWebScrape.Websites
 
         private static string TitleParse(string entryTitle, string bookTitle, BookType bookType)
         {
-            StringBuilder curTitle = new StringBuilder(entryTitle).Replace(",", string.Empty);
-            return curTitle.ToString();
+            if (OmnibusRegex().IsMatch(entryTitle))
+            {
+                entryTitle = OmnibusRegex().Replace(entryTitle, "Omnibus");
+            }
+            else if (BoxSetRegex().IsMatch(entryTitle))
+            {
+                entryTitle = BoxSetRegex().Replace(entryTitle, string.Empty);
+            }
+
+            StringBuilder curTitle = new StringBuilder(TitleParseRegex().Replace(entryTitle, string.Empty));
+            InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "-", " ");
+            InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
+
+            if (entryTitle.Contains("Hardcover") && !bookTitle.Contains("Hardcover"))
+            {
+                curTitle.Replace(" Hardcover", string.Empty);
+            }
+
+            if (entryTitle.Contains("HC") && !bookTitle.Contains("HC"))
+            {
+                curTitle.Replace(" HC", string.Empty);
+            }
+
+            if (entryTitle.Contains("Box Set") && bookTitle.Equals("attack on titan", StringComparison.OrdinalIgnoreCase))
+            {
+                if (!bookTitle.Contains("One", StringComparison.OrdinalIgnoreCase))
+                {
+                    curTitle.Replace("One", "1");
+                }
+                if (!bookTitle.Contains("Two", StringComparison.OrdinalIgnoreCase))
+                {
+                    curTitle.Replace("Two", "2");
+                }
+                if (!bookTitle.Contains("Three", StringComparison.OrdinalIgnoreCase))
+                {
+                    curTitle.Replace("Three", "3");
+                }
+            }
+
+            if (bookType == BookType.LightNovel)
+            {
+                curTitle.Replace("Light Novel", string.Empty);
+                int index = curTitle.ToString().AsSpan().IndexOf("Vol");
+                if (index != -1) curTitle.Insert(index, "Novel ");
+                else curTitle.Insert(curTitle.Length, " Novel");
+            }
+            else
+            {
+                if (bookTitle.Equals("Boruto", StringComparison.OrdinalIgnoreCase))
+                {
+                    curTitle.Replace("Naruto Next Generations", string.Empty);
+                }
+            }
+            return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
         }
 
         private List<EntryModel> GetTravellingManData(string bookTitle, BookType bookType)
@@ -66,7 +119,12 @@ namespace MangaAndLightNovelWebScrape.Websites
 
                 int nextPage = 1;
                 bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
-                doc = web.Load(GenerateWebsiteUrl(bookTitle, bookType, nextPage));
+                for(int x = 0; x < MangaDescRemovalStrings.Count; x++)
+                {
+                    if (bookTitle.Contains(MangaDescRemovalStrings[x])) MangaDescRemovalStrings.RemoveAt(x);
+                }
+                if (bookType == BookType.LightNovel) MangaDescRemovalStrings.Remove("novel");
+
                 while (true)
                 {
                     // Initialize the html doc for crawling
@@ -81,35 +139,52 @@ namespace MangaAndLightNovelWebScrape.Websites
                     for (int x = 0; x < priceData.Count; x++)
                     {
                         string entryTitle = titleData[x].InnerText.Trim();
-                        if (InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
+                        LOGGER.Debug("{}", entryTitle);
+                        if (!entryTitle.Contains("Banpresto")
+                            && !entryTitle.Contains("Nendoroid")
+                            && InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
                             && (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
                             && !(
                                 bookType == BookType.Manga
                                 && (
-                                        InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony")
-                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
+                                    !(!entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) || bookTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase))
+                                    || (
+                                            InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
+                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Itachi")
+                                        )
                                     )
                                 )
                             )        
                         {
-                            TravellingManData.Add(
-                                new EntryModel
-                                (
-                                    TitleParse(FixVolumeRegex().Replace(entryTitle, "Vol").Trim(), bookTitle, bookType),
-                                    priceData[x].InnerText.Trim(),
-                                    StockStatus.IS,
-                                    WEBSITE_TITLE
-                                )
-                            );
+                            bool descIsValid = true;
+                            if (!entryTitle.Contains("Volume", StringComparison.OrdinalIgnoreCase) && !entryTitle.Contains("Vol.", StringComparison.OrdinalIgnoreCase) && !entryTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) && !entryTitle.Contains("Comic", StringComparison.OrdinalIgnoreCase))
+                            {
+                                HtmlNodeCollection descData = web.Load($"https://travellingman.com{doc.DocumentNode.SelectSingleNode($"(//li[@class='list-view-item']/div/a)[{x + 1}]").GetAttributeValue("href", string.Empty)}").DocumentNode.SelectNodes("//div[@class='product-single__description rte'] | //div[@class='product-single__description rte']//p");
+                                StringBuilder desc = new StringBuilder();
+                                foreach (HtmlNode node in descData) { desc.AppendLine(node.InnerText); }
+                                LOGGER.Debug("Checking Desc {} => {}", entryTitle, desc.ToString());
+                                descIsValid = !desc.ToString().ContainsAny(MangaDescRemovalStrings);
+                            }
+
+                            if (descIsValid)
+                            {
+                                TravellingManData.Add(
+                                    new EntryModel
+                                    (
+                                        TitleParse(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType),
+                                        priceData[x].InnerText.Trim(),
+                                        StockStatus.IS,
+                                        WEBSITE_TITLE
+                                    )
+                                );
+                            }
+                            else { LOGGER.Info("Removed (2) {}", entryTitle); }
                         }
-                        else
-                        {
-                            LOGGER.Info("Removed {}", entryTitle);
-                        }
+                        else { LOGGER.Info("Removed (1) {}", entryTitle); }
                     }
 
                     Stop:
-                    if (pageCheck != null)
+                    if (priceData != null && pageCheck != null )
                     {
                         nextPage++;
                     }

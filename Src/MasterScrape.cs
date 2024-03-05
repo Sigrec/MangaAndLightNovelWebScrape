@@ -413,6 +413,7 @@ namespace MangaAndLightNovelWebScrape
             ForbiddenPlanet?.ClearData();
             SciFier?.ClearData();
             SpeedyHen?.ClearData();
+            TravellingMan?.ClearData();
             Waterstones?.ClearData();
             Wordery?.ClearData();
         }
@@ -644,6 +645,10 @@ namespace MangaAndLightNovelWebScrape
                                 case "speedyhen":
                                     WebsiteList.Add(Website.SpeedyHen);
                                     break;
+                                case TravellingMan.WEBSITE_TITLE:
+                                case "travelling man":
+                                    WebsiteList.Add(Website.TravellingMan);
+                                    break;
                                 case Waterstones.WEBSITE_TITLE:
                                     WebsiteList.Add(Website.Waterstones);
                                     break;
@@ -774,6 +779,9 @@ namespace MangaAndLightNovelWebScrape
                         break;
                     case SpeedyHen.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = SpeedyHen.GetUrl();
+                        break;
+                    case TravellingMan.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = TravellingMan.GetUrl();
                         break;
                     case Waterstones.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = Waterstones.GetUrl();
@@ -1105,10 +1113,11 @@ namespace MangaAndLightNovelWebScrape
         // Command to end all chrome.exe process -> taskkill /F /IM chromedriver.exe /T
         // TODO Need to throw exception if user is querying against Japan region and text is not in Japanese
         // TODO Need to throw exception when user inputs websites that aren't part of a region
+        // TODO Noragami omni issue B&N
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string title = "Jujutsu Kaisen";
+            string title = "Berserk";
             BookType bookType = BookType.Manga;
             watch.Start();
             MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain).EnableDebugMode();
