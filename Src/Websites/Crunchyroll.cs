@@ -111,7 +111,10 @@ namespace MangaAndLightNovelWebScrape.Websites
         {
             try
             {
-                HtmlWeb web = new();
+                HtmlWeb web = new()
+                {
+                    UsingCacheIfExists = true
+                };
                 HtmlDocument doc = new()
                 {
                     OptionCheckSyntax = false,

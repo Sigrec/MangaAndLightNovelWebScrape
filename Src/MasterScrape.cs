@@ -63,9 +63,7 @@ namespace MangaAndLightNovelWebScrape
         [GeneratedRegex(@"\s{2,}|\s{0,}--\s{0,}|\s{0,}—\s{0,}")] internal static partial Regex MultipleWhiteSpaceRegex();
         [GeneratedRegex(@";jsessionid=[^?]*")] internal static partial Regex RemoveJSessionIDRegex();
         [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Compendium|Artbook|Error|\(Osi\)|Advertising|Art Book|Adventure|Artbook|Coloring Book|the Anime|Calendar|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA|Poster", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
-        // [GeneratedRegex(@"Official|Guide|Adventure|Advertising|Anime|Calendar|Error|Encyclopedia|Anthology|Character|Bilingual|Game Book|Theatrical|SEGA", RegexOptions.IgnoreCase)] internal static partial Regex CheckEntryRemovalRegex();
 
-        // TODO - Add MasterScrape method WithMemberships() that takes in a list and sets the memberships
         public MasterScrape(StockStatus[] Filter, Region Region = Region.America, Browser Browser = Browser.Chrome, bool IsBarnesAndNobleMember = false, bool IsBooksAMillionMember = false, bool IsKinokuniyaUSAMember = false, bool IsIndigoMember = false)
         {
             this.Filter = Filter;
@@ -108,7 +106,7 @@ namespace MangaAndLightNovelWebScrape
         /// </summary>
         public List<EntryModel> GetResults()
         {
-            return MasterDataList.Count != 0 ? MasterDataList[0] : new List<EntryModel>();
+            return MasterDataList.Count != 0 ? MasterDataList[0] : [];
         }
 
         /// <summary>

@@ -124,7 +124,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         {
             try
             {
-                HtmlWeb web = new HtmlWeb();
+                HtmlWeb web = new HtmlWeb() { UsingCacheIfExists = true };
                 bool letterIsFrontHalf = char.IsDigit(bookTitle[0]) || (bookTitle[0] & 0b11111) <= 13;
                 string url = GetUrl(bookTitle, bookType, curRegion, letterIsFrontHalf);
                 bool ShouldEndEarly = false, IsSingleName = true;
