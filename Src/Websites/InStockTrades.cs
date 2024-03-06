@@ -121,7 +121,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             bool oneShotCheck = false;
             try
             {
-                HtmlWeb web = new HtmlWeb();
+                HtmlWeb web = new HtmlWeb() { UsingCacheIfExists = true };
                 HtmlDocument doc = new HtmlDocument();
                 bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
                 

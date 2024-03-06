@@ -132,7 +132,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             {
                 // Start scraping the URL where the data is found
                 string starterUrl = GenerateWebsiteUrl(bookTitle);
-                HtmlWeb web = new HtmlWeb();
+                HtmlWeb web = new HtmlWeb() { UsingCacheIfExists = true };
 
                 HashSet<string> links = new HashSet<string>();
                 HtmlDocument doc = web.Load(starterUrl);

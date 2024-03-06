@@ -150,7 +150,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 bool hardcoverCheck = false, secondCheck = false, oneShotCheck = false;
                 Uri originalUrl = GenerateWebsiteUrl(bookType, bookTitle, secondCheck);
                 HtmlDocument doc = new HtmlDocument();
-                HtmlWeb web = new HtmlWeb { UserAgent = string.Empty };
+                HtmlWeb web = new HtmlWeb { UserAgent = string.Empty, UsingCacheIfExists = true };
 
                 CheckOther:
                 List<KeyValuePair<Uri, string>> ValidUrls = new List<KeyValuePair<Uri, string>>();

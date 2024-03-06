@@ -18,6 +18,7 @@ namespace MangaAndLightNovelWebScrape
         private AmazonUSA AmazonUSA = null;
         private BarnesAndNoble BarnesAndNoble = null;
         private BooksAMillion BooksAMillion = null;
+        private TravellingMan TravellingMan = null;
         private InStockTrades InStockTrades = null;
         private KinokuniyaUSA KinokuniyaUSA = null;
         private Crunchyroll Crunchyroll = null;
@@ -50,7 +51,7 @@ namespace MangaAndLightNovelWebScrape
         public bool IsIndigoMember { get; set; }
         private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
         // "--headless=new", 
-        private static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent", "--proxy-server=direct://" ];
+        private static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent" ];
         private static readonly string[] FIREFOX_BROWSER_ARGUMENTS = ["-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3"];
         /// <summary>
         /// Determines whether debug mode is enabled (Disabled by default)
@@ -62,14 +63,11 @@ namespace MangaAndLightNovelWebScrape
         [GeneratedRegex(@"\s{2,}|\s{0,}--\s{0,}|\s{0,}—\s{0,}")] internal static partial Regex MultipleWhiteSpaceRegex();
         [GeneratedRegex(@";jsessionid=[^?]*")] internal static partial Regex RemoveJSessionIDRegex();
         [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Compendium|Artbook|Error|\(Osi\)|Advertising|Art Book|Adventure|Artbook|Coloring Book|the Anime|Calendar|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA|Poster", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
-        // [GeneratedRegex(@"Official|Guide|Adventure|Advertising|Anime|Calendar|Error|Encyclopedia|Anthology|Character|Bilingual|Game Book|Theatrical|SEGA", RegexOptions.IgnoreCase)] internal static partial Regex CheckEntryRemovalRegex();
 
-        // TODO - Add MasterScrape method WithMemberships() that takes in a list and sets the memberships
         public MasterScrape(StockStatus[] Filter, Region Region = Region.America, Browser Browser = Browser.Chrome, bool IsBarnesAndNobleMember = false, bool IsBooksAMillionMember = false, bool IsKinokuniyaUSAMember = false, bool IsIndigoMember = false)
         {
             this.Filter = Filter;
             this.Region = Region;
-            if (this.Region.IsMultiRegion()) { throw new NotSupportedException("Multi Region input is not Supported"); }
             this.Browser = Browser;
             this.IsBarnesAndNobleMember = IsBarnesAndNobleMember;
             this.IsBooksAMillionMember = IsBooksAMillionMember;
@@ -108,7 +106,7 @@ namespace MangaAndLightNovelWebScrape
         /// </summary>
         public List<EntryModel> GetResults()
         {
-            return MasterDataList.Count != 0 ? MasterDataList[0] : new List<EntryModel>();
+            return MasterDataList.Count != 0 ? MasterDataList[0] : [];
         }
 
         /// <summary>
@@ -413,6 +411,7 @@ namespace MangaAndLightNovelWebScrape
             ForbiddenPlanet?.ClearData();
             SciFier?.ClearData();
             SpeedyHen?.ClearData();
+            TravellingMan?.ClearData();
             Waterstones?.ClearData();
             Wordery?.ClearData();
         }
@@ -551,7 +550,7 @@ namespace MangaAndLightNovelWebScrape
                 default:
                     ChromeOptions chromeOptions = new()
                     {
-                        PageLoadStrategy = PageLoadStrategy.Normal,
+                        PageLoadStrategy = PageLoadStrategy.Eager,
                     };
                     ChromeDriverService chromeDriverService = ChromeDriverService.CreateDefaultService();
                     chromeDriverService.HideCommandPromptWindow = true;
@@ -643,6 +642,10 @@ namespace MangaAndLightNovelWebScrape
                                 case SpeedyHen.WEBSITE_TITLE:
                                 case "speedyhen":
                                     WebsiteList.Add(Website.SpeedyHen);
+                                    break;
+                                case TravellingMan.WEBSITE_TITLE:
+                                case "travelling man":
+                                    WebsiteList.Add(Website.TravellingMan);
                                     break;
                                 case Waterstones.WEBSITE_TITLE:
                                     WebsiteList.Add(Website.Waterstones);
@@ -775,6 +778,9 @@ namespace MangaAndLightNovelWebScrape
                     case SpeedyHen.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = SpeedyHen.GetUrl();
                         break;
+                    case TravellingMan.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = TravellingMan.GetUrl();
+                        break;
                     case Waterstones.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = Waterstones.GetUrl();
                         break;
@@ -854,6 +860,11 @@ namespace MangaAndLightNovelWebScrape
                     {
                         switch (site)
                         {
+                            case Website.TravellingMan:
+                                TravellingMan ??= new TravellingMan();
+                                LOGGER.Info($"{TravellingMan.WEBSITE_TITLE} Going");
+                                WebTasks.Add(TravellingMan.CreateTravellingManTask(bookTitle, book, MasterDataList));
+                                break;
                             case Website.ForbiddenPlanet:
                                 ForbiddenPlanet ??= new ForbiddenPlanet();
                                 LOGGER.Info($"{ForbiddenPlanet.WEBSITE_TITLE} Going");
@@ -989,6 +1000,7 @@ namespace MangaAndLightNovelWebScrape
         {
             await Task.Run(async () =>
             {
+                if (this.Region.IsMultiRegion()) { throw new NotSupportedException("Multi Region input is not Supported"); }
                 LOGGER.Info("Region set to {}", this.Region);
                 LOGGER.Info("Running on {} Browser", this.Browser);
 
@@ -1098,15 +1110,15 @@ namespace MangaAndLightNovelWebScrape
         // Command to end all chrome.exe process -> taskkill /F /IM chrome.exe /T
         // Command to end all chrome.exe process -> taskkill /F /IM chromedriver.exe /T
         // TODO Need to throw exception if user is querying against Japan region and text is not in Japanese
-        // TODO Need to throw exception when user inputs websites that aren't part of a region
+        // TODO Issue w/ Berserk on Indigo (Canada), maybe Wordery but current run no issues
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string title = "Naruto";
+            string title = "berserk";
             BookType bookType = BookType.Manga;
             watch.Start();
-            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain, Browser.Chrome).EnableDebugMode();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.ForbiddenPlanet ]);
+            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Canada, Browser.Chrome, false, false, false, false).EnableDebugMode();
+            await scrape.InitializeScrapeAsync(title, bookType, [ Website.Indigo ]);
             watch.Stop();
             scrape.PrintResultsToConsole(true, title, bookType);
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");

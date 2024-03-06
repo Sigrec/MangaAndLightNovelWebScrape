@@ -103,7 +103,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         {
             try
             {
-                HtmlWeb web = new HtmlWeb();
+                HtmlWeb web = new HtmlWeb() { UsingCacheIfExists = true };
                 HtmlDocument doc = new HtmlDocument() { OptionCheckSyntax = false, };
                 ushort curPageNum = 1;
                 bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
