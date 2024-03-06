@@ -6,8 +6,12 @@ namespace MangaAndLightNovelWebScrape.Websites
         private List<EntryModel> AmazonUSAData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "Amazon USA";
         public const Region REGION = Region.America;
-        private static readonly Logger Logger = LogManager.GetLogger("AmazonUSALogs");
+        private static readonly Logger LOGGER = LogManager.GetLogger("AmazonUSALogs");
         private static readonly List<string> SeriesBypass = new List<string>(){ "Jujutsu Kaisen" };
+        private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[@class='a-section a-spacing-none puis-padding-right-small s-title-instructions-style']/h2//span | //span[@class='a-size-base-plus a-color-base a-text-normal']");
+        private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//div[@class='a-section a-spacing-none a-spacing-top-micro puis-price-instructions-style']//div[@class='a-row a-spacing-mini a-size-base a-color-base']//following-sibling::div[1]//span[@class='a-price']//span[@class='a-offscreen'] | //div[@class='a-section a-spacing-small puis-padding-left-small puis-padding-right-small']//a[@class='a-size-base a-link-normal s-no-hover s-underline-text s-underline-link-text s-link-style a-text-normal']//span[@class='a-price']//span[@class='a-offscreen']");
+        private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='a-section a-spacing-none a-spacing-top-micro puis-price-instructions-style' or @class='a-section a-spacing-small puis-padding-left-small puis-padding-right-small']");
+        private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//a[@class='s-pagination-item s-pagination-next s-pagination-button s-pagination-separator']");
         
         [GeneratedRegex("\\d+-\\d+-(\\d+)")] private static partial Regex OmnibusFixRegex();
         [GeneratedRegex("\\d+-\\d+-\\d+")] private static partial Regex VolNumMatchRegex();
@@ -30,7 +34,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         {
             // string url = $"https://www.amazon.com/s?k={bookTitle.Replace(" ", "+")}&i=stripbooks&rh=n%3A7421474011%2Cp_n_condition-type%3A1294423011%2Cp_n_feature_nine_browse-bin%3A3291437011&s=date-desc-rank&dc&page={currPageNum}&qid=1678483439&rnid=3291435011&ref=sr_pg_{currPageNum}";
             string url = $"https://www.amazon.com/s?k={bookTitle.Replace(" ", "+")}&i=stripbooks&rh=n%3A4367%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page={currPageNum}&qid=1685551243&rnid=1294421011&ref=sr_pg_{currPageNum}";
-            Logger.Debug(url);
+            LOGGER.Debug(url);
             AmazonUSALinks.Add(url);
             return url;
         }
@@ -83,10 +87,10 @@ namespace MangaAndLightNovelWebScrape.Websites
             var bookSeriesElement = driver.FindElements(By.XPath("//*[@id='brandsRefinements']/ul//li/span/a/span"));
             if (!foundBookSeries && bookSeriesElement.Count == 1 && bookSeriesElement[0].Text.Contains(bookTitle, StringComparison.OrdinalIgnoreCase))
             {
-                Logger.Info("Clicking Book Series");
+                LOGGER.Info("Clicking Book Series");
                 wait.Until(driver => driver.FindElement(By.XPath("//*[@id='brandsRefinements']/ul//li/span/a/span"))).Click();
                 foundBookSeries = true;
-                Logger.Info(driver.Url);
+                LOGGER.Info(driver.Url);
             }
         }
 
@@ -109,10 +113,10 @@ namespace MangaAndLightNovelWebScrape.Websites
                     var paperBackElement = driver.FindElements(By.XPath("//*[@id='p_n_feature_eighteen_browse-bin/7421484011']/span/a/span"));
                     if (!foundPaperback && paperBackElement.Count == 1)
                     {
-                        Logger.Info("Clicking Paperback");
+                        LOGGER.Info("Clicking Paperback");
                         wait.Until(driver => paperBackElement[0]).Click();
                         foundPaperback = true;
-                        Logger.Info(driver.Url);
+                        LOGGER.Info(driver.Url);
                         CheckForBookSeriesButton(driver, wait, foundBookSeries, bookTitle);
                     }
 
@@ -123,22 +127,22 @@ namespace MangaAndLightNovelWebScrape.Websites
                     doc.LoadHtml(driver.PageSource);
 
                     // Get the page data from the HTML doc
-                    HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes("//div[@class='a-section a-spacing-none puis-padding-right-small s-title-instructions-style']/h2//span | //span[@class='a-size-base-plus a-color-base a-text-normal']");
-                    HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes("//div[@class='a-section a-spacing-none a-spacing-top-micro puis-price-instructions-style']//div[@class='a-row a-spacing-mini a-size-base a-color-base']//following-sibling::div[1]//span[@class='a-price']//span[@class='a-offscreen'] | //div[@class='a-section a-spacing-small puis-padding-left-small puis-padding-right-small']//a[@class='a-size-base a-link-normal s-no-hover s-underline-text s-underline-link-text s-link-style a-text-normal']//span[@class='a-price']//span[@class='a-offscreen']");
-                    HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes("//div[@class='a-section a-spacing-none a-spacing-top-micro puis-price-instructions-style' or @class='a-section a-spacing-small puis-padding-left-small puis-padding-right-small']"); // Issue with One Piece
-                    HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode("//a[@class='s-pagination-item s-pagination-next s-pagination-button s-pagination-separator']");
-                    Logger.Debug(titleData.Count + " | " + priceData.Count + " | " + stockStatusData.Count);
+                    HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
+                    HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
+                    HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath); // Issue with One Piece
+                    HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
+                    LOGGER.Debug(titleData.Count + " | " + priceData.Count + " | " + stockStatusData.Count);
 
                     // for (int x = 0; x < stockStatusData.Count; x++)
                     // {
-                    //     Logger.Debug(stockStatusData[x].InnerText);
+                    //     LOGGER.Debug(stockStatusData[x].InnerText);
                     //     if (!stockStatusData[x].InnerText.Contains("Kindle") && !stockStatusData[x].InnerText.Contains("Comics") && stockStatusData[x].InnerText.Contains("Paperback $"))
                     //     {
-                    //         Logger.Debug($"[{titleData[x].InnerText}, {!stockStatusData[x].InnerText.Contains("Kindle") && !stockStatusData[x].InnerText.Contains("Comics") && stockStatusData[x].InnerText.Contains("Paperback $")}, {stockStatusData[x].InnerText}, AmazonUSA");
+                    //         LOGGER.Debug($"[{titleData[x].InnerText}, {!stockStatusData[x].InnerText.Contains("Kindle") && !stockStatusData[x].InnerText.Contains("Comics") && stockStatusData[x].InnerText.Contains("Paperback $")}, {stockStatusData[x].InnerText}, AmazonUSA");
                     //     }
                     //     else
                     //     {
-                    //         Logger.Debug($"Removing {titleData[x].InnerText} with no Price");
+                    //         LOGGER.Debug($"Removing {titleData[x].InnerText} with no Price");
                     //         titleData.RemoveAt(x);
                     //         stockStatusData.RemoveAt(x);
                     //         x--;
@@ -147,9 +151,10 @@ namespace MangaAndLightNovelWebScrape.Websites
 
                     for (int x = 0; x < stockStatusData.Count; x++)
                     {
-                        if (stockStatusData[x].InnerText.Contains("Kindle") || stockStatusData[x].InnerText.Contains("Comics") || !stockStatusData[x].InnerText.Contains("Paperback $") && !stockStatusData[x].InnerText.Contains("Hardcover $"))
+                        string stockStatus = stockStatusData[x].InnerText;
+                        if (stockStatus.Contains("Kindle") || stockStatus.Contains("Comics") || !stockStatus.Contains("Paperback $") && !stockStatus.Contains("Hardcover $"))
                         {
-                            Logger.Debug($"Removing {titleData[x].InnerText} with no Price");
+                            LOGGER.Debug("Removing (1) {}", titleData[x].InnerText);
                             titleData.RemoveAt(x);
                             stockStatusData.RemoveAt(x);
                             x--;
@@ -179,17 +184,17 @@ namespace MangaAndLightNovelWebScrape.Websites
                     {
                         driver.FindElement(By.XPath("//a[@class='s-pagination-item s-pagination-next s-pagination-button s-pagination-separator']")).Click();
                         AmazonUSALinks.Add(driver.Url);
-                        Logger.Debug($"Next Page = {driver.Url}");
+                        LOGGER.Debug($"Next Page = {driver.Url}");
                     }
                     else
                     {
                         // Check for hardcover Format before quitting
                         if (!foundHardcover && driver.FindElements(By.XPath("//div[@id='p_n_feature_eighteen_browse-bin-title']/following-sibling::ul//span[contains(text(), 'Hardcover')]")).Count == 1)
                         {
-                            Logger.Debug("Clicking Hardcover");
+                            LOGGER.Debug("Clicking Hardcover");
                             wait.Until(driver => driver.FindElement(By.XPath("//div[@id='p_n_feature_eighteen_browse-bin-title']/following-sibling::ul//span[contains(text(), 'Hardcover')]"))).Click();
                             wait.Until(driver => driver.FindElement(By.XPath("//title[contains(text(), 'Hardcover')]")));
-                            Logger.Debug($"Next Page = {driver.Url}");
+                            LOGGER.Debug($"Next Page = {driver.Url}");
                             AmazonUSALinks.Add(driver.Url);
                             foundHardcover = true;
                             goto HardcoverRestart;
@@ -200,33 +205,15 @@ namespace MangaAndLightNovelWebScrape.Websites
                 }
             }
             catch (Exception ex)
+            {;
+                LOGGER.Error($"{bookTitle} Does Not Exist @ AmazonUSA {ex}");
+            }
+            finally
             {
                 driver?.Quit();
-                Logger.Error($"{bookTitle} Does Not Exist @ AmazonUSA {ex}");
+                AmazonUSAData.Sort(EntryModel.VolumeSort);
+                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, AmazonUSAData, LOGGER);
             }
-
-            AmazonUSAData.Sort(EntryModel.VolumeSort);
-
-            if (MasterScrape.IsDebugEnabled)
-            {
-                using (StreamWriter outputFile = new(@"Data\AmazonUSAData.txt"))
-                {
-                    if (AmazonUSAData.Count != 0)
-                    {
-                        foreach (EntryModel data in AmazonUSAData)
-                        {
-                            Logger.Debug(data.ToString());
-                            outputFile.WriteLine(data.ToString());
-                        }
-                    }
-                    else
-                    {
-                        Logger.Error($"{bookTitle} Does Not Exist @ AmazonUSA");
-                        outputFile.WriteLine($"{bookTitle} Does Not Exist @ AmazonUSA");
-                    }
-                } 
-            }
-
             return AmazonUSAData;
         }
     }

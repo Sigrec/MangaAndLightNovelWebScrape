@@ -18,6 +18,7 @@ namespace MangaAndLightNovelWebScrape
         private AmazonUSA AmazonUSA = null;
         private BarnesAndNoble BarnesAndNoble = null;
         private BooksAMillion BooksAMillion = null;
+        private TravellingMan TravellingMan = null;
         private InStockTrades InStockTrades = null;
         private KinokuniyaUSA KinokuniyaUSA = null;
         private Crunchyroll Crunchyroll = null;
@@ -50,7 +51,7 @@ namespace MangaAndLightNovelWebScrape
         public bool IsIndigoMember { get; set; }
         private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
         // "--headless=new", 
-        private static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent" ];
+        private static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent" ];
         private static readonly string[] FIREFOX_BROWSER_ARGUMENTS = ["-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3"];
         /// <summary>
         /// Determines whether debug mode is enabled (Disabled by default)
@@ -69,7 +70,6 @@ namespace MangaAndLightNovelWebScrape
         {
             this.Filter = Filter;
             this.Region = Region;
-            if (this.Region.IsMultiRegion()) { throw new NotSupportedException("Multi Region input is not Supported"); }
             this.Browser = Browser;
             this.IsBarnesAndNobleMember = IsBarnesAndNobleMember;
             this.IsBooksAMillionMember = IsBooksAMillionMember;
@@ -118,6 +118,10 @@ namespace MangaAndLightNovelWebScrape
         {
             return MasterUrls;
         }
+
+        /// <summary>
+        /// Gets the list of the currently set memberships for a scrape
+        /// </summary>
         public List<string> GetMembershipList()
         {
             List<string> output = new List<string>();
@@ -128,6 +132,12 @@ namespace MangaAndLightNovelWebScrape
             return output;
         }
 
+        /// <summary>
+        /// Gets the results of a scrape and formats it to a ascii table, check the README to see what it looks like
+        /// </summary>
+        /// <param name="bookTitle">The title used for this scrape</param>
+        /// <param name="bookType">The format used for this scrape</param>
+        /// <param name="includeLinks">Whether to include the website links at the bottom of the ascii table</param>
         public string GetResultsAsAsciiTable(string bookTitle, BookType bookType, bool includeLinks = true)
         {
             if (string.IsNullOrWhiteSpace(bookTitle)) { throw new ArgumentException("Title Can't be Empty"); }
@@ -403,6 +413,7 @@ namespace MangaAndLightNovelWebScrape
             ForbiddenPlanet?.ClearData();
             SciFier?.ClearData();
             SpeedyHen?.ClearData();
+            TravellingMan?.ClearData();
             Waterstones?.ClearData();
             Wordery?.ClearData();
         }
@@ -541,7 +552,7 @@ namespace MangaAndLightNovelWebScrape
                 default:
                     ChromeOptions chromeOptions = new()
                     {
-                        PageLoadStrategy = PageLoadStrategy.Normal,
+                        PageLoadStrategy = PageLoadStrategy.Eager,
                     };
                     ChromeDriverService chromeDriverService = ChromeDriverService.CreateDefaultService();
                     chromeDriverService.HideCommandPromptWindow = true;
@@ -633,6 +644,10 @@ namespace MangaAndLightNovelWebScrape
                                 case SpeedyHen.WEBSITE_TITLE:
                                 case "speedyhen":
                                     WebsiteList.Add(Website.SpeedyHen);
+                                    break;
+                                case TravellingMan.WEBSITE_TITLE:
+                                case "travelling man":
+                                    WebsiteList.Add(Website.TravellingMan);
                                     break;
                                 case Waterstones.WEBSITE_TITLE:
                                     WebsiteList.Add(Website.Waterstones);
@@ -765,6 +780,9 @@ namespace MangaAndLightNovelWebScrape
                     case SpeedyHen.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = SpeedyHen.GetUrl();
                         break;
+                    case TravellingMan.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = TravellingMan.GetUrl();
+                        break;
                     case Waterstones.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = Waterstones.GetUrl();
                         break;
@@ -780,7 +798,7 @@ namespace MangaAndLightNovelWebScrape
             switch (this.Region)
             {
                 case Region.America:
-                    Parallel.ForEach(webScrapeList, (site) =>
+                    foreach (Website site in webScrapeList)
                     {
                         switch (site)
                         {
@@ -837,17 +855,22 @@ namespace MangaAndLightNovelWebScrape
                             default:
                                 break;
                         }
-                    });
+                    }
                     break;
                 case Region.Britain:
-                    Parallel.ForEach(webScrapeList, (site) =>
+                    foreach (Website site in webScrapeList)
                     {
                         switch (site)
                         {
+                            case Website.TravellingMan:
+                                TravellingMan ??= new TravellingMan();
+                                LOGGER.Info($"{TravellingMan.WEBSITE_TITLE} Going");
+                                WebTasks.Add(TravellingMan.CreateTravellingManTask(bookTitle, book, MasterDataList));
+                                break;
                             case Website.ForbiddenPlanet:
                                 ForbiddenPlanet ??= new ForbiddenPlanet();
                                 LOGGER.Info($"{ForbiddenPlanet.WEBSITE_TITLE} Going");
-                                WebTasks.Add(ForbiddenPlanet.CreateForbiddenPlanetTask(bookTitle, book, MasterDataList, SetupBrowserDriver()));
+                                WebTasks.Add(ForbiddenPlanet.CreateForbiddenPlanetTask(bookTitle, book, MasterDataList, SetupBrowserDriver(true)));
                                 break;
                             case Website.SciFier:
                                 SciFier ??= new SciFier();
@@ -872,10 +895,10 @@ namespace MangaAndLightNovelWebScrape
                             default:
                                 break;
                         }
-                    });
+                    }
                     break;
                 case Region.Canada:
-                    Parallel.ForEach(webScrapeList, (site) =>
+                    foreach (Website site in webScrapeList)
                     {
                         switch (site)
                         {
@@ -897,10 +920,10 @@ namespace MangaAndLightNovelWebScrape
                             default:
                                 break;
                         }
-                    });
+                    }
                     break;
                 case Region.Japan:
-                    Parallel.ForEach(webScrapeList, (site) =>
+                    foreach (Website site in webScrapeList)
                     {
                         switch (site)
                         {
@@ -917,10 +940,10 @@ namespace MangaAndLightNovelWebScrape
                             default:
                                 break;
                         }
-                    });
+                    }
                     break;
                 case Region.Europe:
-                    Parallel.ForEach(webScrapeList, (site) =>
+                    foreach (Website site in webScrapeList)
                     {
                         switch (site)
                         {
@@ -937,10 +960,10 @@ namespace MangaAndLightNovelWebScrape
                             default:
                                 break;
                         }
-                    });
+                    }
                     break;
                 case Region.Australia:
-                    Parallel.ForEach(webScrapeList, (site) =>
+                    foreach (Website site in webScrapeList)
                     {
                         switch (site)
                         {
@@ -960,7 +983,7 @@ namespace MangaAndLightNovelWebScrape
                                 WebTasks.Add(MangaMate.CreateMangaMateTask(bookTitle, book, MasterDataList, SetupBrowserDriver()));
                                 break;
                         }
-                    });
+                    }
                     break;
             }
         }
@@ -968,22 +991,18 @@ namespace MangaAndLightNovelWebScrape
         // TODO Remove "Location" Popup for BAM
 
         /// <summary>
-        /// Initalizes the scrape and outputs the compared data
+        /// Initalizes the scrape and outputs the compared data to class level variables
         /// </summary>
         /// <param name="bookTitle">The title of the series to search for</param>
         /// <param name="book">The book type of the series either Manga or Light Novel</param>
         /// <param name="stockFilter"></param>
         /// <param name="webScrapeList">The list of websites you want to search at</param>
-        /// <param name="browser">The browser either Edge, Chrome, or FireFox the user wants to use</param>
-        /// <param name="isBarnesAndNobleMember">Whether the user is a Barnes & Noble Member</param>
-        /// <param name="isBooksAMillionMember">Whether the user is a Books-A-Million Member</param>
-        /// <param name="isKinokuniyaUSAMember">Whether the user is a Kinokuniya USA member</param>
-        /// <param name="isIndigoMember">Whether the user is a Indigo member</param>
         /// <returns></returns>
         public async Task InitializeScrapeAsync(string bookTitle, BookType bookType, HashSet<Website> webScrapeList)
         {
             await Task.Run(async () =>
             {
+                if (this.Region.IsMultiRegion()) { throw new NotSupportedException("Multi Region input is not Supported"); }
                 LOGGER.Info("Region set to {}", this.Region);
                 LOGGER.Info("Running on {} Browser", this.Browser);
 
@@ -1093,15 +1112,16 @@ namespace MangaAndLightNovelWebScrape
         // Command to end all chrome.exe process -> taskkill /F /IM chrome.exe /T
         // Command to end all chrome.exe process -> taskkill /F /IM chromedriver.exe /T
         // TODO Need to throw exception if user is querying against Japan region and text is not in Japanese
-        // TODO Issue w/ Berserk on Indigo (Canada), maybe Wordery but current run no issues
+        // TODO Need to throw exception when user inputs websites that aren't part of a region
+        // TODO Noragami omni issue B&N
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string title = "berserk";
+            string title = "fullmetal alchemist";
             BookType bookType = BookType.Manga;
             watch.Start();
-            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Canada, Browser.Chrome, false, false, false, false).EnableDebugMode();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.Indigo ]);
+            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain).EnableDebugMode();
+            await scrape.InitializeScrapeAsync(title, bookType, [ Website.TravellingMan ]);
             watch.Stop();
             scrape.PrintResultsToConsole(true, title, bookType);
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");

@@ -17,6 +17,7 @@ namespace MangaAndLightNovelWebScrape.Enums
         RobertsAnimeCornerStore,
         SciFier,
         SpeedyHen,
+        TravellingMan,
         Waterstones,
         Wordery
     }
