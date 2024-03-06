@@ -5,7 +5,7 @@ namespace Tests.Websites
         MasterScrape Scrape;
         HashSet<Website> WebsiteList = new HashSet<Website>() {Website.TravellingMan};
     
-        [OneTimeSetUp]
+        [SetUp]
         public void Setup()
         {
             Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain);

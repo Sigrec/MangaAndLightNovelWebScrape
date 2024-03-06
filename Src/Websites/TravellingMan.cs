@@ -1,3 +1,5 @@
+using System.Threading;
+
 namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class TravellingMan
@@ -7,14 +9,14 @@ namespace MangaAndLightNovelWebScrape.Websites
         private List<EntryModel> TravellingManData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "TravellingMan";
         public const Region REGION = Region.Britain;
-        private static readonly List<string> MangaDescRemovalStrings = ["novel", "figure", "sculpture", "collection of", "figurine", "statue", "miniature"];
-        private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//li[@class='list-view-item']/div/a/span");
+        private static readonly List<string> MangaDescRemovalStrings = ["novel", "figure", "sculpture", "collection of", "figurine", "statue", "miniature", "Figuarts"];
+        private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//li[@class='list-view-item']/div/div/div[2]/div/span");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//li[@class='list-view-item']/div/div/div[3]/dl/div[2]/dd[2]/span[1]");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//ul[@class='list--inline pagination']/li[3]/a");
         [GeneratedRegex(@"Volume|Vol\.", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
         [GeneratedRegex(@",| The Manga| Manga|\(.*?\)", RegexOptions.IgnoreCase)] private static partial Regex TitleParseRegex(); // ,|\(.*?\)| Manga| Graphic Novel|:|Hardcover|(?<=Vol \d{1,3})[^\d{1,3}.]+.*|(?<=Vol \d{1,3}.\d{1})[^\d{1,3}.]+.*
         [GeneratedRegex(@"(?:3-in-1|2-in-1)", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
-        [GeneratedRegex(@"(?<=Box Set \d{1,3})[^\d{1,3}.]+.*|Box Set Vol")] private static partial Regex BoxSetRegex();
+        [GeneratedRegex(@"(?<=Box Set \d{1,3})[^\d{1,3}.]+.*|(?:Box Set) Vol")] private static partial Regex BoxSetRegex();
 
         internal void ClearData()
         {
@@ -39,7 +41,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         {
             // https://travellingman.com/search?page=2&q=naruto+manga
             
-            string url = $"https://travellingman.com/search?page={curPage}&q={bookTitle.Replace(" ", "+")}+{(bookType == BookType.Manga ? "manga" : "novel")}";
+            string url = $"https://travellingman.com/search?page={curPage}&q={bookTitle.Replace(" ", "+")}{(bookType == BookType.Manga ? "+manga" : "+novel")}/";
             LOGGER.Info("Url => {}", url);
             TravellingManLinks.Add(url);
             return url;
@@ -53,7 +55,11 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             else if (BoxSetRegex().IsMatch(entryTitle))
             {
-                entryTitle = BoxSetRegex().Replace(entryTitle, string.Empty);
+                entryTitle = BoxSetRegex().Replace(entryTitle, "Box Set");
+                if (entryTitle.EndsWith("Box Set"))
+                {
+                    entryTitle = entryTitle[..entryTitle.AsSpan().LastIndexOf("Box Set")];
+                }
             }
 
             StringBuilder curTitle = new StringBuilder(TitleParseRegex().Replace(entryTitle, string.Empty));
@@ -72,15 +78,15 @@ namespace MangaAndLightNovelWebScrape.Websites
 
             if (entryTitle.Contains("Box Set") && bookTitle.Equals("attack on titan", StringComparison.OrdinalIgnoreCase))
             {
-                if (!bookTitle.Contains("One", StringComparison.OrdinalIgnoreCase))
+                if (entryTitle.Contains("One", StringComparison.OrdinalIgnoreCase))
                 {
                     curTitle.Replace("One", "1");
                 }
-                if (!bookTitle.Contains("Two", StringComparison.OrdinalIgnoreCase))
+                else if (entryTitle.Contains("Two", StringComparison.OrdinalIgnoreCase))
                 {
                     curTitle.Replace("Two", "2");
                 }
-                if (!bookTitle.Contains("Three", StringComparison.OrdinalIgnoreCase))
+                else if (entryTitle.Contains("Three", StringComparison.OrdinalIgnoreCase))
                 {
                     curTitle.Replace("Three", "3");
                 }
@@ -103,6 +109,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
         }
 
+        // TODO - Page source issue when a series has multiple pages, unsure why
         private List<EntryModel> GetTravellingManData(string bookTitle, BookType bookType)
         {
             try
@@ -110,11 +117,13 @@ namespace MangaAndLightNovelWebScrape.Websites
                 HtmlWeb web = new()
                 {
                     UsingCacheIfExists = true,
-                    UseCookies = false
+                    UseCookies = true,
+                    OverrideEncoding = Encoding.UTF8
                 };
                 HtmlDocument doc = new()
                 {
                     OptionCheckSyntax = false,
+                    OptionDefaultStreamEncoding = Encoding.UTF8
                 };
 
                 int nextPage = 1;
@@ -124,6 +133,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     if (bookTitle.Contains(MangaDescRemovalStrings[x])) MangaDescRemovalStrings.RemoveAt(x);
                 }
                 if (bookType == BookType.LightNovel) MangaDescRemovalStrings.Remove("novel");
+
 
                 while (true)
                 {
@@ -139,7 +149,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     for (int x = 0; x < priceData.Count; x++)
                     {
                         string entryTitle = titleData[x].InnerText.Trim();
-                        LOGGER.Debug("{}", entryTitle);
+                        // LOGGER.Debug("{} | {}", entryTitle, titleData[x].InnerHtml.Trim());
                         if (!entryTitle.Contains("Banpresto")
                             && !entryTitle.Contains("Nendoroid")
                             && InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
@@ -151,6 +161,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                                     || (
                                             InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
                                             || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Itachi")
+                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "overlord", entryTitle, "IUnimplemented")
                                         )
                                     )
                                 )
@@ -162,7 +173,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                                 HtmlNodeCollection descData = web.Load($"https://travellingman.com{doc.DocumentNode.SelectSingleNode($"(//li[@class='list-view-item']/div/a)[{x + 1}]").GetAttributeValue("href", string.Empty)}").DocumentNode.SelectNodes("//div[@class='product-single__description rte'] | //div[@class='product-single__description rte']//p");
                                 StringBuilder desc = new StringBuilder();
                                 foreach (HtmlNode node in descData) { desc.AppendLine(node.InnerText); }
-                                LOGGER.Debug("Checking Desc {} => {}", entryTitle, desc.ToString());
+                                // LOGGER.Debug("Checking Desc {} => {}", entryTitle, desc.ToString());
                                 descIsValid = !desc.ToString().ContainsAny(MangaDescRemovalStrings);
                             }
 
@@ -184,7 +195,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     }
 
                     Stop:
-                    if (priceData != null && pageCheck != null )
+                    if (priceData != null && priceData.Count == titleData.Count && pageCheck != null)
                     {
                         nextPage++;
                     }
@@ -200,6 +211,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             finally
             {
+                // driver?.Quit();
                 TravellingManData.Sort(EntryModel.VolumeSort);
                 for(int x = 1; x < TravellingManData.Count; x++)
                 {

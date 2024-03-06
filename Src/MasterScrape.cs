@@ -51,7 +51,7 @@ namespace MangaAndLightNovelWebScrape
         public bool IsIndigoMember { get; set; }
         private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
         // "--headless=new", 
-        private static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent" ];
+        private static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent" ];
         private static readonly string[] FIREFOX_BROWSER_ARGUMENTS = ["-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3"];
         /// <summary>
         /// Determines whether debug mode is enabled (Disabled by default)
@@ -552,7 +552,7 @@ namespace MangaAndLightNovelWebScrape
                 default:
                     ChromeOptions chromeOptions = new()
                     {
-                        PageLoadStrategy = PageLoadStrategy.Normal,
+                        PageLoadStrategy = PageLoadStrategy.Eager,
                     };
                     ChromeDriverService chromeDriverService = ChromeDriverService.CreateDefaultService();
                     chromeDriverService.HideCommandPromptWindow = true;
@@ -1117,7 +1117,7 @@ namespace MangaAndLightNovelWebScrape
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string title = "Berserk";
+            string title = "fullmetal alchemist";
             BookType bookType = BookType.Manga;
             watch.Start();
             MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain).EnableDebugMode();
