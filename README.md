@@ -27,7 +27,7 @@ If you want a website or region to be added fill out a [issue request](https://g
 - [ ] ForBiddenPlanet (In Progress)
 - [x] SciFier
 - [x] SpeedyHen
-- [ ] TravellingMan (In Progress)
+- [x] TravellingMan
 - [x] Waterstones
 - [x] Wordery
 

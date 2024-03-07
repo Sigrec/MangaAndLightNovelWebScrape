@@ -83,8 +83,7 @@ namespace MangaAndLightNovelWebScrape
         /// <summary>
         ///  The Damerau–Levenshtein distance between two words is the minimum number of operations (consisting of insertions, deletions or substitutions of a single character, or transposition of two adjacent characters) required to change one word into the other (http://blog.softwx.net/2015/01/optimizing-damerau-levenshtein_15.html)
         /// </summary>
-        /// <returns>distance, >= 0 representing the number of edits required
-        /// to transform one string to the other, or -1 if the distance is greater than the specified maxDistance.</returns>
+        /// <returns>The distance, >= 0 representing the number of edits required to transform one string to the other, or -1 if the distance is greater than the specified maxDistance.</returns>
         public static int Similar(string s, string t, int maxDistance)
         {
             if (string.IsNullOrWhiteSpace(s)) return ((t ?? string.Empty).Length <= maxDistance) ? (t ?? string.Empty).Length : -1;
@@ -203,9 +202,9 @@ namespace MangaAndLightNovelWebScrape
     /// </summary>
     public partial class VolumeSort : IComparer<EntryModel>
     {
-        private static readonly Logger Logger = LogManager.GetLogger("MasterScrapeLogs");
-        [GeneratedRegex(".*(?<int> \\d+)$|.*(?<double> \\d+\\.\\d+)$")] private static partial Regex ExtractIntRegex();
-        [GeneratedRegex(" Vol \\d+$| Box Set\\d+$| Vol \\d+\\.\\d+$| Box Set \\d+\\.\\d+$")] private static partial Regex ExtractVolNameRegex();
+        private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
+        [GeneratedRegex(@" (?:Vol|Box Set) \d{1,3}$| (?:Vol|Box Set) \d{1,3}\.\d{1,2}$")] private static partial Regex ExtractNameRegex();
+        [GeneratedRegex(@"[^\w\s]")] private static partial Regex FilterNameRegex();
 
         /// <summary>
         /// Extracts the entry's volume number and checks to see if they are equal or similar enough
@@ -216,12 +215,15 @@ namespace MangaAndLightNovelWebScrape
         /// <returns></returns>
         public int Compare(EntryModel entry1, EntryModel entry2)
         {
-            //Logger.Debug($"{entry1.Entry}|{entry2.Entry}");
-            if ((entry1.Entry.Contains("Vol") || entry1.Entry.Contains("Box Set")) && (entry2.Entry.Contains("Vol") || entry2.Entry.Contains("Box Set")))
+            string entry1Text = FilterNameRegex().Replace(entry1.Entry, " ");
+            string entry2Text = FilterNameRegex().Replace(entry2.Entry, " ");
+            if ((entry1.Entry.Contains("Vol") && entry2.Entry.Contains("Vol")) || (entry1.Entry.Contains("Box Set") && entry2.Entry.Contains("Box Set")))
             {
                 double val1 = EntryModel.GetCurrentVolumeNum(entry1.Entry);
                 double val2 = EntryModel.GetCurrentVolumeNum(entry2.Entry);
-                if (val1 != -1 && val2 != -1 && string.Equals(ExtractVolNameRegex().Replace(entry1.Entry, string.Empty), ExtractVolNameRegex().Replace(entry2.Entry, string.Empty), StringComparison.OrdinalIgnoreCase))
+                string entry1Name = ExtractNameRegex().Replace(entry1Text, string.Empty);
+                string entry2Name = ExtractNameRegex().Replace(entry2Text, string.Empty);
+                if (val1 != -1 && val2 != -1 && (string.Equals(entry1Name, entry2Name, StringComparison.OrdinalIgnoreCase) || (EntryModel.Similar(entry1Name, entry2Name, entry1Name.Length > entry2Name.Length ? entry2Name.Length / 6 : entry1Name.Length / 6) != -1)))
                 {
                     if (val1 > val2)
                     {
@@ -237,7 +239,7 @@ namespace MangaAndLightNovelWebScrape
                     }
                 }
             }
-            return entry1.Entry.CompareTo(entry2.Entry);
+            return string.Compare(entry1Text, entry2Text, StringComparison.OrdinalIgnoreCase);
         }
     }
 }

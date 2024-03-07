@@ -13,7 +13,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='product-sashes']/div[1]/span");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//a[@class='right-arrow']");
         [GeneratedRegex(@"Volume", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
-        [GeneratedRegex(@",|\(.*?\)| Manga| Graphic Novel|:|Hardcover|(?<=Vol \d{1,3})[^\d{1,3}.]+.*|(?<=Vol \d{1,3}.\d{1})[^\d{1,3}.]+.*")] private static partial Regex TitleParseRegex();
+        [GeneratedRegex(@",|\(.*?\)| Manga| Graphic Novel|:|Hardcover|(?<=(?:Vol|Box Set)\s+(?:\d{1,3}|\d{1,3}.\d{1}))[^\d{1,3}.]+.*")] private static partial Regex TitleParseRegex();
         [GeneratedRegex(@"(?:3-in-1|2-in-1|Omnibus) Edition", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
 
         internal void ClearData()

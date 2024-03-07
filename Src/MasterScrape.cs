@@ -1110,15 +1110,14 @@ namespace MangaAndLightNovelWebScrape
         // Command to end all chrome.exe process -> taskkill /F /IM chrome.exe /T
         // Command to end all chrome.exe process -> taskkill /F /IM chromedriver.exe /T
         // TODO Need to throw exception if user is querying against Japan region and text is not in Japanese
-        // TODO Issue w/ Berserk on Indigo (Canada), maybe Wordery but current run no issues
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string title = "berserk";
+            string title = "Toilet-bound Hanako-kun";
             BookType bookType = BookType.Manga;
             watch.Start();
-            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Canada, Browser.Chrome, false, false, false, false).EnableDebugMode();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.Indigo ]);
+            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain, Browser.Chrome, false, false, false, false).EnableDebugMode();
+            await scrape.InitializeScrapeAsync(title, bookType, [ Website.ForbiddenPlanet ]);
             watch.Stop();
             scrape.PrintResultsToConsole(true, title, bookType);
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");

@@ -6,9 +6,9 @@ namespace Tests.Websites
     public class CrunchyrollTests
     {
         MasterScrape Scrape;
-        HashSet<Website> WebsiteList = new HashSet<Website>() {Website.Crunchyroll};
+        private readonly HashSet<Website> WebsiteList = [ Website.Crunchyroll ];
 
-        [SetUp]
+        [OneTimeSetUp]
         public void OneTimeSetUp()
         {
             Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER);

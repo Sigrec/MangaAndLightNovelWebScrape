@@ -8,9 +8,10 @@ Legend
 
 v2.1.3 - 
 ✅Fix membership list output in AsciiTable
+✅Completed TravellingMan website for Britain Region 
+❌Completed Forbidden Planet website for Britain Region
+🔥Final data correctly sorted even if entry names without vol numbers are not exactly the same but very similar this includes case as well
 ✍️Added website and region request issue templates (https://github.com/Sigrec/MangaAndLightNovelWebScrape/issues)
-❌Completed TravellingMan website for Britain Region 
-✍️Added website and region request issue templates
 
 v2.1.2 - February 29th
 ✅Added new method to get websites that have a membership for a specific region

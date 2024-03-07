@@ -153,5 +153,16 @@ namespace MangaAndLightNovelWebScrape
             }
             return false;
         }
+
+        internal static void RemoveExtras(this List<EntryModel> input)
+        {
+            for(int x = 1; x < input.Count; x++)
+            {
+                if (input[x].Entry.Equals(input[x - 1].Entry))
+                {
+                    input.RemoveAt(x);
+                }
+            }
+        }
     }
 }
