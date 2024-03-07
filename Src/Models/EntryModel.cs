@@ -204,7 +204,7 @@ namespace MangaAndLightNovelWebScrape
     {
         private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
         [GeneratedRegex(@" (?:Vol|Box Set) \d{1,3}$| (?:Vol|Box Set) \d{1,3}\.\d{1,2}$")] private static partial Regex ExtractNameRegex();
-        [GeneratedRegex(@"[^\w\s]")] private static partial Regex FilterNameRegex();
+        [GeneratedRegex(@"[^\w\s\.]")] private static partial Regex FilterNameRegex();
 
         /// <summary>
         /// Extracts the entry's volume number and checks to see if they are equal or similar enough

@@ -527,12 +527,7 @@ namespace MangaAndLightNovelWebScrape
                     edgeOptions.AddExcludedArgument("disable-popup-blocking");
                     edgeOptions.AddUserProfilePreference("profile.default_content_settings.geolocation", 2);
                     edgeOptions.AddUserProfilePreference("profile.default_content_setting_values.notifications", 2);
-                    if (needsUserAgent)
-                    {
-                        WebDriver dummyDriver = new EdgeDriver(edgeOptions);
-                        edgeOptions.AddArgument("user-agent=" + dummyDriver.ExecuteScript("return navigator.userAgent").ToString().Replace("Headless", string.Empty));
-                        dummyDriver.Quit();
-                    }
+                    if (needsUserAgent) edgeOptions.AddArgument($"user-agent={new HtmlWeb().UserAgent}");
                     return new EdgeDriver(edgeDriverService, edgeOptions);
                 case Browser.FireFox:
                     FirefoxOptions firefoxOptions = new()
@@ -558,12 +553,7 @@ namespace MangaAndLightNovelWebScrape
                     chromeOptions.AddExcludedArgument("disable-popup-blocking");
                     chromeOptions.AddUserProfilePreference("profile.default_content_settings.geolocation", 2);
                     chromeOptions.AddUserProfilePreference("profile.default_content_setting_values.notifications", 2);
-                    if (needsUserAgent)
-                    {
-                        WebDriver dummyDriver = new ChromeDriver(chromeOptions);
-                        chromeOptions.AddArgument("user-agent=" + dummyDriver.ExecuteScript("return navigator.userAgent").ToString().Replace("Headless", string.Empty));
-                        dummyDriver.Quit();
-                    }
+                    if (needsUserAgent) chromeOptions.AddArgument($"user-agent={new HtmlWeb().UserAgent}");
                     return new ChromeDriver(chromeDriverService, chromeOptions);
             }
         }
@@ -860,11 +850,6 @@ namespace MangaAndLightNovelWebScrape
                     {
                         switch (site)
                         {
-                            case Website.TravellingMan:
-                                TravellingMan ??= new TravellingMan();
-                                LOGGER.Info($"{TravellingMan.WEBSITE_TITLE} Going");
-                                WebTasks.Add(TravellingMan.CreateTravellingManTask(bookTitle, book, MasterDataList));
-                                break;
                             case Website.ForbiddenPlanet:
                                 ForbiddenPlanet ??= new ForbiddenPlanet();
                                 LOGGER.Info($"{ForbiddenPlanet.WEBSITE_TITLE} Going");
@@ -874,6 +859,11 @@ namespace MangaAndLightNovelWebScrape
                                 SciFier ??= new SciFier();
                                 LOGGER.Info($"{SciFier.WEBSITE_TITLE} Going");
                                 WebTasks.Add(SciFier.CreateSciFierTask(bookTitle, book, MasterDataList, this.Region));
+                                break;
+                            case Website.TravellingMan:
+                                TravellingMan ??= new TravellingMan();
+                                LOGGER.Info($"{TravellingMan.WEBSITE_TITLE} Going");
+                                WebTasks.Add(TravellingMan.CreateTravellingManTask(bookTitle, book, MasterDataList));
                                 break;
                             case Website.SpeedyHen:
                                 SpeedyHen ??= new SpeedyHen();
@@ -1103,9 +1093,6 @@ namespace MangaAndLightNovelWebScrape
                 if (IsDebugEnabled) { this.PrintResultsToLogger(LOGGER, NLog.LogLevel.Info, true, bookTitle, bookType); }
             });
         }
-        
-        //In the UK there's 
-        // Hive https://www.hive.co.uk/WhatsHiveallabout
 
         // Command to end all chrome.exe process -> taskkill /F /IM chrome.exe /T
         // Command to end all chrome.exe process -> taskkill /F /IM chromedriver.exe /T
@@ -1113,7 +1100,7 @@ namespace MangaAndLightNovelWebScrape
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string title = "Toilet-bound Hanako-kun";
+            string title = "overlord";
             BookType bookType = BookType.Manga;
             watch.Start();
             MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain, Browser.Chrome, false, false, false, false).EnableDebugMode();

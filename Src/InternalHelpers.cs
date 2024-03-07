@@ -83,6 +83,15 @@ namespace MangaAndLightNovelWebScrape
             return bookTitle.Contains(searchTitle, StringComparison.OrdinalIgnoreCase) && curTitle.Contains(removeText, StringComparison.OrdinalIgnoreCase);
         }
 
+        internal static bool RemoveUnintendedVolumes(string bookTitle, string searchTitle, string curTitle, params string[] removeText)
+        {
+            foreach (string text in removeText)
+            {
+                if (bookTitle.Contains(searchTitle, StringComparison.OrdinalIgnoreCase) && curTitle.Contains(text, StringComparison.OrdinalIgnoreCase)) return true;
+            }
+            return false;
+        }
+
         internal static string FilterBookTitle(string bookTitle)
         {
             foreach (char var in trimedChars){
@@ -158,7 +167,7 @@ namespace MangaAndLightNovelWebScrape
         {
             for(int x = 1; x < input.Count; x++)
             {
-                if (input[x].Entry.Equals(input[x - 1].Entry))
+                if (input[x].Entry.Equals(input[x - 1].Entry, StringComparison.OrdinalIgnoreCase))
                 {
                     input.RemoveAt(x);
                 }

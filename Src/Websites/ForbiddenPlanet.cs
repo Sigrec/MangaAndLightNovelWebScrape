@@ -8,7 +8,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         private List<EntryModel> ForbiddenPlanetData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "Forbidden Planet";
         public const Region REGION = Region.Britain;
-        private static readonly List<string> DescRemovalStrings = [ "novel", "original stories"];
+        private static readonly List<string> DescRemovalStrings = [ "novel", "original stories", "collecting issues"];
         private static readonly Logger LOGGER = LogManager.GetLogger("ForbiddenPlanetLogs");
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//h3[@class='h4 clr-black mqt ord--03 one-whole txt-left dtb--fg owl-off']"); //h3[@class='h4 clr-black mqt ord--03 one-whole txt-left dtb--fg owl-off']
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='clr-price']");
@@ -17,15 +17,14 @@ namespace MangaAndLightNovelWebScrape.Websites
         private static readonly XPathExpression BookTypeXPath = XPathExpression.Compile("//li[@class='block right crsr-txt pa--tr pa pqr pql mq type-tag inline-list__item']");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("(//a[@class='product-list__pagination__next'])[1]");
 
-        [GeneratedRegex(@"\(Hardcover\)|:(?:.*):|\(.*\)", RegexOptions.IgnoreCase)] internal static partial Regex TitleParseRegex();
+        [GeneratedRegex(@" The Manga|\(Hardcover\)|:(?:.*):|\(.*\)", RegexOptions.IgnoreCase)] internal static partial Regex TitleParseRegex();
         [GeneratedRegex(@"\(Hardcover\)", RegexOptions.IgnoreCase)] internal static partial Regex ColorTitleParseRegex();
-        [GeneratedRegex(@":.*(?:Edition|3-In-1|3 In 1) Edition\s{0,3}:|:.*(?:3-In-1|3 In 1) Edition\s{0,3}:|:.*(?:3-In-1|3 In 1)\s{0,3}:|\(Omnibus Edition\)", RegexOptions.IgnoreCase)] private static partial Regex OmnibusFixRegex();
+        [GeneratedRegex(@":.*(?:(?:3|2)-In-1|(?:3|2) In 1) Edition\s{0,3}:|:.*(?:(?:3|2)-In-1|(?:3|2) In 1)\s{0,3}:|(?:(?:3|2)-In-1|(?:3|2) In 1)\s{0,3} Edition:|\(Omnibus Edition\)|Omnibus\s{0,}(\d{1,3}|\d{1,3}.\d{1})(?:\s{0,}|:\s{0,})(?:\(.*\)|Vol \d{1,3}-\d{1,3})", RegexOptions.IgnoreCase)] private static partial Regex OmnibusFixRegex();
         [GeneratedRegex(@"Box Set:|:\s+Box Set|Box Set (\d{1,3}):|:\s+(\d{1,3}) \(Box Set\)|\(Box Set\)|Box Set Part", RegexOptions.IgnoreCase)] private static partial Regex BoxSetFixRegex();
         [GeneratedRegex(@"(\d{1,3})-\d{1,3}")] private static partial Regex BoxSetVolFindRegex();
         [GeneratedRegex(@"(?<=(?:Vol|Box Set)\s+(?:\d{1,3}|\d{1,3}.\d{1}))[^\d{1,3}.]+.*")] private static partial Regex RemoveAfterVolNumRegex();
         [GeneratedRegex(@"\((.*?Anniversary.*?)\)")] private static partial Regex AnniversaryMatchRegex();
-        [GeneratedRegex(@"Volume", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
-
+        [GeneratedRegex(@"Volumes|Volume|Vol\.|Volumr", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
 
         protected internal async Task CreateForbiddenPlanetTask(string bookTitle, BookType bookType, List<List<EntryModel>> MasterDataList, WebDriver driver)
         {
@@ -46,11 +45,10 @@ namespace MangaAndLightNovelWebScrape.Websites
             ForbiddenPlanetData.Clear();
         }
 
-        private string GenerateWebsiteUrl(BookType bookType, string entryTitle)
+        private string GenerateWebsiteUrl(BookType bookType, string entryTitle, bool isSecondCategory)
         {
-            // https://forbiddenplanet.com/catalog/comics-and-graphic-novels/?q=Naruto&show_out_of_stock=on&sort=release-date-asc&page=1
-            // https://forbiddenplanet.com/catalog/comics-and-graphic-novels/?q=classroom%20of%20the%20elite%20light%20novel&sort=release-date-asc&page=1
-            string url = $"https://forbiddenplanet.com/catalog/{(bookType == BookType.Manga ? "manga" : string.Empty)}?q={(bookType == BookType.Manga ? InternalHelpers.FilterBookTitle(entryTitle) : $"{InternalHelpers.FilterBookTitle(entryTitle)}%20light%20novel")}&show_out_of_stock=on&sort=release-date-asc&page=1";
+            // https://forbiddenplanet.com/catalog/?q=Naruto&show_out_of_stock=on&sort=release-date-asc&page=1
+            string url = $"https://forbiddenplanet.com/catalog/{(!isSecondCategory ? "manga" : "comics-and-graphic-novels")}/?q={(bookType == BookType.Manga ? InternalHelpers.FilterBookTitle(entryTitle) : $"{InternalHelpers.FilterBookTitle(entryTitle)}%20light%20novel")}&show_out_of_stock=on&sort=release-date-asc&page=1";
             ForbiddenPlanetLinks.Add(url);
             LOGGER.Info($"Url = {url}");
             return url;
@@ -65,9 +63,10 @@ namespace MangaAndLightNovelWebScrape.Websites
                 entryTitle = entryTitle.Replace("(Colour Edition Hardcover)", string.Empty).Trim();
                 entryTitle = entryTitle.Insert(entryTitle.IndexOf("Vol"), "In Color ");
             }
+
             if (!entryTitle.Contains("Anniversary") && (entryTitle.Contains("3-In-1", StringComparison.OrdinalIgnoreCase) || entryTitle.Contains("3 In 1", StringComparison.OrdinalIgnoreCase) || entryTitle.Contains("Omnibus", StringComparison.OrdinalIgnoreCase)))
             {
-                entryTitle = OmnibusFixRegex().Replace(entryTitle, " Omnibus");
+                entryTitle = OmnibusFixRegex().Replace(entryTitle, $" Omnibus $1");
                 curTitle = new StringBuilder(entryTitle);
 
                 if (!entryTitle.Contains("Omnibus"))
@@ -106,26 +105,19 @@ namespace MangaAndLightNovelWebScrape.Websites
                     {
                         curTitle.Replace("Box Set", string.Empty);
                         curTitle.TrimEnd();
-                        if (!char.IsDigit(curTitle.ToString()[^1]))
-                        {   
-                            curTitle.Append(" 1");
+                        if (!char.IsDigit(curTitle.ToString()[^1])) curTitle.Append(" 1");
+                        
+                        if (entryTitle.Contains("Part") && !bookTitle.Contains("Part"))
+                        {
+                            curTitle.Insert(curTitle.Length, " Box Set");
                         }
-                        curTitle.Insert(curTitle.Length - 1, " Box Set ");
+                        else curTitle.Insert(curTitle.Length - 1, " Box Set ");
                     }
                 }
                 curTitle.Replace("Vol", string.Empty);
-                if (!bookTitle.Contains("One", StringComparison.OrdinalIgnoreCase))
-                {
-                    curTitle.Replace("One", "1");
-                }
-                if (!bookTitle.Contains("Two", StringComparison.OrdinalIgnoreCase))
-                {
-                    curTitle.Replace("Two", "2");
-                }
-                if (!bookTitle.Contains("Three", StringComparison.OrdinalIgnoreCase))
-                {
-                    curTitle.Replace("Three", "3");
-                }
+                if (!bookTitle.Contains("One", StringComparison.OrdinalIgnoreCase)) curTitle.Replace("One", "1");
+                if (!bookTitle.Contains("Two", StringComparison.OrdinalIgnoreCase)) curTitle.Replace("Two", "2");
+                if (!bookTitle.Contains("Three", StringComparison.OrdinalIgnoreCase)) curTitle.Replace("Three", "3");
 
                 if (InternalHelpers.RemoveNonWordsRegex().Replace(bookTitle, string.Empty).Contains("Attackontitan", StringComparison.OrdinalIgnoreCase) && !entryTitle.Contains("The Final Season") && entryTitle.Contains("Final Season"))
                 {   
@@ -175,6 +167,11 @@ namespace MangaAndLightNovelWebScrape.Websites
                 curTitle.Insert(entryTitle.AsSpan().IndexOf("Vol"), $"{AnniversaryMatchRegex().Match(entryTitle).Groups[1].Value} ");
             }
 
+            if (entryTitle.Contains("Special") && entryTitle.Contains("Edition"))
+            {
+                curTitle.Insert(entryTitle.AsSpan().IndexOf("Vol"), "Special Edition ");
+            }
+
             curTitle.Replace(",", string.Empty);
             if (!bookTitle.Contains(':'))
             {
@@ -187,13 +184,11 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
         }
 
-        // TODO - Fix these series Naruto, Bleach, Attack on Titan, FMAB
-        // TODO - See if you can get UserAgent from HtmlWeb instead
         private List<EntryModel> GetForbiddenPlanetData(string bookTitle, BookType bookType, WebDriver driver)
         {
             try
             {
-                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(5));
+                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
                 HtmlDocument doc = new HtmlDocument();
                 HtmlWeb web = new()
                 {
@@ -201,13 +196,14 @@ namespace MangaAndLightNovelWebScrape.Websites
                     UseCookies = true
                 };
                 bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
+                bool isSecondCategory = false;
 
-                driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookType, bookTitle));
-                //RemoveCookiePopup(driver, wait);
+                driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookType, bookTitle, isSecondCategory));
                 wait.Until(driver => driver.FindElement(By.CssSelector("div[class='full']")));
-                doc.LoadHtml(driver.PageSource);
+
                 while (true)
                 {
+                    doc.LoadHtml(driver.PageSource);
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
                     HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
                     HtmlNodeCollection minorPriceData = doc.DocumentNode.SelectNodes(MinorPriceXPath);
@@ -220,6 +216,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     {
                         string bookFormat = stockStatusData[x].FirstChild.InnerText;
                         string entryTitle = titleData[x].GetDirectInnerText();
+                        // LOGGER.Debug("{} | {}", entryTitle, bookFormat);
                         if (
                             InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
                             && (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
@@ -229,15 +226,11 @@ namespace MangaAndLightNovelWebScrape.Websites
                                     && (
                                             !entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
                                             && (bookFormat.Equals("Manga") || bookFormat.Equals("Graphic Novel"))
-                                            // && (
-                                            //         entryTitle.AsParallel().Any(char.IsDigit)
-                                            //         || (!entryTitle.AsParallel().Any(char.IsDigit) && entryTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
-                                            //     )
                                             && !(
-                                                InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony")
-                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
-                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Itachi")
+                                                InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony", "Berserker")
                                                 || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear")
+                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto", "Itachi", "Family Day", "Naruto: Shikamaru's Story", "Naruto: Kakashi's Story")
+                                                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "fullmetal alchemist", entryTitle, "Under The Faraway Sky")
                                             )
                                         )
                                     )
@@ -247,9 +240,9 @@ namespace MangaAndLightNovelWebScrape.Websites
                             )
                         {
                             bool descIsValid = true;
-                            if (bookType == BookType.Manga && !entryTitle.Contains("Vol") && !entryTitle.Contains("Box Set") && !entryTitle.Contains("Comic", StringComparison.OrdinalIgnoreCase))
+                            if (bookType == BookType.Manga && (entryTitle.Contains("Hardcover") || !entryTitle.Contains("Vol") && !entryTitle.Contains("Box Set") && !entryTitle.Contains("Comic", StringComparison.OrdinalIgnoreCase)))
                             {
-                                LOGGER.Debug("{} Checking Desc", entryTitle);
+                                // LOGGER.Debug("{} Checking Desc", entryTitle);
                                 HtmlNodeCollection descData = web.Load($"https://forbiddenplanet.com{doc.DocumentNode.SelectSingleNode($"(//a[@class='block one-whole clearfix dfbx dfbx--fdc pt'])[{x + 1}]").GetAttributeValue("href", string.Empty)}").DocumentNode.SelectNodes("//div[@id='product-description']/p");
                                 StringBuilder desc = new StringBuilder();
                                 foreach (HtmlNode node in descData) { desc.AppendLine(node.InnerText); }
@@ -282,8 +275,14 @@ namespace MangaAndLightNovelWebScrape.Websites
                     {
                         driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("(//a[@class='product-list__pagination__next'])[1]"))));
                         wait.Until(driver => driver.FindElement(By.CssSelector("div[class='full']")));
-                        doc.LoadHtml(driver.PageSource);
                         LOGGER.Info($"Url = {driver.Url}");
+                    }
+                    else if (!isSecondCategory)
+                    {
+                        isSecondCategory = true;
+                        LOGGER.Info("Checking Comics & Graphic Novel Cateogry");
+                        driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookType, bookTitle, isSecondCategory));
+                        wait.Until(driver => driver.FindElement(By.CssSelector("div[class='full']")));
                     }
                     else
                     {

@@ -6,10 +6,11 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> Inprogress feature will be fixed in later release
 
-v2.1.3 - 
+v2.2.0 - 
 ✅Fix membership list output in AsciiTable
 ✅Completed TravellingMan website for Britain Region 
 ❌Completed Forbidden Planet website for Britain Region
+⌛UserAgent no longer grabbed from selenium but HtmlWeb instead for faster initialization and no hanging chrome tasks
 🔥Final data correctly sorted even if entry names without vol numbers are not exactly the same but very similar this includes case as well
 ✍️Added website and region request issue templates (https://github.com/Sigrec/MangaAndLightNovelWebScrape/issues)
 
