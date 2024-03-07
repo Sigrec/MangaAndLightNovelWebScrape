@@ -3,7 +3,7 @@
 .NET Library that scrapes various websites based on a region for manga or light novel data for a specifc user inputted series. Then it compares the various prices for each available entry across the websites chosen and outputs a list of the entries available and the website and price for the cheapest entry.
 ***
 ### *Website Completion List*
-If you want more websites just notify me and I will look into seeing if I can add them
+If you want a website or region to be added fill out a [issue request](https://github.com/Sigrec/MangaAndLightNovelWebScrape/issues/new/choose).
 #### America
 - [ ] AmazonUSA (Paused)
 - [x] Barnes & Noble
@@ -24,10 +24,10 @@ If you want more websites just notify me and I will look into seeing if I can ad
 
 #### Britain
 - [ ] AmazonUK (Not Started)
-- [ ] ForBiddenPlanet (Paused)
+- [ ] ForBiddenPlanet (In Progress)
 - [x] SciFier
 - [x] SpeedyHen
-- [ ] TravellingMan (In Progress)
+- [x] TravellingMan
 - [x] Waterstones
 - [x] Wordery
 

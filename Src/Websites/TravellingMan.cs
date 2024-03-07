@@ -9,7 +9,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         private List<EntryModel> TravellingManData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "TravellingMan";
         public const Region REGION = Region.Britain;
-        private static readonly List<string> MangaDescRemovalStrings = ["novel", "figure", "sculpture", "collection of", "figurine", "statue", "miniature", "Figuarts"];
+        private static readonly List<string> DescRemovalStrings = ["novel", "figure", "sculpture", "collection of", "figurine", "statue", "miniature", "Figuarts"];
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//li[@class='list-view-item']/div/div/div[2]/div/span");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//li[@class='list-view-item']/div/div/div[3]/dl/div[2]/dd[2]/span[1]");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//ul[@class='list--inline pagination']/li[3]/a");
@@ -128,11 +128,11 @@ namespace MangaAndLightNovelWebScrape.Websites
 
                 int nextPage = 1;
                 bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
-                for(int x = 0; x < MangaDescRemovalStrings.Count; x++)
+                for(int x = 0; x < DescRemovalStrings.Count; x++)
                 {
-                    if (bookTitle.Contains(MangaDescRemovalStrings[x])) MangaDescRemovalStrings.RemoveAt(x);
+                    if (bookTitle.Contains(DescRemovalStrings[x])) DescRemovalStrings.RemoveAt(x);
                 }
-                if (bookType == BookType.LightNovel) MangaDescRemovalStrings.Remove("novel");
+                if (bookType == BookType.LightNovel) DescRemovalStrings.Remove("novel");
 
 
                 while (true)
@@ -161,10 +161,10 @@ namespace MangaAndLightNovelWebScrape.Websites
                                     || (
                                             InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
                                             || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Itachi")
-                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "overlord", entryTitle, "IUnimplemented")
                                         )
                                     )
                                 )
+                            && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "overlord", entryTitle, "Unimplemented")
                             )        
                         {
                             bool descIsValid = true;
@@ -174,7 +174,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                                 StringBuilder desc = new StringBuilder();
                                 foreach (HtmlNode node in descData) { desc.AppendLine(node.InnerText); }
                                 // LOGGER.Debug("Checking Desc {} => {}", entryTitle, desc.ToString());
-                                descIsValid = !desc.ToString().ContainsAny(MangaDescRemovalStrings);
+                                descIsValid = !desc.ToString().ContainsAny(DescRemovalStrings);
                             }
 
                             if (descIsValid)
@@ -211,15 +211,8 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             finally
             {
-                // driver?.Quit();
                 TravellingManData.Sort(EntryModel.VolumeSort);
-                for(int x = 1; x < TravellingManData.Count; x++)
-                {
-                    if (TravellingManData[x] == TravellingManData[x - 1])
-                    {
-                        TravellingManData.RemoveAt(x);
-                    }
-                }
+                TravellingManData.RemoveExtras();
                 InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, TravellingManData, LOGGER);
             }
             return TravellingManData;

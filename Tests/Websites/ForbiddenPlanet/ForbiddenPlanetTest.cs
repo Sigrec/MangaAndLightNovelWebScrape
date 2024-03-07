@@ -3,17 +3,15 @@ namespace Tests.Websites
     [TestFixture, Description("Validations for Forbidden Planet")]
     [Author("Sean (Alias -> Prem or Sigrec)")]
     [SetUICulture("en")]
-    [Ignore("")]
     public class ForbiddenPlanetTest
     {
         MasterScrape Scrape;
-        HashSet<Website> WebsiteList = new HashSet<Website>() { Website.ForbiddenPlanet };
+        private readonly HashSet<Website> WebsiteList = [ Website.ForbiddenPlanet ];
         
-        [SetUp]
+        [OneTimeSetUp]
         public void OneTimeSetUp()
         {
-            Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain);
-            
+            Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain);    
         }
 
         [Test, Description("Validates Series w/ Non Letter or Digit Char in Title")]
@@ -53,10 +51,10 @@ namespace Tests.Websites
 
         [Test, Description("Validates Novel series w/ manga original source & entries without vol #'s")]
         [Ignore("Novel Not Working")]
-        public async Task Waterstones_Naruto_Novel_Test()
+        public async Task ForbiddenPlanet_Naruto_Novel_Test()
         {
             await Scrape.InitializeScrapeAsync("Naruto", BookType.LightNovel, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Waterstones\WaterstonesNarutoNovelData.txt")));
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetNarutoNovelData.txt")));
         }
 
         [Test, Description("Test Manga Series w/ Box Set w/out Num Indicator")]
@@ -74,7 +72,6 @@ namespace Tests.Websites
         }
 
         [Test, Description("Validates One Shot Manga Series")]
-        [Ignore("One Shots Not Working")]
         public async Task ForbiddenPlanet_Member_GoodbyeEri_Manga_Test()
         {
             await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, WebsiteList);
@@ -98,19 +95,19 @@ namespace Tests.Websites
 
         // Not done, is having issues
         [Test, Description("Validates Novel w/ Novel after Volume and lowercase")]
-        [Ignore("Novel Not Working")]
         public async Task ForbiddenPlanet_Overlord_Novel_Test()
         {
             await Scrape.InitializeScrapeAsync("Overlord", BookType.LightNovel, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetOverlordNovelData.txt")));
         }
 
-        // [Test, Description("Validates Series w/ Non Letter or Digit Char & Numbers in Title")]
-        // public async Task ForbiddenPlanet_07Ghost_Manga_Test()
-        // {
-        //     await Scrape.InitializeScrapeAsync("07-ghost", BookType.Manga, WebsiteList);
-        //     Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanet07GhostMangaData.txt")));
-        // }
+        [Test, Description("Validates Series w/ Non Letter or Digit Char & Numbers in Title")]
+        [Ignore("Does not exist at Forbidden Planet")]
+        public async Task ForbiddenPlanet_07Ghost_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("07-ghost", BookType.Manga, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanet07GhostMangaData.txt")));
+        }
 
         [Test, Description("Validates Manga Series w/ Hardcover & Paperback Volumes")]
         public async Task ForbiddenPlanet_FMAB_Manga_Test()
@@ -134,7 +131,6 @@ namespace Tests.Websites
         }
         
         [Test, Description("Validates Novel w/ Manga Entries & Volume Numbers with Decimals")]
-        [Ignore("Novel Not Working")]
         public async Task ForbiddenPlanet_COTE_Novel_Test()
         {
             await Scrape.InitializeScrapeAsync("classroom of the elite", BookType.LightNovel, WebsiteList);
@@ -146,6 +142,14 @@ namespace Tests.Websites
         {
             await Scrape.InitializeScrapeAsync("Boruto", BookType.Manga, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetBorutoMangaData.txt")));
+        }
+
+        [Test, Description("")]
+        [Ignore("Need to figure out the syntax for Noragami first")]
+        public async Task ForbiddenPlanet_Noragami_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Noragami", BookType.Manga, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetNoragamiMangaData.txt")));
         }
     }
 }
