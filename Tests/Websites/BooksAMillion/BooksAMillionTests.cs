@@ -136,5 +136,12 @@ namespace Tests.Websites
             await Scrape.InitializeScrapeAsync("Boruto", BookType.Manga, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionBorutoMangaData.txt")));
         }
+
+        [Test, Description("Tests series with omnibus that has leading text after vol #")]
+        public async Task BooksAMillion_Noragami_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Noragami", BookType.Manga, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillionNoragamiMangaData.txt")));
+        }
     }
 }

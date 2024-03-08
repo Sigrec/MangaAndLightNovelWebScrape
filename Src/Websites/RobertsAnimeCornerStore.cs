@@ -2,8 +2,8 @@ namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class RobertsAnimeCornerStore
     {
-        private List<string> RobertsAnimeCornerStoreLinks = new List<string>();
-        private List<EntryModel> RobertsAnimeCornerStoreData = new List<EntryModel>();
+        private readonly List<string> RobertsAnimeCornerStoreLinks = new List<string>();
+        private readonly List<EntryModel> RobertsAnimeCornerStoreData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "RobertsAnimeCornerStore";
         private static readonly Logger LOGGER = LogManager.GetLogger("RobertsAnimeCornerStoreLogs");
         private static readonly Dictionary<string, string> URL_MAP_DICT = new()
@@ -24,7 +24,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         private static readonly XPathExpression SeriesTitleXPath = XPathExpression.Compile("//b//a[1]");
 
         [GeneratedRegex(@",|#| Graphic Novel| :|\(.*?\)|\[Novel\]")] private static partial Regex TitleFilterRegex();
-        [GeneratedRegex(@",| #\d+-\d+| #\d+|Graphic Novel| :|\(.*?\)|\[Novel\]")] private static partial Regex OmnibusTitleFilterRegex();
+        [GeneratedRegex(@",| #\d+-\d+| #\d+|Graphic Novel|:.*(?=Omnibus)|\(.*?\)|\[Novel\]")] private static partial Regex OmnibusTitleFilterRegex();
         [GeneratedRegex(@"-(\d+)")] private static partial Regex OmnibusVolNumberRegex();
         [GeneratedRegex(@"\d{1,3}")] private static partial Regex FindVolNumRegex();
 
@@ -41,7 +41,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             return RobertsAnimeCornerStoreLinks.Count != 0 ? RobertsAnimeCornerStoreLinks : null;
         }
         
-        private string GenerateWebsiteUrl(string bookTitle)
+        private static string GenerateWebsiteUrl(string bookTitle)
         {
             string url = string.Empty;
             // Gets the starting page based on first letter and checks if we are looking for the 1st webpage (false) or 2nd webpage containing the actual item data (true)
@@ -143,7 +143,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     string seriesText = MasterScrape.MultipleWhiteSpaceRegex().Replace(series.InnerText.Replace("Graphic Novels", string.Empty).Replace("Novels", string.Empty), " ").Trim();
                     bool isSimilar = EntryModel.Similar(bookTitle, seriesText, (string.IsNullOrWhiteSpace(seriesText) || bookTitle.Length > seriesText.Length ? bookTitle.Length / 6 : seriesText.Length / 6) + bookTitleSpaceCount) != -1;
 
-                    if (isSimilar && ((bookType == BookType.Manga && innerSeriesText.Contains("Graphic Novels")) || bookType == BookType.LightNovel))
+                    if ((seriesText.Contains(bookTitle, StringComparison.OrdinalIgnoreCase) || isSimilar) && ((bookType == BookType.Manga && innerSeriesText.Contains("Graphic Novels")) || bookType == BookType.LightNovel))
                     {
                         links.Add($"https://www.animecornerstore.com/{series.GetAttributeValue("href", "Url Error")}");
                     }
@@ -171,7 +171,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                                 && (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
                                 && ((bookType == BookType.Manga && entryTitle.Contains("Graphic Novel")) || (bookType == BookType.LightNovel && !entryTitle.Contains("Graphic Novel"))))
                             {
-                                LOGGER.Debug("{} | {}", entryTitle, priceData[x].InnerText.Trim());
+                                // LOGGER.Debug("{} | {}", entryTitle, priceData[x].InnerText.Trim());
                                 if (!RobertsAnimeCornerStoreLinks.Contains(link)) { RobertsAnimeCornerStoreLinks.Add(link); }
                                 RobertsAnimeCornerStoreData.Add(
                                     new EntryModel(

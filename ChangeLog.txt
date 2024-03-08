@@ -9,10 +9,23 @@ Legend
 v2.2.0 - 
 ✅Fix membership list output in AsciiTable
 ✅Completed TravellingMan website for Britain Region 
-❌Completed Forbidden Planet website for Britain Region
+✅Completed Forbidden Planet website for Britain Region
+✅Extended "IsWebsiteListValid" method to accept enumerable of the Website enum
+✅Added "Norgami" series formatting
 ⌛UserAgent no longer grabbed from selenium but HtmlWeb instead for faster initialization and no hanging chrome tasks
+🔥Throws error when inputted list is not valid (list contains websites that are not supported by the current region that is set)
+🔥Fixed "IsWebsiteListValid" methods to return correct value, before it was flipped
 🔥Final data correctly sorted even if entry names without vol numbers are not exactly the same but very similar this includes case as well
 ✍️Added website and region request issue templates (https://github.com/Sigrec/MangaAndLightNovelWebScrape/issues)
+📜RobertsAnimeCornerStore Fixes
+ -🔥Correctly gets series that have longer names in the website but user inputs shorthand (ex: Noragami vs Noragami Stray God)
+ -🔥Removes text between title and "Omnibus" tag
+📜Barnes & Nobles Fixes
+ -🔥Correctly removes extra text after Omnibus Vol #
+📜Books-A-Million Fixes
+ -🔥Correctly removes extra text after Omnibus Vol #
+📜MerryManga Fixes
+ -❌Fixed issue where series that did not contain any BoxSets would sometimes not return any data
 
 v2.1.2 - February 29th
 ✅Added new method to get websites that have a membership for a specific region

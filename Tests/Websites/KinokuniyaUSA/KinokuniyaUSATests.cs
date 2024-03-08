@@ -144,5 +144,12 @@ namespace Tests.Websites
             await Scrape.InitializeScrapeAsync("Boruto", BookType.Manga, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\KinokuniyaUSA\KinokuniyaUSABorutoMangaData.txt")));
         }
+
+        [Test, Description("Ensure consistency")]
+        public async Task KinokuniyaUSA_Noragami_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Noragami", BookType.Manga, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\KinokuniyaUSA\KinokuniyaUSANoragamiMangaData.txt")));
+        }
     }
 }

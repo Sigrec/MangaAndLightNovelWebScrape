@@ -36,9 +36,9 @@ namespace MangaAndLightNovelWebScrape.Websites
             return MerryMangaLinks.Count != 0 ? MerryMangaLinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
 
-        private string GenerateWebsiteUrl(string bookTitle, BookType bookType)
+        private string GenerateWebsiteUrl(string bookTitle, BookType bookType, bool isMangaOnly)
         {
-            string url = $"https://www.merrymanga.com/?s={InternalHelpers.FilterBookTitle(bookTitle.Replace(" ", "+"))}&post_type=product&orderby=date&_categories={(bookType == BookType.Manga ? "box-sets%2Cmanga" : "light-novels")}";
+            string url = $"https://www.merrymanga.com/?s={InternalHelpers.FilterBookTitle(bookTitle.Replace(" ", "+"))}&post_type=product&orderby=date&_categories={(bookType == BookType.Manga ? $"{(isMangaOnly ? string.Empty : "box-sets%2C")}manga" : "light-novels")}";
             LOGGER.Info(url);
             MerryMangaLinks.Add(url);
             return url;
@@ -83,9 +83,9 @@ namespace MangaAndLightNovelWebScrape.Websites
         {
             try
             {
-                string initialWebsiteUrl = GenerateWebsiteUrl(bookTitle.ToLower(), bookType);
-                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
-                driver.Navigate().GoToUrl(initialWebsiteUrl);
+                bool isMangaOnly = false;
+                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(5));
+                driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle.ToLower(), bookType, isMangaOnly));
                 wait.Until(driver => driver.FindElement(By.CssSelector("div[class='container main-content']")));
 
                 HtmlDocument doc = new HtmlDocument
@@ -95,7 +95,15 @@ namespace MangaAndLightNovelWebScrape.Websites
                 };
                 doc.LoadHtml(driver.PageSource);
 
-                if (!doc.Text.Contains("facetwp-load-more facetwp-hidden"))
+                if (!isMangaOnly && doc.Text.Contains("No products were found matching your selection."))
+                {
+                    LOGGER.Warn("No Entries Found, Checking Manga Only Link");
+                    isMangaOnly = true;
+                    driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle.ToLower(), bookType, isMangaOnly));
+                    wait.Until(driver => driver.FindElement(By.CssSelector("div[class='container main-content']")));
+                    doc.LoadHtml(driver.PageSource);
+                }
+                else if (!doc.Text.Contains("facetwp-load-more facetwp-hidden"))
                 {
                     LOGGER.Info("Loading More Entries");
                     string loadMoreCssSelector = "div[class='facetwp-facet facetwp-facet-load_more facetwp-type-pager']";
@@ -111,7 +119,6 @@ namespace MangaAndLightNovelWebScrape.Websites
                 {
                     LOGGER.Info("Single Page Entry (No Additional Loading Required)");
                 }
-                driver?.Quit();
 
                 bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);   
 
@@ -153,14 +160,8 @@ namespace MangaAndLightNovelWebScrape.Websites
                             )
                         );
                     }
-                    else
-                    {
-                        LOGGER.Debug("Removed {}", entryTitle);
-                    }
+                    else LOGGER.Debug("Removed {}", entryTitle);
                 }
-
-                MerryMangaData.Sort(EntryModel.VolumeSort);
-                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, MerryMangaData, LOGGER);
             }
             catch (Exception ex)
             {
@@ -169,6 +170,8 @@ namespace MangaAndLightNovelWebScrape.Websites
             finally
             {
                 driver?.Quit();
+                MerryMangaData.Sort(EntryModel.VolumeSort);
+                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, MerryMangaData, LOGGER);
             }
 
             return MerryMangaData;

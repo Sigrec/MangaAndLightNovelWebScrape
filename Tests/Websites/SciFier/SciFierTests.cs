@@ -5,8 +5,8 @@ namespace Tests.Websites
     [SetUICulture("en")]
     public class SciFierTests
     {
-        MasterScrape Scrape;
-        HashSet<Website> WebsiteList = new HashSet<Website>() { Website.SciFier };
+        private static MasterScrape Scrape;
+        private static readonly HashSet<Website> WebsiteList = [ Website.SciFier ];
 
         [SetUp]
         public void OneTimeSetUp()
@@ -159,6 +159,14 @@ namespace Tests.Websites
             Scrape.Region = Region.America;
             await Scrape.InitializeScrapeAsync("Boruto", BookType.Manga, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SciFier\SciFierBorutoMangaData.txt")));
+        }
+
+        [Test]
+        public async Task SciFier_Noragami_Manga_America_Test()
+        {
+            Scrape.Region = Region.America;
+            await Scrape.InitializeScrapeAsync("Noragami", BookType.Manga, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SciFier\SciFierNoragamiMangaData.txt")));
         }
     }
 }

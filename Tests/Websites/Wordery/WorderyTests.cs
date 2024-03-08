@@ -5,10 +5,10 @@ namespace Tests.Websites
     [SetUICulture("en")]
     public class WorderyTests
     {
-        MasterScrape Scrape;
-        HashSet<Website> WebsiteList = new HashSet<Website>() { Website.Wordery };
+        private static MasterScrape Scrape;
+        private static readonly HashSet<Website> WebsiteList = [ Website.Wordery ];
 
-        [SetUp]
+        [OneTimeSetUp]
         public void OneTimeSetUp()
         {
             Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER);
@@ -157,6 +157,14 @@ namespace Tests.Websites
             Scrape.Region = Region.America;
             await Scrape.InitializeScrapeAsync("Boruto: Naruto Next Generations", BookType.Manga, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Wordery\WorderyBorutoMangaData.txt")));
+        }
+
+        [Test]
+        public async Task Wordery_Noragami_Manga_America_Test()
+        {
+            Scrape.Region = Region.America;
+            await Scrape.InitializeScrapeAsync("Noragami", BookType.Manga, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Wordery\WorderyNoragamiMangaData.txt")));
         }
     }
 }

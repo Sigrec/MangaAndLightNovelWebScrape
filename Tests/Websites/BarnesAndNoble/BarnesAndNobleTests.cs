@@ -3,9 +3,9 @@ namespace Tests.Websites
     public class BarnesAndNobleTests
     {
         MasterScrape Scrape;
-        HashSet<Website> WebsiteList = new HashSet<Website>() {Website.BarnesAndNoble};
+        private static readonly HashSet<Website> WebsiteList = [ Website.BarnesAndNoble ];
     
-        [SetUp]
+        [OneTimeSetUp]
         public void Setup()
         {
             Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER);
@@ -143,6 +143,13 @@ namespace Tests.Websites
         {
             await Scrape.InitializeScrapeAsync("Boruto", BookType.Manga, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleBorutoMangaData.txt")));
+        }
+
+        [Test, Description("Tests series with omnibus that has leading text after vol #")]
+        public async Task BarnesAndNoble_Noragami_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Noragami", BookType.Manga, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BarnesAndNoble\BarnesAndNobleNoragamiMangaData.txt")));
         }
     }
 }

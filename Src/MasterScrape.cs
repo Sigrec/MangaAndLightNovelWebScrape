@@ -68,6 +68,11 @@ namespace MangaAndLightNovelWebScrape
         {
             this.Filter = Filter;
             this.Region = Region;
+            if (this.Region.IsMultiRegion()) 
+            {
+                LOGGER.Fatal("User inputted a multi region instead of a singular region");
+                throw new NotSupportedException("Multi Region Scrape is not Supported");
+            }
             this.Browser = Browser;
             this.IsBarnesAndNobleMember = IsBarnesAndNobleMember;
             this.IsBooksAMillionMember = IsBooksAMillionMember;
@@ -976,8 +981,6 @@ namespace MangaAndLightNovelWebScrape
             }
         }
         
-        // TODO Remove "Location" Popup for BAM
-
         /// <summary>
         /// Initalizes the scrape and outputs the compared data to class level variables
         /// </summary>
@@ -990,7 +993,7 @@ namespace MangaAndLightNovelWebScrape
         {
             await Task.Run(async () =>
             {
-                if (this.Region.IsMultiRegion()) { throw new NotSupportedException("Multi Region input is not Supported"); }
+                if (!Helpers.IsWebsiteListValid(this.Region, webScrapeList)) { throw new ArgumentException($"A website(s) in the provided list does not support the current current region {this.Region}"); }
                 LOGGER.Info("Region set to {}", this.Region);
                 LOGGER.Info("Running on {} Browser", this.Browser);
 
@@ -1096,15 +1099,15 @@ namespace MangaAndLightNovelWebScrape
 
         // Command to end all chrome.exe process -> taskkill /F /IM chrome.exe /T
         // Command to end all chrome.exe process -> taskkill /F /IM chromedriver.exe /T
-        // TODO Need to throw exception if user is querying against Japan region and text is not in Japanese
+        // TODO Noragami checks
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string title = "overlord";
+            string title = "Noragami";
             BookType bookType = BookType.Manga;
             watch.Start();
-            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain, Browser.Chrome, false, false, false, false).EnableDebugMode();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.ForbiddenPlanet ]);
+            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.America, Browser.Chrome, false, false, false, false).EnableDebugMode();
+            await scrape.InitializeScrapeAsync(title, bookType, [ Website.Wordery ]);
             watch.Stop();
             scrape.PrintResultsToConsole(true, title, bookType);
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");

@@ -150,6 +150,10 @@ namespace MangaAndLightNovelWebScrape.Websites
             {
                 curTitle.Replace("Vol", string.Empty);
             }
+            // else if (bookTitle.Contains("Noragami", StringComparison.OrdinalIgnoreCase) && !curTitle.ToString().Contains("Omnibus")  && !curTitle.ToString().Contains("Stray Stories") && !curTitle.ToString().Contains("Stray God"))
+            // {
+            //     curTitle.Insert(curTitle.ToString().Trim().AsSpan().IndexOf("Vol"), "Stray God ");
+            // }
 
             return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
         }

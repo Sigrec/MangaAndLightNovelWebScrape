@@ -142,24 +142,61 @@ namespace MangaAndLightNovelWebScrape
             {
                 bool isValid = website.ToString() switch
                 {
-                    AmazonJapan.WEBSITE_TITLE => !AmazonJapan.REGION.HasFlag(region),
-                    AmazonUSA.WEBSITE_TITLE => !AmazonUSA.REGION.HasFlag(region),
-                    BarnesAndNoble.WEBSITE_TITLE => !BarnesAndNoble.REGION.HasFlag(region),
-                    BooksAMillion.WEBSITE_TITLE => !BooksAMillion.REGION.HasFlag(region),
-                    CDJapan.WEBSITE_TITLE => !CDJapan.REGION.HasFlag(region),
-                    Crunchyroll.WEBSITE_TITLE => !Crunchyroll.REGION.HasFlag(region),
-                    ForbiddenPlanet.WEBSITE_TITLE => !ForbiddenPlanet.REGION.HasFlag(region),
-                    Indigo.WEBSITE_TITLE => !Indigo.REGION.HasFlag(region),
-                    InStockTrades.WEBSITE_TITLE => !InStockTrades.REGION.HasFlag(region),
-                    KinokuniyaUSA.WEBSITE_TITLE => !KinokuniyaUSA.REGION.HasFlag(region),
-                    MangaMate.WEBSITE_TITLE => !MangaMate.REGION.HasFlag(region),
-                    MerryManga.WEBSITE_TITLE => !MerryManga.REGION.HasFlag(region),
-                    RobertsAnimeCornerStore.WEBSITE_TITLE => !RobertsAnimeCornerStore.REGION.HasFlag(region),
-                    SciFier.WEBSITE_TITLE => !SciFier.REGION.HasFlag(region),
-                    SpeedyHen.WEBSITE_TITLE => !SpeedyHen.REGION.HasFlag(region),
-                    TravellingMan.WEBSITE_TITLE => !TravellingMan.REGION.HasFlag(region),
-                    Waterstones.WEBSITE_TITLE => !Waterstones.REGION.HasFlag(region),
-                    Wordery.WEBSITE_TITLE => !Wordery.REGION.HasFlag(region),
+                    AmazonJapan.WEBSITE_TITLE => AmazonJapan.REGION.HasFlag(region),
+                    AmazonUSA.WEBSITE_TITLE => AmazonUSA.REGION.HasFlag(region),
+                    BarnesAndNoble.WEBSITE_TITLE => BarnesAndNoble.REGION.HasFlag(region),
+                    BooksAMillion.WEBSITE_TITLE => BooksAMillion.REGION.HasFlag(region),
+                    CDJapan.WEBSITE_TITLE => CDJapan.REGION.HasFlag(region),
+                    Crunchyroll.WEBSITE_TITLE => Crunchyroll.REGION.HasFlag(region),
+                    ForbiddenPlanet.WEBSITE_TITLE => ForbiddenPlanet.REGION.HasFlag(region),
+                    Indigo.WEBSITE_TITLE => Indigo.REGION.HasFlag(region),
+                    InStockTrades.WEBSITE_TITLE => InStockTrades.REGION.HasFlag(region),
+                    KinokuniyaUSA.WEBSITE_TITLE => KinokuniyaUSA.REGION.HasFlag(region),
+                    MangaMate.WEBSITE_TITLE => MangaMate.REGION.HasFlag(region),
+                    MerryManga.WEBSITE_TITLE => MerryManga.REGION.HasFlag(region),
+                    RobertsAnimeCornerStore.WEBSITE_TITLE => RobertsAnimeCornerStore.REGION.HasFlag(region),
+                    SciFier.WEBSITE_TITLE => SciFier.REGION.HasFlag(region),
+                    SpeedyHen.WEBSITE_TITLE => SpeedyHen.REGION.HasFlag(region),
+                    TravellingMan.WEBSITE_TITLE => TravellingMan.REGION.HasFlag(region),
+                    Waterstones.WEBSITE_TITLE => Waterstones.REGION.HasFlag(region),
+                    Wordery.WEBSITE_TITLE => Wordery.REGION.HasFlag(region),
+                    _ => throw new NotImplementedException(),
+                };
+                if (!isValid) { return false; }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// Checks whether a given website list contains valid websites for a given region based on the website enum
+        /// </summary>
+        /// <param name="region">The region to check against</param>
+        /// <param name="input">The list of websites </param>
+        /// <returns>True if the given list is a valid list for the region, false otherwise</returns>
+        public static bool IsWebsiteListValid(Region region, IEnumerable<Website> input)
+        {
+            foreach (Website website in input)
+            {
+                bool isValid = website switch
+                {
+                    Website.AmazonJapan => AmazonJapan.REGION.HasFlag(region),
+                    Website.AmazonUSA => AmazonUSA.REGION.HasFlag(region),
+                    Website.BarnesAndNoble => BarnesAndNoble.REGION.HasFlag(region),
+                    Website.BooksAMillion => BooksAMillion.REGION.HasFlag(region),
+                    Website.CDJapan => CDJapan.REGION.HasFlag(region),
+                    Website.Crunchyroll => Crunchyroll.REGION.HasFlag(region),
+                    Website.ForbiddenPlanet => ForbiddenPlanet.REGION.HasFlag(region),
+                    Website.Indigo => Indigo.REGION.HasFlag(region),
+                    Website.InStockTrades => InStockTrades.REGION.HasFlag(region),
+                    Website.KinokuniyaUSA => KinokuniyaUSA.REGION.HasFlag(region),
+                    Website.MangaMate => MangaMate.REGION.HasFlag(region),
+                    Website.MerryManga => MerryManga.REGION.HasFlag(region),
+                    Website.RobertsAnimeCornerStore => RobertsAnimeCornerStore.REGION.HasFlag(region),
+                    Website.SciFier => SciFier.REGION.HasFlag(region),
+                    Website.SpeedyHen => SpeedyHen.REGION.HasFlag(region),
+                    Website.TravellingMan => TravellingMan.REGION.HasFlag(region),
+                    Website.Waterstones => Waterstones.REGION.HasFlag(region),
+                    Website.Wordery => Wordery.REGION.HasFlag(region),
                     _ => throw new NotImplementedException(),
                 };
                 if (!isValid) { return false; }

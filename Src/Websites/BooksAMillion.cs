@@ -14,7 +14,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='availability_search_results']");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//ul[@class='search-page-list']//a[@title='Next']");
 
-        [GeneratedRegex(@"(?<=Box Set).*|:|\!|,|Includes.*|--The Manga|The Manga|\d+-\d+|\(Manga\) |\d{1,3}\s+\d{1,3}\s+\&\s+(\d{1,3})|\d{1,3},\s+\d{1,3}\s+\&\s+(\d{1,3})", RegexOptions.IgnoreCase)] private static partial Regex MangaFilterTitleRegex();
+        [GeneratedRegex(@"(?<=Box Set).*|:|\!|,|Includes.*|--The Manga|The Manga|\d+-\d+|\(Manga\) |(?<=Omnibus\s\d{1,3})[^\d.].*|\d{1,3}\s+\d{1,3}\s+\&\s+(\d{1,3})|\d{1,3},\s+\d{1,3}\s+\&\s+(\d{1,3})", RegexOptions.IgnoreCase)] private static partial Regex MangaFilterTitleRegex();
         [GeneratedRegex(@":|\!|,|Includes.*|\d+-\d+|\d+, \d+ \& \d+", RegexOptions.IgnoreCase)] private static partial Regex NovelFilterTitleRegex();
         [GeneratedRegex(@"(?<=Vol\s+\d+)[^\d\.].*|\(.*?\)$|\[.*?\]|Manga ", RegexOptions.IgnoreCase)] private static partial Regex CleanFilterTitleRegex();
         [GeneratedRegex(@"Box Set (\d+)", RegexOptions.IgnoreCase)] private static partial Regex VolNumberRegex();
@@ -92,7 +92,8 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             else
             {
-                curTitle = new StringBuilder(CleanFilterTitleRegex().Replace(MangaFilterTitleRegex().Replace(OmnibusRegex().Replace(entryTitle, "Omnibus"), string.Empty), string.Empty));
+                if (entryTitle.Contains("Omnibus") || entryTitle.Contains("3-in-1")) entryTitle = OmnibusRegex().Replace(entryTitle, "Omnibus");
+                curTitle = new StringBuilder(CleanFilterTitleRegex().Replace(MangaFilterTitleRegex().Replace(entryTitle, string.Empty), string.Empty));
                 string newEntryTitle = curTitle.ToString().Trim();
 
                 if (bookTitle.Equals("Boruto", StringComparison.OrdinalIgnoreCase))
@@ -196,7 +197,6 @@ namespace MangaAndLightNovelWebScrape.Websites
                         if ((curTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) || curTitle.Contains("BOXSET", StringComparison.OrdinalIgnoreCase)) && !boxsetCheck)
                         {
                             boxsetValidation = true;
-                            LOGGER.Info("Found Boxset");
                             continue;
                         }
 
@@ -212,7 +212,9 @@ namespace MangaAndLightNovelWebScrape.Websites
                                 || !(
                                     bookType == BookType.Manga 
                                     && (
-                                            curTitle.Contains("(Light Novel") 
+                                            curTitle.Contains("(Light Novel")
+                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", curTitle.ToString(), "Boruto", "Itachi's Story", "Team 7 Character")
+                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", curTitle.ToString(), "of Gluttony")
                                             || (
                                                 !curTitle.Contains("Vol")
                                                 && !(
@@ -220,10 +222,6 @@ namespace MangaAndLightNovelWebScrape.Websites
                                                         && !bookTitle.AsParallel().Any(char.IsDigit)
                                                     )
                                                 )
-                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", curTitle.ToString(), "Boruto") 
-                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", curTitle.ToString(), "Itachi's Story")
-                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", curTitle.ToString(), "Team 7 Character") 
-                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", curTitle.ToString(), "of Gluttony")
                                         )
                                 )
                             )

@@ -6,9 +6,9 @@ namespace Tests.Websites
     public class RobertsAnimeCornerStoreTests
     {
         MasterScrape Scrape;
-        HashSet<Website> WebsiteList = new HashSet<Website>() {Website.RobertsAnimeCornerStore};
+        private static readonly HashSet<Website> WebsiteList = [ Website.RobertsAnimeCornerStore ];
         
-        [SetUp]
+        [OneTimeSetUp]
         public void OneTimeSetUp()
         {
             Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER);

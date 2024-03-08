@@ -140,5 +140,12 @@ namespace Tests.Websites
             await Scrape.InitializeScrapeAsync("Boruto", BookType.Manga, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\MerryManga\MerryMangaBorutoMangaData.txt")));
         }
+
+        [Test, Description("Tests series that does not have any box set category")]
+        public async Task MerryManga_Noragami_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Noragami", BookType.Manga, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\MerryManga\MerryMangaNoragamiMangaData.txt")));
+        }
     }
 }
