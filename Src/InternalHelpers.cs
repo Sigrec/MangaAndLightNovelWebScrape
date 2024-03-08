@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace MangaAndLightNovelWebScrape
 {
     internal static partial class InternalHelpers
@@ -169,6 +171,7 @@ namespace MangaAndLightNovelWebScrape
             {
                 if (input[x].Entry.Equals(input[x - 1].Entry, StringComparison.OrdinalIgnoreCase))
                 {
+                    Console.WriteLine($"Removed {input[x].Entry}");
                     input.RemoveAt(x);
                 }
             }

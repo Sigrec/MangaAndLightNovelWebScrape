@@ -150,5 +150,12 @@ namespace Tests.Websites
             await Scrape.InitializeScrapeAsync("Boruto", BookType.Manga, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoBorutoMangaData.txt")));
         }
+
+        [Test, Description("Ensure consistency")]
+        public async Task Indigo_Noragami_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Noragami", BookType.Manga, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Indigo\IndigoNoragamiMangaData.txt")));
+        }
     }
 }

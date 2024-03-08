@@ -65,11 +65,15 @@ namespace MangaAndLightNovelWebScrape.Websites
             Match findVolNumMatch = MasterScrape.FindVolNumRegex().Match(curTitle.ToString().Trim());
             if (bookType == BookType.Manga && !entryTitle.Contains("Box Set") && !entryTitle.Contains("Vol") && !string.IsNullOrWhiteSpace(findVolNumMatch.Groups[0].Value))
             {
-                curTitle.Insert(findVolNumMatch.Index, "Vol ");
+                curTitle.Insert(findVolNumMatch.Index, "Vol ").TrimEnd();
+            }
+            else if (bookTitle.Contains("Noragami", StringComparison.OrdinalIgnoreCase) && entryTitle.Contains("Stray Stories") && string.IsNullOrWhiteSpace(findVolNumMatch.Groups[0].Value))
+            {
+                curTitle.Insert(curTitle.Length, " Vol 1");
             }
 
             string volNum = findVolNumMatch.Groups[0].Value;
-            if (volNum.StartsWith('0') && volNum.Length > 1)
+            if (volNum.Length > 1 && volNum.StartsWith('0'))
             {
                 curTitle.Replace(volNum, volNum.TrimStart('0'));
             }
@@ -80,13 +84,10 @@ namespace MangaAndLightNovelWebScrape.Websites
         {
             try
             {
-                HtmlWeb web = new HtmlWeb();
-                HtmlDocument doc = new()
-                {
-                    OptionCheckSyntax = false
-                };
-                // doc.OptionFixNestedTags = true;
+                HtmlWeb web = new() { UsingCacheIfExists = true, UseCookies = false };
+                HtmlDocument doc = new() { OptionCheckSyntax = false };
                 WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
+
                 ushort curPageNum = 1;
                 bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
                 driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle, bookType, curPageNum));

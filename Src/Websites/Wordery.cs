@@ -6,12 +6,11 @@ namespace MangaAndLightNovelWebScrape.Websites
         private List<string> WorderyLinks = new List<string>();
         private List<EntryModel> WorderyData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "Wordery";
-        public const Region REGION = Region.America | Region.Canada | Region.Europe | Region.Britain | Region.Australia; 
+        public const Region REGION = Region.Canada | Region.Europe | Region.Britain | Region.Australia; 
         private static readonly Dictionary<Region, Tuple<string, string>> CURRENCY_DICTIONARY = new Dictionary<Region, Tuple<string, string>>
         {
             {Region.Europe, new Tuple<string, string>(" Euro ", "EUR")},
             {Region.Britain, new Tuple<string, string>(" British Pound ", "GBP")},
-            {Region.America, new Tuple<string, string>(" US Dollar ", "USD")},
             {Region.Australia, new Tuple<string, string>(" Australian Dollar ", "AUD")},
             {Region.Canada, new Tuple<string, string>(" Canadian Dollar ", "CAD")}
         };
@@ -272,12 +271,12 @@ namespace MangaAndLightNovelWebScrape.Websites
                             }
                             else
                             {
-                                LOGGER.Info("Removed {} | {}", entryTitle, formatAndLang);
+                                LOGGER.Info("(2) Removed {} | {}", entryTitle, formatAndLang);
                             }
                         }
                         else
                         {
-                            LOGGER.Info("Removed {}", entryTitle);
+                            LOGGER.Info("(1) Removed {}", entryTitle);
                         }
                     }
 

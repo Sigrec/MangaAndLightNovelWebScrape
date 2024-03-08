@@ -142,6 +142,13 @@ namespace Tests.Websites
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SpeedyHen\SpeedyHenBorutoMangaData.txt")));
         }
 
+        [Test, Description("Ensure consistency")]
+        public async Task SpeedyHen_Noragami_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Noragami", BookType.Manga, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SpeedyHen\SpeedyHenNoragamiMangaData.txt")));
+        }
+
         // Cells at Work!
     }
 }

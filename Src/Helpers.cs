@@ -103,11 +103,11 @@ namespace MangaAndLightNovelWebScrape
         {
             return region switch
             {
-                Region.America => [ /*AmazonUSA.WEBSITE_TITLE,*/ BarnesAndNoble.WEBSITE_TITLE, BooksAMillion.WEBSITE_TITLE, Crunchyroll.WEBSITE_TITLE, InStockTrades.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE, MerryManga.WEBSITE_TITLE, RobertsAnimeCornerStore.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, Wordery.WEBSITE_TITLE ],
-                Region.Australia => [ MangaMate.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, Wordery.WEBSITE_TITLE ],
-                Region.Britain => [ /*ForbiddenPlanet.WEBSITE_TITLE,*/ SciFier.WEBSITE_TITLE, SpeedyHen.WEBSITE_TITLE, TravellingMan.WEBSITE_TITLE, Waterstones.WEBSITE_TITLE, Wordery.WEBSITE_TITLE ],
-                Region.Canada => [ Indigo.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, Wordery.WEBSITE_TITLE ],
-                Region.Europe => [ SciFier.WEBSITE_TITLE, Wordery.WEBSITE_TITLE ],
+                Region.America => [ /*AmazonUSA.WEBSITE_TITLE,*/ BarnesAndNoble.WEBSITE_TITLE, BooksAMillion.WEBSITE_TITLE, Crunchyroll.WEBSITE_TITLE, InStockTrades.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE, MerryManga.WEBSITE_TITLE, RobertsAnimeCornerStore.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, /*Wordery.WEBSITE_TITLE*/ ],
+                Region.Australia => [ MangaMate.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, /*Wordery.WEBSITE_TITLE*/ ],
+                Region.Britain => [ ForbiddenPlanet.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, SpeedyHen.WEBSITE_TITLE, TravellingMan.WEBSITE_TITLE, Waterstones.WEBSITE_TITLE, /*Wordery.WEBSITE_TITLE*/ ],
+                Region.Canada => [ Indigo.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, /*Wordery.WEBSITE_TITLE*/ ],
+                Region.Europe => [ SciFier.WEBSITE_TITLE, /*Wordery.WEBSITE_TITLE*/ ],
                 Region.Japan => [ /*mazonJapan.WEBSITE_TITLE, CDJapan.WEBSITE_TITLE*/ ],
                 _ => [ ]
             };
@@ -120,11 +120,11 @@ namespace MangaAndLightNovelWebScrape
         {
             return region switch
             {
-                Region.America => [ /*Website.AmazonUSA,*/ Website.BarnesAndNoble, Website.BooksAMillion, Website.Crunchyroll, Website.InStockTrades, Website.KinokuniyaUSA, Website.MerryManga, Website.RobertsAnimeCornerStore, Website.SciFier, Website.Wordery ],
-                Region.Australia => [ Website.MangaMate, Website.SciFier, Website.Wordery ],
-                Region.Britain => [ /*Website.ForbiddenPlanet,*/ Website.SciFier, Website.SpeedyHen, Website.TravellingMan, Website.Waterstones, Website.Wordery ],
-                Region.Canada => [ Website.Indigo, Website.SciFier, Website.Wordery ],
-                Region.Europe => [ Website.SciFier, Website.Wordery ],
+                Region.America => [ /*Website.AmazonUSA,*/ Website.BarnesAndNoble, Website.BooksAMillion, Website.Crunchyroll, Website.InStockTrades, Website.KinokuniyaUSA, Website.MerryManga, Website.RobertsAnimeCornerStore, Website.SciFier, /*Website.Wordery*/ ],
+                Region.Australia => [ Website.MangaMate, Website.SciFier, /*Website.Wordery*/ ],
+                Region.Britain => [ Website.ForbiddenPlanet, Website.SciFier, Website.SpeedyHen, Website.TravellingMan, Website.Waterstones, /*Website.Wordery*/ ],
+                Region.Canada => [ Website.Indigo, Website.SciFier, /*Website.Wordery*/ ],
+                Region.Europe => [ Website.SciFier, /*Website.Wordery*/ ],
                 Region.Japan => [ /*Website.AmazonJapan, Website.CDJapan*/ ],
                 _ => [ ],
             };
@@ -196,7 +196,7 @@ namespace MangaAndLightNovelWebScrape
                     Website.SpeedyHen => SpeedyHen.REGION.HasFlag(region),
                     Website.TravellingMan => TravellingMan.REGION.HasFlag(region),
                     Website.Waterstones => Waterstones.REGION.HasFlag(region),
-                    Website.Wordery => Wordery.REGION.HasFlag(region),
+                    // Website.Wordery => Wordery.REGION.HasFlag(region),
                     _ => throw new NotImplementedException(),
                 };
                 if (!isValid) { return false; }

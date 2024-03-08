@@ -20,7 +20,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         [GeneratedRegex(@",| \(manga\)|(?<=\d{1,3}): .*| Manga|\s+\(.*?\)| The Manga|", RegexOptions.IgnoreCase)] private static partial Regex TitleRegex();
         [GeneratedRegex(@"(?<=Box Set \d{1}).*|\s+Complete", RegexOptions.IgnoreCase)] private static partial Regex BoxSetTitleRegex();
         [GeneratedRegex(@"(?<=Vol \d{1,3})[^\d{1,3}.]+.*", RegexOptions.IgnoreCase)] private static partial Regex NovelitleRegex();
-        [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)")] private static partial Regex OmnibusRegex();
+        [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)|Omnibus\s+(\d{1,3}).*")] private static partial Regex OmnibusRegex();
         [GeneratedRegex(@"Vol\.|Vols\.|Volume", RegexOptions.IgnoreCase)] private static partial Regex FixVolumeRegex();
 
         protected internal async Task CreateIndigoTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList)
@@ -61,7 +61,7 @@ namespace MangaAndLightNovelWebScrape.Websites
 
             if (OmnibusRegex().IsMatch(entryTitle))
             {
-                entryTitle = OmnibusRegex().Replace(entryTitle, "Omnibus");
+                entryTitle = OmnibusRegex().Replace(entryTitle, "Omnibus $1");
             }
             else if (entryTitle.Contains("Box Set"))
             {
@@ -73,21 +73,17 @@ namespace MangaAndLightNovelWebScrape.Websites
             {
                 curTitle.Replace(" Naruto Next Generations", string.Empty);
             }
-
+            
             if (entryTitle.Contains("Collector's Edition"))
             {
                 curTitle.Insert(curTitle.ToString().IndexOf("Vol"), "Collectors Edition ");
             }
             
-            // LOGGER.Debug("{} | {} | {} | {} | {}", curTitle, !entryTitle.Contains("Vol"), !entryTitle.Contains("Box Set"), !entryTitle.Contains("Anniversary Book"), char.IsDigit(curTitle.ToString()[curTitle.Length - 1]));
-
-            // InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, '.');
             InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
             InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Deluxe", "Deluxe Edition");
             InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, " Complete", " ");
             InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, " Color Edition", "In Color");
             InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "-", " ");
-            // InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, '-');
 
             if (entryTitle.Contains("Special Edition", StringComparison.OrdinalIgnoreCase))
             {
@@ -157,10 +153,8 @@ namespace MangaAndLightNovelWebScrape.Websites
                                 && !(
                                         InternalHelpers.RemoveUnintendedVolumes(bookTitle, "One Piece", entryTitle, "Ace's Story") 
                                         || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear Your Own World")
-                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony")
-                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "Flame Dragon Knight")
-                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "attack on titan", entryTitle, "Kuklo Unbound")
-                                        || (InternalHelpers.RemoveUnintendedVolumes(bookTitle, "attack on titan", entryTitle, "Lost Girls") && !entryTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase))
+                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony", "Flame Dragon Knight")
+                                        || (InternalHelpers.RemoveUnintendedVolumes(bookTitle, "attack on titan", entryTitle, "Kuklo Unbound", "Lost Girls") && !entryTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase))
                                         || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
                                 )   
                             )

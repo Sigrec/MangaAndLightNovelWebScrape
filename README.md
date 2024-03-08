@@ -14,13 +14,11 @@ If you want a website or region to be added fill out a [issue request](https://g
 - [x] MerryManga
 - [x] RobertsAnimeCornerStore
 - [x] SciFier
-- [x] Wordery
 
 #### Australia
 - [ ] AmazonAU (Not Started)
 - [x] MangaMate
 - [x] SciFier
-- [x] Wordery
 
 #### Britain
 - [ ] AmazonUK (Not Started)
@@ -29,17 +27,14 @@ If you want a website or region to be added fill out a [issue request](https://g
 - [x] SpeedyHen
 - [x] TravellingMan
 - [x] Waterstones
-- [x] Wordery
 
 #### Canada
 - [ ] AmazonCanada (Not Started)
 - [x] Indigo
 - [x] SciFier
-- [x] Wordery
 
 #### Europe
 - [x] SciFier
-- [x] Wordery
 
 #### Japan
 - [ ] AmazonJP (Not Started)

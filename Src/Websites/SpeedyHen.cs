@@ -20,7 +20,7 @@ namespace MangaAndLightNovelWebScrape.Websites
 
         [GeneratedRegex(@"Vol\.|Volume", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
         [GeneratedRegex(@"The Manga|\s+Manga|(?<=Vol (?:\d{1,3}|\d{1,3}.\d{1}))[^\d{1,3}.]+.*|(?<=Box Set \d{1,3}).*|\(.*?\)")] private static partial Regex TitleParseRegex();
-        [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)", RegexOptions.IgnoreCase)] private static partial Regex OmnibusParseRegex();
+        [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)|Omnibus\s+(\d{1,3}).*", RegexOptions.IgnoreCase)] private static partial Regex OmnibusParseRegex();
         [GeneratedRegex(@"Box Set!", RegexOptions.IgnoreCase)] private static partial Regex BoxSetParseRegex();
         
 
@@ -65,7 +65,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         {
             if (OmnibusParseRegex().IsMatch(entryTitle))
             {
-                entryTitle = OmnibusParseRegex().Replace(entryTitle, "Omnibus");
+                entryTitle = OmnibusParseRegex().Replace(entryTitle, "Omnibus $1");
             }
             else if (BoxSetParseRegex().IsMatch(entryTitle))
             {
@@ -94,6 +94,11 @@ namespace MangaAndLightNovelWebScrape.Websites
             {
                 int index = MasterScrape.FindVolWithNumRegex().Match(entryTitle).Index;
                 curTitle.Insert(index > 0 ? index : curTitle.Length, " Novel ");
+            }
+
+            if (bookTitle.Contains("Noragami", StringComparison.OrdinalIgnoreCase) && !curTitle.ToString().Contains("Omnibus")  && !curTitle.ToString().Contains("Stray Stories") && !curTitle.ToString().Contains("Stray God"))
+            {
+                curTitle.Insert(curTitle.ToString().IndexOf("Vol"), "Stray God ");
             }
 
             return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();

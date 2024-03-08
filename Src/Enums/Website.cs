@@ -19,6 +19,6 @@ namespace MangaAndLightNovelWebScrape.Enums
         SpeedyHen,
         TravellingMan,
         Waterstones,
-        Wordery
+        // Wordery
     }
 }

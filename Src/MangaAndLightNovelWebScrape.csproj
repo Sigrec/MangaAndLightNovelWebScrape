@@ -9,9 +9,9 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>partial</TrimMode>
-    <PackageVersion>2.1.2</PackageVersion>
-    <Version>2.1.2</Version>
-    <FileVersion>2.1.2.0</FileVersion>
+    <PackageVersion>2.2.0</PackageVersion>
+    <Version>2.2.0</Version>
+    <FileVersion>2.2.0.0</FileVersion>
     <Authors>Prem</Authors>
     <Owners>Prem</Owners>
     <LangVersion>preview</LangVersion>
