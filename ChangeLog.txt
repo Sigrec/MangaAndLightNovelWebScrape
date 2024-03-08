@@ -25,7 +25,10 @@ v2.2.0 -
 📜Books-A-Million Fixes
  -🔥Correctly removes extra text after Omnibus Vol #
 📜MerryManga Fixes
- -❌Fixed issue where series that did not contain any BoxSets would sometimes not return any data
+ -🔥Fixed issue where series that did not contain any BoxSets would sometimes not return any data
+📜Wordery Fixes
+ -🔥Correctly formats entries that have extra text after the vol #
+ -🔥Fixed issue where it would not wait to load the initial page
 
 v2.1.2 - February 29th
 ✅Added new method to get websites that have a membership for a specific region

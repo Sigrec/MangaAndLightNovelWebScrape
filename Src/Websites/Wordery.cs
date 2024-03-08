@@ -21,13 +21,13 @@ namespace MangaAndLightNovelWebScrape.Websites
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("(//span[@class='js-pnav-max'])[1]");
         private static readonly XPathExpression BookFormatXPath = XPathExpression.Compile("//small[@class='c-book__meta']");
         private static readonly XPathExpression StaffXPath = XPathExpression.Compile("//span[@class='c-book__by']");
-        private static readonly XPathExpression CurrencyCheckXPath = XPathExpression.Compile("//*[@id='page']/nav[2]/div[1]/div/ul/li[1]/button/span");
 
         [GeneratedRegex(@"\d{1,3}.\d{1}", RegexOptions.IgnoreCase)] internal static partial Regex MultiVolNumCheck();
         [GeneratedRegex(@"Vol\.|Volume", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
         [GeneratedRegex(@",|&nbsp;|The Manga|Manga|\(.*\)| HARDCOVER", RegexOptions.IgnoreCase)] private static partial Regex TitleParseRegex();
         [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
         [GeneratedRegex(@"(?<=Box Set \d{1,3})[^\d].*", RegexOptions.IgnoreCase)] private static partial Regex BoxSetRegex();
+        [GeneratedRegex(@"(?<=Vol\s+(?:\d{1,3}|\d{1,3}.\d{1,2})[^\d]).*", RegexOptions.IgnoreCase)] private static partial Regex FindVolWithNumRegex();
 
         internal async Task CreateWorderyTask(string bookTitle, BookType bookType, List<List<EntryModel>> MasterDataList, Region curRegion, WebDriver driver)
         {
@@ -146,6 +146,13 @@ namespace MangaAndLightNovelWebScrape.Websites
                 }
             }
 
+            if (bookType == BookType.Manga && curTitle.ToString().Contains("Vol") && !char.IsDigit(curTitle.ToString()[curTitle.Length - 1]))
+            {
+                Match match = FindVolWithNumRegex().Match(curTitle.ToString());
+                // LOGGER.Debug("Fix {} | {} | {} | {}", curTitle.ToString(), match.Index, match.Value, curTitle.ToString()[match.Index]);
+                curTitle.Remove(match.Index, match.Length);
+            }
+
             if (curTitle.ToString().Contains("Box Set") && curTitle.ToString().Contains("Vol"))
             {
                 curTitle.Replace("Vol", string.Empty);
@@ -184,9 +191,10 @@ namespace MangaAndLightNovelWebScrape.Websites
                 if (!driver.FindElement(By.XPath("//*[@id='page']/nav[2]/div[1]/div/ul/li[1]/button/span")).Text.Equals(CURRENCY_DICTIONARY[curRegion].Item2))
                 {
                     LOGGER.Info("Changing Region to {}", curRegion.ToString());
+                    wait.Until(driver => driver.FindElement(By.XPath("//div[@id='results']/div[2]/ul")));
                     driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath($"//div[@class='c-crncy-sel']/form/button[text()='{CURRENCY_DICTIONARY[curRegion].Item1}']"))));
                 }
-                // wait.Until(driver => driver.FindElement(By.XPath("//div[@id='results']")));
+                wait.Until(driver => driver.FindElement(By.XPath("//div[@id='results']/div[2]/ul")));
 
                 doc.LoadHtml(driver.PageSource);
                 ushort maxPageNum = ushort.Parse(doc.DocumentNode.SelectSingleNode(PageCheckXPath).InnerText.Trim());
@@ -289,9 +297,6 @@ namespace MangaAndLightNovelWebScrape.Websites
                         break;
                     }
                 }
-
-                WorderyData.Sort(EntryModel.VolumeSort);
-                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, WorderyData, LOGGER);
             }
             catch (Exception ex)
             {
@@ -300,6 +305,8 @@ namespace MangaAndLightNovelWebScrape.Websites
             finally
             {
                 driver?.Quit();
+                WorderyData.Sort(EntryModel.VolumeSort);
+                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, WorderyData, LOGGER);
             }
             return WorderyData;
         }
