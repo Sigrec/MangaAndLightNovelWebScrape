@@ -44,13 +44,15 @@ namespace Tests.Websites
 
                 Assert.That(RobertsAnimeCornerStore.REGION.HasFlag(Region.America) && !RobertsAnimeCornerStore.REGION.HasFlag(Region.Australia) && !RobertsAnimeCornerStore.REGION.HasFlag(Region.Britain) && !RobertsAnimeCornerStore.REGION.HasFlag(Region.Canada) && !RobertsAnimeCornerStore.REGION.HasFlag(Region.Europe) && !RobertsAnimeCornerStore.REGION.HasFlag(Region.Japan));
 
+                Assert.That(!TravellingMan.REGION.HasFlag(Region.America) && !TravellingMan.REGION.HasFlag(Region.Australia) && TravellingMan.REGION.HasFlag(Region.Britain) && !TravellingMan.REGION.HasFlag(Region.Canada) && !TravellingMan.REGION.HasFlag(Region.Europe) && !TravellingMan.REGION.HasFlag(Region.Japan));
+
                 Assert.That(SciFier.REGION.HasFlag(Region.America) && SciFier.REGION.HasFlag(Region.Australia) && SciFier.REGION.HasFlag(Region.Britain) && SciFier.REGION.HasFlag(Region.Canada) && SciFier.REGION.HasFlag(Region.Europe) && !SciFier.REGION.HasFlag(Region.Japan));
 
                 Assert.That(!SpeedyHen.REGION.HasFlag(Region.America) && !SpeedyHen.REGION.HasFlag(Region.Australia) && SpeedyHen.REGION.HasFlag(Region.Britain) && !SpeedyHen.REGION.HasFlag(Region.Canada) && !SpeedyHen.REGION.HasFlag(Region.Europe) && !SpeedyHen.REGION.HasFlag(Region.Japan));
 
                 Assert.That(!Waterstones.REGION.HasFlag(Region.America) && !Waterstones.REGION.HasFlag(Region.Australia) && Waterstones.REGION.HasFlag(Region.Britain) && !Waterstones.REGION.HasFlag(Region.Canada) && !Waterstones.REGION.HasFlag(Region.Europe) && !Waterstones.REGION.HasFlag(Region.Japan));
 
-                Assert.That(Wordery.REGION.HasFlag(Region.America) && Wordery.REGION.HasFlag(Region.Australia) && Wordery.REGION.HasFlag(Region.Britain) && Wordery.REGION.HasFlag(Region.Canada) && Wordery.REGION.HasFlag(Region.Europe) && !Wordery.REGION.HasFlag(Region.Japan));
+                // Assert.That(Wordery.REGION.HasFlag(Region.America) && Wordery.REGION.HasFlag(Region.Australia) && Wordery.REGION.HasFlag(Region.Britain) && Wordery.REGION.HasFlag(Region.Canada) && Wordery.REGION.HasFlag(Region.Europe) && !Wordery.REGION.HasFlag(Region.Japan));
             });
         }
     }

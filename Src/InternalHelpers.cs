@@ -158,11 +158,16 @@ namespace MangaAndLightNovelWebScrape
 
         internal static bool ContainsAny(this string input, List<string> values)
         {
-            foreach (string val in values)
+            bool contain = false;
+            Parallel.ForEach(values, (curVal, state) => 
             {
-                if (input.Contains(val, StringComparison.OrdinalIgnoreCase)) return true;
-            }
-            return false;
+                if (input.Contains(curVal, StringComparison.OrdinalIgnoreCase)) 
+                {
+                    contain = true;
+                    state.Break();
+                }
+            });
+            return contain;
         }
 
         internal static void RemoveExtras(this List<EntryModel> input)
@@ -175,6 +180,17 @@ namespace MangaAndLightNovelWebScrape
                     input.RemoveAt(x);
                 }
             }
+        }
+
+        /// <summary>
+        /// Applies a coupon to the price by substracting the coupon amount
+        /// </summary>
+        /// <param name="initialPrice"></param>
+        /// <param name="couponAmount"></param>
+        /// <returns></returns>
+        internal static string ApplyCoupon(decimal initialPrice, decimal couponAmount)
+        {
+            return decimal.Subtract(initialPrice, couponAmount).ToString("0.00");
         }
     }
 }

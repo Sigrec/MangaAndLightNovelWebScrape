@@ -6,7 +6,7 @@ namespace Tests.Websites
     public class WorderyTests
     {
         private static MasterScrape Scrape;
-        private static readonly HashSet<Website> WebsiteList = [ Website.Wordery ];
+        private static readonly HashSet<Website> WebsiteList = [ Website.SciFier ]; // TODO - If wordery is valid again then change back
 
         [OneTimeSetUp]
         public void OneTimeSetUp()
