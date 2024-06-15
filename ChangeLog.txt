@@ -6,6 +6,11 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> Inprogress feature will be fixed in later release
 
+v3.0.0 - 
+✅ Disabled/Removed Barnes & Noble
+📜RobertsAnimeCornerStore Fixes
+ -🔥Website url changes applied so it runs without error
+
 v2.2.0 - March 8th
 ✅Removed Wordery from scrape until further notice
 ✅Fix membership list output in AsciiTable

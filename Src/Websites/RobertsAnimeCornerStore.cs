@@ -8,15 +8,18 @@ namespace MangaAndLightNovelWebScrape.Websites
         private static readonly Logger LOGGER = LogManager.GetLogger("RobertsAnimeCornerStoreLogs");
         private static readonly Dictionary<string, string> URL_MAP_DICT = new()
         { 
-            {"mangrapnovag", @"^[a-bA-B\d]"},
-            {"mangrapnovhp", @"^[c-dC-D]"},
-            {"mangrapnovqz", @"^[e-gE-G]"},
-            {"magrnomo", @"^[h-kH-K]"},
-            {"magrnops", @"^[l-nL-N]"},
-            {"magrnotz", @"^[o-qO-Q]"},
-            {"magrnors", @"^[r-sR-S]"},
-            {"magrnotv", @"^[t-vT-V]"},
-            {"magrnowz", @"^[w-zW-Z]"}
+            {"mangalitenovab", @"^[a-bA-B\d]"}, // https://www.animecornerstore.com/mangalitenovab.html
+            {"mangalitenovcd", @"^[c-dC-D]"}, // https://www.animecornerstore.com/mangalitenovcd.html
+            {"mangalitenovef", @"^[e-fE-F]"}, // https://www.animecornerstore.com/mangalitenovef.html
+            {"mangalitenovgh", @"^[g-hG-h]"}, // https://www.animecornerstore.com/mangalitenovgh.html
+            {"mangalitenovik", @"^[i-kI-K]"}, // https://www.animecornerstore.com/mangalitenovik.html
+            {"mangalitenovlm", @"^[l-mL-M]"}, // https://www.animecornerstore.com/mangalitenovlm.html
+            {"mangalitenovnomagrnors", @"^[n-oN-O]"}, // https://www.animecornerstore.com/mangalitenovno.html
+            {"mangalitenovpq", @"^[p-qP-Q]"}, // https://www.animecornerstore.com/mangalitenovpq.html
+            {"mangalitenovrs", @"^[r-sR-S]"}, // https://www.animecornerstore.com/mangalitenovrs.html
+            {"mangalitenovtu", @"^[t-uT-U]"}, // https://www.animecornerstore.com/mangalitenovtu.html
+            {"mangalitenovvw", @"^[v-wV-W]"}, // https://www.animecornerstore.com/mangalitenovvw.html
+            {"mangalitenovxz", @"^[x-zX-Z]"}, // https://www.animecornerstore.com/mangalitenovxz.html
         };
         public const Region REGION = Region.America;
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//font[@face='dom bold, arial, helvetica']/b");

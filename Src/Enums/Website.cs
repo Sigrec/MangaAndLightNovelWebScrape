@@ -4,7 +4,7 @@ namespace MangaAndLightNovelWebScrape.Enums
     {
         AmazonJapan,
         AmazonUSA,
-        BarnesAndNoble,
+        // BarnesAndNoble,
         BooksAMillion,
         CDJapan,
         Crunchyroll,
