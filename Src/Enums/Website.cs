@@ -4,7 +4,6 @@ namespace MangaAndLightNovelWebScrape.Enums
     {
         AmazonJapan,
         AmazonUSA,
-        // BarnesAndNoble,
         BooksAMillion,
         CDJapan,
         Crunchyroll,
@@ -18,7 +17,7 @@ namespace MangaAndLightNovelWebScrape.Enums
         SciFier,
         SpeedyHen,
         TravellingMan,
-        Waterstones,
-        // Wordery
+        Waterstones
+        
     }
 }

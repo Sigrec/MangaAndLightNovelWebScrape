@@ -10,11 +10,11 @@ namespace MangaAndLightNovelWebScrape.Websites
         public const Region REGION = Region.Britain;
         private static readonly List<string> DescRemovalStrings = [ "novel", "original stories", "collecting issues"];
         private static readonly Logger LOGGER = LogManager.GetLogger("ForbiddenPlanetLogs");
-        private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//h3[@class='h4 clr-black mqt ord--03 one-whole txt-left dtb--fg owl-off']"); //h3[@class='h4 clr-black mqt ord--03 one-whole txt-left dtb--fg owl-off']
+        private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[@class='full']/ul/li/section/header/div[2]/h3/a");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='clr-price']");
-        private static readonly XPathExpression MinorPriceXPath = XPathExpression.Compile("//span[@class='t-small clr-price']");
-        private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//ul[@class='inline-list inline-list--q ord--02 mqt']");
-        private static readonly XPathExpression BookTypeXPath = XPathExpression.Compile("//li[@class='block right crsr-txt pa--tr pa pqr pql mq type-tag inline-list__item']");
+        private static readonly XPathExpression MinorPriceXPath = XPathExpression.Compile("(//div[@class='full']/ul/li/section/header/div[2])/p/span[2]");
+        private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='full']/ul/li/section/header/div/ul");
+        private static readonly XPathExpression BookTypeXPath = XPathExpression.Compile("(//div[@class='full']/ul/li/section/header/div[1])/p");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("(//a[@class='product-list__pagination__next'])[1]");
 
         [GeneratedRegex(@" The Manga|\(Hardcover\)|:(?:.*):|\(.*\)", RegexOptions.IgnoreCase)] internal static partial Regex TitleParseRegex();
@@ -66,7 +66,7 @@ namespace MangaAndLightNovelWebScrape.Websites
 
             if (!entryTitle.Contains("Anniversary") && (entryTitle.Contains("3-In-1", StringComparison.OrdinalIgnoreCase) || entryTitle.Contains("3 In 1", StringComparison.OrdinalIgnoreCase) || entryTitle.Contains("Omnibus", StringComparison.OrdinalIgnoreCase)))
             {
-                LOGGER.Debug("(0) {}", entryTitle);
+                // LOGGER.Debug("(0) {}", entryTitle);
                 entryTitle = OmnibusFixRegex().Replace(entryTitle, $" Omnibus $1$2$3");
                 curTitle = new StringBuilder(entryTitle);
 
@@ -80,7 +80,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     curTitle.Insert(MasterScrape.FindVolNumRegex().Match(curTitle.ToString()).Index, "Vol ");
                 }
                 curTitle.TrimEnd();
-                LOGGER.Debug("(1) {}", curTitle.ToString());
+                // LOGGER.Debug("(1) {}", curTitle.ToString());
 
                 if (!char.IsDigit(curTitle.ToString()[^1]))
                 {
@@ -88,7 +88,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     curTitle.TrimEnd();
                     curTitle.Insert(curTitle.ToString().IndexOf("Vol"), "Omnibus ");
                 }
-                LOGGER.Debug("(2) {}", curTitle.ToString());
+                // LOGGER.Debug("(2) {}", curTitle.ToString());
             }
             else if (entryTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
             {
@@ -173,7 +173,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             {
                 curTitle.Insert(entryTitle.AsSpan().IndexOf("Vol"), "Special Edition ");
             }
-            LOGGER.Debug("(3) {}", curTitle.ToString());
+            // LOGGER.Debug("(3) {}", curTitle.ToString());
 
             curTitle.Replace(",", string.Empty);
             if (!bookTitle.Contains(':'))
@@ -220,13 +220,13 @@ namespace MangaAndLightNovelWebScrape.Websites
                     HtmlNodeCollection bookFormatData = doc.DocumentNode.SelectNodes(BookTypeXPath);
                     HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
                     HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
-                    //LOGGER.Debug("{} | {} | {} | {} | {}", titleData.Count, priceData.Count, minorPriceData.Count, bookFormatData.Count, stockStatusData.Count);
+                    // LOGGER.Debug("{} | {} | {} | {} | {}", titleData.Count, priceData.Count, minorPriceData.Count, bookFormatData.Count, stockStatusData.Count);
 
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        string bookFormat = stockStatusData[x].FirstChild.InnerText;
+                        string bookFormat = bookFormatData[x].InnerText;
                         string entryTitle = titleData[x].GetDirectInnerText();
-                        LOGGER.Debug("(-1) {} | {}", entryTitle, bookFormat);
+                        // LOGGER.Debug("(-1) {} | {} | {}", entryTitle, bookFormat, minorPriceData[x].InnerText);
                         if (
                             InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
                             && (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
@@ -266,11 +266,11 @@ namespace MangaAndLightNovelWebScrape.Websites
                                     new EntryModel(
                                         WebUtility.HtmlDecode(TitleParse(bookTitle, entryTitle, bookType)),
                                         $"{priceData[x].GetDirectInnerText()}{minorPriceData[x].InnerText}", 
-                                        stockStatusData[x].LastChild.InnerText switch
+                                        stockStatusData[x].InnerText switch
                                         {
                                             "Pre-Order" => StockStatus.PO,
                                             "Currently Unavailable" => StockStatus.OOS,
-                                            _ => StockStatus.IS
+                                             _ => StockStatus.IS
                                         },
                                         WEBSITE_TITLE
                                     )

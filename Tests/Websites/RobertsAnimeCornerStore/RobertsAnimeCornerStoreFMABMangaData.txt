@@ -1,4 +1,4 @@
-[Fullmetal Alchemist 20th Anniversary Book, $19.98, PO, RobertsAnimeCornerStore]
+[Fullmetal Alchemist 20th Anniversary Book, $19.98, IS, RobertsAnimeCornerStore]
 [Fullmetal Alchemist Fullmetal Edition Vol 1, $17.29, IS, RobertsAnimeCornerStore]
 [Fullmetal Alchemist Fullmetal Edition Vol 2, $17.29, IS, RobertsAnimeCornerStore]
 [Fullmetal Alchemist Fullmetal Edition Vol 3, $17.29, IS, RobertsAnimeCornerStore]
@@ -26,4 +26,4 @@
 [Fullmetal Alchemist Omnibus Vol 7, $12.97, IS, RobertsAnimeCornerStore]
 [Fullmetal Alchemist Omnibus Vol 8, $12.97, IS, RobertsAnimeCornerStore]
 [Fullmetal Alchemist Omnibus Vol 9, $12.97, IS, RobertsAnimeCornerStore]
-[Fullmetal Alchemist The Complete Four-Panel Comics, $11.24, IS, RobertsAnimeCornerStore]
+[Fullmetal Alchemist The Complete Four Panel Comics, $11.24, IS, RobertsAnimeCornerStore]

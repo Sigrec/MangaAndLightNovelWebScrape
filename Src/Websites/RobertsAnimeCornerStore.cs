@@ -6,18 +6,6 @@ namespace MangaAndLightNovelWebScrape.Websites
         private readonly List<EntryModel> RobertsAnimeCornerStoreData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "RobertsAnimeCornerStore";
         private static readonly Logger LOGGER = LogManager.GetLogger("RobertsAnimeCornerStoreLogs");
-        private static readonly Dictionary<string, string> URL_MAP_DICT = new()
-        { 
-            {"mangrapnovag", @"^[a-bA-B\d]"},
-            {"mangrapnovhp", @"^[c-dC-D]"},
-            {"mangrapnovqz", @"^[e-gE-G]"},
-            {"magrnomo", @"^[h-kH-K]"},
-            {"magrnops", @"^[l-nL-N]"},
-            {"magrnotz", @"^[o-qO-Q]"},
-            {"magrnors", @"^[r-sR-S]"},
-            {"magrnotv", @"^[t-vT-V]"},
-            {"magrnowz", @"^[w-zW-Z]"}
-        };
         public const Region REGION = Region.America;
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//font[@face='dom bold, arial, helvetica']/b");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//form[@method='POST'][contains(text()[2], '$')]//font[@color='#ffcc33'][2]");
@@ -43,16 +31,26 @@ namespace MangaAndLightNovelWebScrape.Websites
         
         private static string GenerateWebsiteUrl(string bookTitle)
         {
-            string url = string.Empty;
+
             // Gets the starting page based on first letter and checks if we are looking for the 1st webpage (false) or 2nd webpage containing the actual item data (true)
-            Parallel.ForEach(URL_MAP_DICT, (link, state) =>
+            string key = bookTitle.ToLower()[0] switch
             {
-                if (new Regex(link.Value).Match(bookTitle).Success)
-                {
-                    url = $"https://www.animecornerstore.com/{link.Key}.html";
-                    state.Stop();
-                }
-            });
+                'a' or 'b' or (>= '0' and <= '9') => "mangalitenovab", // https://www.animecornerstore.com/mangalitenovab.html
+                'c' or 'd' => "mangalitenovcd", // https://www.animecornerstore.com/mangalitenovcd.html
+                'e' or 'f' => "mangalitenovef", // https://www.animecornerstore.com/mangalitenovef.html
+                'g' or 'h' => "mangalitenovgh", // https://www.animecornerstore.com/mangalitenovgh.html
+                'i' or 'j' or 'k' => "mangalitenovik", // https://www.animecornerstore.com/mangalitenovik.html
+                'l' or 'm' => "mangalitenovlm", // https://www.animecornerstore.com/mangalitenovlm.html
+                'n' or 'o' => "mangalitenovno", // https://www.animecornerstore.com/mangalitenovno.html
+                'p' or 'q' => "mangalitenovpq", // https://www.animecornerstore.com/mangalitenovpq.html
+                'r' or 's' => "mangalitenovrs", // https://www.animecornerstore.com/mangalitenovrs.html
+                't' or 'u' => "mangalitenovtu", // https://www.animecornerstore.com/mangalitenovtu.html
+                'v' or 'w' => "mangalitenovvw", // https://www.animecornerstore.com/mangalitenovvw.html
+                'x' or 'y' or 'z'=> "mangalitenovxz", // https://www.animecornerstore.com/mangalitenovxz.html
+                _ => throw new ArgumentOutOfRangeException(nameof(bookTitle), $"{bookTitle} Starts w/ Unknown Caracter")
+            };
+
+            string url = $"https://www.animecornerstore.com/{key}.html";
             LOGGER.Info($"Initial Url = {url}");
             return url;
         }
@@ -95,6 +93,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 }
             }
             InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
+            InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "-", " ");
 
             if (specialEditionCheck)
             {
@@ -120,6 +119,10 @@ namespace MangaAndLightNovelWebScrape.Websites
                 {
                     curTitle.Insert(curTitle.Length, " Novel");
                 }
+            }
+            else if (bookType == BookType.Manga)
+            {
+                InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "The Manga", "Manga");
             }
 
             return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ");
@@ -169,7 +172,19 @@ namespace MangaAndLightNovelWebScrape.Websites
                                 || bookType == BookType.Manga && InternalHelpers.RemoveUnintendedVolumes(bookTitle, "attack on titan", entryTitle, "Spoof")
                                 )
                                 && (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
-                                && ((bookType == BookType.Manga && entryTitle.Contains("Graphic Novel")) || (bookType == BookType.LightNovel && !entryTitle.Contains("Graphic Novel"))))
+                                && (
+                                        (
+                                            bookType == BookType.Manga && entryTitle.Contains("Graphic Novel")
+                                            && !(
+                                                InternalHelpers.RemoveUnintendedVolumes(bookTitle, "berserk", entryTitle, "Berserk With Darkness Ink")
+                                            )
+                                        ) 
+                                        || 
+                                        (
+                                            bookType == BookType.LightNovel && !entryTitle.Contains("Graphic Novel")
+                                        )
+                                    )
+                                )
                             {
                                 // LOGGER.Debug("{} | {}", entryTitle, priceData[x].InnerText.Trim());
                                 if (!RobertsAnimeCornerStoreLinks.Contains(link)) { RobertsAnimeCornerStoreLinks.Add(link); }

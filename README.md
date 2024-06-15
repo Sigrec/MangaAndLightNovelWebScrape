@@ -5,40 +5,40 @@
 ### *Website Completion List*
 If you want a website or region to be added fill out a [issue request](https://github.com/Sigrec/MangaAndLightNovelWebScrape/issues/new/choose).
 #### America
-- [ ] AmazonUSA (Paused)
-- [x] Barnes & Noble (No Longer Supported due to robots.txt change)
-- [x] Books-A-Million
-- [x] Crunchyroll
-- [x] InStockTrades
-- [x] Kinokuniya USA
-- [x] MerryManga
-- [x] RobertsAnimeCornerStore
-- [x] SciFier
+⌛ AmazonUSA (Paused)
+❌ Barnes & Noble (No longer supported due to robots.txt change) 
+✅ Books-A-Million
+✅ Crunchyroll
+✅ InStockTrades
+✅ Kinokuniya USA
+✅ MerryManga
+✅ RobertsAnimeCornerStore
+✅ SciFier
 
 #### Australia
-- [ ] AmazonAU (Not Started)
-- [x] MangaMate
-- [x] SciFier
+⌛ AmazonAU (Not Started)
+✅ MangaMate
+✅ SciFier
 
 #### Britain
-- [ ] AmazonUK (Not Started)
-- [x] ForBiddenPlanet
-- [x] SciFier
-- [x] SpeedyHen
-- [x] TravellingMan
-- [x] Waterstones
+⌛ AmazonUK (Not Started)
+✅ ForBiddenPlanet
+✅ SciFier
+✅ SpeedyHen
+✅ TravellingMan
+✅ Waterstones
 
 #### Canada
-- [ ] AmazonCanada (Not Started)
-- [x] Indigo
-- [x] SciFier
+⌛ AmazonCanada (Not Started)
+✅ Indigo
+✅ SciFier
 
 #### Europe
-- [x] SciFier
+✅ SciFier
 
 #### Japan
-- [ ] AmazonJP (Not Started)
-- [ ] CDJapan (Paused)
+⌛ AmazonJP (Not Started)
+⌛ CDJapan (Paused)
  
 ***
 #### Demo
@@ -50,14 +50,13 @@ private static async Task Main(string[] args)
     scrape.Region = Region.Canada;
     scrape.Browser = Browser.FireFox;
     scrape.Filter = StockstatusFilter.EXCLUDE_OOS_AND_PO_FILTER;
-    scrape.IsBarnesAndNobleMember = true;
     scrape.IsBooksAMillionMember = false;
     scrape.IsKinokuniyaUSAMember = true;
     scrape.IsIndigoMember = false;
 
     // Alternativly you can do everything in the constructor and enable debug mode which will print to log and txt files
     // Chaining Regions like so Region.America | Region.Britain will not work
-    MasterScrape Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, StockStatusFilter.EXCLUDE_ALL_FILTER, Region.Britain, Browser.Edge, false, false, false, true).EnableDebugMode();
+    MasterScrape Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, StockStatusFilter.EXCLUDE_ALL_FILTER, Region.Britain, Browser.Edge, false, false, true).EnableDebugMode();
 
     // Initialize the Scrape
     await scrape.InitializeScrapeAsync(

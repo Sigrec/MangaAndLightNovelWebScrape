@@ -20,4 +20,6 @@
 [Classroom of the Elite Year 2 Novel Vol 5, $12.98, IS, RobertsAnimeCornerStore]
 [Classroom of the Elite Year 2 Novel Vol 6, $12.98, IS, RobertsAnimeCornerStore]
 [Classroom of the Elite Year 2 Novel Vol 7, $12.98, IS, RobertsAnimeCornerStore]
-[Classroom of the Elite Year 2 Novel Vol 8, $12.98, PO, RobertsAnimeCornerStore]
+[Classroom of the Elite Year 2 Novel Vol 8, $12.98, IS, RobertsAnimeCornerStore]
+[Classroom of the Elite Year 2 Novel Vol 9, $12.98, PO, RobertsAnimeCornerStore]
+[Classroom of the Elite Year 2 Novel Vol 9.5, $12.98, PO, RobertsAnimeCornerStore]
