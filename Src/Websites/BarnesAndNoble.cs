@@ -169,6 +169,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 }
                 else
                 {
+                    LOGGER.Info("Check 0");
                     HtmlNodeCollection formats = doc.DocumentNode.SelectNodes("(//div[@class='sidebar__section refinements']/span/h2[contains(text(), 'Format')])[1]/ancestor::div[1]/ul//a[contains(text(), 'Paperback') or contains(text(), 'Hardcover') or contains(text(), 'BN Exclusive')]");
                     if (formats.Count != 0)
                     {
@@ -198,8 +199,10 @@ namespace MangaAndLightNovelWebScrape.Websites
                 HtmlNode pageCheck = null;
                 string nextPage = !oneShotCheck ? ValidUrls[validUrlCount].Key : originalUrl;
                 bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
+                LOGGER.Info("Check 1");
                 while (oneShotCheck || (validUrlCount <= ValidUrls.Count))
                 {
+                    LOGGER.Info("Check 2");
                     if (!oneShotCheck && pageCheck == null)
                     {
                         nextPage = ValidUrls[validUrlCount].Key;

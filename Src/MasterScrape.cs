@@ -16,7 +16,7 @@ namespace MangaAndLightNovelWebScrape
         private List<Task> WebTasks = new List<Task>(13);
         private Dictionary<string, string> MasterUrls = new Dictionary<string, string>();
         private AmazonUSA AmazonUSA = null;
-        private BarnesAndNoble BarnesAndNoble = null;
+        // private BarnesAndNoble BarnesAndNoble = null;
         private BooksAMillion BooksAMillion = null;
         private TravellingMan TravellingMan = null;
         private InStockTrades InStockTrades = null;
@@ -389,7 +389,7 @@ namespace MangaAndLightNovelWebScrape
             RobertsAnimeCornerStore?.ClearData();
             InStockTrades?.ClearData();
             KinokuniyaUSA?.ClearData();
-            BarnesAndNoble?.ClearData();
+            // BarnesAndNoble?.ClearData();
             BooksAMillion?.ClearData();
             AmazonUSA?.ClearData();
             SciFier?.ClearData();
@@ -724,9 +724,9 @@ namespace MangaAndLightNovelWebScrape
                     case AmazonUSA.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = AmazonUSA.GetUrl();
                         break;
-                    case BarnesAndNoble.WEBSITE_TITLE:
-                        MasterUrls[entry.Website] = BarnesAndNoble.GetUrl();
-                        break;
+                    // case BarnesAndNoble.WEBSITE_TITLE:
+                    //     MasterUrls[entry.Website] = BarnesAndNoble.GetUrl();
+                    //     break;
                     case BooksAMillion.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = BooksAMillion.GetUrl();
                         break;
@@ -795,11 +795,11 @@ namespace MangaAndLightNovelWebScrape
                                 LOGGER.Info($"{Crunchyroll.WEBSITE_TITLE} Going");
                                 WebTasks.Add(Crunchyroll.CreateCrunchyrollTask(bookTitle, book, MasterDataList));
                                 break;
-                            case Website.BarnesAndNoble:
-                                BarnesAndNoble ??= new BarnesAndNoble();
-                                LOGGER.Info($"{BarnesAndNoble.WEBSITE_TITLE} Going");
-                                WebTasks.Add(BarnesAndNoble.CreateBarnesAndNobleTask(bookTitle, book, isBarnesAndNobleMember, MasterDataList));
-                                break;
+                            // case Website.BarnesAndNoble:
+                            //     BarnesAndNoble ??= new BarnesAndNoble();
+                            //     LOGGER.Info($"{BarnesAndNoble.WEBSITE_TITLE} Going");
+                            //     WebTasks.Add(BarnesAndNoble.CreateBarnesAndNobleTask(bookTitle, book, isBarnesAndNobleMember, MasterDataList));
+                            //     break;
                             case Website.RobertsAnimeCornerStore:
                                 RobertsAnimeCornerStore ??= new RobertsAnimeCornerStore();
                                 LOGGER.Info($"{RobertsAnimeCornerStore.WEBSITE_TITLE} Going");
@@ -1093,11 +1093,11 @@ namespace MangaAndLightNovelWebScrape
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string title = "One Piece";
+            string title = "world trigger";
             BookType bookType = BookType.Manga;
             watch.Start();
             MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.America, Browser.Chrome, false, false, false, false).EnableDebugMode();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.AmazonUSA ]);
+            await scrape.InitializeScrapeAsync(title, bookType, [  ]);
             watch.Stop();
             scrape.PrintResultsToConsole(true, title, bookType);
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");

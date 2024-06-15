@@ -6,7 +6,7 @@
 If you want a website or region to be added fill out a [issue request](https://github.com/Sigrec/MangaAndLightNovelWebScrape/issues/new/choose).
 #### America
 - [ ] AmazonUSA (Paused)
-- [x] Barnes & Noble
+- [x] Barnes & Noble (No Longer Supported due to robots.txt change)
 - [x] Books-A-Million
 - [x] Crunchyroll
 - [x] InStockTrades
