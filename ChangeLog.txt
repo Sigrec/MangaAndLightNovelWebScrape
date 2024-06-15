@@ -6,6 +6,16 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> Inprogress feature will be fixed in later release
 
+v3.0.0 - 
+✅Removed Barnes & Noble
+✅Removed Wordery
+✅Changed default browser to FireFox from Chrome
+📜RobertsAnimeCornerStore Fixes
+ -🔥Website url changes applied so it runs without crashing
+ -🔥Fixed text formatting when series is a manga adaptation
+📜FrobiddenPlanet Fixes
+ -🔥Fixed html parsing causing no data to be returned
+
 v2.2.0 - March 8th
 ✅Removed Wordery from scrape until further notice
 ✅Fix membership list output in AsciiTable

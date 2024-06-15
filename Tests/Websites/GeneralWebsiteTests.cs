@@ -22,8 +22,6 @@ namespace Tests.Websites
 
                 Assert.That(AmazonUSA.REGION.HasFlag(Region.America) && !AmazonUSA.REGION.HasFlag(Region.Australia) && !AmazonUSA.REGION.HasFlag(Region.Britain) && !AmazonUSA.REGION.HasFlag(Region.Canada) && !AmazonUSA.REGION.HasFlag(Region.Europe) && !AmazonUSA.REGION.HasFlag(Region.Japan));
 
-                Assert.That(BarnesAndNoble.REGION.HasFlag(Region.America) && !BarnesAndNoble.REGION.HasFlag(Region.Australia) && !BarnesAndNoble.REGION.HasFlag(Region.Britain) && !BarnesAndNoble.REGION.HasFlag(Region.Canada) && !BarnesAndNoble.REGION.HasFlag(Region.Europe) && !BarnesAndNoble.REGION.HasFlag(Region.Japan));
-
                 Assert.That(BooksAMillion.REGION.HasFlag(Region.America) && !BooksAMillion.REGION.HasFlag(Region.Australia) && !BooksAMillion.REGION.HasFlag(Region.Britain) && !BooksAMillion.REGION.HasFlag(Region.Canada) && !BooksAMillion.REGION.HasFlag(Region.Europe) && !BooksAMillion.REGION.HasFlag(Region.Japan));
 
                 Assert.That(!CDJapan.REGION.HasFlag(Region.America) && !CDJapan.REGION.HasFlag(Region.Australia) && !CDJapan.REGION.HasFlag(Region.Britain) && !CDJapan.REGION.HasFlag(Region.Canada) && !CDJapan.REGION.HasFlag(Region.Europe) && CDJapan.REGION.HasFlag(Region.Japan));
