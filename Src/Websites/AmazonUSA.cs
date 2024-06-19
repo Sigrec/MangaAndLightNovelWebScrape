@@ -1,3 +1,5 @@
+using System.Threading;
+
 namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class AmazonUSA
@@ -8,20 +10,22 @@ namespace MangaAndLightNovelWebScrape.Websites
         public const Region REGION = Region.America;
         public const string WEBSITE_LINK = "https://www.amazon.com/Manga-Comics-Graphic-Novels-Books/b?ie=UTF8&node=4367";
         private static readonly Logger LOGGER = LogManager.GetLogger("AmazonUSALogs");
-        private static readonly List<string> TitleRemovalStrings = ["Kindle", "Manga Set", "Manga Complete Book Set", "Collection Set", "ESPINAS", "nº", "Volume"];
+        private static readonly List<string> TitleRemovalStrings = ["Kindle", "Manga Set", "Manga Complete Book Set", "Collection Set", "ESPINAS", "nº", "BOOKS COVER", "Free Comic Book", "v. ", "CN:"];
 
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[@class='a-section a-spacing-none puis-padding-right-small s-title-instructions-style']/h2/a/span");
-        private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//div[@class='a-section a-spacing-none a-spacing-top-micro puis-price-instructions-style']");
+        private static readonly XPathExpression TopPriceXPath = XPathExpression.Compile("//div[@data-cy='price-recipe']");
+        private static readonly XPathExpression BottomPriceXPath = XPathExpression.Compile("//div[@class='puisg-col-inner']//div[@class='puisg-col-inner']/div[last()]");
         private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='a-section a-spacing-none a-spacing-top-micro puis-price-instructions-style' or @class='a-section a-spacing-small puis-padding-left-small puis-padding-right-small']");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//span[@class='s-pagination-item s-pagination-disabled'] | //span[@class='s-pagination-strip']/a[(last() - 1)]");
 
-        [GeneratedRegex(@"\(.*?\)|―The Manga")] internal static partial Regex FormatMangaEntryTitleRegex();
-        [GeneratedRegex(@"(?:\s\$\d{1,3}\.\d{1,2})")] internal static partial Regex GetPriceRegex();
-        [GeneratedRegex(@"Save\s(\$\d{1,3}\.\d{1,2})")] internal static partial Regex GetCouponRegex();
-        [GeneratedRegex(@"Vol\.", RegexOptions.IgnoreCase)] internal static partial Regex FormatVolumeRegex();
+        [GeneratedRegex(@"\(.*?\)|―The Manga", RegexOptions.IgnoreCase)] internal static partial Regex FormatMangaEntryTitleRegex();
+        [GeneratedRegex(@"(?:\$\d{1,3}\.\d{1,2})")] internal static partial Regex GetPriceRegex();
+        [GeneratedRegex(@"Save\s(\$\d{1,3}\.\d{1,2})", RegexOptions.IgnoreCase)] internal static partial Regex GetCouponRegex();
+        [GeneratedRegex(@"Vol\.|Volume", RegexOptions.IgnoreCase)] internal static partial Regex FormatVolumeRegex();
         [GeneratedRegex(@"\d{1,3}-\d{1,3}-(\d{1,3})")] private static partial Regex OmnibusCheckRegex();
-        [GeneratedRegex(@"\(Omnibus Edition\)")] private static partial Regex OmnibusFixRegex();
+        [GeneratedRegex(@"\(Omnibus Edition\)", RegexOptions.IgnoreCase)] private static partial Regex OmnibusFixRegex();
         [GeneratedRegex(@":.*")] private static partial Regex ColonFixRegex();
+        [GeneratedRegex(@"\((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s\d{1,3}\s\d{4}\)", RegexOptions.IgnoreCase)] private static partial Regex ContainsDateRegex();
 
         protected internal async Task CreateAmazonUSATask(string bookTitle, BookType book, List<List<EntryModel>> MasterDataList, WebDriver driver)
         {
@@ -72,7 +76,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 entryTitle = FormatMangaEntryTitleRegex().Replace(entryTitle, string.Empty);
             }
 
-            if (!bookTitle.Contains(':') && entryTitle.Contains(':') && entryTitle.Any(char.IsDigit))
+            if (!bookTitle.Contains(':') && entryTitle.Contains(':') && !entryTitle.Substring(entryTitle.IndexOf(':')).Contains("Vol ") && entryTitle.Any(char.IsDigit))
             {
                 entryTitle = ColonFixRegex().Replace(entryTitle, string.Empty);
             }
@@ -86,16 +90,22 @@ namespace MangaAndLightNovelWebScrape.Websites
                 parsedTitle = parsedTitle.Insert(MasterScrape.FindVolNumRegex().Match(parsedTitle.ToString()).Index, "Vol ");
             }
 
+            parsedTitle.TrimEnd();
+            if (entryTitle.Contains("Box Set") && !char.IsDigit(parsedTitle[parsedTitle.Length - 1]))
+            {
+                parsedTitle.Append(" 1");
+            }
+
             if (bookTitle.Contains("Adventure of Dai"))
             {
                 parsedTitle.Replace(" Disciples of Avan", string.Empty);
             }
+            parsedTitle.TrimEnd([ ':' ]);
 
             LOGGER.Info("AFTER = {}", MasterScrape.MultipleWhiteSpaceRegex().Replace(parsedTitle.ToString(), " ").Trim());
             return MasterScrape.MultipleWhiteSpaceRegex().Replace(parsedTitle.ToString(), " ").Trim();
         }
 
-        // TODO - Add logic to include coupon
         private List<EntryModel> GetAmazonUSAData(string bookTitle, BookType bookType, WebDriver driver)
         {
             try
@@ -103,9 +113,10 @@ namespace MangaAndLightNovelWebScrape.Websites
                 WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
                 uint curPage = 1;
                 driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookType, curPage, bookTitle));
-                wait.Until(driver => driver.FindElement(By.CssSelector("div[class='s-main-slot s-result-list s-search-results sg-row']")));
+                wait.Until(driver => driver.FindElement(By.XPath("/html/body/div[1]/div[1]/div[1]/div[1]/div/span[1]/div[1]")));
+                // Thread.Sleep(100000);
 
-                HtmlDocument doc = new() { OptionCheckSyntax = false, };
+                HtmlDocument doc = new() { OptionCheckSyntax = true, OptionFixNestedTags = true };
                 doc.LoadHtml(driver.PageSource);
 
                 HtmlNodeCollection pageNums = doc.DocumentNode.SelectNodes(PageCheckXPath);
@@ -114,26 +125,54 @@ namespace MangaAndLightNovelWebScrape.Websites
                 bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
                 while (true)
                 {
+                    driver.ExecuteScript("window.scrollTo(0, document.body.scrollHeight);");
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
-                    HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
+                    HtmlNodeCollection topPriceData = doc.DocumentNode.SelectNodes(TopPriceXPath);
+                    HtmlNodeCollection bottomPriceData = doc.DocumentNode.SelectNodes(BottomPriceXPath);
                     HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
                     HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
+                    // LOGGER.Debug("{} | {} | {} | {}", titleData.Count, topPriceData.Count, bottomPriceData.Count, stockStatusData.Count); 
 
                     for (int x = 0; x < titleData.Count; x++)
                     {
                         string entryTitle = titleData[x].InnerText.Trim();
                         string stockStatus = stockStatusData[x].InnerText;
-                        LOGGER.Info("BEFORE = {} | {}", entryTitle, stockStatus);
+                        string topPrice = topPriceData[x].InnerText.Trim();
+                        string bottomPrice = bottomPriceData[x].InnerText.Trim();
+                        LOGGER.Info("BEFORE = {} | {} | {} | {}", entryTitle, stockStatus, topPrice, bottomPrice);
                         if (InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
                             && (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
                             && stockStatus.Contains('$')
-                            && !entryTitle.ContainsAny(TitleRemovalStrings))
+                            && !ContainsDateRegex().IsMatch(entryTitle)
+                            && !entryTitle.ContainsAny(TitleRemovalStrings)
+                            && !((topPrice.Contains("Kindle") || topPrice.Contains("Available instantly")) && (bottomPrice.Contains("Kindle") || bottomPrice.Contains("Available instantly")))
+                            && !(
+                                bookType == BookType.Manga
+                                && (
+                                     InternalHelpers.RemoveUnintendedVolumes(bookTitle, "one piece", entryTitle, "joy boy")
+                                )
+                            )
+                        )
                         {
-                            string price = GetPriceRegex().Match(stockStatus).Value.Trim();
+                            string price = string.Empty;
+                            if (topPrice.Contains("Paperback") || topPrice.Contains("Hardcover"))
+                            {
+                                price = GetPriceRegex().Match(topPrice).Value.Trim();
+                            }
+                            else if (bottomPrice.Contains("Paperback") || bottomPrice.Contains("Hardcover"))
+                            {
+                                price = GetPriceRegex().Match(bottomPrice).Value.Trim();
+                            }
+                            else
+                            {
+                                LOGGER.Error("No Valid Price, Top Price = {} | Bottom Price = {}", topPrice, bottomPrice);
+                                continue;
+                            }
+
                             if (stockStatus.Contains("Save $"))
                             {
                                 decimal coupon = Convert.ToDecimal(GetCouponRegex().Match(stockStatus).Groups[1].Value.TrimStart('$'));
-                                LOGGER.Debug("Applying Coupon {} to {} for {}", coupon, entryTitle, price.TrimStart('$'));
+                                LOGGER.Info("Applying Coupon {} to {} for {}", coupon, entryTitle, price.TrimStart('$'));
                                 price = $"${InternalHelpers.ApplyCoupon(Convert.ToDecimal(price.TrimStart('$')), coupon)}";
                             }
                             AmazonUSAData.Add(
@@ -172,6 +211,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             {
                 driver?.Quit();
                 AmazonUSAData.Sort(EntryModel.VolumeSort);
+                AmazonUSAData.RemoveExtras();
                 InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, AmazonUSAData, LOGGER);
             }
             return AmazonUSAData;

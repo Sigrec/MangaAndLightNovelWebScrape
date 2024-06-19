@@ -49,6 +49,7 @@ namespace MangaAndLightNovelWebScrape
         private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
         // "--headless=new", 
         private static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent"  ];
+        // "-headless",
         private static readonly string[] FIREFOX_BROWSER_ARGUMENTS = [ "-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3"];
         /// <summary>
         /// Determines whether debug mode is enabled (Disabled by default)
@@ -58,7 +59,7 @@ namespace MangaAndLightNovelWebScrape
         [GeneratedRegex(@"(?:\d{1,3}|\d{1,3}.\d{1})$")] internal static partial Regex FindVolNumRegex();
         [GeneratedRegex(@"Vol (?:\d{1,3}|\d{1,3}.\d{1})$")] internal static partial Regex FindVolWithNumRegex();
         [GeneratedRegex(@"\s{2,}|\s{0,}--\s{0,}|\s{0,}—\s{0,}")] internal static partial Regex MultipleWhiteSpaceRegex();
-        [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Compendium|Artbook|Error|\(Osi\)|Advertising|Art Book|Adventure|Artbook|Coloring Book|the Anime|Calendar|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA|Poster|IMPORT|Trace", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
+        [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character|Guide|Art of |[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Compendium|Artbook|Error|\(Osi\)|Advertising|Art Book|Adventure Book|Artbook|Coloring Book|the Anime|Calendar|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA|Poster|IMPORT|Trace|Bookmarks", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
 
         public MasterScrape(StockStatus[] Filter, Region Region = Region.America, Browser Browser = Browser.FireFox, bool IsBooksAMillionMember = false, bool IsKinokuniyaUSAMember = false, bool IsIndigoMember = false)
         {
@@ -754,6 +755,11 @@ namespace MangaAndLightNovelWebScrape
                     {
                         switch (site)
                         {
+                            case Website.AmazonUSA:
+                                AmazonUSA ??= new AmazonUSA();
+                                LOGGER.Info($"{AmazonUSA.WEBSITE_TITLE} Going");
+                                WebTasks.Add(AmazonUSA.CreateAmazonUSATask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
+                                break;
                             case Website.Crunchyroll:
                                 Crunchyroll ??= new Crunchyroll();
                                 LOGGER.Info($"{Crunchyroll.WEBSITE_TITLE} Going");
@@ -778,11 +784,6 @@ namespace MangaAndLightNovelWebScrape
                                 BooksAMillion ??= new BooksAMillion();
                                 LOGGER.Info($"{BooksAMillion.WEBSITE_TITLE} Going");
                                 WebTasks.Add(BooksAMillion.CreateBooksAMillionTask(bookTitle, book, isBooksAMillionMember, MasterDataList, SetupBrowserDriver(true)));
-                                break;
-                            case Website.AmazonUSA:
-                                AmazonUSA ??= new AmazonUSA();
-                                LOGGER.Info($"{AmazonUSA.WEBSITE_TITLE} Going");
-                                WebTasks.Add(AmazonUSA.CreateAmazonUSATask(bookTitle, book, MasterDataList, SetupBrowserDriver(false)));
                                 break;
                             case Website.SciFier:
                                 SciFier ??= new SciFier();
@@ -1031,11 +1032,11 @@ namespace MangaAndLightNovelWebScrape
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string title = "world trigger";
+            string title = "Naruto";
             BookType bookType = BookType.Manga;
             watch.Start();
             MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.America, Browser.FireFox, false, false, false).EnableDebugMode();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.RobertsAnimeCornerStore ]);
+            await scrape.InitializeScrapeAsync(title, bookType, [ Website.AmazonUSA ]);
             watch.Stop();
             scrape.PrintResultsToConsole(true, title, bookType);
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
