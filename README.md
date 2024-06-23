@@ -4,8 +4,9 @@
 ***
 ### *Website Completion List*
 If you want a website or region to be added fill out a [issue request](https://github.com/Sigrec/MangaAndLightNovelWebScrape/issues/new/choose).
-#### America
-⌛ AmazonUSA (Paused)
+```
+America
+✅ AmazonUSA
 ❌ Barnes & Noble (No longer supported due to robots.txt change) 
 ✅ Books-A-Million
 ✅ Crunchyroll
@@ -15,12 +16,12 @@ If you want a website or region to be added fill out a [issue request](https://g
 ✅ RobertsAnimeCornerStore
 ✅ SciFier
 
-#### Australia
+Australia
 ⌛ AmazonAU (Not Started)
 ✅ MangaMate
 ✅ SciFier
 
-#### Britain
+Britain
 ⌛ AmazonUK (Not Started)
 ✅ ForBiddenPlanet
 ✅ SciFier
@@ -28,17 +29,18 @@ If you want a website or region to be added fill out a [issue request](https://g
 ✅ TravellingMan
 ✅ Waterstones
 
-#### Canada
+Canada
 ⌛ AmazonCanada (Not Started)
 ✅ Indigo
 ✅ SciFier
 
-#### Europe
+Europe
 ✅ SciFier
 
-#### Japan
+Japan
 ⌛ AmazonJP (Not Started)
 ⌛ CDJapan (Paused)
+```
  
 ***
 #### Demo

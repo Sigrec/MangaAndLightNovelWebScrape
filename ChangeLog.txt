@@ -6,7 +6,7 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> Inprogress feature will be fixed in later release
 
-v3.0.0 - 
+v3.0.0 - June 23rd, 2024
 ✅Added AmazonUSA
 ✅Removed Barnes & Noble
 ✅Removed Wordery
