@@ -103,7 +103,7 @@ namespace MangaAndLightNovelWebScrape
         {
             return region switch
             {
-                Region.America => [ /*AmazonUSA.WEBSITE_TITLE,*/ BooksAMillion.WEBSITE_TITLE, Crunchyroll.WEBSITE_TITLE, InStockTrades.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE, MerryManga.WEBSITE_TITLE, RobertsAnimeCornerStore.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, ],
+                Region.America => [ AmazonUSA.WEBSITE_TITLE, BooksAMillion.WEBSITE_TITLE, Crunchyroll.WEBSITE_TITLE, InStockTrades.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE, MerryManga.WEBSITE_TITLE, RobertsAnimeCornerStore.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, ],
                 Region.Australia => [ MangaMate.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, ],
                 Region.Britain => [ ForbiddenPlanet.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, SpeedyHen.WEBSITE_TITLE, TravellingMan.WEBSITE_TITLE, Waterstones.WEBSITE_TITLE, ],
                 Region.Canada => [ Indigo.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, ],
@@ -120,7 +120,7 @@ namespace MangaAndLightNovelWebScrape
         {
             return region switch
             {
-                Region.America => [ /*Website.AmazonUSA,*/ Website.BooksAMillion, Website.Crunchyroll, Website.InStockTrades, Website.KinokuniyaUSA, Website.MerryManga, Website.RobertsAnimeCornerStore, Website.SciFier ],
+                Region.America => [ Website.AmazonUSA, Website.BooksAMillion, Website.Crunchyroll, Website.InStockTrades, Website.KinokuniyaUSA, Website.MerryManga, Website.RobertsAnimeCornerStore, Website.SciFier ],
                 Region.Australia => [ Website.MangaMate, Website.SciFier ],
                 Region.Britain => [ Website.ForbiddenPlanet, Website.SciFier, Website.SpeedyHen, Website.TravellingMan, Website.Waterstones ],
                 Region.Canada => [ Website.Indigo, Website.SciFier ],

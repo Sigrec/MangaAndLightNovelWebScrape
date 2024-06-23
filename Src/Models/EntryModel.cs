@@ -10,8 +10,8 @@ namespace MangaAndLightNovelWebScrape
         public string  Website { get; set; }
         private static readonly Logger Logger = LogManager.GetLogger("MasterScrapeLogs");
         internal static VolumeSort VolumeSort = new VolumeSort();
-        [GeneratedRegex("[Vol|Box Set].*?(\\d+).*")]  private static partial Regex VolumeNumRegex();
-        [GeneratedRegex(@".*(?<int> \d+)$|.*(?<double> \d+\.\d+)$")] private static partial Regex ExtractDoubleRegex();
+        [GeneratedRegex(@"[Vol|Box Set].*?(\d+).*")]  private static partial Regex VolumeNumRegex();
+        [GeneratedRegex(@"(?:.*(?<int> \d{1,3})|.*(?<double> \d{1,3}\.\d{1,3}))(?:\s+Novel$|$)")] private static partial Regex ExtractDoubleRegex();
 
         /// <summary>
         /// Model for a series's book entry
@@ -76,7 +76,7 @@ namespace MangaAndLightNovelWebScrape
             {
                 return -1;
             }
-            Logger.Error($"Failed to Extract Entry # from {title}");
+            Logger.Error($"Failed to Extract Entry # from \"{title}\"");
             return -1;
         }
 

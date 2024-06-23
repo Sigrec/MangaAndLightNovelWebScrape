@@ -7,13 +7,16 @@ Legend
 ❌ -> Inprogress feature will be fixed in later release
 
 v3.0.0 - 
+✅Added AmazonUSA
 ✅Removed Barnes & Noble
 ✅Removed Wordery
 ✅Changed default browser to FireFox from Chrome
+🔥Fixed issue where removing duplicates would only remove the first duplicate instead of all of them
+🔥Fixed issue where light novel scrape would fail to get the volume number and not sort
 📜RobertsAnimeCornerStore Fixes
  -🔥Website url changes applied so it runs without crashing
  -🔥Fixed text formatting when series is a manga adaptation
-📜FrobiddenPlanet Fixes
+📜ForbiddenPlanet Fixes
  -🔥Fixed html parsing causing no data to be returned
 
 v2.2.0 - March 8th

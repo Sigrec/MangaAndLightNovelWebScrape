@@ -170,14 +170,23 @@ namespace MangaAndLightNovelWebScrape
             return contain;
         }
 
-        internal static void RemoveExtras(this List<EntryModel> input)
+        internal static void RemoveDuplicates(this List<EntryModel> input, Logger LOGGER)
         {
             for(int x = 1; x < input.Count; x++)
             {
                 if (input[x].Entry.Equals(input[x - 1].Entry, StringComparison.OrdinalIgnoreCase))
                 {
-                    Console.WriteLine($"Removed {input[x].Entry}");
-                    input.RemoveAt(x);
+                    if (input[x].ParsePrice() >= input[x - 1].ParsePrice())
+                    {
+                        LOGGER.Info($"Removed Duplicate {input[x]}");
+                        input.RemoveAt(x);
+                        x--;
+                    }
+                    else
+                    {
+                        LOGGER.Info($"Removed Duplicate {input[x - 1]}");
+                        input.RemoveAt(x - 1);
+                    }
                 }
             }
         }
