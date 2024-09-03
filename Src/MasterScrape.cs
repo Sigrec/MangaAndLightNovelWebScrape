@@ -455,23 +455,23 @@ namespace MangaAndLightNovelWebScrape
                             // LOGGER.Debug($"Not The Same ({smallerList[y].Entry} | {biggerListData.Entry} | {!smallerList[y].Entry.Equals(biggerListData.Entry)} | {(EntryModel.Similar(smallerList[y].Entry, biggerListData.Entry, smallerList[y].Entry.Length > biggerListData.Entry.Length ? biggerListData.Entry.Length / 6 : smallerList[y].Entry.Length / 6) == -1)} | {smallerList[y].Entry.Contains("Imperfect")})");
                             continue;
                         }
-                        // If the vol numbers are the same and the titles are similar or the same from the if check above, add the lowest price volume to the list
                         
                         // LOGGER.Debug($"MATCH? ({biggerListCurrentVolNum} = {(biggerListData.Entry.Contains("Box Set") ? EntryModel.GetCurrentVolumeNum(smallerList[y].Entry) : EntryModel.GetCurrentVolumeNum(smallerList[y].Entry))}) -> {biggerListCurrentVolNum == EntryModel.GetCurrentVolumeNum(smallerList[y].Entry)}");
+                        // If the vol numbers are the same and the titles are similar or the same from the if check above, add the lowest price volume to the list
                         if (biggerListCurrentVolNum == EntryModel.GetCurrentVolumeNum(smallerList[y].Entry))
                         {
-                            // LOGGER.Debug($"Found Match for {biggerListData.Entry} {smallerList[y].Entry}");
-                            // LOGGER.Debug($"PRICE COMPARISON ({biggerListData.ParsePrice()} > {smallerList[y].ParsePrice()}) -> {biggerListData.ParsePrice() > smallerList[y].ParsePrice()}");
+                            LOGGER.Debug($"Found Match for {biggerListData.Entry} {smallerList[y].Entry}");
+                            LOGGER.Debug($"PRICE COMPARISON ({biggerListData.ParsePrice()} > {smallerList[y].ParsePrice()}) -> {biggerListData.ParsePrice() > smallerList[y].ParsePrice()}");
                             // Get the lowest price between the two then add the lowest dataset
                             if (biggerListData.ParsePrice() > smallerList[y].ParsePrice())
                             {
+                                // LOGGER.Debug($"Add Match SmallerList {smallerList[y]}");
                                 finalData.Add(smallerList[y]);
-                                LOGGER.Debug($"Add Match SmallerList {smallerList[y]}");
                             }
                             else
                             {
+                                // LOGGER.Debug($"Add Match BiggerList {biggerListData}");
                                 finalData.Add(biggerListData);
-                                LOGGER.Debug($"Add Match BiggerList {biggerListData}");
                             }
                             smallerList.RemoveAt(y);
 
@@ -540,7 +540,7 @@ namespace MangaAndLightNovelWebScrape
                 default:
                     ChromeOptions chromeOptions = new()
                     {
-                        PageLoadStrategy = PageLoadStrategy.Eager,
+                        PageLoadStrategy = PageLoadStrategy.Normal,
                     };
                     ChromeDriverService chromeDriverService = ChromeDriverService.CreateDefaultService();
                     chromeDriverService.HideCommandPromptWindow = true;
@@ -696,7 +696,7 @@ namespace MangaAndLightNovelWebScrape
                         MasterUrls[entry.Website] = AmazonUSA.GetUrl();
                         break;
                     case BooksAMillion.WEBSITE_TITLE:
-                        MasterUrls[entry.Website] = BooksAMillion.GetUrl();
+                        MasterUrls[entry.Website] = BooksAMillion.GetUrls();
                         break;
                     case CDJapan.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = CDJapan.GetUrl();
@@ -1032,11 +1032,11 @@ namespace MangaAndLightNovelWebScrape
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string title = "boruto";
+            string title = "Dragon Quest: The Adventure of Dai";
             BookType bookType = BookType.Manga;
             watch.Start();
             MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.America, Browser.FireFox, false, false, false).EnableDebugMode();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.AmazonUSA ]);
+            await scrape.InitializeScrapeAsync(title, bookType, [ Website.MerryManga ]);
             watch.Stop();
             scrape.PrintResultsToConsole(true, title, bookType);
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");

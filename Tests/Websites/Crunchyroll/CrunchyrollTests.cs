@@ -29,11 +29,18 @@ namespace Tests.Websites
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollJujutsuKaisenMangaData.txt")));
         }
 
+        [Ignore("Is no longer on the CR website rn")]
         [Test, Description("Test Title that contains a keyword to skip and contains ':'")]
         public async Task Crunchyroll_AdventuresOfDai_Manga_Test()
         {
             await Scrape.InitializeScrapeAsync("Dragon Quest: The Adventure of Dai", BookType.Manga, WebsiteList);
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollAdventuresOfDaiMangaData.txt")));
+        }
+        [Test, Description("Test Title that contains '+'")]
+        public async Task Crunchyroll_DragonQuestMonsterPlus_Manga_Test()
+        {
+            await Scrape.InitializeScrapeAsync("Dragon Quest Monsters+", BookType.Manga, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollDragonQuestMonster+MangaData.txt")));
         }
 
         [Test, Description("Tests Manga book, Box Sets, Omnibus, & Manga w/ No Vol Number")]

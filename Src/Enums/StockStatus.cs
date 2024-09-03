@@ -22,5 +22,9 @@ namespace MangaAndLightNovelWebScrape.Enums
         /// Backorder
         /// </summary>
         BO,
+        /// <summary>
+        /// Coming Soon
+        /// </summary>
+        CS,
     }
 }

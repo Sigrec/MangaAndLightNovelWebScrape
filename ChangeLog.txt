@@ -4,7 +4,23 @@ Legend
 ⌛ -> Completed performance/library update
 ✍️ -> Additional Info about a Change
 📜 -> Higher level identifier for feature changes
-❌ -> Inprogress feature will be fixed in later release
+❌ -> In-progress feature will be fixed in later release
+
+v3.1.0
+✅ Added new StockStatus, "Coming Soon (CS)"
+✅ PriceComparison now takes into accounts bundles where volumes are in range like "7-9"
+📜Books-A-Million Fixes
+-✅Volumes that are in stock but are "On Order" so will take time are now labeled as "BO" (Backorder) instead of "OOS" (Out of Stock)
+-🔥Fixed issue where some omnibus titles would not be formatted correctly
+-🔥Fixed issue where not all links would be printed at the end if for instance a series has boxsets the link is different
+-🔥Fixed issue where it would loop forever due to pop up without cookies
+-🔥Fixed issue where list would not sort if there was a crash or error during the scrape run
+📜Crunchyroll Fixes
+-🔥Bundles now are correctly parsed
+-🔥Coming-Soon entries are correctly labeled as "CS" instead of "NA"
+📜MerryManga Fixes (Website itself has issues loadings somestimes)
+-🔥Fixed stockstatus xpath to also look for new MerryManga status "available at warehouse" which will be another "IS" status for this library
+-🔥Fixed issue where it would not properly load all entries causing a crash
 
 v3.0.0 - June 23rd, 2024
 ✅Added AmazonUSA
@@ -14,10 +30,11 @@ v3.0.0 - June 23rd, 2024
 🔥Fixed issue where removing duplicates would only remove the first duplicate instead of all of them
 🔥Fixed issue where light novel scrape would fail to get the volume number and not sort
 📜RobertsAnimeCornerStore Fixes
- -🔥Website url changes applied so it runs without crashing
- -🔥Fixed text formatting when series is a manga adaptation
+-🔥Website url changes applied so it runs without crashing
+-🔥Fixed text formatting when series is a manga adaptation
+-🔥Searching for light novels no longer crashes
 📜ForbiddenPlanet Fixes
- -🔥Fixed html parsing causing no data to be returned
+-🔥Fixed html parsing causing no data to be returned
 
 v2.2.0 - March 8th
 ✅Removed Wordery from scrape until further notice
@@ -32,21 +49,21 @@ v2.2.0 - March 8th
 🔥Fixed "IsWebsiteListValid" methods to return correct value, before it was flipped
 🔥Final data correctly sorted even if entry names without vol numbers are not exactly the same but very similar this includes case as well
 📜RobertsAnimeCornerStore Fixes
- -🔥Correctly gets series that have longer names in the website but user inputs shorthand (ex: Noragami vs Noragami Stray God)
- -🔥Removes text between title and "Omnibus" tag
+-🔥Correctly gets series that have longer names in the website but user inputs shorthand (ex: Noragami vs Noragami Stray God)
+-🔥Removes text between title and "Omnibus" tag
 📜Barnes & Nobles Fixes
- -🔥Correctly removes extra text after Omnibus Vol #
+-🔥Correctly removes extra text after Omnibus Vol #
 📜Books-A-Million Fixes
- -🔥Correctly removes extra text after Omnibus Vol #
+-🔥Correctly removes extra text after Omnibus Vol #
 📜MerryManga Fixes
- -🔥Fixed issue where series that did not contain any BoxSets would sometimes not return any data
+-🔥Fixed issue where series that did not contain any BoxSets would sometimes not return any data
 📜Wordery Fixes
- -🔥Correctly formats entries that have extra text after the vol #
- -🔥Fixed issue where it would not wait to load the initial page
+-🔥Correctly formats entries that have extra text after the vol #
+-🔥Fixed issue where it would not wait to load the initial page
 📜MangaMate Fixes
- -🔥Correctly removes extra text after Omnibus Vol #
+-🔥Correctly removes extra text after Omnibus Vol #
 📜SpeedyHen Fixes
- -🔥Correctly removes extra text after Omnibus Vol #
+-🔥Correctly removes extra text after Omnibus Vol #
 
 v2.1.2 - February 29th
 ✅Added new method to get websites that have a membership for a specific region
@@ -65,10 +82,10 @@ v2.0.0 - February 29th
 🔥Correctly throws error when user inputs a multi-flag Region
 ✍️Removed all websites from GetWebsite Helper methods that are not in a complete state
 📜RobertsAnimeCornerStore Fixes
- -🔥Correctly filters out unintended volumes like Coloring Books
- -🔥Now checks all possible matching series lists on Rob's & prints all links
+-🔥Correctly filters out unintended volumes like Coloring Books
+-🔥Now checks all possible matching series lists on Rob's & prints all links
 📜InStockTrades Fixes
- -🔥Correctly filteres out entries that contain a # in the inputted title that corresponds to the vol # and not the # in the title of the inputted series
+-🔥Correctly filteres out entries that contain a # in the inputted title that corresponds to the vol # and not the # in the title of the inputted series
 
 v1.3.2 - February 24th
 ✅Added unit test for region check
@@ -100,7 +117,7 @@ v1.1.5 - January 31st (Has Major Bug where Helpers Methods are not Updated)
 ✅Completed Wordery website for America, Britain, Canada, Europe, & Australia Regions
 ✍️Fixed tests to accomdate changes
 📜SciFier
- -🔥Fixed issue where StockStatus would not be picked up if it was OOS
+-🔥Fixed issue where StockStatus would not be picked up if it was OOS
 
 V1.1.4 - December 27th
 ⌛Updated to .NET 8.0
@@ -114,38 +131,38 @@ V1.1.4 - December 27th
 ✅Added 3 new stock status filters
 🔥Website const variiable region is now public instead of private
 📜Crunchyroll Fixes
- -🔥"Volume 0's" the "0" is no longer cutoff
- -🔥Omnibus parsing fixed for 2in1 and 2in1
- -🔥Fixed AoT Special Edition volume parsing
- -🔥Fixed issue where sometimes if a entry is on sale the stock status would return NA (Not Available) instead of correct stock status
+-🔥"Volume 0's" the "0" is no longer cutoff
+-🔥Omnibus parsing fixed for 2in1 and 2in1
+-🔥Fixed AoT Special Edition volume parsing
+-🔥Fixed issue where sometimes if a entry is on sale the stock status would return NA (Not Available) instead of correct stock status
 📜SciFier
  -⌛Performance improvement when book title has a lot of pages now skips immedieatly instead of checking entries if not in char range
- -🔥Added additional parsing for "Bleach" title
+-🔥Added additional parsing for "Bleach" title
  -✍️Still issues with some light novel scrapes, hard to fix right now but will work on it later
 📜RobertsAnimeCornerStore
- -🔥Now correctly gets light novel data for a series where the manga and light novels are not in the same link
- -🔥Fixed issue where light novel entries would be missing "Novel" in the scraped title sometimes
- -🔥Light novel entries now correctly add "Vol" to entries that have a vol #
+-🔥Now correctly gets light novel data for a series where the manga and light novels are not in the same link
+-🔥Fixed issue where light novel entries would be missing "Novel" in the scraped title sometimes
+-🔥Light novel entries now correctly add "Vol" to entries that have a vol #
 📜KinokuniyaUSA
- -🔥Updated html parsing
- -🔥Fixed issue where entries with titles at the end and subtitles in front now get parsed correctly
- -🔥Fixed issue where color editions were not being scraped
+-🔥Updated html parsing
+-🔥Fixed issue where entries with titles at the end and subtitles in front now get parsed correctly
+-🔥Fixed issue where color editions were not being scraped
  -✍️Still issue where some entries aren't included when sorting by manga, nothing I can do about that
 📜InStockTrades
- -🔥Minor fixes to some parsing
+-🔥Minor fixes to some parsing
 📜Indigo
- -🔥Fixed crash issue related to stock status always returning null
- -🔥Fixed issue where incorrect stock status would be returned on "pre-order" & "coming soon" entries
- -🔥Fixed duplicate entry issue in final data sets
- -🔥Fixwed issue where the check to see if a entry is a novel when searching for manga sometimes still includes a novel entry
- -🔥Removes library edition volumes
- -🔥Correctly formats collection edition volumes
- -🔥Fixed duplicate "Vol" in special edition entries
- -🔥Fix generated url to prevent non paperback & hardcover manga related entries from being skipped
+-🔥Fixed crash issue related to stock status always returning null
+-🔥Fixed issue where incorrect stock status would be returned on "pre-order" & "coming soon" entries
+-🔥Fixed duplicate entry issue in final data sets
+-🔥Fixwed issue where the check to see if a entry is a novel when searching for manga sometimes still includes a novel entry
+-🔥Removes library edition volumes
+-🔥Correctly formats collection edition volumes
+-🔥Fixed duplicate "Vol" in special edition entries
+-🔥Fix generated url to prevent non paperback & hardcover manga related entries from being skipped
 📜Books-A-Million
- -🔥Fix issue where boxsets would append vol 1 if they have no number sometimes
+-🔥Fix issue where boxsets would append vol 1 if they have no number sometimes
 📜Barnes & Noble
- -🔥Fix parsing issue with manga entries that are adaptations of novels
+-🔥Fix parsing issue with manga entries that are adaptations of novels
 
 V1.1.3 - November 3rd
 ✅Added methods to print results to logger or console

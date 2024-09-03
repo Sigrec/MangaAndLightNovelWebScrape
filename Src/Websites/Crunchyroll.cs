@@ -14,7 +14,9 @@ namespace MangaAndLightNovelWebScrape.Websites
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//a[@class='right-arrow']");
         [GeneratedRegex(@"Volume", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
         [GeneratedRegex(@",|\(.*?\)| Manga| Graphic Novel|:|Hardcover|(?<=(?:Vol|Box Set)\s+(?:\d{1,3}|\d{1,3}.\d{1}))[^\d{1,3}.]+.*", RegexOptions.IgnoreCase)] private static partial Regex TitleParseRegex();
+        [GeneratedRegex(@",| Manga| Graphic Novel|:|Hardcover|(?<=(?:Vol|Box Set)\s+(?:\d{1,3}|\d{1,3}.\d{1}))[^\d{1,3}.]+.*", RegexOptions.IgnoreCase)] private static partial Regex BundleParseRegex();
         [GeneratedRegex(@"(?:3-in-1|2-in-1|Omnibus) Edition", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
+        [GeneratedRegex(@"\((\d{1,3}-\d{1,3})\) Bundle", RegexOptions.IgnoreCase)] private static partial Regex BundleVolRegex();
 
         internal void ClearData()
         {
@@ -37,11 +39,18 @@ namespace MangaAndLightNovelWebScrape.Websites
 
         private string GenerateWebsiteUrl(BookType bookType, string bookTitle, int nextPage)
         {
-            // https://store.crunchyroll.com/search?q=jujutsu%20kaisen&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Manga
-            // https://store.crunchyroll.com/search?q=overlord&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Manga
-            // https://store.crunchyroll.com/search?q=overlord&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Novels
+            // https://store.crunchyroll.com/search?q=naruto&prefn1=subcategory&prefv1=Light%20Novels
+            //https://store.crunchyroll.com/search?q=Naruto&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Manga&srule=Product%20Name%20(A-Z)&start=0&sz=100
             
-            string url = $"https://store.crunchyroll.com/search?q={InternalHelpers.FilterBookTitle(bookTitle)}&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2={(bookType == BookType.Manga ? "Manga" : "Novels")}&srule=Product%20Name%20(A-Z)&start={nextPage}&sz=100";
+            string url = string.Empty;
+            if (bookType == BookType.Manga)
+            {
+                url = $"https://store.crunchyroll.com/search?q={InternalHelpers.FilterBookTitle(bookTitle)}&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Manga&srule=Product%20Name%20(A-Z)&start={nextPage}&sz=100";
+            }
+            else
+            {
+                url = $"https://store.crunchyroll.com/search?q={InternalHelpers.FilterBookTitle(bookTitle)}&prefn1=subcategory&prefv1=Light%20Novels";
+            }
             LOGGER.Info(url);
             CrunchyrollLinks.Add(url);
             return url;
@@ -53,6 +62,10 @@ namespace MangaAndLightNovelWebScrape.Websites
             if (OmnibusRegex().IsMatch(entryTitle))
             {
                 curTitle = new StringBuilder(OmnibusRegex().Replace(entryTitle, "Omnibus"));
+            }
+            else if (!bookTitle.Contains("Bundle") && entryTitle.Contains("Bundle"))
+            {
+                curTitle = new StringBuilder(BundleVolRegex().Replace(entryTitle, "Bundle Vol $1"));
             }
             else
             {
@@ -101,8 +114,8 @@ namespace MangaAndLightNovelWebScrape.Websites
                     curTitle.Insert(curTitle.Length, " Novel");
                 }
             }
-
-            InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, '-');
+  
+            InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, '-', "Bundle");
             InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
             return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.Replace("Hardcover", string.Empty).ToString(), " ").Trim();
         }
@@ -135,24 +148,43 @@ namespace MangaAndLightNovelWebScrape.Websites
                         if (InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
                             && (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
                             && !(
-                                bookType == BookType.Manga
-                                && (
-                                        InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony")
-                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
+                                    (
+                                        bookType == BookType.Manga
+                                        && (
+                                            InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony")
+                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
+                                        )
+                                    )
+                                    ||
+                                    (
+                                        bookType == BookType.LightNovel
+                                        && (
+                                            InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Overlord", entryTitle, "Unimplemented")
+                                        )
                                     )
                                 )
                             )        
                         {
+                            if (!entryTitle.Contains("Bundle"))
+                            {
+                                entryTitle = TitleParseRegex().Replace(FixVolumeRegex().Replace(entryTitle, "Vol"), string.Empty);
+                            }
+                            else
+                            {
+                                entryTitle = BundleParseRegex().Replace(FixVolumeRegex().Replace(entryTitle, "Vol"), string.Empty);
+                            }
+
                             CrunchyrollData.Add(
                                 new EntryModel
                                 (
-                                    TitleParse(TitleParseRegex().Replace(FixVolumeRegex().Replace(entryTitle, "Vol"), string.Empty).Trim(), entryTitle, bookTitle, bookType),
+                                    TitleParse(entryTitle, entryTitle, bookTitle, bookType),
                                     priceData[x].InnerText.Trim(),
                                     stockStatusData[x].InnerText.Trim() switch
                                     {
                                         "IN-STOCK" => StockStatus.IS,
                                         "SOLD-OUT" => StockStatus.OOS,
                                         "PRE-ORDER" => StockStatus.PO,
+                                        "COMING-SOON" => StockStatus.CS,
                                         _ => StockStatus.NA,
                                     },
                                     WEBSITE_TITLE
