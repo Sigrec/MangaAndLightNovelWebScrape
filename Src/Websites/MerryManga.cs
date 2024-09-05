@@ -35,21 +35,25 @@ namespace MangaAndLightNovelWebScrape.Websites
 
         internal string GetUrl()
         {
-            return MerryMangaLinks.Count != 0 ? MerryMangaLinks[0] : $"{WEBSITE_TITLE} Has no Link";
+            return string.Join(" , ", MerryMangaLinks);
         }
 
         // https://www.merrymanga.com/?s=jujutsu+kaisen&post_type=product&orderby=date&_categories=manga
-        private string GenerateWebsiteUrl(string bookTitle, BookType bookType, bool isMangaOnly)
+        // https://www.merrymanga.com/?s=Naruto&post_type=product&_categories=box-sets
+        private string GenerateWebsiteUrl(string bookTitle, BookType bookType, bool hasBoxSet)
         {
-            string url = $"https://www.merrymanga.com/?s={InternalHelpers.FilterBookTitle(bookTitle.Replace(" ", "+"))}&post_type=product&orderby=date&_categories={(bookType == BookType.Manga ? $"{(isMangaOnly ? string.Empty : "box-sets%2C")}manga" : "light-novels")}";
+            string url;
+            if (hasBoxSet && bookType != BookType.LightNovel)
+            {
+                url = $"https://www.merrymanga.com/?s={InternalHelpers.FilterBookTitle(bookTitle.Replace(" ", "+"))}&post_type=product&orderby=date&_categories=box-sets";
+            }
+            else
+            {
+                url = $"https://www.merrymanga.com/?s={InternalHelpers.FilterBookTitle(bookTitle.Replace(" ", "+"))}&post_type=product&orderby=date&_categories={(bookType == BookType.Manga ? "manga" : "light-novels")}";
+            }
             LOGGER.Info(url);
             MerryMangaLinks.Add(url);
             return url;
-        }
-
-        private void LoadAllEntries()
-        {
-            
         }
 
         private static string ParseTitle(string entryTitle, string bookTitle, BookType bookType)
@@ -91,9 +95,10 @@ namespace MangaAndLightNovelWebScrape.Websites
         {
             try
             {
-                bool isMangaOnly = false;
-                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(5));
-                driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle.ToLower(), bookType, isMangaOnly));
+                bool hasBoxSet = bookType == BookType.Manga;
+                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
+                Restart:
+                driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle.ToLower(), bookType, hasBoxSet));
                 wait.Until(driver => driver.FindElement(By.CssSelector("div[class='container main-content']")));
 
                 HtmlDocument doc = new HtmlDocument
@@ -103,26 +108,27 @@ namespace MangaAndLightNovelWebScrape.Websites
                 };
                 doc.LoadHtml(driver.PageSource);
 
-                if (!isMangaOnly && doc.Text.Contains("No products were found matching your selection."))
+                if (hasBoxSet && doc.Text.Contains("No products were found matching your selection."))
                 {
                     LOGGER.Warn("No Entries Found, Checking Manga Only Link");
-                    isMangaOnly = true;
-                    driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle.ToLower(), bookType, isMangaOnly));
+                    MerryMangaLinks.Clear();
+                    hasBoxSet = false;
+                    driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle.ToLower(), bookType, hasBoxSet));
                     wait.Until(driver => driver.FindElement(By.CssSelector("div[class='container main-content']")));
                 }
-                // //button[@class='facetwp-load-more']
+
                 if (driver.FindElements(By.ClassName("facetwp-load-more")).Count != 0)
                 {
-                    LOGGER.Info("Loading More Entries...");
-                    // wait.Until(driver => driver.FindElement(By.ClassName("facetwp-load-more"))).Click();
+                    // LOGGER.Info("Loading More Entries...");
                     while (wait.Until(driver => driver.FindElements(By.ClassName("facetwp-load-more"))).Count != 0)
                     {
-                        if (driver.FindElements(By.CssSelector("button[class='facetwp-load-more facetwp-hidden']")).Count == 1)
+                        LOGGER.Info("Loading More Entries...");
+                        if (driver.FindElements(By.ClassName("woocommerce-info")).Count == 1 || driver.FindElements(By.CssSelector("button[class='facetwp-load-more facetwp-hidden']")).Count == 1)
                         {
                             break;
                         }
                         driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.ClassName("facetwp-load-more"))));
-                        // wait.Until(driver => driver.FindElement(By.ClassName("facetwp-load-more"))).Click();
+                        wait.Until(driver => driver.FindElement(By.CssSelector("div[class='facetwp-facet facetwp-facet-load_more facetwp-type-pager']")).Displayed);
                     }
                     doc.LoadHtml(driver.PageSource);
                 }
@@ -133,7 +139,6 @@ namespace MangaAndLightNovelWebScrape.Websites
                 HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
                 HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
                 HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
-                LOGGER.Debug("Check (1) {} | {} | {}", titleData.Count, priceData.Count, stockStatusData.Count);
 
                 for (int x = 0; x < titleData.Count; x++)
                 {
@@ -166,8 +171,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                                 $"${priceData[x].InnerText.Trim()}",
                                 stockStatusData[x].GetAttributeValue("class", "Unknown").Trim() switch
                                 {
-                                    string status when status.Contains("instock", StringComparison.OrdinalIgnoreCase) => StockStatus.IS,
-                                    string status when status.Contains("available_at_warehouse", StringComparison.OrdinalIgnoreCase) => StockStatus.IS,
+                                    string status when status.Contains("instock", StringComparison.OrdinalIgnoreCase) || status.Contains("available_at_warehouse", StringComparison.OrdinalIgnoreCase) => StockStatus.IS,
                                     string status when status.Contains("outofstock", StringComparison.OrdinalIgnoreCase) => StockStatus.OOS,
                                     string status when status.Contains("preorder", StringComparison.OrdinalIgnoreCase) => StockStatus.PO,
                                     string status when status.Contains("onbackorder", StringComparison.OrdinalIgnoreCase) => StockStatus.BO,
@@ -178,6 +182,12 @@ namespace MangaAndLightNovelWebScrape.Websites
                         );
                     }
                     else LOGGER.Debug("Removed {}", entryTitle);
+                }
+
+                if (hasBoxSet)
+                {
+                    hasBoxSet = false;
+                    goto Restart;
                 }
             }
             catch (Exception ex)

@@ -6,9 +6,10 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> In-progress feature will be fixed in later release
 
-v3.1.0
-✅ Added new StockStatus, "Coming Soon (CS)"
-✅ PriceComparison now takes into accounts bundles where volumes are in range like "7-9"
+v3.1.0 - Sept 5th, 2024
+✅Added new StockStatus, "Coming Soon (CS)"
+✅PriceComparison now takes into accounts bundles where volumes are in range like "7-9"
+✅Added comments to Website enum to include there region(s) 
 📜Books-A-Million Fixes
 -✅Volumes that are in stock but are "On Order" so will take time are now labeled as "BO" (Backorder) instead of "OOS" (Out of Stock)
 -🔥Fixed issue where some omnibus titles would not be formatted correctly
@@ -21,6 +22,11 @@ v3.1.0
 📜MerryManga Fixes (Website itself has issues loadings somestimes)
 -🔥Fixed stockstatus xpath to also look for new MerryManga status "available at warehouse" which will be another "IS" status for this library
 -🔥Fixed issue where it would not properly load all entries causing a crash
+-🔥Fixed issue where the box-set link would be returned after a scrape run when the series has no box sets
+-🔥Fixed issue where both the box-set and non box-set link would not both be returned if a series has entries for both
+-🔥Fixed issue where box sets would not be added
+📜Indigo Fixes (Still not working 100% correctly)
+-🔥Fixed issue where it would always return no data
 
 v3.0.0 - June 23rd, 2024
 ✅Added AmazonUSA

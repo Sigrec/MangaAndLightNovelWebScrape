@@ -37,7 +37,7 @@ If you want a website or region to be added fill out a [issue request](https://g
 ##### Canada
 ```
 ⌛ AmazonCanada (Not Started)
-✅ Indigo
+❌ Indigo (Not Working)
 ✅ SciFier
 ```
 

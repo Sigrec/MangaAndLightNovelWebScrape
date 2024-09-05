@@ -11,11 +11,8 @@ namespace MangaAndLightNovelWebScrape.Websites
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//a[@class='link secondary']");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='price-wrapper']/span/span");
         private static readonly XPathExpression EntryLinkXPath = XPathExpression.Compile("//a[@class='link secondary']");
-        private static readonly XPathExpression OneShotTitleXPath = XPathExpression.Compile("//h1[@class='product-name font-weight-mid']");
-        private static readonly XPathExpression OneShotPriceXPath = XPathExpression.Compile("//span[@class='value']");
-        private static readonly XPathExpression OneShotCheckXPath = XPathExpression.Compile("//span[@class='search-result-count' and contains(text(), 'Results for')]");
-        private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='col-12 pdp-checkout-button']/button[2]/text()");
-        private static readonly XPathExpression FormatCheckXPath = XPathExpression.Compile("//tr[@class='format-spec ']/td");
+        private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//p[@class='delivery-option-details mouse']/span[2]");
+        private static readonly XPathExpression FormatXPath = XPathExpression.Compile("//span[@class='tile-text-light mouse variant-format-label']");
 
         [GeneratedRegex(@",| \(manga\)|(?<=\d{1,3}): .*| Manga|\s+\(.*?\)| The Manga|", RegexOptions.IgnoreCase)] private static partial Regex TitleRegex();
         [GeneratedRegex(@"(?<=Box Set \d{1}).*|\s+Complete", RegexOptions.IgnoreCase)] private static partial Regex BoxSetTitleRegex();
@@ -23,11 +20,11 @@ namespace MangaAndLightNovelWebScrape.Websites
         [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)|Omnibus\s+(\d{1,3}).*")] private static partial Regex OmnibusRegex();
         [GeneratedRegex(@"Vol\.|Vols\.|Volume", RegexOptions.IgnoreCase)] private static partial Regex FixVolumeRegex();
 
-        protected internal async Task CreateIndigoTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList)
+        protected internal async Task CreateIndigoTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList, WebDriver driver)
         {
             await Task.Run(() => 
             {
-                MasterDataList.Add(GetIndigoData(bookTitle, book, isMember));
+                MasterDataList.Add(GetIndigoData(bookTitle, book, isMember, driver));
             });
         }
 
@@ -44,9 +41,9 @@ namespace MangaAndLightNovelWebScrape.Websites
 
         private string GenerateWebsiteUrl(string bookTitle, BookType bookType)
         {
-            // https://www.indigo.ca/en-ca/books/?q=One+Piece+manga&prefn1=Language&prefv1=English&start=0&sz=1000
+            // https://www.indigo.ca/en-ca/books/manga/?q=world+trigger&prefn1=BISACBindingTypeID&prefv1=TP%7CPO&prefn2=Language&prefv2=English&start=0&sz=1000
             // https://www.indigo.ca/en-ca/books/?q=fullmetal+alchemist+novel&prefn1=Language&prefv1=English&start=0&sz=1000
-            string url = $"https://www.indigo.ca/en-ca/books/?q={bookTitle.Replace(' ', '+')}+{(bookType == BookType.Manga ? "manga" : "novel")}&prefn1=Language&prefv1=English&start=0&sz=1000";
+            string url = $"https://www.indigo.ca/en-ca/books/?q={bookTitle.Replace(' ', '+')}+{(bookType == BookType.Manga ? string.Empty : "novel")}&prefn1=BISACBindingTypeID&prefv1=TP%7CPO&prefn2=Language&prefv2=English&start=0&sz=1000";
             LOGGER.Info(url);
             IndigoLinks.Add(url);
             return url;
@@ -106,41 +103,33 @@ namespace MangaAndLightNovelWebScrape.Websites
             return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ");
         }
 
-        private List<EntryModel> GetIndigoData(string bookTitle, BookType bookType, bool isMember)
+        private List<EntryModel> GetIndigoData(string bookTitle, BookType bookType, bool isMember, WebDriver driver)
         {
             try
             {
                 HtmlWeb web = new HtmlWeb();
-                HtmlDocument doc = web.Load(GenerateWebsiteUrl(bookTitle, bookType));
-                HtmlNodeCollection titleData = null;
-                HtmlNodeCollection priceData = null;
-                HtmlNodeCollection entryLinkData = doc.DocumentNode.SelectNodes(EntryLinkXPath);
-                HtmlNode oneShotStockCheck = null;
-                bool isOneShot = false;
+                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
                 bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
 
-                if (doc.DocumentNode.SelectSingleNode(OneShotCheckXPath) != null)
-                {
-                    titleData = doc.DocumentNode.SelectNodes(TitleXPath);
-                    priceData = doc.DocumentNode.SelectNodes(PriceXPath);
-                }
-                else
-                {
-                    titleData = doc.DocumentNode.SelectNodes(OneShotTitleXPath);
-                    priceData = doc.DocumentNode.SelectNodes(OneShotPriceXPath);
-                    oneShotStockCheck = doc.DocumentNode.SelectSingleNode(OneShotCheckXPath);
-                    isOneShot = true;
-                }
+                HtmlDocument doc = web.Load(GenerateWebsiteUrl(bookTitle, bookType));
+                HtmlDocument innerDoc = new HtmlDocument();
+                HtmlNodeCollection entryLinkData = doc.DocumentNode.SelectNodes(EntryLinkXPath);
+                HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
+                HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
+                HtmlNodeCollection formatData = doc.DocumentNode.SelectNodes(FormatXPath);
+                LOGGER.Debug("{} | {} | {}", titleData.Count, priceData.Count, formatData.Count);
 
                 string price = string.Empty;
                 for(int x = 0; x < titleData.Count; x++)
                 {
-                    string entryTitle = System.Net.WebUtility.HtmlDecode(titleData[x].InnerText);
+                    string entryTitle = titleData[x].InnerText.Trim();
                     string titleDesc = titleData[x].GetAttributeValue("data-adobe-tracking", "Book Type Error");
+                    string format = formatData[x].InnerText.Trim();
                     // LOGGER.Debug("{} | {} | {} | {}", bookTitle, entryTitle, !MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck, InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle));
                     if ((!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
                         && InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
                         && !entryTitle.Contains("library edition", StringComparison.OrdinalIgnoreCase)
+                        && !format.ContainsAny(["eBook", "Binding", "Picture", "Board", "Audio", "Mass Market", "Toy", "Bound"])
                         && (
                             (
                                 bookType == BookType.Manga
@@ -169,32 +158,29 @@ namespace MangaAndLightNovelWebScrape.Websites
                             )
                         )
                     {
-                        if (!isOneShot) { doc = web.Load($"https://www.indigo.ca{entryLinkData[x].GetAttributeValue("href", "error")}"); }
-                        // LOGGER.Debug("{} | {} | {}", entryTitle, doc.DocumentNode.SelectSingleNode(StockStatusXPath).InnerText.Trim(), $"https://www.indigo.ca{entryLinkData[x].GetAttributeValue("href", "error")}");
-                        string format = doc.DocumentNode.SelectSingleNode(FormatCheckXPath).InnerText;
-                        // LOGGER.Debug("{} | {}", entryTitle, eBookCheckNode == null);
+                        driver.Navigate().GoToUrl($"https://www.indigo.ca{entryLinkData[x].GetAttributeValue("href", "error")}");
+                        wait.Until(driver => driver.FindElements(By.CssSelector("p[class='delivery-option-details mouse']")));
+                        innerDoc.LoadHtml(driver.PageSource);
+                        // LOGGER.Debug(innerDoc.Text);
 
-                        if (!format.EndsWith("eBook", StringComparison.OrdinalIgnoreCase) && !format.EndsWith("Binding", StringComparison.OrdinalIgnoreCase))
-                        {
-                            price = priceData[x].InnerText.Trim();
-                            IndigoData.Add(
-                                new EntryModel(
-                                    ParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType),
-                                    isMember ? $"${EntryModel.ApplyDiscount(Convert.ToDecimal(price[1..]), PLUM_DISCOUNT)}" : price,
-                                    doc.DocumentNode.SelectSingleNode(StockStatusXPath).InnerText.Trim() switch
-                                    {
-                                        "Add to Bag" => StockStatus.IS,
-                                        "Pre-Order" => StockStatus.PO,
-                                        "Coming Soon" => StockStatus.OOS,
-                                        _ => StockStatus.NA
-                                    },
-                                    WEBSITE_TITLE
-                                )
-                            );
-                        }
-                        else { LOGGER.Info("Removed (2) {}", entryTitle); }
+                        price = priceData[x].InnerText.Trim();
+                        LOGGER.Debug("{} | {}", entryTitle, price);
+                        IndigoData.Add(
+                            new EntryModel(
+                                ParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType),
+                                isMember ? $"${EntryModel.ApplyDiscount(Convert.ToDecimal(price[1..]), PLUM_DISCOUNT)}" : price,
+                                innerDoc.DocumentNode.SelectSingleNode(StockStatusXPath).InnerText switch
+                                {
+                                    string status when status.Contains("In stock", StringComparison.OrdinalIgnoreCase) => StockStatus.IS,
+                                    string status when status.Contains("Pre-order", StringComparison.OrdinalIgnoreCase) => StockStatus.PO,
+                                    string status when status.Contains("Out of stock", StringComparison.OrdinalIgnoreCase) => StockStatus.OOS,
+                                    _ => StockStatus.NA
+                                },
+                                WEBSITE_TITLE
+                            )
+                        );
                     }
-                    else { LOGGER.Info("Removed (1) {}", entryTitle); }
+                    else { LOGGER.Info("Removed {}", entryTitle); }
                 }
 
             }
@@ -202,10 +188,13 @@ namespace MangaAndLightNovelWebScrape.Websites
             {
                 LOGGER.Error($"{bookTitle} Does Not Exist @ Indigo {ex}");
             }
-
-            IndigoData = IndigoData.Distinct().ToList();
-            IndigoData.Sort(EntryModel.VolumeSort);
-            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, IndigoData, LOGGER);
+            finally
+            {
+                driver?.Quit();
+                IndigoData = IndigoData.Distinct().ToList();
+                IndigoData.Sort(EntryModel.VolumeSort);
+                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, IndigoData, LOGGER);
+            }
 
             return IndigoData;
         }

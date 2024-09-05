@@ -304,9 +304,9 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             finally
             {
+                driver?.Quit();
                 BooksAMillionData.Sort(EntryModel.VolumeSort);
                 InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, BooksAMillionData, LOGGER);
-                driver?.Quit();
             }
             return BooksAMillionData;
         }
