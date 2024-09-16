@@ -1,4 +1,4 @@
-# [MangaAndLightNovelWebScrape](https://www.nuget.org/packages/MangaAndLightNovelWebScrape/3.1.0#readme-body-tab)
+# [MangaAndLightNovelWebScrape](https://www.nuget.org/packages/MangaAndLightNovelWebScrape/3.1.1#readme-body-tab)
 ### *(Manga & Light Novel Web Scrape Framework for .NET) - [ChangeLog](https://github.com/Sigrec/MangaAndLightNovelWebScrape/blob/master/ChangeLog.txt)*
 .NET Library that scrapes various websites based on a region for manga or light novel data for a specifc user inputted series. Then it compares the various prices for each available entry across the websites chosen and outputs a list of the entries available and the website and price for the cheapest entry.
 ***
@@ -68,18 +68,26 @@ private static async Task Main(string[] args)
 
     // Alternativly you can do everything in the constructor and enable debug mode which will print to log and txt files
     // Chaining Regions like so Region.America | Region.Britain will not work
-    MasterScrape Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, StockStatusFilter.EXCLUDE_ALL_FILTER, Region.Britain, Browser.Edge, false, false, true).EnableDebugMode();
+    MasterScrape Scrape = new MasterScrape(
+        StockStatusFilter.EXCLUDE_NONE_FILTER, 
+        StockStatusFilter.EXCLUDE_ALL_FILTER, 
+        Region.Britain, 
+        Browser.Edge, 
+        false, 
+        false, 
+        true
+    ).EnableDebugMode();
 
     // Initialize the Scrape
     await scrape.InitializeScrapeAsync(
         "one piece", // Title
         BookType.Manga, // BookType
-        scrape.GenerateWebsiteList(new List<string>() { InStockTrades.WEBSITE_TITLE }), // Website List
+        scrape.GenerateWebsiteList([ RobertsAnimeCornerStore.WEBSITE_TITLE, Crunchyroll.WEBSITE_TITLE ]), // Website List
     );
 
     // Get Final data Results
-    List<EntryModel> finalData = scrape.GetResults();
-    Dictionary<string, string> finalUrls = scrape.GetResultsUrls();
+    List<EntryModel> resultData = scrape.GetResults();
+    Dictionary<string, string> resultUrls = scrape.GetResultsUrls();
 
     // Print final result data either to console, logger, or file (can be printed in a ascii table format)
     scrape.PrintResultsToConsole(true, "world trigger", BookType.Manga);

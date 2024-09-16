@@ -166,6 +166,82 @@ namespace MangaAndLightNovelWebScrape
         }
 
         /// <summary>
+        /// Gets a websites link/url
+        /// </summary>
+        /// <param name="website">The website to get the link/url for</param>
+        /// <param name="curRegion">The region if the website has a different link/url based on region</param>
+        /// <returns></returns>
+        public static string GetWebsiteLink(string website, Region curRegion = Region.America)
+        {
+            return website switch
+            {
+                AmazonJapan.WEBSITE_TITLE => @"https://www.amazon.co.jp/",
+                AmazonUSA.WEBSITE_TITLE => @"https://www.amazon.com/",
+                BooksAMillion.WEBSITE_TITLE => @"https://www.booksamillion.com/",
+                CDJapan.WEBSITE_TITLE => @"https://www.cdjapan.co.jp/",
+                Crunchyroll.WEBSITE_TITLE => @"https://store.crunchyroll.com/",
+                ForbiddenPlanet.WEBSITE_TITLE => @"https://forbiddenplanet.com/",
+                Indigo.WEBSITE_TITLE => @"https://www.indigo.ca/en-ca/",
+                InStockTrades.WEBSITE_TITLE => @"https://www.instocktrades.com/",
+                KinokuniyaUSA.WEBSITE_TITLE => @"https://united-states.kinokuniya.com/",
+                MangaMate.WEBSITE_TITLE => @"https://mangamate.shop/",
+                MerryManga.WEBSITE_TITLE => @"https://www.merrymanga.com/",
+                RobertsAnimeCornerStore.WEBSITE_TITLE => @"https://www.animecornerstore.com/graphicnovels1.html",
+                SciFier.WEBSITE_TITLE => @$"https://scifier.com/?setCurrencyId={curRegion switch
+                {
+                    Region.Britain => 1,
+                    Region.America => 2,
+                    Region.Australia => 3,
+                    Region.Europe => 5,
+                    Region.Canada => 6,
+                    _ => throw new NotImplementedException()
+                }}",
+                SpeedyHen.WEBSITE_TITLE => @"https://www.speedyhen.com/",
+                TravellingMan.WEBSITE_TITLE => @"https://travellingman.com/",
+                Waterstones.WEBSITE_TITLE => @"https://www.waterstones.com/",
+                _ => throw new NotImplementedException()
+            };
+        }
+
+        /// <summary>
+        /// Gets a websites link/url
+        /// </summary>
+        /// <param name="website">The website to get the link/url for</param>
+        /// <param name="curRegion">The region if the website has a different link/url based on region</param>
+        /// <returns></returns>
+        public static string GetWebsiteLink(Website website, Region curRegion = Region.America)
+        {
+            return website switch
+            {
+                Website.AmazonJapan => @"https://www.amazon.co.jp/",
+                Website.AmazonUSA => @"https://www.amazon.com/",
+                Website.BooksAMillion => @"https://www.booksamillion.com/",
+                Website.CDJapan => @"https://www.cdjapan.co.jp/",
+                Website.Crunchyroll => @"https://store.crunchyroll.com/",
+                Website.ForbiddenPlanet => @"https://forbiddenplanet.com/",
+                Website.Indigo => @"https://www.indigo.ca/en-ca/",
+                Website.InStockTrades => @"https://www.instocktrades.com/",
+                Website.KinokuniyaUSA => @"https://united-states.kinokuniya.com/",
+                Website.MangaMate => @"https://mangamate.shop/",
+                Website.MerryManga => @"https://www.merrymanga.com/",
+                Website.RobertsAnimeCornerStore => @"https://www.animecornerstore.com/graphicnovels1.html",
+                Website.SciFier => @$"https://scifier.com/?setCurrencyId={curRegion switch
+                {
+                    Region.Britain => 1,
+                    Region.America => 2,
+                    Region.Australia => 3,
+                    Region.Europe => 5,
+                    Region.Canada => 6,
+                    _ => throw new NotImplementedException()
+                }}",
+                Website.SpeedyHen => @"https://www.speedyhen.com/",
+                Website.TravellingMan => @"https://travellingman.com/",
+                Website.Waterstones => @"https://www.waterstones.com/",
+                _ => throw new NotImplementedException()
+            };
+        }
+
+        /// <summary>
         /// Checks whether a given website list contains valid websites for a given region based on the website enum
         /// </summary>
         /// <param name="region">The region to check against</param>

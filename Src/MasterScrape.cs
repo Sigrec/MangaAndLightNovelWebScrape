@@ -50,7 +50,7 @@ namespace MangaAndLightNovelWebScrape
         // "--headless=new", 
         private static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent"  ];
         // "-headless",
-        private static readonly string[] FIREFOX_BROWSER_ARGUMENTS = [ "-new-instance", "-private", "-disable-logging", "-log-level=3"];
+        private static readonly string[] FIREFOX_BROWSER_ARGUMENTS = [ "-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3"];
         /// <summary>
         /// Determines whether debug mode is enabled (Disabled by default)
         /// </summary>

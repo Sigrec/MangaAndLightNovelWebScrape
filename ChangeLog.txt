@@ -6,6 +6,10 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> In-progress feature will be fixed in later release
 
+v3.1.1 - Sept 16th, 2024
+✅Added new helper function to print websites
+🔥FireFox is now in headless mode
+
 v3.1.0 - Sept 5th, 2024
 ✅Added new StockStatus, "Coming Soon (CS)"
 ✅PriceComparison now takes into accounts bundles where volumes are in range like "7-9"
