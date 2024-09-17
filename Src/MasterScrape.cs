@@ -579,10 +579,6 @@ namespace MangaAndLightNovelWebScrape
                                 case BooksAMillion.WEBSITE_TITLE:
                                     WebsiteList.Add(Website.BooksAMillion);
                                     break;
-                                case "BullMoose":
-                                case BullMoose.WEBSITE_TITLE:
-                                    WebsiteList.Add(Website.BullMoose);
-                                    break;
                                 case RobertsAnimeCornerStore.WEBSITE_TITLE:
                                     WebsiteList.Add(Website.RobertsAnimeCornerStore);
                                     break;
@@ -772,11 +768,6 @@ namespace MangaAndLightNovelWebScrape
                                 BooksAMillion ??= new BooksAMillion();
                                 LOGGER.Info($"{BooksAMillion.WEBSITE_TITLE} Going");
                                 WebTasks.Add(BooksAMillion.CreateBooksAMillionTask(bookTitle, bookType, isBooksAMillionMember, MasterDataList, SetupBrowserDriver(true)));
-                                break;
-                            case Website.BullMoose:
-                                BullMoose ??= new BullMoose();
-                                LOGGER.Info($"{BullMoose.WEBSITE_TITLE} Going");
-                                WebTasks.Add(BullMoose.CreateBullMooseTask(bookTitle, bookType, MasterDataList, SetupBrowserDriver()));
                                 break;
                             case Website.Crunchyroll:
                                 Crunchyroll ??= new Crunchyroll();
@@ -1049,7 +1040,7 @@ namespace MangaAndLightNovelWebScrape
             BookType bookType = BookType.Manga;
             watch.Start();
             MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.America, Browser.FireFox, false, false, false).EnableDebugMode();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.BullMoose ]);
+            await scrape.InitializeScrapeAsync(title, bookType, [ Website.Crunchyroll ]);
             watch.Stop();
             scrape.PrintResultsToConsole(true, title, bookType);
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");

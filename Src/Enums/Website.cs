@@ -15,10 +15,6 @@ namespace MangaAndLightNovelWebScrape.Enums
         /// </summary>
         BooksAMillion,
         /// <summary>
-        /// America
-        /// </summary>
-        BullMoose,
-        /// <summary>
         /// Japan
         /// </summary>
         CDJapan,
