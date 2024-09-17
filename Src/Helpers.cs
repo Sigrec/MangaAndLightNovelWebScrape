@@ -256,6 +256,7 @@ namespace MangaAndLightNovelWebScrape
                     Website.AmazonJapan => AmazonJapan.REGION.HasFlag(region),
                     Website.AmazonUSA => AmazonUSA.REGION.HasFlag(region),
                     Website.BooksAMillion => BooksAMillion.REGION.HasFlag(region),
+                    Website.BullMoose => BullMoose.REGION.HasFlag(region),
                     Website.CDJapan => CDJapan.REGION.HasFlag(region),
                     Website.Crunchyroll => Crunchyroll.REGION.HasFlag(region),
                     Website.ForbiddenPlanet => ForbiddenPlanet.REGION.HasFlag(region),
