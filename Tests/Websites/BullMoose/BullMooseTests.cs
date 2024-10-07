@@ -21,7 +21,7 @@ namespace Tests.Websites
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BullMoose\BullMooseAkaneBanashiMangaData.txt")));
         }
 
-        [Test, Description("Validates Series w/ Vol 0 that does not contain 'Vol' stirng & Novel entries")]
+        [Test, Description("Validates Series w/ Vol 0 that does not contain 'Vol' string & Novel entries")]
         public async Task BullMoose_JujutsuKaisen_Manga_Europe_Test()
         {
             await Scrape.InitializeScrapeAsync("jujutsu kaisen", BookType.Manga, WebsiteList);
@@ -35,7 +35,7 @@ namespace Tests.Websites
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BullMoose\BullMooseAdventuresOfDaiMangaData.txt")));
         }
 
-        [Test, Description("Tests Manga book, Box Sets, Omnibus, & Manga w/ No Vol Number")]
+        [Test, Description("Tests Manga book w/ Box Sets & Manga with volume number")]
         public async Task BullMoose_OnePiece_Manga_Canada_Test()
         {
             await Scrape.InitializeScrapeAsync("one piece", BookType.Manga, WebsiteList);
@@ -57,7 +57,7 @@ namespace Tests.Websites
             Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BullMoose\BullMooseNarutoNovelData.txt")));
         }
 
-        [Test]
+        [Test, Description("Anniversary Edition, Box Sets w/ 'Vol' string")]
         public async Task BullMoose_Bleach_Manga_Europe_Test()
         {
             await Scrape.InitializeScrapeAsync("Bleach", BookType.Manga, WebsiteList);

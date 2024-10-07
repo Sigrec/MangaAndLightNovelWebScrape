@@ -12,11 +12,12 @@ namespace MangaAndLightNovelWebScrape.Websites
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[@class='producttitlelink product-grid-variant']/a");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@itemprop='price']");
         private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='variant-availability pv-avail-status-class']/div[2]/span/text()");
+        private static readonly XPathExpression FormatXPath = XPathExpression.Compile("//span[@class='see-more-format']");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//div[@id='pagingdiv']/center/div/span[last() - 1]/a");
 
         [GeneratedRegex(@"Vol\.|Volume", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
         [GeneratedRegex(@"\d{1,3}$", RegexOptions.IgnoreCase)] internal static partial Regex FindVolNumRegex();
-        [GeneratedRegex(@"@.*", RegexOptions.IgnoreCase)] internal static partial Regex TitleParseRegex();
+        [GeneratedRegex(@"(?<=\d{1,3})@.*|(?<=Vol \d{1,3}):.*", RegexOptions.IgnoreCase)] internal static partial Regex TitleParseRegex();
 
         internal void ClearData()
         {
@@ -37,17 +38,25 @@ namespace MangaAndLightNovelWebScrape.Websites
             return BullMooseLinks.Count != 0 ? BullMooseLinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
 
-        private string GenerateWebsiteUrl(string bookTitle, BookType bookType, int pageNum)
+        private string GenerateWebsiteUrl(string bookTitle, BookType bookType, int pageNum, bool checkBoxSet)
         {
-            string url = $"https://www.bullmoose.com/search?q={InternalHelpers.FilterBookTitle(bookTitle)}&so=1&page={pageNum}&af=-2042|-2|-5005";
-            LOGGER.Info(url);
+            string url;
+            if (checkBoxSet){
+                url = $"https://www.bullmoose.com/search?q={InternalHelpers.FilterBookTitle(bookTitle)}%20Box%20Set&so=0&page={pageNum}&af=-2042|-2|-5005";
+                LOGGER.Info("Box Set Url: {}", url);
+            }
+            else
+            {
+                url = $"https://www.bullmoose.com/search?q={InternalHelpers.FilterBookTitle(bookTitle)}&so=1&page={pageNum}&af=-2042|-2|-5005";
+                LOGGER.Info("Base Url: {}", url);
+            }
             BullMooseLinks.Add(url);
             return url;
         }
 
         private string ParseTitle(string entryTitle, string bookTitle)
         {
-            StringBuilder curTitle = new StringBuilder(FixVolumeRegex().Replace(entryTitle, "Vol"));
+            StringBuilder curTitle = new StringBuilder(entryTitle);
             LOGGER.Debug("{}", entryTitle);
             if ((entryTitle.Count(c => c == ',') >= 2) || (entryTitle.Contains("Volume") && entryTitle.Contains("Vol.")))
             {
@@ -57,11 +66,31 @@ namespace MangaAndLightNovelWebScrape.Websites
                 LOGGER.Debug("{} | {}", entryTitle, curTitle.ToString());
             }
             curTitle.Replace(",", string.Empty);
+            InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
+            curTitle.TrimEnd();
 
-            if (!entryTitle.Contains("Vol"))
+            if (entryTitle.Contains("Box Set"))
             {
-                curTitle.Insert(FindVolNumRegex().Match(curTitle.ToString()).Index, "Vol ");
+                if (entryTitle.Contains("Vol"))
+                {
+                    int volIdx = curTitle.ToString().IndexOf("Vol");
+                    curTitle.Remove(volIdx, curTitle.Length - volIdx);
+                }
             }
+            else
+            {
+                if (!entryTitle.Contains("Vol") && char.IsDigit(curTitle.ToString()[curTitle.Length - 1]))
+                {
+                    curTitle.Insert(FindVolNumRegex().Match(curTitle.ToString()).Index, "Vol ");
+                }
+            }
+
+            if (bookTitle.Contains(':') && entryTitle.Contains('@'))
+            {
+                curTitle.Replace('@', ':');
+            }
+            InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, '@');
+            
             return curTitle.ToString().Trim();
         }
 
@@ -76,7 +105,9 @@ namespace MangaAndLightNovelWebScrape.Websites
                 };
                 int curPage = 1;
                 bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
-                driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle, bookType, curPage));
+                bool checkBoxSet = false;
+
+                driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle, bookType, curPage, checkBoxSet));
                 wait.Until(driver => driver.FindElement(By.ClassName("product-variant-grid")));
                 doc.LoadHtml(driver.PageSource);
                 HtmlNode page = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
@@ -87,16 +118,18 @@ namespace MangaAndLightNovelWebScrape.Websites
                 {
                     HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
                     HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
+                    HtmlNodeCollection formatData = doc.DocumentNode.SelectNodes(FormatXPath);
                     HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
+                    LOGGER.Debug("{} | {} | {} | {}", titleData != null ? titleData.Count : 0, priceData != null ? priceData.Count : 0, formatData != null ? formatData.Count : 0, stockStatusData != null ? stockStatusData.Count : 0);
 
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        string entryTitle = titleData[x].GetAttributeValue("title", "Title Error");
+                        string entryTitle = FixVolumeRegex().Replace(titleData[x].GetAttributeValue("title", "Title Error"), "Vol");
                         entryTitle = entryTitle[(entryTitle.IndexOf('/') + 1)..].Trim();
                         // LOGGER.Debug("{} | {} | {} | {} | {}", InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle), !MasterScrape.EntryRemovalRegex().IsMatch(entryTitle), BookTitleRemovalCheck, entryTitle.Contains("Vol"), entryTitle.Any(char.IsDigit));
-                        LOGGER.Debug(entryTitle);
                         if ((!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
-                            && (entryTitle.Contains("Vol") || entryTitle.Any(char.IsDigit)))
+                            && formatData[x].InnerText.Contains("Book", StringComparison.OrdinalIgnoreCase)
+                        )
                         {
                             BullMooseData.Add(
                                 new EntryModel
@@ -123,12 +156,27 @@ namespace MangaAndLightNovelWebScrape.Websites
 
                     if (curPage == maxPage)
                     {
-                        break;
+                        if (checkBoxSet)
+                        {
+                            break;
+                        }
+                        else
+                        {
+                            curPage = 1;
+                            checkBoxSet = true;
+                            driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle, bookType, curPage, checkBoxSet));
+                            wait.Until(driver => driver.FindElement(By.ClassName("product-variant-grid")));
+                            doc.LoadHtml(driver.PageSource);
+
+                            page = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
+                            maxPage = page != null ? int.Parse(page.InnerText.Trim()) : 1;
+                            LOGGER.Debug("Box Set Max Page Num = {}", maxPage);
+                        }
                     }
                     else
                     {
                         curPage++;
-                        driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle, bookType, curPage));
+                        driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle, bookType, curPage, checkBoxSet));
                         wait.Until(driver => driver.FindElement(By.ClassName("product-variant-grid")));
                         doc.LoadHtml(driver.PageSource);
                     }
