@@ -4,7 +4,7 @@ namespace MangaAndLightNovelWebScrape
 {
     internal static partial class InternalHelpers
     {
-        // private static readonly Logger LOGGER = LogManager.GetLogger("MerryMangaLogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         internal static char[] trimedChars = [' ', '\'', '!', '-', ',', ':'];
         [GeneratedRegex(@"[^\w+]")] internal static partial Regex RemoveNonWordsRegex();
 

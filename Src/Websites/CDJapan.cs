@@ -4,7 +4,7 @@ namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class CDJapan
     {
-        private static readonly Logger LOGGER = LogManager.GetLogger("CDJapanLogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         public const Region REGION = Region.Japan;
         public const string WEBSITE_TITLE = "CDJapan";
         private List<string> CDJapanLinks = new List<string>();

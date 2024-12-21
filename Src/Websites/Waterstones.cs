@@ -5,7 +5,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         private List<string> WaterstonesLinks = new List<string>();
         private List<EntryModel> WaterstonesData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "Waterstones";
-        private static readonly Logger LOGGER = LogManager.GetLogger("WaterstonesLogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         public const Region REGION = Region.Britain;
 
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//a[contains(@class, 'title link-invert')]");

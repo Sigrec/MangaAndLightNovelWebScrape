@@ -2,7 +2,7 @@ namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class SpeedyHen
     {
-        private static readonly Logger LOGGER = LogManager.GetLogger("SpeedyHenLogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         private List<string> SpeedyHenLinks = new List<string>();
         private List<EntryModel> SpeedyHenData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "SpeedyHen";

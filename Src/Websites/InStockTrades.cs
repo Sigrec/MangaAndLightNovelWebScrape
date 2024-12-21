@@ -5,7 +5,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         private List<string> InStockTradesLinks = new();
         private List<EntryModel> InStockTradesData = new();
         public const string WEBSITE_TITLE = "InStockTrades";
-        private static readonly Logger LOGGER = LogManager.GetLogger("InStockTradesLogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         public const Region REGION = Region.America;
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("/html/body/div[2]/div/div[3]/div/div[2][not(div[@class='damage'])]/div/a");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("/html/body/div[2]/div/div[3]/div/div[2][not(div[@class='damage'])]/div/div[1]/div[2]");

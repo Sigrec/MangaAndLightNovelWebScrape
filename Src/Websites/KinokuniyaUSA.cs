@@ -5,7 +5,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         private List<string> KinokuniyaUSALinks = new();
         private List<EntryModel> KinokuniyaUSAData = new();
         public const string WEBSITE_TITLE = "Kinokuniya USA";
-        private static readonly Logger LOGGER = LogManager.GetLogger("KinokuniyaUSALogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         private static readonly int STATUS_START_INDEX = "Availability Status : ".Length;
         public const Region REGION = Region.America;
         private static readonly string[] SkipBookTitles = { "Attack on Titan" };

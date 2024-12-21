@@ -4,7 +4,7 @@ namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class TravellingMan
     {
-        private static readonly Logger LOGGER = LogManager.GetLogger("TravellingManLogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         private List<string> TravellingManLinks = new List<string>();
         private List<EntryModel> TravellingManData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "TravellingMan";

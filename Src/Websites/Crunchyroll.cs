@@ -2,7 +2,7 @@ namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class Crunchyroll
     {
-        private static readonly Logger LOGGER = LogManager.GetLogger("CrunchyrollLogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         private List<string> CrunchyrollLinks = new List<string>();
         private List<EntryModel> CrunchyrollData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "Crunchyroll";

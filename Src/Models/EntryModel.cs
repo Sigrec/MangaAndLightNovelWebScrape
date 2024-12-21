@@ -8,7 +8,7 @@ namespace MangaAndLightNovelWebScrape
         public string Price { get; set; }
         public StockStatus StockStatus { get; set; }
         public string  Website { get; set; }
-        private static readonly Logger Logger = LogManager.GetLogger("MasterScrapeLogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         internal static VolumeSort VolumeSort = new VolumeSort();
         [GeneratedRegex(@"[Vol|Box Set].*?(\d+).*")]  private static partial Regex VolumeNumRegex();
         [GeneratedRegex(@"(?:.*(?<int> \d{1,3})|.*(?<double> \d{1,3}\.\d{1,3}))(?:\s+Novel$|$)|(?:.*(?<int> \d{1,3})-\d{1,3})")] private static partial Regex ExtractDoubleRegex();
@@ -76,7 +76,7 @@ namespace MangaAndLightNovelWebScrape
             {
                 return -1;
             }
-            Logger.Error($"Failed to Extract Entry # from \"{title}\"");
+            LOGGER.Error($"Failed to Extract Entry # from \"{title}\"");
             return -1;
         }
 
@@ -202,7 +202,7 @@ namespace MangaAndLightNovelWebScrape
     /// </summary>
     public partial class VolumeSort : IComparer<EntryModel>
     {
-        private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         [GeneratedRegex(@" (?:Vol|Box Set) \d{1,3}$| (?:Vol|Box Set) \d{1,3}\.\d{1,2}$")] private static partial Regex ExtractNameRegex();
         [GeneratedRegex(@"[^\w\s\.]")] private static partial Regex FilterNameRegex();
 

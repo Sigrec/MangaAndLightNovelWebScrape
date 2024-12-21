@@ -46,7 +46,7 @@ namespace MangaAndLightNovelWebScrape
         public bool IsBooksAMillionMember { get; set; }
         public bool IsKinokuniyaUSAMember { get; set; }
         public bool IsIndigoMember { get; set; }
-        private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         // "--headless=new", 
         private static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent"  ];
         // "-headless",
@@ -1035,8 +1035,8 @@ namespace MangaAndLightNovelWebScrape
             string title = "jujutsu kaisen";
             BookType bookType = BookType.Manga;
             watch.Start();
-            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Canada, Browser.FireFox, false, false, false).EnableDebugMode();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.Indigo ]);
+            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.America, Browser.FireFox, false, false, false).EnableDebugMode();
+            await scrape.InitializeScrapeAsync(title, bookType, [ Website.Crunchyroll ]);
             watch.Stop();
             scrape.PrintResultsToConsole(true, title, bookType);
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
