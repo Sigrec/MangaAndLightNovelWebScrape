@@ -8,7 +8,7 @@ namespace MangaAndLightNovelWebScrape
         public string Price { get; set; }
         public StockStatus StockStatus { get; set; }
         public string  Website { get; set; }
-        private static readonly Logger Logger = LogManager.GetLogger("MasterScrapeLogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         internal static VolumeSort VolumeSort = new VolumeSort();
         [GeneratedRegex(@"[Vol|Box Set].*?(\d+).*")]  private static partial Regex VolumeNumRegex();
         [GeneratedRegex(@"(?:.*(?<int> \d{1,3})|.*(?<double> \d{1,3}\.\d{1,3}))(?:\s+Novel$|$)|(?:.*(?<int> \d{1,3})-\d{1,3})")] private static partial Regex ExtractDoubleRegex();
@@ -63,20 +63,27 @@ namespace MangaAndLightNovelWebScrape
         /// <returns></returns>
         internal static double GetCurrentVolumeNum(string title)
         {
+            // Early return if "Box Set" is found
+            if (title.Contains("Box Set"))
+            {
+                return -1;
+            }
+
             Match match = ExtractDoubleRegex().Match(title);
+            // Check for integer match first
             if (match.Groups["int"].Success)
             {
                 return Convert.ToDouble(match.Groups["int"].Value);
             }
-            else if (match.Groups["double"].Success)
+
+            // Check for double match
+            if (match.Groups["double"].Success)
             {
                 return Convert.ToDouble(match.Groups["double"].Value);
             }
-            else if (title.Contains("Box Set"))
-            {
-                return -1;
-            }
-            Logger.Error($"Failed to Extract Entry # from \"{title}\"");
+
+            // Log failure if no match found
+            LOGGER.Error($"Failed to Extract Entry # from \"{title}\"");
             return -1;
         }
 
@@ -202,9 +209,8 @@ namespace MangaAndLightNovelWebScrape
     /// </summary>
     public partial class VolumeSort : IComparer<EntryModel>
     {
-        private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
-        [GeneratedRegex(@" (?:Vol|Box Set) \d{1,3}$| (?:Vol|Box Set) \d{1,3}\.\d{1,2}$")] private static partial Regex ExtractNameRegex();
-        [GeneratedRegex(@"[^\w\s\.]")] private static partial Regex FilterNameRegex();
+        [GeneratedRegex(@" (?:Vol|Box Set) \d{1,3}(?:\.\d{1,2})?$")] private static partial Regex ExtractNameRegex();
+        [GeneratedRegex(@"[^\p{L}\p{N}\s\.]")] private static partial Regex FilterNameRegex();
 
         /// <summary>
         /// Extracts the entry's volume number and checks to see if they are equal or similar enough
@@ -217,25 +223,24 @@ namespace MangaAndLightNovelWebScrape
         {
             string entry1Text = FilterNameRegex().Replace(entry1.Entry, " ");
             string entry2Text = FilterNameRegex().Replace(entry2.Entry, " ");
+
             if ((entry1.Entry.Contains("Vol") && entry2.Entry.Contains("Vol")) || (entry1.Entry.Contains("Box Set") && entry2.Entry.Contains("Box Set")))
             {
                 double val1 = EntryModel.GetCurrentVolumeNum(entry1.Entry);
                 double val2 = EntryModel.GetCurrentVolumeNum(entry2.Entry);
+
                 string entry1Name = ExtractNameRegex().Replace(entry1Text, string.Empty);
                 string entry2Name = ExtractNameRegex().Replace(entry2Text, string.Empty);
-                if (val1 != -1 && val2 != -1 && (string.Equals(entry1Name, entry2Name, StringComparison.OrdinalIgnoreCase) || (EntryModel.Similar(entry1Name, entry2Name, entry1Name.Length > entry2Name.Length ? entry2Name.Length / 6 : entry1Name.Length / 6) != -1)))
+
+                // Check for valid volume numbers and matching names
+                if (val1 != -1 && val2 != -1)
                 {
-                    if (val1 > val2)
+                    bool namesMatch = string.Equals(entry1Name, entry2Name, StringComparison.OrdinalIgnoreCase);
+                    bool namesAreSimilar = EntryModel.Similar(entry1Name, entry2Name, Math.Min(entry1Name.Length, entry2Name.Length) / 6) != -1;
+                    
+                    if (namesMatch || namesAreSimilar)
                     {
-                        return 1;
-                    }
-                    else if (val1 < val2)
-                    {
-                        return -1;
-                    }
-                    else if (val1 == val2)
-                    {
-                        return 0;
+                        return val1.CompareTo(val2); // Simplified comparison of val1 and val2
                     }
                 }
             }

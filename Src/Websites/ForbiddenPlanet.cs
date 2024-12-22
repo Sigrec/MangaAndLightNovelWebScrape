@@ -9,7 +9,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         public const string WEBSITE_TITLE = "Forbidden Planet";
         public const Region REGION = Region.Britain;
         private static readonly List<string> DescRemovalStrings = [ "novel", "original stories", "collecting issues"];
-        private static readonly Logger LOGGER = LogManager.GetLogger("ForbiddenPlanetLogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[@class='full']/ul/li/section/header/div[2]/h3/a");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='clr-price']");
         private static readonly XPathExpression MinorPriceXPath = XPathExpression.Compile("(//div[@class='full']/ul/li/section/header/div[2])/p/span[2]");

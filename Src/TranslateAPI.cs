@@ -8,7 +8,7 @@ namespace Tsundoku.Helpers
 {
     public partial class TranslateAPI : IDisposable
 	{
-        private static readonly Logger LOGGER = LogManager.GetLogger("CDJapanLogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
 		private static readonly string USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.66 Safari/537.36";
 		private static GraphQLHttpClient AniListClient = new GraphQLHttpClient("https://graphql.anilist.co", new SystemTextJsonSerializer());
         private bool disposedValue;

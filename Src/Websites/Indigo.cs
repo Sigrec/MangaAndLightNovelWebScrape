@@ -6,7 +6,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         public List<EntryModel> IndigoData = new();
         public const string WEBSITE_TITLE = "Indigo";
         private const decimal PLUM_DISCOUNT = 0.1M;
-        private static readonly Logger LOGGER = LogManager.GetLogger("IndigoLogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         public const Region REGION = Region.Canada;
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//a[@class='link secondary']");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='price-wrapper']/span/span");

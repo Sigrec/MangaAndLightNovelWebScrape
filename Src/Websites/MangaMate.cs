@@ -2,7 +2,7 @@ namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class MangaMate
     {
-        private static readonly Logger LOGGER = LogManager.GetLogger("MangaMateLogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         private List<string> MangaMateLinks = new List<string>();
         private List<EntryModel> MangaMateData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "MangaMate";

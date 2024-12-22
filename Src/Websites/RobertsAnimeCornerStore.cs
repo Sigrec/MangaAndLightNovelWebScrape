@@ -5,7 +5,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         private readonly List<string> RobertsAnimeCornerStoreLinks = new List<string>();
         private readonly List<EntryModel> RobertsAnimeCornerStoreData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "RobertsAnimeCornerStore";
-        private static readonly Logger LOGGER = LogManager.GetLogger("RobertsAnimeCornerStoreLogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         public const Region REGION = Region.America;
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//font[@face='dom bold, arial, helvetica']/b");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//form[@method='POST'][contains(text()[2], '$')]//font[@color='#ffcc33'][2]");

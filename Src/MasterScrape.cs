@@ -47,7 +47,7 @@ namespace MangaAndLightNovelWebScrape
         public bool IsBooksAMillionMember { get; set; }
         public bool IsKinokuniyaUSAMember { get; set; }
         public bool IsIndigoMember { get; set; }
-        private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrapeLogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         // "--headless=new", 
         private static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent"  ];
         // "-headless",
@@ -57,10 +57,10 @@ namespace MangaAndLightNovelWebScrape
         /// </summary>
         internal static bool IsDebugEnabled { get; set; } = false;
         
-        [GeneratedRegex(@"(?:\d{1,3}|\d{1,3}.\d{1})$")] internal static partial Regex FindVolNumRegex();
-        [GeneratedRegex(@"Vol (?:\d{1,3}|\d{1,3}.\d{1})$")] internal static partial Regex FindVolWithNumRegex();
-        [GeneratedRegex(@"\s{2,}|\s{0,}--\s{0,}|\s{0,}—\s{0,}")] internal static partial Regex MultipleWhiteSpaceRegex();
-        [GeneratedRegex(@"Encyclopedia|Anthology|Official|Character|Guide|[^\w]Art of |Illustration|Anime Profiles|Choose Your Path|Compendium|Artbook|Error|\(Osi\)|Advertising|Art Book|Adventure Book|Artbook|Coloring Book|the Anime|Calendar|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA|Poster|IMPORT|Trace|Bookmarks|Music Book|Retrospective|Notebook Journal|Sketchbook|Notebook", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
+        [GeneratedRegex(@"^\d{1,3}(\.\d{1})?$")] internal static partial Regex FindVolNumRegex();
+        [GeneratedRegex(@"Vol \d{1,3}(\.\d{1})?$")] internal static partial Regex FindVolWithNumRegex();
+        [GeneratedRegex(@"\s{2,}|(--|\u2014)\s*| - ")] internal static partial Regex MultipleWhiteSpaceRegex();
+        [GeneratedRegex(@"(?:Encyclopedia|Anthology|Official|Character|Guide|Illustration|Anime Profiles|Choose Your Path|Compendium|Art(?:book| Book)|Error|Advertising|\(Osi\)|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA|Poster|IMPORT|Trace|Bookmarks|Music Book|Retrospective|Notebook(?: Journal|)|[^\w]Art of |the Anime|Calendar|Adventure Book|Coloring Book|Sketchbook|Notebook)", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
 
         public MasterScrape(StockStatus[] Filter, Region Region = Region.America, Browser Browser = Browser.FireFox, bool IsBooksAMillionMember = false, bool IsKinokuniyaUSAMember = false, bool IsIndigoMember = false)
         {
@@ -1036,7 +1036,11 @@ namespace MangaAndLightNovelWebScrape
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
+<<<<<<< HEAD
             string title = "Dragon Quest: The Adventure of Dai";
+=======
+            string title = "attack on titan";
+>>>>>>> crunchyroll
             BookType bookType = BookType.Manga;
             watch.Start();
             MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.America, Browser.FireFox, false, false, false).EnableDebugMode();

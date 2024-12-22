@@ -7,7 +7,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         private List<string> BooksAMillionLinks = new();
         private List<EntryModel> BooksAMillionData = new();
         public const string WEBSITE_TITLE = "Books-A-Million";
-        private static readonly Logger LOGGER = LogManager.GetLogger("BooksAMillionLogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         private const decimal MEMBERSHIP_DISCOUNT = 0.1M;
         public const Region REGION = Region.America;
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[@class='search-item-title']/a");

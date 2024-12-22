@@ -8,7 +8,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         private List<string> MerryMangaLinks = new List<string>();
         private List<EntryModel> MerryMangaData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "MerryManga";
-        private static readonly Logger LOGGER = LogManager.GetLogger("MerryMangaLogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         public const Region REGION = Region.America;
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//h2[@class='woocommerce-loop-product__title']");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='price']/ins/span[@class='woocommerce-Price-amount amount']/bdi/text()[1] | //span[@class='price']/span[@class='woocommerce-Price-amount amount']/bdi/text()[1]");

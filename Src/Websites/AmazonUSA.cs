@@ -7,7 +7,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         public const string WEBSITE_TITLE = "Amazon USA";
         public const Region REGION = Region.America;
         public const string WEBSITE_LINK = "https://www.amazon.com/Manga-Comics-Graphic-Novels-Books/b?ie=UTF8&node=4367";
-        private static readonly Logger LOGGER = LogManager.GetLogger("AmazonUSALogs");
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         private static readonly List<string> TitleRemovalStrings = [ "Kindle", "Manga Set", "Book Set", "Books Set", "Collection Set", "Novels Set", "books Collection", "Novel Set", "ESPINAS", "nº", "BOOKS COVER", "Free Comic Book", "n.", "v. ", "CN:", "Reedición", "Català" ];
         private static readonly List<string> EntryPriceRemovalStrings = [ "Kindle", "Available instantly", "No featured offers available", "Unknown Binding", "DVD", "Blu-ray" ];
         private static readonly List<string> ValidPriceStrings = [ "Paperback", "Hardcover" ];
