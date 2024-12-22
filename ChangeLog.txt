@@ -6,6 +6,12 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> In-progress feature will be fixed in later release
 
+v4.0.0 - 
+📜Crunchyroll Fixes
+-🔥Fixed url generation to prevent unwanted product from being parsed
+-🔥"Back Order" stock status added
+-⌛All around performance improvements
+
 v3.1.1 - Sept 16th, 2024
 ✅Added new helper function to print websites
 🔥FireFox is now in headless mode

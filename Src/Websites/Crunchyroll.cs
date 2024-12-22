@@ -1,3 +1,5 @@
+using OpenQA.Selenium.DevTools.V124.DOM;
+
 namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class Crunchyroll
@@ -10,12 +12,12 @@ namespace MangaAndLightNovelWebScrape.Websites
         public const Region REGION = Region.America;
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[@class='pdp-link']/a");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='sales']/span");
-        private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='product-sashes']/div[1]/span");
+        private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='product-sashes']");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//a[@class='right-arrow']");
         [GeneratedRegex(@"Volume", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
-        [GeneratedRegex(@",|\(.*?\)| Manga| Graphic Novel|:|Hardcover|(?<=(?:Vol|Box Set)\s+(?:\d{1,3}|\d{1,3}.\d{1}))[^\d{1,3}.]+.*", RegexOptions.IgnoreCase)] private static partial Regex TitleParseRegex();
-        [GeneratedRegex(@",| Manga| Graphic Novel|:|Hardcover|(?<=(?:Vol|Box Set)\s+(?:\d{1,3}|\d{1,3}.\d{1}))[^\d{1,3}.]+.*", RegexOptions.IgnoreCase)] private static partial Regex BundleParseRegex();
-        [GeneratedRegex(@"(?:3-in-1|2-in-1|Omnibus) Edition", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
+        [GeneratedRegex(@",|\(.*?\)| Manga| Graphic Novel|:|(?<=(?:Vol|Box Set)\s+\d{1,3}(?:\.\d)?\s+).*|Hardcover", RegexOptions.IgnoreCase)] private static partial Regex ParseAndCleanTitleRegex();
+        [GeneratedRegex(@",| Manga| Graphic Novel|:|(?:Vol|Box Set)\s+\d{1,3}(\.\d)?[^\d]+.*|Hardcover", RegexOptions.IgnoreCase)] private static partial Regex BundleParseRegex();
+        [GeneratedRegex(@"(?:\d-in-\d|Omnibus) Edition", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
         [GeneratedRegex(@"\((\d{1,3}-\d{1,3})\) Bundle", RegexOptions.IgnoreCase)] private static partial Regex BundleVolRegex();
 
         internal void ClearData()
@@ -37,28 +39,32 @@ namespace MangaAndLightNovelWebScrape.Websites
             return CrunchyrollLinks.Count != 0 ? CrunchyrollLinks[0] : $"{WEBSITE_TITLE} Has no Link";
         }
 
-        private string GenerateWebsiteUrl(BookType bookType, string bookTitle, int nextPage)
+        private string GenerateWebsiteUrl(BookType bookType, string bookTitle, uint maxTotalProducts, bool retry = false)
         {
             // https://store.crunchyroll.com/search?q=naruto&prefn1=subcategory&prefv1=Light%20Novels
-            //https://store.crunchyroll.com/search?q=Naruto&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Manga&srule=Product%20Name%20(A-Z)&start=0&sz=100
+            // https://store.crunchyroll.com/collections/jujutsu-kaisen/?prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Specialty%20Books%7CManga%7CBundles
+            // https://store.crunchyroll.com/collections/one-piece/?cgid=one-piece&prefn1=category&prefv1=Manga%20%26%20Books&sz=200
+            // https://store.crunchyroll.com/collections/one-piece/?cgid=one-piece&prefn1=category&prefv1=Manga%20%26%20Books&start=100&sz=100
+            // https://store.crunchyroll.com/search?q=Akane-Banashi&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Manga&sz={maxTotalProducts}
             
-            string url = string.Empty;
-            if (bookType == BookType.Manga)
-            {
-                url = $"https://store.crunchyroll.com/search?q={InternalHelpers.FilterBookTitle(bookTitle)}&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Manga&srule=Product%20Name%20(A-Z)&start={nextPage}&sz=100";
-            }
-            else
-            {
-                url = $"https://store.crunchyroll.com/search?q={InternalHelpers.FilterBookTitle(bookTitle)}&prefn1=subcategory&prefv1=Light%20Novels";
-            }
+            string url = bookType == BookType.Manga
+                ? (retry
+                    ? $"https://store.crunchyroll.com/search?q={bookTitle.Replace(" ", "-").ToLower()}&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Specialty%20Books%7CManga%7CBundles&sz={maxTotalProducts}"
+                    : $"https://store.crunchyroll.com/collections/{bookTitle.Replace(" ", "-").ToLower()}/?prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Specialty%20Books%7CManga%7CBundles&sz={maxTotalProducts}")
+                : (retry
+                    ? $"https://store.crunchyroll.com/search?q={bookTitle.Replace(" ", "-").ToLower()}&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Specialty%20Books%7CLight%20Novels%7CBundles&sz={maxTotalProducts}"
+                    : $"https://store.crunchyroll.com/collections/{bookTitle.Replace(" ", "-").ToLower()}/?prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Specialty%20Books%7CLight%20Novels%7CBundles&sz={maxTotalProducts}");
+
             LOGGER.Info(url);
             CrunchyrollLinks.Add(url);
             return url;
         }
 
-        private static string TitleParse(string entryTitle, string baseTitleText, string bookTitle, BookType bookType)
+        private static string ParseAndCleanTitle(string entryTitle, string baseTitleText, string bookTitle, BookType bookType)
         {
             StringBuilder curTitle;
+
+            // Check if we need to replace "Omnibus" or "Bundle"
             if (OmnibusRegex().IsMatch(entryTitle))
             {
                 curTitle = new StringBuilder(OmnibusRegex().Replace(entryTitle, "Omnibus"));
@@ -72,6 +78,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 curTitle = new StringBuilder(entryTitle);
             }
 
+            // Perform specific changes for Manga books
             if (bookType == BookType.Manga)
             {
                 if (entryTitle.Contains("Deluxe Edition"))
@@ -82,128 +89,133 @@ namespace MangaAndLightNovelWebScrape.Websites
                 if (entryTitle.Contains("with Playing Cards", StringComparison.OrdinalIgnoreCase))
                 {
                     curTitle.Replace(" with Playing Cards", string.Empty);
-                    curTitle.Insert(MasterScrape.FindVolNumRegex().Match(curTitle.ToString()).Index, "Special Edition Vol ");;
+                    int index = MasterScrape.FindVolNumRegex().Match(curTitle.ToString()).Index;
+                    if (index > 0)
+                    {
+                        curTitle.Insert(index, "Special Edition Vol ");
+                    }
                 }
-                entryTitle = curTitle.ToString();
 
                 if (!entryTitle.Contains("Vol") && !entryTitle.Contains("Box Set"))
                 {
-                    if (MasterScrape.FindVolNumRegex().IsMatch(entryTitle))
+                    var volMatch = MasterScrape.FindVolNumRegex().Match(entryTitle);
+                    if (volMatch.Success)
                     {
-                        curTitle.Insert(MasterScrape.FindVolNumRegex().Match(entryTitle).Index, "Vol ");
+                        curTitle.Insert(volMatch.Index, "Vol ");
                     }
-                    // else if (baseTitleText.Contains("(Hardcover)"))
-                    // {
-                    //     return curTitle.Append(" Hardcover").ToString();
-                    // }
                 }
 
-                if (bookTitle.Equals("attack on titan", StringComparison.OrdinalIgnoreCase) && baseTitleText.Contains("(Hardcover)") && !curTitle.ToString().Contains("In Color"))
+                if (bookTitle.Equals("attack on titan", StringComparison.OrdinalIgnoreCase) && baseTitleText.Contains("(Hardcover)") && !curTitle.ToString().Contains("In Color")&& !curTitle.ToString().Contains("Color Edition"))
                 {
-                    return curTitle.Append(" In Color").ToString();
+                    curTitle.Append(" In Color");
                 }
             }
             else if (bookType == BookType.LightNovel && !entryTitle.Contains("Novel"))
             {
                 if (entryTitle.Contains("Vol"))
                 {
-                    curTitle.Insert(entryTitle.AsSpan().IndexOf("Vol"), "Novel ");
+                    int volIndex = entryTitle.IndexOf("Vol");
+                    curTitle.Insert(volIndex, "Novel ");
                 }
                 else
                 {
-                    curTitle.Insert(curTitle.Length, " Novel");
+                    curTitle.Append(" Novel");
                 }
             }
-  
+
+            // Remove unwanted characters from the title
             InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, '-', "Bundle");
             InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
-            return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.Replace("Hardcover", string.Empty).ToString(), " ").Trim();
+
+            // Final cleanup and return
+            return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
         }
 
-        private List<EntryModel> GetCrunchyrollData(string bookTitle, BookType bookType)
+        internal List<EntryModel> GetCrunchyrollData(string bookTitle, BookType bookType)
         {
             try
             {
-                HtmlWeb web = new() { UsingCacheIfExists = true, UseCookies = false };
-                HtmlDocument doc = new()
-                {
-                    OptionCheckSyntax = false,
-                };
-                int nextPage = 0;
-                bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
-                while (true)
-                {
-                    // Initialize the html doc for crawling
-                    doc = web.Load(GenerateWebsiteUrl(bookType, bookTitle, nextPage));
+                // Initialize once and reuse if necessary.
+                HtmlWeb web = new HtmlWeb { UsingCacheIfExists = true, UseCookies = false };
+                HtmlDocument doc;
 
-                    // Get the page data from the HTML doc
-                    HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
-                    HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
-                    HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
-                    HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
+                uint maxTotalProducts = 500;
+                bool bookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
 
-                    for (int x = 0; x < titleData.Count; x++)
+                // Load the document once after preparation.
+                doc = web.Load(GenerateWebsiteUrl(bookType, bookTitle, maxTotalProducts));
+
+                // Get the page data from the HTML doc
+                HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
+                HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
+                HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
+                HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
+
+                if (titleData == null && priceData == null && stockStatusData == null)
+                {
+                    LOGGER.Info("Trying Second Link");
+                    ClearData();
+                    doc = web.Load(GenerateWebsiteUrl(bookType, bookTitle, maxTotalProducts, true));
+                    titleData = doc.DocumentNode.SelectNodes(TitleXPath);
+                    priceData = doc.DocumentNode.SelectNodes(PriceXPath);
+                    stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
+                    pageCheck = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
+                }
+
+                for (int x = 0; x < titleData.Count; x++)
+                {
+                    string entryTitle = titleData[x].InnerText.Trim();
+                    // First check: does the book title contain the entry title?
+                    if (!InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle))
+                        continue;
+
+                    // Second check: Is the entry title removed based on the regex or the removal flag?
+                    if (MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) && !bookTitleRemovalCheck)
+                        continue;
+
+                    bool shouldRemoveEntry = false;
+                    if (bookType == BookType.Manga)
                     {
-                        string entryTitle = titleData[x].InnerText.Trim();
-                        if (InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
-                            && (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
-                            && !(
-                                    (
-                                        bookType == BookType.Manga
-                                        && (
-                                            InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony")
-                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
-                                        )
-                                    )
-                                    ||
-                                    (
-                                        bookType == BookType.LightNovel
-                                        && (
-                                            InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Overlord", entryTitle, "Unimplemented")
-                                        )
-                                    )
-                                )
-                            )        
-                        {
-                            if (!entryTitle.Contains("Bundle"))
-                            {
-                                entryTitle = TitleParseRegex().Replace(FixVolumeRegex().Replace(entryTitle, "Vol"), string.Empty);
-                            }
-                            else
-                            {
-                                entryTitle = BundleParseRegex().Replace(FixVolumeRegex().Replace(entryTitle, "Vol"), string.Empty);
-                            }
-
-                            CrunchyrollData.Add(
-                                new EntryModel
-                                (
-                                    TitleParse(entryTitle, entryTitle, bookTitle, bookType),
-                                    priceData[x].InnerText.Trim(),
-                                    stockStatusData[x].InnerText.Trim() switch
-                                    {
-                                        "IN-STOCK" => StockStatus.IS,
-                                        "SOLD-OUT" => StockStatus.OOS,
-                                        "PRE-ORDER" => StockStatus.PO,
-                                        "COMING-SOON" => StockStatus.CS,
-                                        _ => StockStatus.NA,
-                                    },
-                                    WEBSITE_TITLE
-                                )
-                            );
-                        }
-                        else
-                        {
-                            LOGGER.Info("Removed {}", entryTitle);
-                        }
+                        shouldRemoveEntry = 
+                            (!bookTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) && entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)) ||
+                            InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, ["of Gluttony", "Darkness Ink"]) ||
+                            InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto") ||
+                            InternalHelpers.RemoveUnintendedVolumes(bookTitle, "One Piece", entryTitle, "Pirate Recipes");
                     }
-
-                    if (pageCheck != null)
+                    else if (bookType == BookType.LightNovel)
                     {
-                        nextPage += 100;
+                        shouldRemoveEntry = InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Overlord", entryTitle, "Unimplemented");
+                    }
+                    if (!shouldRemoveEntry)   
+                    {
+                        entryTitle = FixVolumeRegex().Replace(entryTitle, "Vol");
+
+                        // Apply different parsing logic based on whether it's a bundle
+                        entryTitle = !entryTitle.Contains("Bundle") 
+                            ? ParseAndCleanTitleRegex().Replace(entryTitle, string.Empty) 
+                            : BundleParseRegex().Replace(entryTitle, string.Empty);
+
+                        string cleanedTitle = ParseAndCleanTitle(entryTitle, titleData[x].InnerText, bookTitle, bookType);
+                        string price = priceData[x].InnerText.Trim();
+
+                        // Retrieve stock status in a more efficient manner
+                        string stockStatusText = stockStatusData[x].SelectSingleNode("./div[1]/span")?.InnerText.Trim() ?? string.Empty;
+                        StockStatus stockStatus = stockStatusText switch
+                        {
+                            "IN-STOCK" => StockStatus.IS,
+                            "SOLD-OUT" => StockStatus.OOS,
+                            "PRE-ORDER" => StockStatus.PO,
+                            "Back Order" => StockStatus.BO,
+                            "COMING-SOON" => StockStatus.CS,
+                            _ => StockStatus.BO,
+                        };
+
+                        // Create the EntryModel and add it to CrunchyrollData
+                        CrunchyrollData.Add(new EntryModel(cleanedTitle, price, stockStatus, WEBSITE_TITLE));
                     }
                     else
                     {
-                        break;
+                        LOGGER.Info("Removed {}", entryTitle);
                     }
                 }
             }

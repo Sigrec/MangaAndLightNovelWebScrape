@@ -4,7 +4,6 @@ namespace MangaAndLightNovelWebScrape
 {
     internal static partial class InternalHelpers
     {
-        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         internal static char[] trimedChars = [' ', '\'', '!', '-', ',', ':'];
         [GeneratedRegex(@"[^\w+]")] internal static partial Regex RemoveNonWordsRegex();
 
@@ -66,17 +65,35 @@ namespace MangaAndLightNovelWebScrape
 
         internal static void RemoveCharacterFromTitle(ref StringBuilder curTitle, string bookTitle, char charToRemove)
         {
-            if (!bookTitle.Contains(charToRemove))
+            // Check if charToRemove exists in bookTitle
+            if (bookTitle.Contains(charToRemove))
             {
-                curTitle.Replace(charToRemove.ToString(), string.Empty);
+                // Use a single pass to remove all occurrences of charToRemove in curTitle
+                int index = 0;
+                while ((index = curTitle.ToString().IndexOf(charToRemove, index)) != -1)
+                {
+                    curTitle.Remove(index, 1);
+                }
             }
         }
 
         internal static void RemoveCharacterFromTitle(ref StringBuilder curTitle, string bookTitle, char charToRemove, string textToCheck)
         {
-            if (!bookTitle.Contains(charToRemove) && !curTitle.ToString().Contains(textToCheck))
+            string title = curTitle.ToString();
+            if (!bookTitle.Contains(charToRemove) && !title.Contains(textToCheck))
             {
-                curTitle.Replace(charToRemove.ToString(), string.Empty);
+                int index = 0;
+                while (index < curTitle.Length)
+                {
+                    if (curTitle[index] == charToRemove)
+                    {
+                        curTitle.Remove(index, 1); // Remove character at index
+                    }
+                    else
+                    {
+                        index++; // Only increment if no removal occurred
+                    }
+                }
             }
         }
 
@@ -90,15 +107,22 @@ namespace MangaAndLightNovelWebScrape
         /// <returns>True if the curTitle should be removed</returns>
         internal static bool RemoveUnintendedVolumes(string bookTitle, string searchTitle, string curTitle, string removeText)
         {
-            return bookTitle.Contains(searchTitle, StringComparison.OrdinalIgnoreCase) && curTitle.Contains(removeText, StringComparison.OrdinalIgnoreCase);
+            return bookTitle.IndexOf(searchTitle, StringComparison.OrdinalIgnoreCase) >= 0 &&
+                curTitle.IndexOf(removeText, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         internal static bool RemoveUnintendedVolumes(string bookTitle, string searchTitle, string curTitle, params string[] removeText)
         {
-            foreach (string text in removeText)
+            if (!bookTitle.Contains(searchTitle, StringComparison.OrdinalIgnoreCase)) return false;
+
+            foreach (var text in removeText)
             {
-                if (bookTitle.Contains(searchTitle, StringComparison.OrdinalIgnoreCase) && curTitle.Contains(text, StringComparison.OrdinalIgnoreCase)) return true;
+                if (curTitle.Contains(text, StringComparison.OrdinalIgnoreCase)) 
+                {
+                    return true;
+                }
             }
+
             return false;
         }
 
@@ -145,55 +169,50 @@ namespace MangaAndLightNovelWebScrape
         {
             if (MasterScrape.IsDebugEnabled)
             {
-                using (StreamWriter outputFile = new($@"Data\{website.Replace(" ", string.Empty)}Data.txt"))
+                // Clean up website string once before using it for file path.
+                string filePath = $@"Data\{website.Replace(" ", string.Empty)}Data.txt";
+
+                using (StreamWriter outputFile = new(filePath))
                 {
-                    if (dataList.Count != 0)
+                    if (dataList.Count > 0)
                     {
+                        // If we have data, write it to both the logger and the output file.
                         foreach (EntryModel data in dataList)
                         {
-                            WebsiteLogger.Info(data);
-                            outputFile.WriteLine(data);
+                            WebsiteLogger.Info(data);  // Log the data entry
+                            outputFile.WriteLine(data);  // Write to the file
                         }
                     }
                     else
                     {
-                        WebsiteLogger.Error($"{bookTitle} Does Not Exist at {website}");
-                        outputFile.WriteLine($"{bookTitle} Does Not Exist at {website}");
+                        string message = $"{bookTitle} Does Not Exist at {website}";
+                        WebsiteLogger.Error(message);  // Log the error message
+                        outputFile.WriteLine(message);  // Write the error to the file
                     }
-                } 
+                }
             }
         }
 
         internal static bool ContainsAny(this string input, List<string> values)
         {
-            bool contain = false;
-            Parallel.ForEach(values, (curVal, state) => 
-            {
-                if (input.Contains(curVal, StringComparison.OrdinalIgnoreCase)) 
-                {
-                    contain = true;
-                    state.Break();
-                }
-            });
-            return contain;
+            return values.Any(val => input.Contains(val, StringComparison.OrdinalIgnoreCase));
         }
 
         internal static void RemoveDuplicates(this List<EntryModel> input, Logger LOGGER)
         {
-            for(int x = 1; x < input.Count; x++)
+            for (int x = input.Count - 1; x > 0; x--)
             {
                 if (input[x].Entry.Equals(input[x - 1].Entry, StringComparison.OrdinalIgnoreCase))
                 {
                     if (input[x].ParsePrice() >= input[x - 1].ParsePrice())
                     {
                         LOGGER.Info($"Removed Duplicate {input[x]}");
-                        input.RemoveAt(x);
-                        x--;
+                        input.RemoveAt(x);  // Remove the current entry
                     }
                     else
                     {
                         LOGGER.Info($"Removed Duplicate {input[x - 1]}");
-                        input.RemoveAt(x - 1);
+                        input.RemoveAt(x - 1);  // Remove the previous entry
                     }
                 }
             }
