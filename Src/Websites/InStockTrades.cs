@@ -1,3 +1,5 @@
+using System.Net;
+
 namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class InStockTrades
@@ -7,27 +9,28 @@ namespace MangaAndLightNovelWebScrape.Websites
         public const string WEBSITE_TITLE = "InStockTrades";
         private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         public const Region REGION = Region.America;
-        private static readonly XPathExpression TitleXPath = XPathExpression.Compile("/html/body/div[2]/div/div[3]/div/div[2][not(div[@class='damage'])]/div/a");
-        private static readonly XPathExpression PriceXPath = XPathExpression.Compile("/html/body/div[2]/div/div[3]/div/div[2][not(div[@class='damage'])]/div/div[1]/div[2]");
-        private static readonly XPathExpression PageCheckXPath= XPathExpression.Compile("/html/body/div[2]/div/div[4]/span/input");
+        private static readonly XPathExpression TitleXPath = XPathExpression.Compile(".//div[@class='title']/a/text()");
+        private static readonly XPathExpression DetailsXPath = XPathExpression.Compile("//div[@class='detail clearfix']");
+        private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//div[@class='price']/text()");
+        private static readonly XPathExpression PageCheckXPath= XPathExpression.Compile("//input[@id='currentpage']");
 
-        [GeneratedRegex(@" GN| TP| HC| Manga|(?<=Vol).*|(?<=Box Set).*")]  private static partial Regex TitleRegex();
-        [GeneratedRegex(@" GN| TP| HC| Manga|(?<=Vol \d{1,3})[^\d{1,3].*|(?<=Box Set).*")]  private static partial Regex FixTitleTwoRegex();
-        [GeneratedRegex(@"(?:Vol|GN)\s+(\d+)|Box Set\s+(\d+)|Box Set\s+Part\s+(\d+)")] private static partial Regex VolNumberRegex();
-        [GeneratedRegex(@"3In1 Ed|3In1")] private static partial Regex OmnibusRegex();
+        [GeneratedRegex(@" GN| TP| HC| Manga|(?<=Vol).*|(?<=Box Set).*|\(.*\)")]  private static partial Regex TitleRegex();
+        [GeneratedRegex(@" HC| TP|\(.*\)|(?<=Vol (?:\d{1,3}|\d{1,3}.\d{1,3}) ).*|(?<=Box Set (?:\d{1,3}|\d{1,3}.\d{1,3}) ).*")]  private static partial Regex CleanTitleRegex();
+        [GeneratedRegex(@"(?:Vol|GN)\s+(\d{1,3}|\d{1,3}.\d{1,3})|Box Set\s+\s+(\d{1,3}|\d{1,3}.\d{1,3})|Box Set\s+Part\s+\s+(\d{1,3}|\d{1,3}.\d{1,3})")] private static partial Regex VolNumberRegex();
+        [GeneratedRegex(@"3In1 (?:Ed TP|TP|Ed)|3In1|Omnibus TP")] private static partial Regex OmnibusRegex();
 
         internal async Task CreateInStockTradesTask(string bookTitle, BookType book, List<List<EntryModel>> MasterDataList)
         {
             await Task.Run(() => 
             {
-                MasterDataList.Add(GetInStockTradesData(bookTitle, book, 1));
+                MasterDataList.Add(GetInStockTradesData(bookTitle, book));
             });
         }
 
         //https://www.instocktrades.com/search?term=world+trigger
         //https://www.instocktrades.com/search?pg=1&title=World+Trigger&publisher=&writer=&artist=&cover=&ps=true
         // https://www.instocktrades.com/search?title=overlord+novel&publisher=&writer=&artist=&cover=&ps=true
-        private string GetUrl(byte currPageNum, string bookTitle)
+        private string GenerateWebsiteUrl(uint currPageNum, string bookTitle)
         {
             string url = $"https://www.instocktrades.com/search?pg={currPageNum}&title={bookTitle.Replace(' ', '+')}&publisher=&writer=&artist=&cover=&ps=true";
             InStockTradesLinks.Add(url);
@@ -47,22 +50,16 @@ namespace MangaAndLightNovelWebScrape.Websites
         }
 
         // TODO Recheck Toilet Bound scrape
-        private static string TitleParse(string bookTitle, string entryTitle, BookType bookType)
+        private static string ParseAndCleanTitle(string bookTitle, string entryTitle, BookType bookType)
         {
             string volGroup;
             StringBuilder curTitle = new StringBuilder(entryTitle);
+
             if (entryTitle.Contains("Box Set")) 
             { 
                 curTitle.Replace("Vol ", string.Empty);
                 Match match = VolNumberRegex().Match(curTitle.ToString());
-                if (!string.IsNullOrWhiteSpace(match.Groups[3].Value))
-                {
-                    volGroup = match.Groups[3].Value;
-                }
-                else
-                {
-                    volGroup = match.Groups[2].Value;
-                }
+                volGroup = !string.IsNullOrWhiteSpace(match.Groups[3].Value) ? match.Groups[3].Value : match.Groups[2].Value;
 
                 if (entryTitle.Contains("Season"))
                 {
@@ -71,155 +68,166 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             else
             {
-                volGroup = VolNumberRegex().Match(curTitle.ToString()).Groups[1].Value;
                 if (bookTitle.Equals("Overlord", StringComparison.OrdinalIgnoreCase) && entryTitle.Contains(" Og "))
                 {
                     curTitle.Replace("Og", "Oh");
                 }
-
-                if (entryTitle.Contains("Special Ed") && !entryTitle.Contains("Vol"))
+                if (!entryTitle.Contains("Vol") && ((entryTitle.Contains("Special Ed") && !bookTitle.Contains("Special Ed")) || char.IsDigit(entryTitle[^1]) || entryTitle[^1] == ')'))
                 {
-                    curTitle.Insert(VolNumberRegex().Match(curTitle.ToString()).Index, "Vol ");
-                }
-
-                if (bookType == BookType.Manga)
-                {
-                    // LOGGER.Debug("{} | {} | {}", curTitle.ToString(), volGroup, string.IsNullOrWhiteSpace(volGroup));
-                    if (!entryTitle.Contains("Vol") || string.IsNullOrWhiteSpace(volGroup))
+                    LOGGER.Debug("CHECK 1 {}", curTitle.ToString());
+                    Match volMatch = VolNumberRegex().Match(curTitle.ToString());
+                    if (string.IsNullOrWhiteSpace(volMatch.Groups[1].Value))
                     {
-                        curTitle.Append(" Vol 1");
+                        curTitle.Insert(volMatch.Index, $"Vol {volMatch.Groups[1]}");
+                    }
+                    else if (string.IsNullOrWhiteSpace(volMatch.Groups[2].Value))
+                    {
+                        curTitle.Insert(volMatch.Index, $"Vol {volMatch.Groups[2]}");
                     }
                 }
-                else if (bookType == BookType.LightNovel && !entryTitle.Contains("Novel"))
+
+                if (bookType == BookType.LightNovel && !entryTitle.Contains("Novel"))
                 {
                     curTitle.Append(" Novel");
                 }
             }
 
+            if (bookType == BookType.Manga)
+            {
+                InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Vol GN", "Vol");
+                InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, " GN", string.Empty);
+            }
+            else
+            {
+    
+                InternalHelpers.ReplaceMultipleTextInEntryTitle(ref curTitle, bookTitle, ["Light Novel", "Novel Sc", "L Novel"], "Novel");
+            }
+
             InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "One", "1");
             InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Color HC Ed", "In Color");
-            InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, " Ann", " Anniversary Edition");
-            InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Light Novel", "Novel");
+            InternalHelpers.ReplaceMultipleTextInEntryTitle(ref curTitle, bookTitle, ["Ed Vol", "Ed HC Vol"], "Edition Vol");
+            InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Colossal Ed", "Colossal Edition");
+            InternalHelpers.ReplaceMultipleTextInEntryTitle(ref curTitle, bookTitle, [" Annv Book", " Ann"], " Anniversary Edition");
             InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Deluxe Edition", "Deluxe");
-            InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Vol GN", "Vol");
 
             if (!curTitle.ToString().Contains("Special Edition") && (entryTitle.Contains("Special Ed") || entryTitle.Contains("Sp Ed")))
             {
                 curTitle.Insert(curTitle.ToString().IndexOf("Vol"), "Special Edition ");
             }
+
+            entryTitle = curTitle.ToString();
             if (entryTitle.EndsWith(" Sc") || entryTitle.Contains(" Sc "))
             {
-                curTitle.Remove(entryTitle.LastIndexOf(" Sc"), 3);
+                curTitle.Remove(curTitle.ToString().LastIndexOf(" Sc"), 3);
             }
 
-            return System.Net.WebUtility.HtmlDecode($"{(!string.IsNullOrWhiteSpace(volGroup) ? TitleRegex().Replace(OmnibusRegex().Replace(curTitle.ToString(), "Omnibus"), string.Empty) : FixTitleTwoRegex().Replace(OmnibusRegex().Replace(curTitle.ToString(), "Omnibus"), string.Empty))} {(!entryTitle.Contains("Season") ? volGroup.TrimStart('0') : string.Empty)}".Replace("Ed Vol", "Edition Vol").Trim());
+            entryTitle = WebUtility.HtmlDecode(OmnibusRegex().Replace(curTitle.ToString(), "Omnibus"));
+            string finalTitle = TitleRegex().Replace(entryTitle, string.Empty).Trim();
+            volGroup = VolNumberRegex().Match(curTitle.ToString()).Groups[1].Value;
+            if (volGroup.StartsWith('0'))
+            {
+                return $"{finalTitle} {volGroup.TrimStart('0')}";
+            }
+            else if (entryTitle.Contains("Season") && !bookTitle.Contains("Season"))
+            {
+                return finalTitle;
+            }
+            else
+            {
+                return CleanTitleRegex().Replace(entryTitle, string.Empty).Trim();
+            }
         }
 
-        private List<EntryModel> GetInStockTradesData(string bookTitle, BookType bookType, byte currPageNum)
+        internal List<EntryModel> GetInStockTradesData(string bookTitle, BookType bookType)
         {
-            ushort maxPages = 0;
-            bool oneShotCheck = false;
+            uint maxPages = 0;
+            uint curPageNum = 1;
+            bool isOneShot = false;
             try
             {
                 HtmlWeb web = new HtmlWeb() { UsingCacheIfExists = true };
-                HtmlDocument doc = new HtmlDocument();
+                HtmlDocument doc;
                 bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
+
+                doc = web.Load(GenerateWebsiteUrl(curPageNum, bookTitle));
+                HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
+                if (pageCheck != null)
+                {
+                    maxPages = Convert.ToUInt32(pageCheck.GetAttributeValue("data-max", "Page Num Error"));
+                }
                 
                 while (true)
                 {
-                    doc = web.Load(GetUrl(currPageNum, bookTitle));
-
                     // Get the page data from the HTML doc
-                    HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
-                    oneShotCheck = titleData.Count == 1 && !titleData.AsParallel().Any(title => title.InnerText.Contains("Vol") || title.InnerText.Contains("Box Set") || title.InnerText.Contains("Manga"));
+                    HtmlNodeCollection detailsData = doc.DocumentNode.SelectNodes(DetailsXPath);
+                    List<HtmlNode> titleData = [.. detailsData
+                        .Select(node => node.SelectSingleNode(TitleXPath))
+                        .Where(titleNode => titleNode != null)];
+
+                    isOneShot = titleData.Count == 1 && !titleData.Any(title => title.InnerText.Contains("Vol") || title.InnerText.Contains("Box Set") || title.InnerText.Contains("Manga"));
+
                     HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
-                    if (maxPages == 0)
-                    {
-                        HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
-                        if (pageCheck != null)
-                        {
-                            maxPages = Convert.ToUInt16(pageCheck.GetAttributeValue("data-max", "Page Num Error"));
-                        }
-                    }
 
                     string entryTitle;
+                    InStockTradesData.Capacity += titleData.Count;
                     for (int x = 0; x < titleData.Count; x++)
                     {
-                        entryTitle = !bookTitle.Contains("Adv") ? entryTitle = titleData[x].InnerText.Replace(" Adv ", " Adventure ") : titleData[x].InnerText;
-                        LOGGER.Debug("{} | {}", entryTitle, oneShotCheck);
+                        entryTitle = bookTitle.Contains("Adv") 
+                            ? titleData[x].InnerText 
+                            : titleData[x].InnerText.Replace(" Adv ", " Adventure ");
 
-                        if (
-                            (InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
-                            && !MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
-                            && (   
-                                (
-                                    bookType == BookType.Manga 
-                                    && ( // Ensure manga entry contains valid indentifier
-                                            oneShotCheck
-                                            || 
-                                            (!oneShotCheck
-                                                && 
-                                                (
-                                                    entryTitle.Contains("Vol") 
-                                                    || entryTitle.Contains("Box Set") 
-                                                    || entryTitle.Contains("Manga")
-                                                    || entryTitle.Contains("Special Ed")
-                                                )
-                                            )
-                                        )
-                                    && !entryTitle.Contains(" Novel", StringComparison.OrdinalIgnoreCase)
-                                    && !( // Remove unintended volumes from specific series
-                                            InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle.ToString(), "of Gluttony")
-                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle.ToString(), "Boruto")
-                                        )
-                                )
-                                || 
-                                ( // Ensure novel entry doesn't contain Manga & Contains Novel or doesn't contain "Vol" identifier
-                                    bookType == BookType.LightNovel 
-                                    && !entryTitle.Contains("Manga") 
-                                    && (
-                                            entryTitle.Contains(" Novel", StringComparison.OrdinalIgnoreCase) 
-                                            || !entryTitle.Contains("Vol")
-                                        )
-                                    && !(
-                                            InternalHelpers.RemoveUnintendedVolumes(bookTitle, "fullmetal alchemist", entryTitle.ToString(), "Fullmetal Alchemist 20th Annv Book HC")
-                                        )
-                                )
-                            )
-                        )
+                        bool isBookTitleValid = InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle) && 
+                        !detailsData[x].InnerText.Contains("Damaged") && 
+                        !MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck;
+
+                        bool isMangaEntryValid = bookType == BookType.Manga && 
+                            !entryTitle.ContainsAny([" Novel ", " Sc "]) && 
+                            !entryTitle.EndsWith("Novel") && 
+                            !entryTitle.EndsWith("Sc") &&
+                            (isOneShot || 
+                            entryTitle.ContainsAny([" GN", "Vol", "Box Set", "Manga", "Special Ed", " HC"])) &&
+                            !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony") &&
+                            !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto");
+
+                        bool isNovelEntryValid = bookType == BookType.LightNovel && 
+                                !entryTitle.ContainsAny(["Manga", " GN", " Ed TP"]) && 
+                                entryTitle.ContainsAny(["Novel", "Sc"]) && 
+                                !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "overlord", entryTitle, "Joined Party");
+                        // || !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "fullmetal alchemist", entryTitle, "Fullmetal Alchemist 20th Annv Book HC");
+
+                        if (isBookTitleValid && (isMangaEntryValid || isNovelEntryValid))
                         {
+                            string cleanedTitle = ParseAndCleanTitle(bookTitle, entryTitle, bookType);
+                            string trimmedPrice = priceData[x].InnerText.Trim();
                             InStockTradesData.Add(
-                                new EntryModel
-                                (
-                                    TitleParse(bookTitle, entryTitle, bookType),
-                                    priceData[x].InnerText.Trim(), 
-                                    StockStatus.IS, 
-                                    WEBSITE_TITLE
-                                )
+                                new EntryModel(cleanedTitle, trimmedPrice, StockStatus.IS, WEBSITE_TITLE)
                             );
                         }
-                        else { LOGGER.Info("Removed {}", entryTitle); }
+                        else 
+                        { 
+                            LOGGER.Info("Removed {} | {} | {} | {}", entryTitle, isBookTitleValid, isMangaEntryValid, isNovelEntryValid);
+                        }
                     }
 
-                    if (maxPages != 0 && currPageNum != maxPages)
+                    if (maxPages != 0 && curPageNum != maxPages)
                     {
-                        currPageNum++;
+                        doc = web.Load(GenerateWebsiteUrl(++curPageNum, bookTitle));
                     }
                     else
                     {
-                        InStockTradesData.Sort(EntryModel.VolumeSort);
                         break;
                     }
                 }
             }
             catch (Exception e)
             {
-                LOGGER.Debug($"{bookTitle} Does Not Exist @ {WEBSITE_TITLE} \n{e}");
+                LOGGER.Error($"{bookTitle} | {bookType} Does Not Exist @ {WEBSITE_TITLE} \n{e}");
             }
-
-            //Print data to a txt file
-            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, InStockTradesData, LOGGER);
-
+            finally
+            {
+                InStockTradesData.Sort(EntryModel.VolumeSort);
+                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, InStockTradesData, LOGGER);
+            }
             return InStockTradesData;
         }
     }

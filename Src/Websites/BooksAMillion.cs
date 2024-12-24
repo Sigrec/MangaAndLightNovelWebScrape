@@ -300,7 +300,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             catch (Exception ex)
             {
-                LOGGER.Error($"{bookTitle} Does Not Exist @ BooksAMillion\n{ex}");
+                LOGGER.Error($"{bookTitle} | {bookType} Does Not Exist @ BooksAMillion\n{ex}");
             }
             finally
             {

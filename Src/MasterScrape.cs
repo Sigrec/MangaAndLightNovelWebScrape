@@ -17,7 +17,6 @@ namespace MangaAndLightNovelWebScrape
         private Dictionary<string, string> MasterUrls = new Dictionary<string, string>();
         private AmazonUSA AmazonUSA = null;
         private BooksAMillion BooksAMillion = null;
-        private BullMoose BullMoose = null;
         private TravellingMan TravellingMan = null;
         private InStockTrades InStockTrades = null;
         private KinokuniyaUSA KinokuniyaUSA = null;
@@ -60,7 +59,7 @@ namespace MangaAndLightNovelWebScrape
         [GeneratedRegex(@"^\d{1,3}(\.\d{1})?$")] internal static partial Regex FindVolNumRegex();
         [GeneratedRegex(@"Vol \d{1,3}(\.\d{1})?$")] internal static partial Regex FindVolWithNumRegex();
         [GeneratedRegex(@"\s{2,}|(--|\u2014)\s*| - ")] internal static partial Regex MultipleWhiteSpaceRegex();
-        [GeneratedRegex(@"(?:Encyclopedia|Anthology|Official|Character|Guide|Illustration|Anime Profiles|Choose Your Path|Compendium|Art(?:book| Book)|Error|Advertising|\(Osi\)|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA|Poster|IMPORT|Trace|Bookmarks|Music Book|Retrospective|Notebook(?: Journal|)|[^\w]Art of |the Anime|Calendar|Adventure Book|Coloring Book|Sketchbook|Notebook)", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
+        [GeneratedRegex(@"(?:Encyclopedia|Anthology|Official|Character|Guide|Illustration|Anime Profiles|Choose Your Path|Compendium|Art(?:book| Book)|Error|Advertising|\(Osi\)|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA|Poster|IMPORT|Trace|Bookmarks|Music Book|Retrospective|Notebook(?: Journal|)|[^\w]Art of |the Anime|Calendar|Adventure Book|Coloring Book|Sketchbook|Notebook|Choose.*Adventure)", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
 
         public MasterScrape(StockStatus[] Filter, Region Region = Region.America, Browser Browser = Browser.FireFox, bool IsBooksAMillionMember = false, bool IsKinokuniyaUSAMember = false, bool IsIndigoMember = false)
         {
@@ -384,7 +383,6 @@ namespace MangaAndLightNovelWebScrape
         {
             Crunchyroll?.ClearData();
             RobertsAnimeCornerStore?.ClearData();
-            BullMoose?.ClearData();
             InStockTrades?.ClearData();
             KinokuniyaUSA?.ClearData();
             BooksAMillion?.ClearData();
@@ -698,9 +696,6 @@ namespace MangaAndLightNovelWebScrape
                         break;
                     case BooksAMillion.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = BooksAMillion.GetUrls();
-                        break;
-                    case BullMoose.WEBSITE_TITLE:
-                        MasterUrls[entry.Website] = BullMoose.GetUrl();
                         break;
                     case CDJapan.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = CDJapan.GetUrl();
@@ -1036,15 +1031,11 @@ namespace MangaAndLightNovelWebScrape
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-<<<<<<< HEAD
-            string title = "Dragon Quest: The Adventure of Dai";
-=======
-            string title = "attack on titan";
->>>>>>> crunchyroll
+            string title = "Noragami";
             BookType bookType = BookType.Manga;
             watch.Start();
             MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.America, Browser.FireFox, false, false, false).EnableDebugMode();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.Crunchyroll ]);
+            await scrape.InitializeScrapeAsync(title, bookType, [ Website.InStockTrades ]);
             watch.Stop();
             scrape.PrintResultsToConsole(true, title, bookType);
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");

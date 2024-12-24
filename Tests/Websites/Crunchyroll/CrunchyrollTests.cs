@@ -5,7 +5,7 @@ namespace Tests.Websites
     [SetUICulture("en")]
     public class CrunchyrollTests
     {
-        MasterScrape Scrape;
+        private MasterScrape Scrape;
         private readonly HashSet<Website> WebsiteList = [ Website.Crunchyroll ];
 
         [OneTimeSetUp]
