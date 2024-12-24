@@ -47,6 +47,18 @@ namespace MangaAndLightNovelWebScrape
             return RemoveNonWordsRegex().Replace(curTitle, string.Empty).StartsWith(RemoveNonWordsRegex().Replace(bookTitle, string.Empty), StringComparison.OrdinalIgnoreCase);
         }
 
+        internal static void ReplaceMultipleTextInEntryTitle (ref StringBuilder curTitle, string bookTitle, string[] containsText, string replaceText)
+        {
+            foreach (string text in containsText)
+            {
+                if (!bookTitle.Contains(text, StringComparison.OrdinalIgnoreCase) && curTitle.ToString().Contains(text, StringComparison.OrdinalIgnoreCase))
+                {
+                    curTitle.Replace(text, replaceText);
+                    break;
+                }
+            }
+        }
+
         internal static void ReplaceTextInEntryTitle (ref StringBuilder curTitle, string bookTitle, string containsText, string replaceText)
         {
             if (!bookTitle.Contains(containsText, StringComparison.OrdinalIgnoreCase))
@@ -165,7 +177,7 @@ namespace MangaAndLightNovelWebScrape
             return pStringBuilder;
         }
 
-        internal static void PrintWebsiteData(string website, string bookTitle, List<EntryModel> dataList, Logger WebsiteLogger)
+        internal static void PrintWebsiteData(string website, string bookTitle, List<EntryModel> dataList, Logger LOGGER)
         {
             if (MasterScrape.IsDebugEnabled)
             {
@@ -179,14 +191,14 @@ namespace MangaAndLightNovelWebScrape
                         // If we have data, write it to both the logger and the output file.
                         foreach (EntryModel data in dataList)
                         {
-                            WebsiteLogger.Info(data);  // Log the data entry
+                            LOGGER.Info(data);  // Log the data entry
                             outputFile.WriteLine(data);  // Write to the file
                         }
                     }
                     else
                     {
                         string message = $"{bookTitle} Does Not Exist at {website}";
-                        WebsiteLogger.Error(message);  // Log the error message
+                        LOGGER.Error(message);  // Log the error message
                         outputFile.WriteLine(message);  // Write the error to the file
                     }
                 }

@@ -211,6 +211,7 @@ namespace MangaAndLightNovelWebScrape
     {
         [GeneratedRegex(@" (?:Vol|Box Set) \d{1,3}(?:\.\d{1,2})?$")] private static partial Regex ExtractNameRegex();
         [GeneratedRegex(@"[^\p{L}\p{N}\s\.]")] private static partial Regex FilterNameRegex();
+        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
 
         /// <summary>
         /// Extracts the entry's volume number and checks to see if they are equal or similar enough
@@ -236,9 +237,7 @@ namespace MangaAndLightNovelWebScrape
                 if (val1 != -1 && val2 != -1)
                 {
                     bool namesMatch = string.Equals(entry1Name, entry2Name, StringComparison.OrdinalIgnoreCase);
-                    bool namesAreSimilar = EntryModel.Similar(entry1Name, entry2Name, Math.Min(entry1Name.Length, entry2Name.Length) / 6) != -1;
-                    
-                    if (namesMatch || namesAreSimilar)
+                    if (namesMatch || (EntryModel.Similar(entry1Name, entry2Name, Math.Min(entry1Name.Length, entry2Name.Length) / 6) != -1))
                     {
                         return val1.CompareTo(val2); // Simplified comparison of val1 and val2
                     }

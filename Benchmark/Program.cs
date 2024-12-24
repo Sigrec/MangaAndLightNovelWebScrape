@@ -14,6 +14,7 @@ public class Program
         Dictionary<string, Type> websiteBenchmarks = new Dictionary<string, Type>
         {
             { "Crunchyroll", typeof(CrunchyrollBenchmarks) },
+            { "InStockTrades", typeof(InStockTradesBenchmarks) },
             // Add other benchmarks here as needed
         };
 
@@ -21,7 +22,7 @@ public class Program
         if (args.Length == 0)
         {
             Console.WriteLine("No arguments provided. Running all benchmarks...");
-            RunBenchmarks(null);
+            RunBenchmarks(null, null);
         }
         else
         {
@@ -29,7 +30,7 @@ public class Program
             string website = args[0]; // Assume the first argument is the website name
             if (websiteBenchmarks.ContainsKey(website))
             {
-                RunBenchmarks(website);
+                RunBenchmarks(website, websiteBenchmarks);
             }
             else
             {
@@ -38,14 +39,8 @@ public class Program
         }
     }
 
-    private static void RunBenchmarks(string? website)
+    private static void RunBenchmarks(string? website, Dictionary<string, Type>? websiteBenchmarks)
     {
-        // Dictionary to map website names to their corresponding benchmark classes
-        Dictionary<string, Type> websiteBenchmarks = new Dictionary<string, Type>
-        {
-            { "Crunchyroll", typeof(CrunchyrollBenchmarks) },
-            // Add other benchmarks here as needed
-        };
 
         // Create a custom configuration for BenchmarkDotNet with an output folder
         var config = ManualConfig.CreateEmpty()

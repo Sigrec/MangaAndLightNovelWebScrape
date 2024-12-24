@@ -290,7 +290,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             catch (Exception e)
             {
-                LOGGER.Error($"{bookTitle} Does Not Exist @ Kinokuniya USA \n{e.StackTrace}");
+                LOGGER.Error($"{bookTitle} | {bookType} Does Not Exist @ Kinokuniya USA \n{e.StackTrace}");
             }
             finally
             {

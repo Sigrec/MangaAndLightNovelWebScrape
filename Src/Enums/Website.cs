@@ -2,6 +2,9 @@ namespace MangaAndLightNovelWebScrape.Enums
 {
     public enum Website
     {
+        /// <summary>
+        /// Japan
+        /// </summary>
         AmazonJapan,
         /// <summary>
         /// America

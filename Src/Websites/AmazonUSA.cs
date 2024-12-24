@@ -304,7 +304,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             catch (Exception ex)
             {
-                LOGGER.Error("{} Does Not Exist @ {} \n{}", bookTitle, WEBSITE_TITLE, ex);
+                LOGGER.Error("{} | {} Does Not Exist @ {} \n{}", bookTitle, bookType, WEBSITE_TITLE, ex);
             }
             finally
             {

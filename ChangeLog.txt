@@ -11,6 +11,10 @@ v4.0.0 -
 -🔥Fixed url generation to prevent unwanted product from being parsed
 -🔥"Back Order" stock status added
 -⌛All around performance improvements
+📜InStockTrades Fixes
+-🔥Fixed novel parsing
+-🔥Fixed parsing for volumes with decimals (Vol 9.5)
+-⌛All around performance improvements
 
 v3.1.1 - Sept 16th, 2024
 ✅Added new helper function to print websites

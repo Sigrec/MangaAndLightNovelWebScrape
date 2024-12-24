@@ -221,7 +221,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             catch (Exception ex)
             {
-                LOGGER.Error("{} Does Not Exist @ {} \n{}", bookTitle, WEBSITE_TITLE, ex);
+                LOGGER.Error("{} | {} | {} Does Not Exist @ {} \n{}", bookTitle, bookType, bookType, WEBSITE_TITLE, ex);
             }
             
             CrunchyrollData.Sort(EntryModel.VolumeSort);
