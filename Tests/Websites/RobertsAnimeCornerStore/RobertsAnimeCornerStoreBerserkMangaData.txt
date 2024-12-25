@@ -29,3 +29,6 @@
 [Berserk Vol 35, $14.87, IS, RobertsAnimeCornerStore]
 [Berserk Vol 36, $14.87, IS, RobertsAnimeCornerStore]
 [Berserk Vol 39, $14.87, IS, RobertsAnimeCornerStore]
+[Berserk Vol 40, $12.98, IS, RobertsAnimeCornerStore]
+[Berserk Vol 41, $12.98, IS, RobertsAnimeCornerStore]
+[Berserk Vol 42, $12.98, PO, RobertsAnimeCornerStore]

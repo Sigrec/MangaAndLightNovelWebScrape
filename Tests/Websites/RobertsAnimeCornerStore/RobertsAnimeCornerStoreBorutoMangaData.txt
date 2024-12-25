@@ -1,3 +1,4 @@
+[Boruto Two Blue Vortex Vol 1, $10.98, PO, RobertsAnimeCornerStore]
 [Boruto Vol 1, $8.64, IS, RobertsAnimeCornerStore]
 [Boruto Vol 2, $8.64, IS, RobertsAnimeCornerStore]
 [Boruto Vol 3, $8.64, IS, RobertsAnimeCornerStore]
@@ -16,5 +17,5 @@
 [Boruto Vol 16, $8.98, IS, RobertsAnimeCornerStore]
 [Boruto Vol 17, $8.98, IS, RobertsAnimeCornerStore]
 [Boruto Vol 18, $8.98, IS, RobertsAnimeCornerStore]
-[Boruto Vol 19, $10.98, PO, RobertsAnimeCornerStore]
-[Boruto Vol 20, $10.98, PO, RobertsAnimeCornerStore]
+[Boruto Vol 19, $10.98, IS, RobertsAnimeCornerStore]
+[Boruto Vol 20, $10.98, IS, RobertsAnimeCornerStore]

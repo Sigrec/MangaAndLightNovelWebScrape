@@ -15,6 +15,7 @@ public class Program
         {
             { "Crunchyroll", typeof(CrunchyrollBenchmarks) },
             { "InStockTrades", typeof(InStockTradesBenchmarks) },
+            { "RobertsAnimeCornerStore", typeof(RobertsAnimeCornerStoreBenchmarks) },
             // Add other benchmarks here as needed
         };
 

@@ -8,9 +8,9 @@ namespace MangaAndLightNovelWebScrape
         public string Price { get; set; }
         public StockStatus StockStatus { get; set; }
         public string  Website { get; set; }
-        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+        private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrape");
         internal static VolumeSort VolumeSort = new VolumeSort();
-        [GeneratedRegex(@"[Vol|Box Set].*?(\d+).*")]  private static partial Regex VolumeNumRegex();
+        // [GeneratedRegex(@"[Vol|Box Set].*?(\d+).*")]  private static partial Regex VolumeNumRegex();
         [GeneratedRegex(@"(?:.*(?<int> \d{1,3})|.*(?<double> \d{1,3}\.\d{1,3}))(?:\s+Novel$|$)|(?:.*(?<int> \d{1,3})-\d{1,3})")] private static partial Regex ExtractDoubleRegex();
 
         /// <summary>

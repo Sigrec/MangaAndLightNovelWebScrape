@@ -1035,7 +1035,7 @@ namespace MangaAndLightNovelWebScrape
             BookType bookType = BookType.Manga;
             watch.Start();
             MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.America, Browser.FireFox, false, false, false).EnableDebugMode();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.InStockTrades ]);
+            await scrape.InitializeScrapeAsync(title, bookType, [ Website.RobertsAnimeCornerStore ]);
             watch.Stop();
             scrape.PrintResultsToConsole(true, title, bookType);
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");

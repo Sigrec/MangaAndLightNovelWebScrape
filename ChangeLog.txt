@@ -15,6 +15,9 @@ v4.0.0 -
 -🔥Fixed novel parsing
 -🔥Fixed parsing for volumes with decimals (Vol 9.5)
 -⌛All around performance improvements
+📜RobertsAnimeCornerStore Fixes
+-🔥Fixed backorder stockstatus showing as OOS
+-⌛All around performance improvements
 
 v3.1.1 - Sept 16th, 2024
 ✅Added new helper function to print websites

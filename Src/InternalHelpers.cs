@@ -5,6 +5,7 @@ namespace MangaAndLightNovelWebScrape
     internal static partial class InternalHelpers
     {
         internal static char[] trimedChars = [' ', '\'', '!', '-', ',', ':'];
+        private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrape");
         [GeneratedRegex(@"[^\w+]")] internal static partial Regex RemoveNonWordsRegex();
 
         internal static List<EntryModel> RemoveDuplicateEntries(List<EntryModel> entries)
@@ -78,13 +79,15 @@ namespace MangaAndLightNovelWebScrape
         internal static void RemoveCharacterFromTitle(ref StringBuilder curTitle, string bookTitle, char charToRemove)
         {
             // Check if charToRemove exists in bookTitle
-            if (bookTitle.Contains(charToRemove))
+            if (!bookTitle.Contains(charToRemove) && curTitle.ToString().Contains(charToRemove))
             {
-                // Use a single pass to remove all occurrences of charToRemove in curTitle
-                int index = 0;
-                while ((index = curTitle.ToString().IndexOf(charToRemove, index)) != -1)
+                for (int i = 0; i < curTitle.Length; i++)
                 {
-                    curTitle.Remove(index, 1);
+                    if (curTitle[i] == charToRemove)
+                    {
+                        curTitle.Remove(i, 1);
+                        i--; // Adjust the index to re-check the current position after removal
+                    }
                 }
             }
         }
