@@ -5,19 +5,27 @@ using BenchmarkDotNet.Exporters;
 using BenchmarkDotNet.Loggers;
 using BenchmarkDotNet.Columns;
 using System.Reflection;
+using OpenQA.Selenium;
+using MangaAndLightNovelWebScrape.Enums;
+using OpenQA.Selenium.Edge;
+using OpenQA.Selenium.Firefox;
+using OpenQA.Selenium.Chrome;
+using HtmlAgilityPack;
+using MangaAndLightNovelWebScrape;
 
 public class Program
 {
     public static void Main(string[] args)
     {
         // Dictionary to map website names to their corresponding benchmark classes
-        Dictionary<string, Type> websiteBenchmarks = new Dictionary<string, Type>
+        var websiteBenchmarks = new Dictionary<string[], Type>
         {
-            { "Crunchyroll", typeof(CrunchyrollBenchmarks) },
-            { "InStockTrades", typeof(InStockTradesBenchmarks) },
-            { "RobertsAnimeCornerStore", typeof(RobertsAnimeCornerStoreBenchmarks) },
-            // Add other benchmarks here as needed
+            { [ "Crunchyroll", "CR" ], typeof(CrunchyrollBenchmarks) },
+            { [ "InStockTrades", "IST" ], typeof(InStockTradesBenchmarks) },
+            { [ "RobertsAnimeCornerStore", "ROB" ], typeof(RobertsAnimeCornerStoreBenchmarks) },
+            { [ "BooksAMillion", "BAM" ], typeof(BooksAMillionBenchmarks) }
         };
+
 
         // Check if an argument is given, if not, run all benchmarks
         if (args.Length == 0)
@@ -29,7 +37,7 @@ public class Program
         {
             // If an argument is given, run the specific benchmark
             string website = args[0]; // Assume the first argument is the website name
-            if (websiteBenchmarks.ContainsKey(website))
+            if (websiteBenchmarks.Keys.Any(keys => keys.Contains(website)))
             {
                 RunBenchmarks(website, websiteBenchmarks);
             }
@@ -40,7 +48,7 @@ public class Program
         }
     }
 
-    private static void RunBenchmarks(string? website, Dictionary<string, Type>? websiteBenchmarks)
+    private static void RunBenchmarks(string? website, Dictionary<string[], Type>? websiteBenchmarks)
     {
 
         // Create a custom configuration for BenchmarkDotNet with an output folder
@@ -49,7 +57,10 @@ public class Program
             .AddExporter(MarkdownExporter.GitHub)
             .AddLogger(ConsoleLogger.Default)
             .AddColumnProvider(DefaultColumnProviders.Instance)
-            .WithArtifactsPath(GetArtifactsPath(website));
+            .WithArtifactsPath(GetArtifactsPath(websiteBenchmarks!
+                .FirstOrDefault(entry => entry.Key.Contains(website))
+                .Key.FirstOrDefault())
+            );
 
         if (website == null)
         {
@@ -59,7 +70,9 @@ public class Program
         else
         {
             // If a specific website is given, run that website's benchmark
-            Type benchmarkType = websiteBenchmarks[website];
+            Type benchmarkType = websiteBenchmarks!
+                .FirstOrDefault(entry => entry.Key.Contains(website))
+                .Value;
             string filter = $"*{benchmarkType.Name}*";
 
             // Run the specific benchmark with the filter and output configuration
@@ -74,5 +87,51 @@ public class Program
         string folderName = website ?? "AllBenchmarks";
         Directory.CreateDirectory(folderName); // Ensure the directory exists
         return folderName;
+    }
+
+    internal static WebDriver SetupBrowserDriver(bool needsUserAgent = false, Browser browser = Browser.FireFox)
+    {
+        switch (browser)
+        {
+            case Browser.Edge:
+                EdgeOptions edgeOptions = new()
+                {
+                    PageLoadStrategy = PageLoadStrategy.Normal,
+                };
+                EdgeDriverService edgeDriverService = EdgeDriverService.CreateDefaultService();
+                edgeDriverService.HideCommandPromptWindow = true;
+                edgeOptions.AddArguments(MasterScrape.CHROME_BROWSER_ARGUMENTS);
+                edgeOptions.AddExcludedArgument("disable-popup-blocking");
+                edgeOptions.AddUserProfilePreference("profile.default_content_settings.geolocation", 2);
+                edgeOptions.AddUserProfilePreference("profile.default_content_setting_values.notifications", 2);
+                if (needsUserAgent) edgeOptions.AddArgument($"user-agent={new HtmlWeb().UserAgent}");
+                return new EdgeDriver(edgeDriverService, edgeOptions);
+            case Browser.FireFox:
+                FirefoxOptions firefoxOptions = new()
+                {
+                    PageLoadStrategy = PageLoadStrategy.Normal,
+                    AcceptInsecureCertificates = true
+                };
+                FirefoxDriverService fireFoxDriverService = FirefoxDriverService.CreateDefaultService();
+                fireFoxDriverService.HideCommandPromptWindow = true;
+                firefoxOptions.AddArguments(MasterScrape.FIREFOX_BROWSER_ARGUMENTS);
+                firefoxOptions.SetPreference("profile.default_content_settings.geolocation", 2);
+                firefoxOptions.SetPreference("profile.default_content_setting_values.notifications", 2);
+                return new FirefoxDriver(fireFoxDriverService, firefoxOptions);
+            case Browser.Chrome:
+            default:
+                ChromeOptions chromeOptions = new()
+                {
+                    PageLoadStrategy = PageLoadStrategy.Normal,
+                };
+                ChromeDriverService chromeDriverService = ChromeDriverService.CreateDefaultService();
+                chromeDriverService.HideCommandPromptWindow = true;
+                chromeOptions.AddArguments(MasterScrape.CHROME_BROWSER_ARGUMENTS);
+                chromeOptions.AddExcludedArgument("disable-popup-blocking");
+                chromeOptions.AddUserProfilePreference("profile.default_content_settings.geolocation", 2);
+                chromeOptions.AddUserProfilePreference("profile.default_content_setting_values.notifications", 2);
+                if (needsUserAgent) chromeOptions.AddArgument($"user-agent={new HtmlWeb().UserAgent}");
+                return new ChromeDriver(chromeDriverService, chromeOptions);
+        }
     }
 }

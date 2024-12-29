@@ -48,9 +48,9 @@ namespace MangaAndLightNovelWebScrape
         public bool IsIndigoMember { get; set; }
         private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         // "--headless=new", 
-        private static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent"  ];
+        internal static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--ininternal", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent"  ];
         // "-headless",
-        private static readonly string[] FIREFOX_BROWSER_ARGUMENTS = [ "-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3"];
+        internal static readonly string[] FIREFOX_BROWSER_ARGUMENTS = [ "-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3"];
         /// <summary>
         /// Determines whether debug mode is enabled (Disabled by default)
         /// </summary>
@@ -506,7 +506,7 @@ namespace MangaAndLightNovelWebScrape
         /// </summary>
         /// <param name="needsUserAgent">Whether the website needs a valid user-agent</param>
         /// <returns>Edge, Chrome, or FireFox WebDriver</returns>
-        protected internal WebDriver SetupBrowserDriver(bool needsUserAgent = false, bool forceFireFox = false)
+        private WebDriver SetupBrowserDriver(bool needsUserAgent = false, bool forceFireFox = false)
         {
             switch (forceFireFox ? Browser.FireFox : this.Browser)
             {
@@ -1031,11 +1031,11 @@ namespace MangaAndLightNovelWebScrape
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string title = "Noragami";
+            string title = "jujutsu kaisen";
             BookType bookType = BookType.Manga;
             watch.Start();
             MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.America, Browser.FireFox, false, false, false).EnableDebugMode();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.RobertsAnimeCornerStore ]);
+            await scrape.InitializeScrapeAsync(title, bookType, [ Website.BooksAMillion]);
             watch.Stop();
             scrape.PrintResultsToConsole(true, title, bookType);
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");

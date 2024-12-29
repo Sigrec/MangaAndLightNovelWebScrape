@@ -1,5 +1,3 @@
-using OpenQA.Selenium.DevTools.V124.DOM;
-
 namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class Crunchyroll
