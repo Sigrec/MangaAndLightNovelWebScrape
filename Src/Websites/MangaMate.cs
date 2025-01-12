@@ -159,7 +159,7 @@ namespace MangaAndLightNovelWebScrape.Websites
 
                 MangaMateData = InternalHelpers.RemoveDuplicateEntries(MangaMateData);
                 MangaMateData.Sort(EntryModel.VolumeSort);
-                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, MangaMateData, LOGGER);
+                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, MangaMateData, LOGGER);
             }
             catch (Exception ex)
             {

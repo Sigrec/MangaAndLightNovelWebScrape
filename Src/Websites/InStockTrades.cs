@@ -226,7 +226,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             finally
             {
                 InStockTradesData.Sort(EntryModel.VolumeSort);
-                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, InStockTradesData, LOGGER);
+                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, InStockTradesData, LOGGER);
             }
             return InStockTradesData;
         }

@@ -180,7 +180,7 @@ namespace MangaAndLightNovelWebScrape
             return pStringBuilder;
         }
 
-        internal static void PrintWebsiteData(string website, string bookTitle, List<EntryModel> dataList, Logger LOGGER)
+        internal static void PrintWebsiteData(string website, string bookTitle, BookType bookType, List<EntryModel> dataList, Logger LOGGER)
         {
             if (MasterScrape.IsDebugEnabled)
             {
@@ -200,7 +200,7 @@ namespace MangaAndLightNovelWebScrape
                     }
                     else
                     {
-                        string message = $"{bookTitle} Does Not Exist at {website}";
+                        string message = $"{bookTitle} | {bookType} Does Not Exist at {website}";
                         LOGGER.Error(message);  // Log the error message
                         outputFile.WriteLine(message);  // Write the error to the file
                     }

@@ -193,7 +193,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 driver?.Quit();
                 IndigoData = IndigoData.Distinct().ToList();
                 IndigoData.Sort(EntryModel.VolumeSort);
-                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, IndigoData, LOGGER);
+                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, IndigoData, LOGGER);
             }
 
             return IndigoData;

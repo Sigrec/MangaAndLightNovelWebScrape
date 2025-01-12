@@ -263,7 +263,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             
             SciFierData.Sort(EntryModel.VolumeSort);
-            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, SciFierData, LOGGER); 
+            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, SciFierData, LOGGER); 
             return SciFierData;
         }
     }

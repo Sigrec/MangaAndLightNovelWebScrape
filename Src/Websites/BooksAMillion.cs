@@ -16,13 +16,14 @@ namespace MangaAndLightNovelWebScrape.Websites
         private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='availability_search_results']");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//ul[@class='search-page-list']//a[@title='Next']");
 
+        [GeneratedRegex(@"V\d{1,3}", RegexOptions.IgnoreCase)] private static partial Regex MangaRemovalRegex();
         [GeneratedRegex(@"(?<=Box Set).*|:|\!|,|Includes.*|--The Manga|The Manga|\d+-\d+|\(Manga\) |(?<=Omnibus\s\d{1,3})[^\d.].*|\d{1,3}\s+\d{1,3}\s+\&\s+(\d{1,3})|\d{1,3},\s+\d{1,3}\s+\&\s+(\d{1,3})", RegexOptions.IgnoreCase)] private static partial Regex MangaFilterTitleRegex();
         [GeneratedRegex(@":|\!|,|Includes.*|\d+-\d+|\d+, \d+ \& \d+", RegexOptions.IgnoreCase)] private static partial Regex NovelFilterTitleRegex();
         [GeneratedRegex(@"(?<=Vol\s+\d+)[^\d\.].*|\(.*?\)$|\[.*?\]|Manga ", RegexOptions.IgnoreCase)] private static partial Regex CleanFilterTitleRegex();
         [GeneratedRegex(@"Box Set (\d+)", RegexOptions.IgnoreCase)] private static partial Regex VolNumberRegex();
         [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)|3-In-1 V\d+|Vols\.|\d{1,3}-In-\d{1,3}|\d{1,3}-\d{1,3}", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
         [GeneratedRegex(@"3-In-1 V(\d+)|\d{1,3}-In-\d{1,3}|(?:\d{1,3}-(\d{1,3}))$|\d{1,3},\s+\d{1,3}\s+\&\s+(\d{1,3})|\d{1,3}\s+\d{1,3}\s+\&\s+(\d{1,3})", RegexOptions.IgnoreCase)] private static partial Regex OmnibusMatchRegex();
-        [GeneratedRegex(@"Vol\.|Volumes|Volume|Vols", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
+        [GeneratedRegex(@"Vol\.|Volumes|Volume|Vols\.|Vols", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
 
         internal async Task CreateBooksAMillionTask(string bookTitle, BookType book, bool isMember, List<List<EntryModel>> MasterDataList, WebDriver driver)
         {
@@ -46,27 +47,22 @@ namespace MangaAndLightNovelWebScrape.Websites
         private string GenerateWebsiteUrl(string bookTitle, bool boxsetCheck, BookType bookType, int pageNum, bool skipUrlAdd = false)
         {
             // Initialize a StringBuilder
-            var stringBuilder = new StringBuilder("https://www.booksamillion.com/search?");
-            
-            // Directly append the query and filter components
-            stringBuilder.Append($"query={InternalHelpers.FilterBookTitle(bookTitle)}");
-            stringBuilder.Append("&sort=date");
+            var stringBuilder = new StringBuilder("https://www.booksamillion.com/search2?");
 
             if (bookType == BookType.LightNovel)
             {
-                // https://www.booksamillion.com/search?filter=product_type%3Abooks;query=classroom%20of%20the%20elite%20novel;sort=date;page=2&id=9253104384644
-                stringBuilder.Append($"{(boxsetCheck ? "+novel+box+set" : "+novel")}&page={pageNum}");
-            }
-            else if (!boxsetCheck)
-            {
-                // https://booksamillion.com/search?query=jujutsu%20kaisen&filter=product_type%3Abooks%7Cbook_categories%3ACGN&sort=date
-                // https://booksamillion.com/search?query=jujutsu%20kaisen;filter=product_type%3Abooks%7Cbook_categories%3ACGN;sort=date;page=2&id=9253104384644
-                stringBuilder.Append($"&filter=product_type%3Abooks%7Cbook_categories%3ACGN&page={pageNum}");
+                // https://www.booksamillion.com/search2?query=naruto%20light%20novel&filters[product_type]=Books
+                stringBuilder.Append($"query={InternalHelpers.FilterBookTitle(bookTitle)}");
+                stringBuilder.Append($"{(boxsetCheck ? "%20light%20novel%20box%20set" : "%20light%20novel")}&filters[product_type]=Books&page={pageNum}");
             }
             else
             {
-                // https://booksamillion.com/search?filter=product_type%3Abooks&query=bleach+box+set
-                stringBuilder.Append($"{(boxsetCheck ? "+box+set" : string.Empty)}");
+                // https://www.booksamillion.com/search2?query=naruto;filters%5Bproduct_type%5D=Books
+
+                // https://www.booksamillion.com/search2?id=9351450074874&query=one+piece+box+set&filters%5Bproduct_type%5D=Books
+                // https://www.booksamillion.com/search2?id=9351450074874&query=naruto+box+set&filters%5Bproduct_type%5D=Books
+
+                stringBuilder.Append($"query={InternalHelpers.FilterBookTitle(bookTitle)}{(boxsetCheck ? "manga%20box%20set" : "%20manga")};filters%5Bproduct_type%5D=Books;page={pageNum}");
             }
 
             // Convert StringBuilder to string
@@ -116,7 +112,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 }
                 
                 curTitle = new StringBuilder(CleanFilterTitleRegex().Replace(MangaFilterTitleRegex().Replace(entryTitle, string.Empty), string.Empty));
-                entryTitle = curTitle.ToString().Trim();
+                string entryTitleCleaned = curTitle.ToString().Trim();
 
                 if (bookTitle.Equals("Boruto", StringComparison.OrdinalIgnoreCase))
                 {
@@ -126,8 +122,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 if (entryTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) || 
                     entryTitle.Contains("BOXSET", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (bookTitle.Equals("Noruto", StringComparison.OrdinalIgnoreCase) && 
-                        entryTitle.Equals(entryTitle.ToUpper()))
+                    if (entryTitleCleaned.Equals("NARUTO BOXSET V01-V27"))
                     {
                         curTitle.Replace("NARUTO BOXSET V01-V27", "Naruto Box Set 1");
                     }
@@ -146,13 +141,14 @@ namespace MangaAndLightNovelWebScrape.Websites
                     string firstOmniNum = omnibusMatch[1].Value.TrimStart('0');
                     string secondOmniNum = omnibusMatch[2].Value;
                     string thirdOmniNum = omnibusMatch[3].Value;
+                    LOGGER.Debug("{} | {} | {} | {}", entryTitleCleaned, firstOmniNum, secondOmniNum, thirdOmniNum);
 
-                    if (!entryTitle.Contains(" Omnibus ", StringComparison.OrdinalIgnoreCase))
+                    if (!entryTitleCleaned.Contains(" Omnibus", StringComparison.OrdinalIgnoreCase))
                     {
-                        curTitle.Insert(entryTitle.IndexOf("Vol", StringComparison.OrdinalIgnoreCase), "Omnibus ");
+                        curTitle.Insert(entryTitleCleaned.IndexOf("Vol", StringComparison.OrdinalIgnoreCase), "Omnibus ");
                     }
                     
-                    if (!entryTitle.Contains(" Vol ", StringComparison.OrdinalIgnoreCase))
+                    if (!entryTitleCleaned.Contains(" Vol", StringComparison.OrdinalIgnoreCase))
                     {
                         curTitle.Append("Vol ");
                     }
@@ -173,17 +169,18 @@ namespace MangaAndLightNovelWebScrape.Websites
                         }
                     }
                 }
-                else if (!entryTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase) &&
-                         !entryTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) &&
-                         MasterScrape.FindVolNumRegex().IsMatch(entryTitle))
+                else if (!entryTitleCleaned.Contains("Vol", StringComparison.OrdinalIgnoreCase) &&
+                         !entryTitleCleaned.Contains("Box Set", StringComparison.OrdinalIgnoreCase) &&
+                         MasterScrape.FindVolNumRegex().IsMatch(entryTitleCleaned))
                 {
-                    curTitle.Insert(MasterScrape.FindVolNumRegex().Match(entryTitle).Index, "Vol ");
+                    curTitle.Insert(MasterScrape.FindVolNumRegex().Match(entryTitleCleaned).Index, "Vol ");
                 }
+                LOGGER.Debug("{}", curTitle.ToString());
 
                 if (entryTitle.Contains("Stall", StringComparison.OrdinalIgnoreCase) && 
                     !bookTitle.Contains("Stall", StringComparison.OrdinalIgnoreCase))
                 {
-                    int volIndex = entryTitle.LastIndexOf("Vol", StringComparison.OrdinalIgnoreCase);
+                    int volIndex = curTitle.ToString().LastIndexOf("Vol", StringComparison.OrdinalIgnoreCase);
                     if (volIndex != -1)
                     {
                         curTitle.Remove(volIndex, curTitle.Length - volIndex);
@@ -223,7 +220,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 
                 while(true)
                 {
-                    wait.Until(e => e.FindElement(By.Id("content")));
+                    wait.Until(e => e.FindElement(By.ClassName("search-results")));
 
                     // Initialize the html doc for crawling
                     doc.LoadHtml(driver.PageSource);
@@ -237,35 +234,53 @@ namespace MangaAndLightNovelWebScrape.Websites
 
                     for(int x = 0; x < titleData.Count; x++)
                     {
-                        string entryTitle = titleData[x].InnerText;
-                        if (!boxsetCheck && (entryTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) || entryTitle.Contains("BOXSET", StringComparison.OrdinalIgnoreCase)))
+                        string entryTitle = titleData[x].InnerText.Trim();
+                        if (!boxsetValidation && entryTitle.Contains(bookTitle, StringComparison.OrdinalIgnoreCase) && (entryTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) || entryTitle.Contains("BOXSET", StringComparison.OrdinalIgnoreCase)) && (bookType == BookType.Manga || (bookType == BookType.LightNovel && !entryTitle.ContainsAny(["Manga", "Volumes", "Vol"]) && !MangaRemovalRegex().IsMatch(entryTitle))))
                         {
                             boxsetValidation = true;
                             continue;
                         }
 
-                        if ((!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || 
-                            BookTitleRemovalCheck || 
-                            entryTitle.Contains("With Poster", StringComparison.OrdinalIgnoreCase)) &&
+                        LOGGER.Debug("{} | {} | {} | {}", entryTitle, !MasterScrape.EntryRemovalRegex().IsMatch(entryTitle), InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle), !bookQuality[x].InnerText.Contains("Library Binding"));
+
+                        if ((!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck || entryTitle.Contains("[With")) &&
                             InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle) &&
                             !bookQuality[x].InnerText.Contains("Library Binding") &&
                             (titleData.Count == 1 && !boxsetCheck || 
-                            !(bookType == BookType.Manga &&
+                            bookType == BookType.Manga && 
                                 (
+                                    (entryTitle.Equals(bookTitle, StringComparison.OrdinalIgnoreCase) && pageNum == 1) || 
+                                    entryTitle.ContainsAny(["Vol", "Box Set", "BOXSET", "Comic"]) || 
+                                    (!entryTitle.ContainsAny(["Vol", "Box Set", "BOXSET", "Comic"]) && 
+                                    (pageNum > 1 || entryTitle.Any(char.IsDigit) &&
+                                    !bookTitle.Any(char.IsDigit)))
+                                ) 
+                                &&
+                                (!(
                                     entryTitle.Contains("(Light Novel", StringComparison.OrdinalIgnoreCase) ||
-                                    InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto", "Itachi's Story", "Team 7 Character") ||
                                     InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony") ||
-                                    InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Attack on Titan", entryTitle, "Adventure") ||
-                                    InternalHelpers.RemoveUnintendedVolumes(bookTitle, "One Piece", entryTitle, "Heroines") ||
-                                    (!entryTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase) &&
-                                    entryTitle.Any(char.IsDigit) &&
-                                    !bookTitle.Any(char.IsDigit))
+                                    InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Attack on Titan", entryTitle, "Adventure", "Fly") ||
+                                    InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto", "Story", "Team 7 Character", "Dragon Rider")
                                 )
-                            ))
+                                ||
+                                (
+                                    InternalHelpers.RemoveUnintendedVolumes(bookTitle, "One Piece", entryTitle, "Wanted")
+                                ))
+                            ||
+                            bookType == BookType.LightNovel &&
+                            (entryTitle.ContainsAny(["Light Novel", "Novel",]) || 
+                            !entryTitle.ContainsAny(["Manga", "Volumes", "Vol"]) && 
+                            !MangaRemovalRegex().IsMatch(entryTitle)))
                         )
                         {
+                            if (!entryTitle.ContainsAny(["Boxset", "Box Set"]) && MangaRemovalRegex().IsMatch(entryTitle))
+                            {
+                                LOGGER.Info("Removed (2) {}", entryTitle);
+                                continue;
+                            }
+
                             entryTitle = CleanAndParseTitle(
-                                FixVolumeRegex().Replace(System.Net.WebUtility.HtmlDecode(entryTitle), "Vol"), 
+                                FixVolumeRegex().Replace(entryTitle.Replace("&amp;", "&"), "Vol "), 
                                 bookType, 
                                 bookTitle
                             );
@@ -292,7 +307,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                             }
                             else 
                             { 
-                                LOGGER.Info("Removed (2) {}", entryTitle); 
+                                LOGGER.Info("Removed (3) {}", entryTitle); 
                             }
                         }
                         else
@@ -314,7 +329,9 @@ namespace MangaAndLightNovelWebScrape.Websites
                         if (boxsetValidation && !boxsetCheck)
                         {
                             boxsetCheck = true;
+                            pageNum = 1;
                             curUrl = GenerateWebsiteUrl(bookTitle, boxsetCheck, bookType, pageNum);
+                            LOGGER.Info("Initial Box Set Url: {}", curUrl);
                             driver.Navigate().GoToUrl(curUrl);
                         }
                         else
@@ -332,7 +349,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             {
                 driver?.Quit();
                 BooksAMillionData.Sort(EntryModel.VolumeSort);
-                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, BooksAMillionData, LOGGER);
+                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, BooksAMillionData, LOGGER);
             }
             return BooksAMillionData;
         }

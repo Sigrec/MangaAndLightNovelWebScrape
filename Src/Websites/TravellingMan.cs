@@ -213,7 +213,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             {
                 TravellingManData.Sort(EntryModel.VolumeSort);
                 TravellingManData.RemoveDuplicates(LOGGER);
-                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, TravellingManData, LOGGER);
+                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, TravellingManData, LOGGER);
             }
             return TravellingManData;
         }

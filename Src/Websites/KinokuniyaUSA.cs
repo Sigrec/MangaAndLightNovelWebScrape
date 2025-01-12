@@ -286,7 +286,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 }
 
                 KinokuniyaUSAData.Sort(EntryModel.VolumeSort);
-                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, KinokuniyaUSAData, LOGGER);
+                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, KinokuniyaUSAData, LOGGER);
             }
             catch (Exception e)
             {
