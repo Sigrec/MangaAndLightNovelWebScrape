@@ -238,7 +238,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
 
             WaterstonesData.Sort(EntryModel.VolumeSort);
-            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, WaterstonesData, LOGGER);
+            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, WaterstonesData, LOGGER);
             return WaterstonesData;
         }
     }

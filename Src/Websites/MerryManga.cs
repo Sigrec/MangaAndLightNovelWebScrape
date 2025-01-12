@@ -198,7 +198,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             {
                 driver?.Quit();
                 MerryMangaData.Sort(EntryModel.VolumeSort);
-                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, MerryMangaData, LOGGER);
+                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, MerryMangaData, LOGGER);
             }
 
             return MerryMangaData;

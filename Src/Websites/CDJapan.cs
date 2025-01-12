@@ -135,7 +135,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 LOGGER.Error($"{bookTitle} | {bookType} Does Not Exist @ {WEBSITE_TITLE} \n{e}");
             }
             
-            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, CDJapanData, LOGGER);
+            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, CDJapanData, LOGGER);
             return CDJapanData;
         }
     }

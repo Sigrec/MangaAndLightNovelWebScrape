@@ -48,18 +48,18 @@ namespace MangaAndLightNovelWebScrape
         public bool IsIndigoMember { get; set; }
         private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         // "--headless=new", 
-        private static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent"  ];
+        internal static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--ininternal", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent"  ];
         // "-headless",
-        private static readonly string[] FIREFOX_BROWSER_ARGUMENTS = [ "-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3"];
+        internal static readonly string[] FIREFOX_BROWSER_ARGUMENTS = [ "-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3"];
         /// <summary>
         /// Determines whether debug mode is enabled (Disabled by default)
         /// </summary>
         internal static bool IsDebugEnabled { get; set; } = false;
         
-        [GeneratedRegex(@"^\d{1,3}(\.\d{1})?$")] internal static partial Regex FindVolNumRegex();
-        [GeneratedRegex(@"Vol \d{1,3}(\.\d{1})?$")] internal static partial Regex FindVolWithNumRegex();
-        [GeneratedRegex(@"\s{2,}|(--|\u2014)\s*| - ")] internal static partial Regex MultipleWhiteSpaceRegex();
-        [GeneratedRegex(@"(?:Encyclopedia|Anthology|Official|Character|Guide|Illustration|Anime Profiles|Choose Your Path|Compendium|Art(?:book| Book)|Error|Advertising|\(Osi\)|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA|Poster|IMPORT|Trace|Bookmarks|Music Book|Retrospective|Notebook(?: Journal|)|[^\w]Art of |the Anime|Calendar|Adventure Book|Coloring Book|Sketchbook|Notebook|Choose.*Adventure)", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
+        [GeneratedRegex(@"\d{1,3}(?:\.\d{1})?$")] internal static partial Regex FindVolNumRegex();
+        [GeneratedRegex(@"Vol \d{1,3}(?:\.\d{1})?$")] internal static partial Regex FindVolWithNumRegex();
+        [GeneratedRegex(@"\s{2,}|(?:--|\u2014)\s*| - ")] internal static partial Regex MultipleWhiteSpaceRegex();
+        [GeneratedRegex(@"(?:Encyclopedia|Anthology|Official|Character|Guide|Illustration|Anime Profiles|Choose Your Path|Compendium|Art(?:book| Book)|Error|Advertising|\(Osi\)|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA|Poster|IMPORT|Trace|Bookmarks|Music Book|Retrospective|Notebook(?: Journal|)|[^\w]Art of |the Anime|Calendar|Adventure Book|Coloring Book|Sketchbook|Notebook|Choose.*Adventure|PLUSH|Pirate Recipes|Exclusive)", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
 
         public MasterScrape(StockStatus[] Filter, Region Region = Region.America, Browser Browser = Browser.FireFox, bool IsBooksAMillionMember = false, bool IsKinokuniyaUSAMember = false, bool IsIndigoMember = false)
         {
@@ -506,7 +506,7 @@ namespace MangaAndLightNovelWebScrape
         /// </summary>
         /// <param name="needsUserAgent">Whether the website needs a valid user-agent</param>
         /// <returns>Edge, Chrome, or FireFox WebDriver</returns>
-        protected internal WebDriver SetupBrowserDriver(bool needsUserAgent = false, bool forceFireFox = false)
+        private WebDriver SetupBrowserDriver(bool needsUserAgent = false, bool forceFireFox = false)
         {
             switch (forceFireFox ? Browser.FireFox : this.Browser)
             {
@@ -757,7 +757,7 @@ namespace MangaAndLightNovelWebScrape
                             case Website.AmazonUSA:
                                 AmazonUSA ??= new AmazonUSA();
                                 LOGGER.Info($"{AmazonUSA.WEBSITE_TITLE} Going");
-                                WebTasks.Add(AmazonUSA.CreateAmazonUSATask(bookTitle, bookType, MasterDataList, SetupBrowserDriver(false)));
+                                WebTasks.Add(AmazonUSA.CreateAmazonUSATask(bookTitle, bookType, MasterDataList, SetupBrowserDriver()));
                                 break;
                             case Website.BooksAMillion:
                                 BooksAMillion ??= new BooksAMillion();
@@ -922,7 +922,10 @@ namespace MangaAndLightNovelWebScrape
         {
             await Task.Run(async () =>
             {
-                if (!Helpers.IsWebsiteListValid(this.Region, webScrapeList)) { throw new ArgumentException($"A website{(webScrapeList.Count > 1 ? "(s)" : string.Empty)} in the provided list [{string.Join(", ", webScrapeList)}] does not support the current current region \"{this.Region}\""); }
+                if (!Helpers.IsWebsiteListValid(this.Region, webScrapeList)) 
+                { 
+                    throw new ArgumentException($"A website{(webScrapeList.Count > 1 ? "(s)" : string.Empty)} in the provided list [{string.Join(", ", webScrapeList)}] does not support the current current region \"{this.Region}\""); 
+                }
 
                 LOGGER.Info("Region set to {}", this.Region);
                 LOGGER.Info("Running on {} Browser", this.Browser);
@@ -1031,11 +1034,11 @@ namespace MangaAndLightNovelWebScrape
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string title = "Noragami";
+            string title = "Berserk";
             BookType bookType = BookType.Manga;
             watch.Start();
             MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.America, Browser.FireFox, false, false, false).EnableDebugMode();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.RobertsAnimeCornerStore ]);
+            await scrape.InitializeScrapeAsync(title, bookType, [ Website.BooksAMillion]);
             watch.Stop();
             scrape.PrintResultsToConsole(true, title, bookType);
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");

@@ -309,7 +309,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 driver?.Quit();
                 ForbiddenPlanetData.Sort(EntryModel.VolumeSort);
                 ForbiddenPlanetData.RemoveDuplicates(LOGGER);
-                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, ForbiddenPlanetData, LOGGER);
+                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, ForbiddenPlanetData, LOGGER);
             }
             return ForbiddenPlanetData;
         }

@@ -7,6 +7,8 @@ Legend
 ❌ -> In-progress feature will be fixed in later release
 
 v4.0.0 - 
+❌Fix logging configuration to generate new log files after a certain amount of data
+❌Added toggable option on whether to keep the Selenium WebDriver persistent instead of disposing it after every run
 📜Crunchyroll Fixes
 -🔥Fixed url generation to prevent unwanted product from being parsed
 -🔥"Back Order" stock status added
@@ -17,6 +19,12 @@ v4.0.0 -
 -⌛All around performance improvements
 📜RobertsAnimeCornerStore Fixes
 -🔥Fixed backorder stockstatus showing as OOS
+-⌛All around performance improvements
+📜Books-A-Million Fixes
+-🔥Fixed url generation to get correct entries
+-🔥Fixed box set checking logic
+-🔥Fixed naruto LN parsing when looking for manga
+-🔥Fixed parse of volumes that don't have "Vol" in initial title (ex Jujutsu Kaisen 0)
 -⌛All around performance improvements
 
 v3.1.1 - Sept 16th, 2024

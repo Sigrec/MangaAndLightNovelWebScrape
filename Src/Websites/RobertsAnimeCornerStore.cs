@@ -237,7 +237,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             finally
             {
                 RobertsAnimeCornerStoreData.Sort(EntryModel.VolumeSort);
-                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, RobertsAnimeCornerStoreData, LOGGER); 
+                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, RobertsAnimeCornerStoreData, LOGGER); 
             }           
             return RobertsAnimeCornerStoreData;
         }

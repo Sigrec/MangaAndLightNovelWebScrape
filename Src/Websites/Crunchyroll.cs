@@ -1,5 +1,3 @@
-using OpenQA.Selenium.DevTools.V124.DOM;
-
 namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class Crunchyroll
@@ -186,6 +184,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     {
                         shouldRemoveEntry = InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Overlord", entryTitle, "Unimplemented");
                     }
+                    
                     if (!shouldRemoveEntry)   
                     {
                         entryTitle = FixVolumeRegex().Replace(entryTitle, "Vol");
@@ -225,7 +224,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             
             CrunchyrollData.Sort(EntryModel.VolumeSort);
-            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, CrunchyrollData, LOGGER);
+            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, CrunchyrollData, LOGGER);
             return CrunchyrollData;
         }
     }

@@ -311,7 +311,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 driver?.Quit();
                 AmazonUSAData.Sort(EntryModel.VolumeSort);
                 AmazonUSAData.RemoveDuplicates(LOGGER);
-                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, AmazonUSAData, LOGGER);
+                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, AmazonUSAData, LOGGER);
             }
             return AmazonUSAData;
         }

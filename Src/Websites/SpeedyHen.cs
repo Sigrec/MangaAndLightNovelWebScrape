@@ -192,7 +192,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 }
 
                 SpeedyHenData.Sort(EntryModel.VolumeSort);
-                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, SpeedyHenData, LOGGER);
+                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, SpeedyHenData, LOGGER);
             }
             catch (Exception ex)
             {
