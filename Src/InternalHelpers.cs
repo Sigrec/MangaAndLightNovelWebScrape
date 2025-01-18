@@ -180,7 +180,7 @@ namespace MangaAndLightNovelWebScrape
             return pStringBuilder;
         }
 
-        internal static void PrintWebsiteData(string website, string bookTitle, BookType bookType, List<EntryModel> dataList, Logger LOGGER)
+        internal static void PrintWebsiteData(string website, string bookTitle, BookType bookType, IEnumerable<EntryModel> dataList, Logger LOGGER)
         {
             if (MasterScrape.IsDebugEnabled)
             {
@@ -189,7 +189,7 @@ namespace MangaAndLightNovelWebScrape
 
                 using (StreamWriter outputFile = new(filePath))
                 {
-                    if (dataList.Count > 0)
+                    if (dataList.Count() > 0)
                     {
                         // If we have data, write it to both the logger and the output file.
                         foreach (EntryModel data in dataList)
