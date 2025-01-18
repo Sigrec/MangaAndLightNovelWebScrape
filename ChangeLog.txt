@@ -37,8 +37,8 @@ v4.0.0 -
 📜SciFier Fixes
 -🔥Fixed issue where incorrect price would get scraped for entries
 -🔥Properly ignores used copies
--❌Fixed issue where scraping for light novel would not work for series that are not LN originals
--❌Link output for Scifier now outputs the exact links
+-🔥Fixed issue where scraping for light novel would not work for series that are not LN originals
+-✅Link output for Scifier now outputs the exact links where entries are found
 
 v3.1.1 - Sept 16th, 2024
 ✅Added new helper function to print websites
