@@ -1,4 +1,4 @@
-# [MangaAndLightNovelWebScrape](https://www.nuget.org/packages/MangaAndLightNovelWebScrape/3.1.1#readme-body-tab)
+# [MangaAndLightNovelWebScrape](https://www.nuget.org/packages/MangaAndLightNovelWebScrape/4.0.0#readme-body-tab)
 ### *(Manga & Light Novel Web Scrape Framework for .NET) - [ChangeLog](https://github.com/Sigrec/MangaAndLightNovelWebScrape/blob/master/ChangeLog.txt)*
 .NET Library that scrapes various websites based on a region for manga or light novel data for a specifc user inputted series. Then it compares the various prices for each available entry across the websites chosen and outputs a list of the entries available and the website and price for the cheapest entry.
 ***
@@ -12,7 +12,7 @@ If you want a website or region to be added fill out a [issue request](https://g
 ✅ Books-A-Million
 ✅ Crunchyroll
 ✅ InStockTrades
-✅ Kinokuniya USA
+✅ Kinokuniya USA (Sometimes Manga entries will be left out because when going to the manga tab it leaves some out)
 ✅ MerryManga
 ✅ RobertsAnimeCornerStore
 ✅ SciFier
@@ -70,12 +70,11 @@ private static async Task Main(string[] args)
     // Chaining Regions like so Region.America | Region.Britain will not work
     MasterScrape Scrape = new MasterScrape(
         StockStatusFilter.EXCLUDE_NONE_FILTER, 
-        StockStatusFilter.EXCLUDE_ALL_FILTER, 
-        Region.Britain, 
-        Browser.Edge, 
-        false, 
-        false, 
-        true
+        Region: Region.Britain, 
+        Browser: Browser.Edge, 
+        IsBooksAMillionMemnber: false, 
+        IsKinokuniyaUSAMember: false, 
+        IsIndigoMember:true
     ).EnableDebugMode();
 
     // Initialize the Scrape

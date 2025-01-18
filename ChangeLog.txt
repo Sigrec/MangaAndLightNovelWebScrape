@@ -9,6 +9,8 @@ Legend
 v4.0.0 - 
 ❌Fix logging configuration to generate new log files after a certain amount of data
 ❌Added toggable option on whether to keep the Selenium WebDriver persistent instead of disposing it after every run
+✅FireFox is the new default webdriver used for scrapes
+🔥Fixed issue where FireFox would not work when site required a user-agent
 📜Crunchyroll Fixes
 -🔥Fixed url generation to prevent unwanted product from being parsed
 -🔥"Back Order" stock status added
@@ -25,6 +27,12 @@ v4.0.0 -
 -🔥Fixed box set checking logic
 -🔥Fixed naruto LN parsing when looking for manga
 -🔥Fixed parse of volumes that don't have "Vol" in initial title (ex Jujutsu Kaisen 0)
+-⌛All around performance improvements
+📜KinokuniyaUSA Fixes
+-🔥Fixed issue where Kino would not load on FireFox
+-🔥Fixed issue where parsing titles where volume number was proceeded by some text like "special edition" would not parse correctly
+-🔥Correctly label items that are "available for order" as "Backorder (BO)" instead of "In Stock (IS)"
+-🔥Fixed title parsing for light novels
 -⌛All around performance improvements
 
 v3.1.1 - Sept 16th, 2024

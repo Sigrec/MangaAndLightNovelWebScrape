@@ -48,9 +48,9 @@ namespace MangaAndLightNovelWebScrape
         public bool IsIndigoMember { get; set; }
         private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         // "--headless=new", 
-        internal static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--ininternal", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent"  ];
+        internal static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--ininternal", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent", "--disable-gpu", "--blink-settings=imagesEnabled=false", "--disable-software-rasterizer", "--disable-webrtc" ];
         // "-headless",
-        internal static readonly string[] FIREFOX_BROWSER_ARGUMENTS = [ "-headless", "-new-instance", "-private", "-disable-logging", "-log-level=3"];
+        internal static readonly string[] FIREFOX_BROWSER_ARGUMENTS = [ "-headless", ];
         /// <summary>
         /// Determines whether debug mode is enabled (Disabled by default)
         /// </summary>
@@ -523,20 +523,7 @@ namespace MangaAndLightNovelWebScrape
                     edgeOptions.AddUserProfilePreference("profile.default_content_setting_values.notifications", 2);
                     if (needsUserAgent) edgeOptions.AddArgument($"user-agent={new HtmlWeb().UserAgent}");
                     return new EdgeDriver(edgeDriverService, edgeOptions);
-                case Browser.FireFox:
-                    FirefoxOptions firefoxOptions = new()
-                    {
-                        PageLoadStrategy = PageLoadStrategy.Normal,
-                        AcceptInsecureCertificates = true
-                    };
-                    FirefoxDriverService fireFoxDriverService = FirefoxDriverService.CreateDefaultService();
-                    fireFoxDriverService.HideCommandPromptWindow = true;
-                    firefoxOptions.AddArguments(FIREFOX_BROWSER_ARGUMENTS);
-                    firefoxOptions.SetPreference("profile.default_content_settings.geolocation", 2);
-                    firefoxOptions.SetPreference("profile.default_content_setting_values.notifications", 2);
-                    return new FirefoxDriver(fireFoxDriverService, firefoxOptions);
                 case Browser.Chrome:
-                default:
                     ChromeOptions chromeOptions = new()
                     {
                         PageLoadStrategy = PageLoadStrategy.Normal,
@@ -549,6 +536,45 @@ namespace MangaAndLightNovelWebScrape
                     chromeOptions.AddUserProfilePreference("profile.default_content_setting_values.notifications", 2);
                     if (needsUserAgent) chromeOptions.AddArgument($"user-agent={new HtmlWeb().UserAgent}");
                     return new ChromeDriver(chromeDriverService, chromeOptions);
+                case Browser.FireFox:
+                default:
+                    FirefoxOptions firefoxOptions = new()
+                    {
+                        PageLoadStrategy = PageLoadStrategy.Normal,
+                        AcceptInsecureCertificates = true
+                    };
+                    FirefoxDriverService fireFoxDriverService = FirefoxDriverService.CreateDefaultService();
+                    fireFoxDriverService.HideCommandPromptWindow = true;
+
+                    firefoxOptions.AddArguments(FIREFOX_BROWSER_ARGUMENTS);
+                    firefoxOptions.SetPreference("javascript.enabled", true);
+                    firefoxOptions.SetPreference("media.peerconnection.enabled", false);  // Disable WebRTC
+                    firefoxOptions.SetPreference("devtools.console.stdout.content", false);
+                    firefoxOptions.SetPreference("profile.default_content_settings.geolocation", 2);
+                    firefoxOptions.SetPreference("profile.default_content_setting_values.notifications", 2);
+                    firefoxOptions.SetPreference("dom.webdriver.enabled", false);  // Disable WebDriver detection
+                    firefoxOptions.SetPreference("browser.safebrowsing.enabled", false);  // Disable safe browsing
+                    firefoxOptions.SetPreference("layers.acceleration.disabled", true);  // Disable hardware acceleration
+                    firefoxOptions.SetPreference("privacy.trackingprotection.enabled", false);  // Disable tracking protection
+                    firefoxOptions.SetPreference("webgl.disabled", true);  // Disable WebGL
+                    firefoxOptions.SetPreference("extensions.enabled", false);  // Disable extensions
+                    firefoxOptions.SetPreference("app.update.enabled", false);  // Disable automatic updates
+
+                    // Optional additional settings for improved performance
+                    firefoxOptions.SetPreference("browser.preferences.animateFadeIn", false);  // Disable fade-in animations
+                    firefoxOptions.SetPreference("toolkit.cosmeticAnimations.enabled", false);  // Disable cosmetic animations
+                    firefoxOptions.SetPreference("layout.css.prefers-reduced-motion.enabled", true);  // Disable CSS animations
+                    firefoxOptions.SetPreference("browser.sessionstore.restore_on_demand", true);  // Load tabs on demand
+                    firefoxOptions.SetPreference("browser.sessionstore.max_tabs_undo", 0);  // Disable undo closed tabs
+                    firefoxOptions.SetPreference("datareporting.healthreport.service.enabled", false);  // Disable health report
+                    firefoxOptions.SetPreference("toolkit.telemetry.enabled", false);  // Disable telemetry
+                    firefoxOptions.SetPreference("toolkit.telemetry.unified", false);  // Disable unified telemetry
+                    firefoxOptions.SetPreference("app.shield.optoutstudies.enabled", false);  // Disable Shield studies
+                    firefoxOptions.SetPreference("browser.sessionhistory.max_entries", 0);  // Disable session history
+
+                    if (needsUserAgent) firefoxOptions.SetPreference("general.useragent.override", new HtmlWeb().UserAgent);
+
+                    return new FirefoxDriver(fireFoxDriverService, firefoxOptions);
             }
         }
 
@@ -1034,11 +1060,19 @@ namespace MangaAndLightNovelWebScrape
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string title = "Noragami";
+            string title = "Attack on Titan";
             BookType bookType = BookType.Manga;
             watch.Start();
-            MasterScrape scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.America, Browser.FireFox, false, false, false).EnableDebugMode();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.MerryManga ]);
+
+            MasterScrape scrape = new MasterScrape(
+                Filter: StockStatusFilter.EXCLUDE_NONE_FILTER, 
+                Region: Region.America, 
+                Browser: Browser.FireFox, 
+                IsBooksAMillionMember: false, 
+                IsKinokuniyaUSAMember: false, 
+                IsIndigoMember: false).EnableDebugMode();
+            await scrape.InitializeScrapeAsync(title, bookType, [ Website.KinokuniyaUSA ]);
+            
             watch.Stop();
             scrape.PrintResultsToConsole(true, title, bookType);
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
