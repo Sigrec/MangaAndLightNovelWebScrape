@@ -1,5 +1,4 @@
 using System.Net;
-using System.Security.Cryptography;
 
 namespace MangaAndLightNovelWebScrape.Websites
 {
@@ -19,7 +18,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             {Region.Canada, 6}
         };
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//h3[@class='card-title']");
-        private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='price price--withTax price--main _hasSale'] | //span[@class='price price--withTax price--main']");
+        private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//div[@class='card-body']//span[contains(@class, 'price price--withTax price--main')]");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//a[@aria-label='Next']");
         private static readonly XPathExpression SummaryXPath = XPathExpression.Compile("//div[@class='card-text card-text--summary']");
         private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='card-buttons']");
@@ -94,6 +93,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 curTitle.AppendFormat(" Vol {0}", volNum);
             }
             InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
+            InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, '-', ' ');
             InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Complete ", string.Empty);
             InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Color Edition", "In Color");
             if (entryTitle.Contains("Special Edition"))
@@ -129,6 +129,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         {
             try
             {
+                LOGGER.Debug("TEST TEST");
                 HtmlWeb web = new HtmlWeb() { UsingCacheIfExists = true };
                 bool letterIsFrontHalf = char.IsDigit(bookTitle[0]) || (bookTitle[0] & 0b11111) <= 13;
                 string url = GetUrl(bookTitle, bookType, curRegion, letterIsFrontHalf);
@@ -168,6 +169,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                         if (
                             (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
                             && InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
+                            && !entryTitle.Contains("USED COPY", StringComparison.OrdinalIgnoreCase)
                             && (
                                     (
                                         bookType == BookType.Manga

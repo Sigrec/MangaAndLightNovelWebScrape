@@ -1060,18 +1060,18 @@ namespace MangaAndLightNovelWebScrape
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string title = "Attack on Titan";
+            string title = "Boruto";
             BookType bookType = BookType.Manga;
             watch.Start();
 
             MasterScrape scrape = new MasterScrape(
                 Filter: StockStatusFilter.EXCLUDE_NONE_FILTER, 
-                Region: Region.America, 
+                Region: Region.Australia, 
                 Browser: Browser.FireFox, 
                 IsBooksAMillionMember: false, 
                 IsKinokuniyaUSAMember: false, 
                 IsIndigoMember: false).EnableDebugMode();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.KinokuniyaUSA ]);
+            await scrape.InitializeScrapeAsync(title, bookType, [ Website.SciFier ]);
             
             watch.Stop();
             scrape.PrintResultsToConsole(true, title, bookType);
