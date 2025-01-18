@@ -59,7 +59,7 @@ namespace MangaAndLightNovelWebScrape
         [GeneratedRegex(@"\d{1,3}(?:\.\d{1})?$")] internal static partial Regex FindVolNumRegex();
         [GeneratedRegex(@"Vol \d{1,3}(?:\.\d{1})?$")] internal static partial Regex FindVolWithNumRegex();
         [GeneratedRegex(@"\s{2,}|(?:--|\u2014)\s*| - ")] internal static partial Regex MultipleWhiteSpaceRegex();
-        [GeneratedRegex(@"(?:Encyclopedia|Anthology|Official|Character|Guide|Illustration|Anime Profiles|Choose Your Path|Compendium|Art(?:book| Book)|Error|Advertising|\(Osi\)|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA|Poster|IMPORT|Trace|Bookmarks|Music Book|Retrospective|Notebook(?: Journal|)|[^\w]Art of |the Anime|Calendar|Adventure Book|Coloring Book|Sketchbook|Notebook|Choose.*Adventure|PLUSH|Pirate Recipes|Exclusive)", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
+        [GeneratedRegex(@"(?:Encyclopedia|Anthology|Official|Character|Guide|Illustration|Anime Profiles|Choose Your Path|Compendium|Art(?:book| Book)|Error|Advertising|\(Osi\)|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA|Poster|IMPORT|Trace|Bookmarks|Music Book|Retrospective|Notebook(?: Journal|)|[^\w]Art of |the Anime|Calendar|Adventure|Coloring Book|Sketchbook|Notebook|PLUSH|Pirate Recipes|Exclusive|Hobby)", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
 
         public MasterScrape(StockStatus[] Filter, Region Region = Region.America, Browser Browser = Browser.FireFox, bool IsBooksAMillionMember = false, bool IsKinokuniyaUSAMember = false, bool IsIndigoMember = false)
         {
@@ -712,6 +712,7 @@ namespace MangaAndLightNovelWebScrape
         {
             foreach (EntryModel entry in CurMasterDataList)
             {
+                int count = 0;
                 switch (entry.Website)
                 {
                     case AmazonJapan.WEBSITE_TITLE:
@@ -748,7 +749,6 @@ namespace MangaAndLightNovelWebScrape
                         MasterUrls[entry.Website] = MerryManga.GetUrl();
                         break;
                     case RobertsAnimeCornerStore.WEBSITE_TITLE:
-                        int count = 0;
                         foreach (string url in RobertsAnimeCornerStore.GetUrls())
                         {
                             MasterUrls[entry.Website + (count != 0 ? $" {count}" : string.Empty)] = url;
@@ -756,7 +756,11 @@ namespace MangaAndLightNovelWebScrape
                         }
                         break;
                     case SciFier.WEBSITE_TITLE:
-                        MasterUrls[entry.Website] = SciFier.GetUrl();
+                        foreach (string url in SciFier.GetUrls())
+                        {
+                            MasterUrls[entry.Website + (count != 0 ? $" {count}" : string.Empty)] = url;
+                            count++;
+                        }
                         break;
                     case SpeedyHen.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = SpeedyHen.GetUrl();
@@ -991,7 +995,7 @@ namespace MangaAndLightNovelWebScrape
                     // If user only is searched from 1 website then skip comparison
                     if (MasterDataList.Count == 1)
                     {
-                        MasterDataList[0] = new List<EntryModel>(MasterDataList[0]);
+                        MasterDataList[0] = [.. MasterDataList[0]];
                         goto Skip;
                     }
 
@@ -1060,8 +1064,8 @@ namespace MangaAndLightNovelWebScrape
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string title = "Attack on Titan";
-            BookType bookType = BookType.Manga;
+            string title = "Naruto";
+            BookType bookType = BookType.LightNovel;
             watch.Start();
 
             MasterScrape scrape = new MasterScrape(
@@ -1071,7 +1075,7 @@ namespace MangaAndLightNovelWebScrape
                 IsBooksAMillionMember: false, 
                 IsKinokuniyaUSAMember: false, 
                 IsIndigoMember: false).EnableDebugMode();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.KinokuniyaUSA ]);
+            await scrape.InitializeScrapeAsync(title, bookType, [ Website.SciFier ]);
             
             watch.Stop();
             scrape.PrintResultsToConsole(true, title, bookType);

@@ -25,6 +25,7 @@ public class Program
             { [ "RobertsAnimeCornerStore", "ROB" ], typeof(RobertsAnimeCornerStoreBenchmarks) },
             { [ "BooksAMillion", "BAM" ], typeof(BooksAMillionBenchmarks) },
             { [ "KinokuniyaUSA", "KINOUS" ], typeof(KinokuniyaUSABenchmarks) },
+            { [ "SciFier", "SF" ], typeof(SciFierBenchmarks) },
         };
 
 

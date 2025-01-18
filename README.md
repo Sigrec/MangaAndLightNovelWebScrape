@@ -69,12 +69,12 @@ private static async Task Main(string[] args)
     // Alternativly you can do everything in the constructor and enable debug mode which will print to log and txt files
     // Chaining Regions like so Region.America | Region.Britain will not work
     MasterScrape Scrape = new MasterScrape(
-        StockStatusFilter.EXCLUDE_NONE_FILTER, 
+        Filter: StockStatusFilter.EXCLUDE_NONE_FILTER, 
         Region: Region.Britain, 
         Browser: Browser.Edge, 
         IsBooksAMillionMemnber: false, 
         IsKinokuniyaUSAMember: false, 
-        IsIndigoMember:true
+        IsIndigoMember: true
     ).EnableDebugMode();
 
     // Initialize the Scrape

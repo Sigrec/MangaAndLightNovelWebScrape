@@ -34,6 +34,11 @@ v4.0.0 -
 -🔥Correctly label items that are "available for order" as "Backorder (BO)" instead of "In Stock (IS)"
 -🔥Fixed title parsing for light novels
 -⌛All around performance improvements
+📜SciFier Fixes
+-🔥Fixed issue where incorrect price would get scraped for entries
+-🔥Properly ignores used copies
+-🔥Fixed issue where scraping for light novel would not work for series that are not LN originals
+-✅Link output for Scifier now outputs the exact links where entries are found
 
 v3.1.1 - Sept 16th, 2024
 ✅Added new helper function to print websites
