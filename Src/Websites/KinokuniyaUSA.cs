@@ -309,9 +309,9 @@ namespace MangaAndLightNovelWebScrape.Websites
                 KinokuniyaUSAData.Sort(EntryModel.VolumeSort);
                 InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, KinokuniyaUSAData, LOGGER);
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                LOGGER.Error($"{bookTitle} | {bookType}, Does Not Exist @ {WEBSITE_TITLE} \n{e.StackTrace}");
+                LOGGER.Error("{} ({}) Does Not Exist @ {} \n{}", bookTitle, bookType, WEBSITE_TITLE, ex);
             }
             finally
             {
