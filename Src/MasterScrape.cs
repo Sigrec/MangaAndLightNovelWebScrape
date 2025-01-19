@@ -14,7 +14,7 @@ namespace MangaAndLightNovelWebScrape
         internal List<List<EntryModel>> MasterDataList = new List<List<EntryModel>>();
         private ConcurrentBag<List<EntryModel>> ResultsList = new ConcurrentBag<List<EntryModel>>();
         private List<Task> WebTasks = new List<Task>(16);
-        private Dictionary<string, string> MasterUrls = new Dictionary<string, string>();
+        private Dictionary<string, string> MasterUrls = [];
         private AmazonUSA AmazonUSA = null;
         private BooksAMillion BooksAMillion = null;
         private TravellingMan TravellingMan = null;
@@ -50,7 +50,7 @@ namespace MangaAndLightNovelWebScrape
         // "--headless=new", 
         internal static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--ininternal", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent", "--disable-gpu", "--blink-settings=imagesEnabled=false", "--disable-software-rasterizer", "--disable-webrtc" ];
         // "-headless",
-        internal static readonly string[] FIREFOX_BROWSER_ARGUMENTS = [ "-headless", ];
+        internal static readonly string[] FIREFOX_BROWSER_ARGUMENTS = [ "-headless" ];
         /// <summary>
         /// Determines whether debug mode is enabled (Disabled by default)
         /// </summary>
@@ -572,6 +572,11 @@ namespace MangaAndLightNovelWebScrape
                     firefoxOptions.SetPreference("app.shield.optoutstudies.enabled", false);  // Disable Shield studies
                     firefoxOptions.SetPreference("browser.sessionhistory.max_entries", 0);  // Disable session history
 
+                    // Disable popups
+                    firefoxOptions.SetPreference("dom.disable_open_during_load", true);  // Prevent popups during page load
+                    firefoxOptions.SetPreference("dom.popup_allowed_events", "");  // Disable popups triggered by events
+                    firefoxOptions.SetPreference("security.dialog_enable_delay", 0);
+
                     if (needsUserAgent) firefoxOptions.SetPreference("general.useragent.override", new HtmlWeb().UserAgent);
 
                     return new FirefoxDriver(fireFoxDriverService, firefoxOptions);
@@ -799,6 +804,11 @@ namespace MangaAndLightNovelWebScrape
                                 LOGGER.Info($"{Crunchyroll.WEBSITE_TITLE} Going");
                                 WebTasks.Add(Crunchyroll.CreateCrunchyrollTask(bookTitle, bookType, MasterDataList));
                                 break;
+                            case Website.MangaMate:
+                                MangaMate ??= new MangaMate();
+                                LOGGER.Info($"{MangaMate.WEBSITE_TITLE} Going");
+                                WebTasks.Add(MangaMate.CreateMangaMateTask(bookTitle, bookType, MasterDataList, SetupBrowserDriver()));
+                                break;
                             case Website.RobertsAnimeCornerStore:
                                 RobertsAnimeCornerStore ??= new RobertsAnimeCornerStore();
                                 LOGGER.Info($"{RobertsAnimeCornerStore.WEBSITE_TITLE} Going");
@@ -839,6 +849,11 @@ namespace MangaAndLightNovelWebScrape
                                 LOGGER.Info($"{ForbiddenPlanet.WEBSITE_TITLE} Going");
                                 WebTasks.Add(ForbiddenPlanet.CreateForbiddenPlanetTask(bookTitle, bookType, MasterDataList, SetupBrowserDriver(true)));
                                 break;
+                            case Website.MangaMate:
+                                MangaMate ??= new MangaMate();
+                                LOGGER.Info($"{MangaMate.WEBSITE_TITLE} Going");
+                                WebTasks.Add(MangaMate.CreateMangaMateTask(bookTitle, bookType, MasterDataList, SetupBrowserDriver()));
+                                break;
                             case Website.SciFier:
                                 SciFier ??= new SciFier();
                                 LOGGER.Info($"{SciFier.WEBSITE_TITLE} Going");
@@ -874,6 +889,11 @@ namespace MangaAndLightNovelWebScrape
                                 LOGGER.Info($"{Indigo.WEBSITE_TITLE} Going");
                                 WebTasks.Add(Indigo.CreateIndigoTask(bookTitle, bookType, isIndigoMember, MasterDataList, SetupBrowserDriver()));
                                 break;
+                            case Website.MangaMate:
+                                MangaMate ??= new MangaMate();
+                                LOGGER.Info($"{MangaMate.WEBSITE_TITLE} Going");
+                                WebTasks.Add(MangaMate.CreateMangaMateTask(bookTitle, bookType, MasterDataList, SetupBrowserDriver()));
+                                break;
                             case Website.SciFier:
                                 SciFier ??= new SciFier();
                                 LOGGER.Info($"{SciFier.WEBSITE_TITLE} Going");
@@ -899,6 +919,11 @@ namespace MangaAndLightNovelWebScrape
                                 LOGGER.Info($"{CDJapan.WEBSITE_TITLE} Going");
                                 WebTasks.Add(CDJapan.CreateCDJapanTask(bookTitle, bookType, MasterDataList));
                                 break;
+                            case Website.MangaMate:
+                                MangaMate ??= new MangaMate();
+                                LOGGER.Info($"{MangaMate.WEBSITE_TITLE} Going");
+                                WebTasks.Add(MangaMate.CreateMangaMateTask(bookTitle, bookType, MasterDataList, SetupBrowserDriver()));
+                                break;
                             default:
                                 break;
                         }
@@ -909,6 +934,11 @@ namespace MangaAndLightNovelWebScrape
                     {
                         switch (site)
                         {
+                            case Website.MangaMate:
+                                MangaMate ??= new MangaMate();
+                                LOGGER.Info($"{MangaMate.WEBSITE_TITLE} Going");
+                                WebTasks.Add(MangaMate.CreateMangaMateTask(bookTitle, bookType, MasterDataList, SetupBrowserDriver()));
+                                break;
                             case Website.SciFier:
                                 SciFier ??= new SciFier();
                                 LOGGER.Info($"{SciFier.WEBSITE_TITLE} Going");
@@ -1064,18 +1094,18 @@ namespace MangaAndLightNovelWebScrape
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string title = "Naruto";
-            BookType bookType = BookType.LightNovel;
+            string title = "Attack on Titan";
+            BookType bookType = BookType.Manga;
             watch.Start();
 
             MasterScrape scrape = new MasterScrape(
                 Filter: StockStatusFilter.EXCLUDE_NONE_FILTER, 
-                Region: Region.America, 
+                Region: Region.Australia, 
                 Browser: Browser.FireFox, 
                 IsBooksAMillionMember: false, 
                 IsKinokuniyaUSAMember: false, 
                 IsIndigoMember: false).EnableDebugMode();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.SciFier ]);
+            await scrape.InitializeScrapeAsync(title, bookType, [ Website.MangaMate ]);
             
             watch.Stop();
             scrape.PrintResultsToConsole(true, title, bookType);

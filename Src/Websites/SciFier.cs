@@ -274,9 +274,9 @@ namespace MangaAndLightNovelWebScrape.Websites
                     }
                 }
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                LOGGER.Error($"{bookTitle} | {bookType} Does Not Exist @ {WEBSITE_TITLE} \n{e}");
+                LOGGER.Error("{} ({}) Does Not Exist @ {} \n{}", bookTitle, bookType, WEBSITE_TITLE, ex);
             }
             
             SciFierData.Sort(EntryModel.VolumeSort);

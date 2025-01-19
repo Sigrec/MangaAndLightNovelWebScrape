@@ -1,3 +1,5 @@
+using System.Threading;
+
 namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class MangaMate
@@ -6,7 +8,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         private List<string> MangaMateLinks = new List<string>();
         private List<EntryModel> MangaMateData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "MangaMate";
-        public const Region REGION = Region.Australia;
+        public const Region REGION = Region.America | Region.Europe | Region.Britain | Region.Canada | Region.Australia;
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[@class='grid-product__title grid-product__title--body']");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//div[@class='grid-product__price']/text()[3]");
         private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='grid-product__content']/div[1]");
@@ -39,7 +41,7 @@ namespace MangaAndLightNovelWebScrape.Websites
 
         private string GenerateWebsiteUrl(string bookTitle, BookType bookType, ushort pageNum)
         {
-            // https://mangamate.shop/search?options%5Bprefix%5D=last&page=2&q=Naruto+manga
+            // https://mangamate.shop/search?q=akane%20banashi&options%5Bprefix%5D=last
             string url = $"https://mangamate.shop/search?options%5Bprefix%5D=last&page={pageNum}&q={InternalHelpers.FilterBookTitle(bookTitle.Replace(" ", "+"))}+{(bookType == BookType.Manga ? "manga" : "novel")}";
             LOGGER.Info("Page {} => {}", pageNum, url);
             MangaMateLinks.Add(url);
@@ -86,7 +88,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             {
                 HtmlWeb web = new() { UsingCacheIfExists = true, UseCookies = false };
                 HtmlDocument doc = new() { OptionCheckSyntax = false };
-                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
+                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(30));
 
                 ushort curPageNum = 1;
                 bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
@@ -96,6 +98,14 @@ namespace MangaAndLightNovelWebScrape.Websites
                 ushort maxPageNum = 1;
                 try { maxPageNum = ushort.Parse(driver.FindElement(By.XPath("//span[@class='page'][last()]")).Text.Trim()); }
                 catch (NoSuchElementException) {}
+
+                // Click AUD currency
+                driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("//button[@aria-controls='CurrencyList-toolbar']"))));
+                wait.Until(driver => driver.FindElement(By.XPath("//button[@aria-controls='CurrencyList-toolbar']")).GetDomAttribute("aria-expanded").Equals("true"));
+                driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("//a[@data-value='AU'][1]"))));
+                wait.Until(driver => driver.FindElement(By.XPath("(//div[@class='grid grid--uniform'])[2]")));
+                driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("//button[@class='recommendation-modal__close-button']"))));
+                LOGGER.Info("Clicked AUD Currency");
 
                 doc.LoadHtml(driver.PageSource);
                 while (true)
@@ -145,7 +155,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                             }
                             else { LOGGER.Info("Removed {}", entryTitle); } 
                         }  
-                        else { LOGGER.Info("Removed {}", entryTitle); }    
+                        else { LOGGER.Info("Removed (1) {}", entryTitle); }    
                     }
 
                     if (curPageNum < maxPageNum)
@@ -156,18 +166,17 @@ namespace MangaAndLightNovelWebScrape.Websites
                     }
                     else { break; }
                 }
-
-                MangaMateData = InternalHelpers.RemoveDuplicateEntries(MangaMateData);
-                MangaMateData.Sort(EntryModel.VolumeSort);
-                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, MangaMateData, LOGGER);
             }
             catch (Exception ex)
             {
-                LOGGER.Error("{} | {} Does Not Exist @ {} \n{}", bookTitle, bookType, WEBSITE_TITLE, ex);
+                LOGGER.Error("{} ({}) Does Not Exist @ {} \n{}", bookTitle, bookType, WEBSITE_TITLE, ex);
             }
             finally
             {
                 driver?.Quit();
+                MangaMateData = InternalHelpers.RemoveDuplicateEntries(MangaMateData);
+                MangaMateData.Sort(EntryModel.VolumeSort);
+                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, MangaMateData, LOGGER);
             }
             return MangaMateData;
         }
