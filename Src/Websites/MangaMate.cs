@@ -8,7 +8,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         private List<string> MangaMateLinks = new List<string>();
         private List<EntryModel> MangaMateData = new List<EntryModel>();
         public const string WEBSITE_TITLE = "MangaMate";
-        public const Region REGION = Region.America | Region.Europe | Region.Britain | Region.Canada | Region.Australia;
+        public const Region REGION = Region.Australia;
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[@class='grid-product__title grid-product__title--body']");
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//div[@class='grid-product__price']/text()[3]");
         private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='grid-product__content']/div[1]");

@@ -6,8 +6,7 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> In-progress feature will be fixed in later release
 
-v4.0.0 - 
-❌Fix logging configuration to generate new log files after a certain amount of data
+v4.0.0 - Jan 20th, 2025
 ✅Added toggable option on whether to keep a Selenium WebDriver persistent instead of creating and disposing one every run (by default it is false)
 ✅Correctly fixed output type so it's "Library"
 ✅FireFox is the new default webdriver used for scrapes
