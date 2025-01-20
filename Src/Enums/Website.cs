@@ -57,15 +57,10 @@ namespace MangaAndLightNovelWebScrape.Enums
         /// <summary>
         /// Britain
         /// </summary>
-        SpeedyHen,
-        /// <summary>
-        /// Britain
-        /// </summary>
         TravellingMan,
         /// <summary>
         /// Britain
         /// </summary>
         Waterstones
-        
     }
 }

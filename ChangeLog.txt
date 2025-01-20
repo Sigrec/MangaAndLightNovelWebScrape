@@ -8,8 +8,10 @@ Legend
 
 v4.0.0 - 
 ❌Fix logging configuration to generate new log files after a certain amount of data
-❌Added toggable option on whether to keep the Selenium WebDriver persistent instead of disposing it after every run
+✅Added toggable option on whether to keep a Selenium WebDriver persistent instead of creating and disposing one every run (by default it is false)
+✅Correctly fixed output type so it's "Library"
 ✅FireFox is the new default webdriver used for scrapes
+✅SpeedyHen removed due to Cloudflare Captcha blocking scraping
 🔥Fixed issue where FireFox would not work when site required a user-agent
 📜Crunchyroll Fixes/Updates
 -🔥Fixed url generation to prevent unwanted product from being parsed
@@ -41,6 +43,15 @@ v4.0.0 -
 -✅Link output for Scifier now outputs the exact links where entries are found
 📜MangaMate Fixes/Updates
 -🔥Properly gets the AUD currency
+📜TravellingMan Fixes/Updates
+-🔥Small fix to parsing for novels
+📜ForbiddenPlanet Fixes/Updates
+-🔥Fixed issue where it would not go to the next page correctly
+-🔥Fixed issue where statue entries would be picked up when they shouldn'T
+-🔥Fixed issue where "sale" was being picked up as a book format
+📜AmazonUSA Fixes/Updates
+-🔥Complete scrape logic rewrite to fix a bunch of issues for manga
+-✍️Parsing novels for some series still has issues, it's really hard to cover every possible case
 
 v3.1.1 - Sept 16th, 2024
 ✅Added new helper function to print websites

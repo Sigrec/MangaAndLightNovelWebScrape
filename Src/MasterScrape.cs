@@ -13,7 +13,7 @@ namespace MangaAndLightNovelWebScrape
     { 
         internal List<List<EntryModel>> MasterDataList = new List<List<EntryModel>>();
         private ConcurrentBag<List<EntryModel>> ResultsList = new ConcurrentBag<List<EntryModel>>();
-        private List<Task> WebTasks = new List<Task>(16);
+        private List<Task> WebTasks = new List<Task>(15);
         private Dictionary<string, string> MasterUrls = [];
         private AmazonUSA AmazonUSA = null;
         private BooksAMillion BooksAMillion = null;
@@ -30,7 +30,7 @@ namespace MangaAndLightNovelWebScrape
         private ForbiddenPlanet ForbiddenPlanet = null;
         private MerryManga MerryManga = null;
         private MangaMate MangaMate = null;
-        private SpeedyHen SpeedyHen = null;
+        private WebDriver PersistentWebDriver = null;
         /// <summary>
         /// The current region of the Scrape
         /// </summary>
@@ -46,6 +46,7 @@ namespace MangaAndLightNovelWebScrape
         public bool IsBooksAMillionMember { get; set; }
         public bool IsKinokuniyaUSAMember { get; set; }
         public bool IsIndigoMember { get; set; }
+        internal static bool IsWebDriverPersistent { get; set; } = false;
         private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         // "--headless=new", 
         internal static readonly string[] CHROME_BROWSER_ARGUMENTS = [ "--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--ininternal", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent", "--disable-gpu", "--blink-settings=imagesEnabled=false", "--disable-software-rasterizer", "--disable-webrtc" ];
@@ -59,7 +60,7 @@ namespace MangaAndLightNovelWebScrape
         [GeneratedRegex(@"\d{1,3}(?:\.\d{1})?$")] internal static partial Regex FindVolNumRegex();
         [GeneratedRegex(@"Vol \d{1,3}(?:\.\d{1})?$")] internal static partial Regex FindVolWithNumRegex();
         [GeneratedRegex(@"\s{2,}|(?:--|\u2014)\s*| - ")] internal static partial Regex MultipleWhiteSpaceRegex();
-        [GeneratedRegex(@"(?:Encyclopedia|Anthology|Official|Character|Guide|Illustration|Anime Profiles|Choose Your Path|Compendium|Art(?:book| Book)|Error|Advertising|\(Osi\)|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA|Poster|IMPORT|Trace|Bookmarks|Music Book|Retrospective|Notebook(?: Journal|)|[^\w]Art of |the Anime|Calendar|Adventure|Coloring Book|Sketchbook|Notebook|PLUSH|Pirate Recipes|Exclusive|Hobby)", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
+        [GeneratedRegex(@"(?:Encyclopedia|Anthology|Official|Character|Guide|Illustration|Anime Profiles|Choose Your Path|Compendium|Art(?:book| Book)|Error|Advertising|\(Osi\)|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA|Poster|Statue|IMPORT|Trace|Bookmarks|Music Book|Retrospective|Notebook(?: Journal|)|[^\w]Art of |the Anime|Calendar|Adventure (?:Book)|Coloring Book|Sketchbook|Notebook|PLUSH|Pirate Recipes|Exclusive|Hobby|Model\s+Kit)", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
 
         public MasterScrape(StockStatus[] Filter, Region Region = Region.America, Browser Browser = Browser.FireFox, bool IsBooksAMillionMember = false, bool IsKinokuniyaUSAMember = false, bool IsIndigoMember = false)
         {
@@ -74,6 +75,25 @@ namespace MangaAndLightNovelWebScrape
             this.IsBooksAMillionMember = IsBooksAMillionMember;
             this.IsKinokuniyaUSAMember = IsKinokuniyaUSAMember;
             this.IsIndigoMember = IsIndigoMember;
+        }
+
+        public MasterScrape EnablePersistentWebDriver()
+        {
+            LOGGER.Info("Enabling Persistent WebDriver");
+            IsWebDriverPersistent = true;
+            if (PersistentWebDriver == null)
+            {
+                PersistentWebDriver = SetupBrowserDriver(true);
+            }
+            return this;
+        }
+
+        public MasterScrape DisablePersistentWebDriver()
+        {
+            LOGGER.Info("Disabling Persistent WebDriver");
+            IsWebDriverPersistent = false;
+            PersistentWebDriver?.Quit();
+            return this;
         }
 
         /// <summary>
@@ -407,7 +427,6 @@ namespace MangaAndLightNovelWebScrape
         {
             ForbiddenPlanet?.ClearData();
             SciFier?.ClearData();
-            SpeedyHen?.ClearData();
             TravellingMan?.ClearData();
             Waterstones?.ClearData();
         }
@@ -559,6 +578,7 @@ namespace MangaAndLightNovelWebScrape
                     firefoxOptions.SetPreference("webgl.disabled", true);  // Disable WebGL
                     firefoxOptions.SetPreference("extensions.enabled", false);  // Disable extensions
                     firefoxOptions.SetPreference("app.update.enabled", false);  // Disable automatic updates
+                    firefoxOptions.SetPreference("useAutomationExtension", false);
 
                     // Optional additional settings for improved performance
                     firefoxOptions.SetPreference("browser.preferences.animateFadeIn", false);  // Disable fade-in animations
@@ -645,10 +665,6 @@ namespace MangaAndLightNovelWebScrape
                                 case SciFier.WEBSITE_TITLE:
                                 case "scifier":
                                     WebsiteList.Add(Website.SciFier);
-                                    break;
-                                case SpeedyHen.WEBSITE_TITLE:
-                                case "speedyhen":
-                                    WebsiteList.Add(Website.SpeedyHen);
                                     break;
                                 case TravellingMan.WEBSITE_TITLE:
                                 case "travelling man":
@@ -767,9 +783,6 @@ namespace MangaAndLightNovelWebScrape
                             count++;
                         }
                         break;
-                    case SpeedyHen.WEBSITE_TITLE:
-                        MasterUrls[entry.Website] = SpeedyHen.GetUrl();
-                        break;
                     case TravellingMan.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = TravellingMan.GetUrl();
                         break;
@@ -792,12 +805,12 @@ namespace MangaAndLightNovelWebScrape
                             case Website.AmazonUSA:
                                 AmazonUSA ??= new AmazonUSA();
                                 LOGGER.Info($"{AmazonUSA.WEBSITE_TITLE} Going");
-                                WebTasks.Add(AmazonUSA.CreateAmazonUSATask(bookTitle, bookType, MasterDataList, SetupBrowserDriver()));
+                                WebTasks.Add(AmazonUSA.CreateAmazonUSATask(bookTitle, bookType, MasterDataList, !IsWebDriverPersistent ? SetupBrowserDriver() : PersistentWebDriver));
                                 break;
                             case Website.BooksAMillion:
                                 BooksAMillion ??= new BooksAMillion();
                                 LOGGER.Info($"{BooksAMillion.WEBSITE_TITLE} Going");
-                                WebTasks.Add(BooksAMillion.CreateBooksAMillionTask(bookTitle, bookType, isBooksAMillionMember, MasterDataList, SetupBrowserDriver(true)));
+                                WebTasks.Add(BooksAMillion.CreateBooksAMillionTask(bookTitle, bookType, isBooksAMillionMember, MasterDataList, !IsWebDriverPersistent ? SetupBrowserDriver(true) : PersistentWebDriver));
                                 break;
                             case Website.Crunchyroll:
                                 Crunchyroll ??= new Crunchyroll();
@@ -807,7 +820,7 @@ namespace MangaAndLightNovelWebScrape
                             case Website.MangaMate:
                                 MangaMate ??= new MangaMate();
                                 LOGGER.Info($"{MangaMate.WEBSITE_TITLE} Going");
-                                WebTasks.Add(MangaMate.CreateMangaMateTask(bookTitle, bookType, MasterDataList, SetupBrowserDriver()));
+                                WebTasks.Add(MangaMate.CreateMangaMateTask(bookTitle, bookType, MasterDataList, !IsWebDriverPersistent ? SetupBrowserDriver() : PersistentWebDriver));
                                 break;
                             case Website.RobertsAnimeCornerStore:
                                 RobertsAnimeCornerStore ??= new RobertsAnimeCornerStore();
@@ -822,7 +835,7 @@ namespace MangaAndLightNovelWebScrape
                             case Website.KinokuniyaUSA:
                                 KinokuniyaUSA ??= new KinokuniyaUSA();
                                 LOGGER.Info($"{KinokuniyaUSA.WEBSITE_TITLE} Going");
-                                WebTasks.Add(KinokuniyaUSA.CreateKinokuniyaUSATask(bookTitle, bookType, isKinokuniyaUSAMember, MasterDataList, SetupBrowserDriver(true)));
+                                WebTasks.Add(KinokuniyaUSA.CreateKinokuniyaUSATask(bookTitle, bookType, isKinokuniyaUSAMember, MasterDataList, !IsWebDriverPersistent ? SetupBrowserDriver(true) : PersistentWebDriver));
                                 break;
                             case Website.SciFier:
                                 SciFier ??= new SciFier();
@@ -832,7 +845,7 @@ namespace MangaAndLightNovelWebScrape
                             case Website.MerryManga:
                                 MerryManga ??= new MerryManga();
                                 LOGGER.Info($"{MerryManga.WEBSITE_TITLE} Going");
-                                WebTasks.Add(MerryManga.CreateMerryMangaTask(bookTitle, bookType, MasterDataList, SetupBrowserDriver()));
+                                WebTasks.Add(MerryManga.CreateMerryMangaTask(bookTitle, bookType, MasterDataList, !IsWebDriverPersistent ? SetupBrowserDriver() : PersistentWebDriver));
                                 break;
                             default:
                                 break;
@@ -847,12 +860,12 @@ namespace MangaAndLightNovelWebScrape
                             case Website.ForbiddenPlanet:
                                 ForbiddenPlanet ??= new ForbiddenPlanet();
                                 LOGGER.Info($"{ForbiddenPlanet.WEBSITE_TITLE} Going");
-                                WebTasks.Add(ForbiddenPlanet.CreateForbiddenPlanetTask(bookTitle, bookType, MasterDataList, SetupBrowserDriver(true)));
+                                WebTasks.Add(ForbiddenPlanet.CreateForbiddenPlanetTask(bookTitle, bookType, MasterDataList, !IsWebDriverPersistent ? SetupBrowserDriver(true) : PersistentWebDriver));
                                 break;
                             case Website.MangaMate:
                                 MangaMate ??= new MangaMate();
                                 LOGGER.Info($"{MangaMate.WEBSITE_TITLE} Going");
-                                WebTasks.Add(MangaMate.CreateMangaMateTask(bookTitle, bookType, MasterDataList, SetupBrowserDriver()));
+                                WebTasks.Add(MangaMate.CreateMangaMateTask(bookTitle, bookType, MasterDataList, !IsWebDriverPersistent ? SetupBrowserDriver() : PersistentWebDriver));
                                 break;
                             case Website.SciFier:
                                 SciFier ??= new SciFier();
@@ -864,15 +877,10 @@ namespace MangaAndLightNovelWebScrape
                                 LOGGER.Info($"{TravellingMan.WEBSITE_TITLE} Going");
                                 WebTasks.Add(TravellingMan.CreateTravellingManTask(bookTitle, bookType, MasterDataList));
                                 break;
-                            case Website.SpeedyHen:
-                                SpeedyHen ??= new SpeedyHen();
-                                LOGGER.Info($"{SpeedyHen.WEBSITE_TITLE} Going");
-                                WebTasks.Add(SpeedyHen.CreateSpeedyHenTask(bookTitle, bookType, MasterDataList));
-                                break;
                             case Website.Waterstones:
                                 Waterstones ??= new Waterstones();
                                 LOGGER.Info($"{Waterstones.WEBSITE_TITLE} Going");
-                                WebTasks.Add(Waterstones.CreateWaterstonesTask(bookTitle, bookType, MasterDataList, SetupBrowserDriver(true)));
+                                WebTasks.Add(Waterstones.CreateWaterstonesTask(bookTitle, bookType, MasterDataList, !IsWebDriverPersistent ? SetupBrowserDriver(true) : PersistentWebDriver));
                                 break;
                             default:
                                 break;
@@ -887,12 +895,12 @@ namespace MangaAndLightNovelWebScrape
                             case Website.Indigo:
                                 Indigo ??= new Indigo();
                                 LOGGER.Info($"{Indigo.WEBSITE_TITLE} Going");
-                                WebTasks.Add(Indigo.CreateIndigoTask(bookTitle, bookType, isIndigoMember, MasterDataList, SetupBrowserDriver()));
+                                WebTasks.Add(Indigo.CreateIndigoTask(bookTitle, bookType, isIndigoMember, MasterDataList, !IsWebDriverPersistent ? SetupBrowserDriver() : PersistentWebDriver));
                                 break;
                             case Website.MangaMate:
                                 MangaMate ??= new MangaMate();
                                 LOGGER.Info($"{MangaMate.WEBSITE_TITLE} Going");
-                                WebTasks.Add(MangaMate.CreateMangaMateTask(bookTitle, bookType, MasterDataList, SetupBrowserDriver()));
+                                WebTasks.Add(MangaMate.CreateMangaMateTask(bookTitle, bookType, MasterDataList, !IsWebDriverPersistent ? SetupBrowserDriver() : PersistentWebDriver));
                                 break;
                             case Website.SciFier:
                                 SciFier ??= new SciFier();
@@ -912,7 +920,7 @@ namespace MangaAndLightNovelWebScrape
                             case Website.AmazonJapan:
                                 AmazonJapan ??= new AmazonJapan();
                                 LOGGER.Info($"{AmazonJapan.WEBSITE_TITLE} Going");
-                                WebTasks.Add(AmazonJapan.CreateAmazonJapanTask(bookTitle, bookType, MasterDataList, SetupBrowserDriver()));
+                                WebTasks.Add(AmazonJapan.CreateAmazonJapanTask(bookTitle, bookType, MasterDataList, !IsWebDriverPersistent ? SetupBrowserDriver() : PersistentWebDriver));
                                 break;
                             case Website.CDJapan:
                                 CDJapan ??= new CDJapan();
@@ -922,7 +930,7 @@ namespace MangaAndLightNovelWebScrape
                             case Website.MangaMate:
                                 MangaMate ??= new MangaMate();
                                 LOGGER.Info($"{MangaMate.WEBSITE_TITLE} Going");
-                                WebTasks.Add(MangaMate.CreateMangaMateTask(bookTitle, bookType, MasterDataList, SetupBrowserDriver()));
+                                WebTasks.Add(MangaMate.CreateMangaMateTask(bookTitle, bookType, MasterDataList, !IsWebDriverPersistent ? SetupBrowserDriver() : PersistentWebDriver));
                                 break;
                             default:
                                 break;
@@ -937,7 +945,7 @@ namespace MangaAndLightNovelWebScrape
                             case Website.MangaMate:
                                 MangaMate ??= new MangaMate();
                                 LOGGER.Info($"{MangaMate.WEBSITE_TITLE} Going");
-                                WebTasks.Add(MangaMate.CreateMangaMateTask(bookTitle, bookType, MasterDataList, SetupBrowserDriver()));
+                                WebTasks.Add(MangaMate.CreateMangaMateTask(bookTitle, bookType, MasterDataList, !IsWebDriverPersistent ? SetupBrowserDriver() : PersistentWebDriver));
                                 break;
                             case Website.SciFier:
                                 SciFier ??= new SciFier();
@@ -957,7 +965,7 @@ namespace MangaAndLightNovelWebScrape
                             case Website.MangaMate:
                                 MangaMate ??= new MangaMate();
                                 LOGGER.Info($"{MangaMate.WEBSITE_TITLE} Going");
-                                WebTasks.Add(MangaMate.CreateMangaMateTask(bookTitle, bookType, MasterDataList, SetupBrowserDriver()));
+                                WebTasks.Add(MangaMate.CreateMangaMateTask(bookTitle, bookType, MasterDataList, !IsWebDriverPersistent ? SetupBrowserDriver() : PersistentWebDriver));
                                 break;
                             case Website.SciFier:
                                 SciFier ??= new SciFier();
@@ -1094,18 +1102,18 @@ namespace MangaAndLightNovelWebScrape
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string title = "Attack on Titan";
+            string title = "One Piece";
             BookType bookType = BookType.Manga;
             watch.Start();
 
             MasterScrape scrape = new MasterScrape(
                 Filter: StockStatusFilter.EXCLUDE_NONE_FILTER, 
-                Region: Region.Australia, 
+                Region: Region.America, 
                 Browser: Browser.FireFox, 
                 IsBooksAMillionMember: false, 
                 IsKinokuniyaUSAMember: false, 
-                IsIndigoMember: false).EnableDebugMode();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.MangaMate ]);
+                IsIndigoMember: false).EnableDebugMode().EnablePersistentWebDriver();
+            await scrape.InitializeScrapeAsync(title, bookType, [ Website.AmazonUSA ]);
             
             watch.Stop();
             scrape.PrintResultsToConsole(true, title, bookType);

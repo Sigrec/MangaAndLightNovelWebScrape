@@ -169,11 +169,18 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             catch (Exception ex)
             {
-                LOGGER.Error("{} ({}) Does Not Exist @ {} \n{}", bookTitle, bookType, WEBSITE_TITLE, ex);
+                LOGGER.Error("{} ({}) Error @ {} \n{}", bookTitle, bookType, WEBSITE_TITLE, ex);
             }
             finally
             {
-                driver?.Quit();
+                if (!MasterScrape.IsWebDriverPersistent)
+                {
+                    driver?.Quit();
+                }
+                else 
+                { 
+                    driver?.Close(); 
+                }
                 MangaMateData = InternalHelpers.RemoveDuplicateEntries(MangaMateData);
                 MangaMateData.Sort(EntryModel.VolumeSort);
                 InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, MangaMateData, LOGGER);

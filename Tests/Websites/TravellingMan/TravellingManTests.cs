@@ -31,7 +31,7 @@ namespace Tests.Websites
             new object[] { "Bleach", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManBleachMangaData.txt", false },
             new object[] { "Attack on Titan", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManAttackOnTitanMangaData.txt", false },
             new object[] { "Goodbye, Eri", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManGoodbyeEriMangaData.txt", false },
-            new object[] { "2.5 Dimensional Seduction", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManDimensionalSeductionMangaData.txt", false },
+            new object[] { "2.5 Dimensional Seduction", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManDimensionalSeductionMangaData.txt", true },
             new object[] { "Overlord", BookType.LightNovel, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManOverlordNovelData.txt", false },
             new object[] { "overlord", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManOverlordMangaData.txt", false },
             new object[] { "07-ghost", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingMan07GhostMangaData.txt", true },
@@ -39,6 +39,7 @@ namespace Tests.Websites
             new object[] { "Berserk", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManBerserkMangaData.txt", false },
             new object[] { "Toilet-bound Hanako-kun", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManToiletMangaData.txt", false },
             new object[] { "classroom of the elite", BookType.LightNovel, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManCOTENovelData.txt", false },
+            new object[] { "classroom of the elite", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManCOTENovelData.txt", false },
             new object[] { "Boruto", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManBorutoMangaData.txt", false }
         ];
 

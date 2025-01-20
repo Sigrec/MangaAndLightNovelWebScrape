@@ -3,153 +3,57 @@ namespace Tests.Websites
     [TestFixture, Description("Validations for Forbidden Planet")]
     [Author("Sean (Alias -> Prem or Sigrec)")]
     [SetUICulture("en")]
-    public class ForbiddenPlanetTest
+    public class ForbiddenPlanetTests
     {
-        MasterScrape Scrape;
-        private readonly HashSet<Website> WebsiteList = [ Website.ForbiddenPlanet ];
-        
+        private MasterScrape Scrape;
+        private static readonly HashSet<Website> WebsiteList = [Website.ForbiddenPlanet];
+
         [OneTimeSetUp]
         public void OneTimeSetUp()
         {
-            Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain);    
+            Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain);
         }
 
-        [Test, Description("Validates Series w/ Non Letter or Digit Char in Title")]
-        public async Task ForbiddenPlanet_AkaneBanashi_Manga_Test()
+        [OneTimeTearDown]
+        public void TearDown()
         {
-            await Scrape.InitializeScrapeAsync("Akane-Banashi", BookType.Manga, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetAkaneBanashiMangaData.txt")));
+            Scrape = null;
         }
 
-        [Test, Description("Validates Manga Series w/ Volumes that does not contain Vol type string but is valid")]
-        public async Task ForbiddenPlanet_JujutsuKaisen_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("Jujutsu Kaisen", BookType.Manga, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetJujutsuKaisenMangaData.txt")));
-        }
+        private static readonly object[] ScrapeTestCases =
+        [
+            new object[] { "Akane-Banashi", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetAkaneBanashiMangaData.txt", false },
+            new object[] { "Jujutsu Kaisen", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetJujutsuKaisenMangaData.txt", false },
+            new object[] { "Dragon Quest: The Adventure of Dai", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetAdventuresOfDaiMangaData.txt", false },
+            new object[] { "One Piece", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetOnePieceManga.txt", false },
+            new object[] { "Naruto", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetNarutoManga.txt", false },
+            new object[] { "Naruto", BookType.LightNovel, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetNarutoNovelData.txt", false },
+            new object[] { "Bleach", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetBleachManga.txt", false },
+            new object[] { "Attack On Titan", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetAttackOnTitanManga.txt", false },
+            new object[] { "Goodbye, Eri", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetGoodbyeEriMangaData.txt", false },
+            new object[] { "2.5 Dimensional Seduction", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetDimensionalSeductionMangaData.txt", false },
+            new object[] { "overlord", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetOverlordMangaData.txt", false },
+            new object[] { "Overlord", BookType.LightNovel, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetOverlordNovelData.txt", false },
+            new object[] { "07-ghost", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanet07GhostMangaData.txt", false },
+            new object[] { "fullmetal alchemist", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetFMABMangaData.txt", false },
+            new object[] { "Berserk", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetBerserkMangaData.txt", false },
+            new object[] { "Toilet-bound Hanako-kun", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetToiletMangaData.txt", false },
+            new object[] { "classroom of the elite", BookType.LightNovel, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetCOTENovelData.txt", false },
+            new object[] { "Boruto", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetBorutoMangaData.txt", false },
+            new object[] { "Noragami", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetNoragamiMangaData.txt", false }
+        ];
 
-        [Test, Description("Test Title that contains a keyword to skip and contains ':'")]
-        public async Task ForbiddenPlanet_AdventuresOfDai_Manga_Test()
+        [TestCaseSource(nameof(ScrapeTestCases))]
+        public async Task ForbiddenPlanet_Scrape_Test(string title, BookType bookType, string expectedFilePath, bool skip)
         {
-            await Scrape.InitializeScrapeAsync("Dragon Quest: The Adventure of Dai", BookType.Manga, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetAdventuresOfDaiMangaData.txt")));
-        }
+            if (skip)
+            {
+                Assert.Ignore($"Test skipped: {title}");
+                return;
+            }
 
-        [Test, Description("Test Manga Series w/ Omnibus of Dif Text Format & Light Novels")]
-        public async Task ForbiddenPlanet_OnePiece_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("One Piece", BookType.Manga, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetOnePieceManga.txt")));
-        }
-
-        [Test, Description("Test Manga Series w/ Omnibus of Dif Text Format & Light Novels")]
-        public async Task ForbiddenPlanet_Naruto_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("Naruto", BookType.Manga, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetNarutoManga.txt")));
-        }
-
-        [Test, Description("Validates Novel series w/ manga original source & entries without vol #'s")]
-        [Ignore("Novel Not Working")]
-        public async Task ForbiddenPlanet_Naruto_Novel_Test()
-        {
-            await Scrape.InitializeScrapeAsync("Naruto", BookType.LightNovel, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetNarutoNovelData.txt")));
-        }
-
-        [Test, Description("Test Manga Series w/ Box Set w/out Num Indicator")]
-        public async Task ForbiddenPlanet_Bleach_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("Bleach", BookType.Manga, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetBleachManga.txt")));
-        }
-
-        [Test, Description("Test Manga Series w/ Box Set in Dif Formats, Color Editions, & Dif Omnibus Types")]
-        public async Task ForbiddenPlanet_AttackOnTitan_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("Attack On Titan", BookType.Manga, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetAttackOnTitanManga.txt")));
-        }
-
-        [Test, Description("Validates One Shot Manga Series")]
-        public async Task ForbiddenPlanet_Member_GoodbyeEri_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("Goodbye, Eri", BookType.Manga, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetGoodbyeEriMangaData.txt")));
-        }
-
-        [Test, Description("Validates Series w/ Number")]
-        public async Task ForbiddenPlanet_DimensionalSeduction_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("2.5 Dimensional Seduction", BookType.Manga, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetDimensionalSeductionMangaData.txt")));
-        }
-
-        // Currently there A La Carte are under Subject Comic and not Manga so theyh aren't grabbed
-        [Test, Description("Validates Manga w/ Novel Entries & Has Paperback & Hardcover Initially")]
-        public async Task ForbiddenPlanet_Overlord_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("overlord", BookType.Manga, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetOverlordMangaData.txt")));
-        }
-
-        // Not done, is having issues
-        [Test, Description("Validates Novel w/ Novel after Volume and lowercase")]
-        public async Task ForbiddenPlanet_Overlord_Novel_Test()
-        {
-            await Scrape.InitializeScrapeAsync("Overlord", BookType.LightNovel, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetOverlordNovelData.txt")));
-        }
-
-        [Test, Description("Validates Series w/ Non Letter or Digit Char & Numbers in Title")]
-        [Ignore("Does not exist at Forbidden Planet")]
-        public async Task ForbiddenPlanet_07Ghost_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("07-ghost", BookType.Manga, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanet07GhostMangaData.txt")));
-        }
-
-        [Test, Description("Validates Manga Series w/ Hardcover & Paperback Volumes")]
-        public async Task ForbiddenPlanet_FMAB_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("fullmetal alchemist", BookType.Manga, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetFMABMangaData.txt")));
-        }
-
-        [Test, Description("Validates Manga Series w/ Deluxe Hardcover & Paperback Volumes")]
-        public async Task ForbiddenPlanet_Berserk_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("Berserk", BookType.Manga, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetBerserkMangaData.txt")));
-        }
-
-        [Test, Description("Validates Manga Series w/ Illustration Entries & Vol 0")]
-        public async Task ForbiddenPlanet_Toilet_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("Toilet-bound Hanako-kun", BookType.Manga, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetToiletMangaData.txt")));
-        }
-        
-        [Test, Description("Validates Novel w/ Manga Entries & Volume Numbers with Decimals")]
-        public async Task ForbiddenPlanet_COTE_Novel_Test()
-        {
-            await Scrape.InitializeScrapeAsync("classroom of the elite", BookType.LightNovel, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetCOTENovelData.txt")));
-        }
-
-        [Test]
-        public async Task ForbiddenPlanet_Boruto_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("Boruto", BookType.Manga, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetBorutoMangaData.txt")));
-        }
-
-        [Test, Description("")]
-        [Ignore("Need to figure out the syntax for Noragami first")]
-        public async Task ForbiddenPlanet_Noragami_Manga_Test()
-        {
-            await Scrape.InitializeScrapeAsync("Noragami", BookType.Manga, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@"C:\MangaAndLightNovelWebScrape\Tests\Websites\ForbiddenPlanet\ForbiddenPlanetNoragamiMangaData.txt")));
+            await Scrape.InitializeScrapeAsync(title, bookType, WebsiteList);
+            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(expectedFilePath)));
         }
     }
 }

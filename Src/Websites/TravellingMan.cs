@@ -14,7 +14,7 @@ namespace MangaAndLightNovelWebScrape.Websites
         private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//li[@class='list-view-item']/div/div/div[3]/dl/div[2]/dd[2]/span[1]");
         private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//ul[@class='list--inline pagination']/li[3]/a");
         [GeneratedRegex(@"Volume|Vol\.", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
-        [GeneratedRegex(@",| The Manga| Manga|\(.*?\)", RegexOptions.IgnoreCase)] private static partial Regex TitleParseRegex();
+        [GeneratedRegex(@",| The Manga| Manga|\(.*?\)", RegexOptions.IgnoreCase)] private static partial Regex CleanAndParseTitleRegex();
         [GeneratedRegex(@"(?:3-in-1|2-in-1)", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
         [GeneratedRegex(@"(?<=Box Set \d{1,3})[^\d{1,3}.]+.*|(?:Box Set) Vol")] private static partial Regex BoxSetRegex();
 
@@ -40,14 +40,13 @@ namespace MangaAndLightNovelWebScrape.Websites
         private string GenerateWebsiteUrl(string bookTitle, BookType bookType, int curPage)
         {
             // https://travellingman.com/search?page=2&q=naruto+manga
-            
-            string url = $"https://travellingman.com/search?page={curPage}&q={bookTitle.Replace(" ", "+")}{(bookType == BookType.Manga ? "+manga" : "+novel")}/";
-            LOGGER.Info("Url => {}", url);
+            string url = $"https://travellingman.com/search?page={curPage}&q={bookTitle.Replace(" ", "+")}{(bookType == BookType.Manga ? "+manga" : "+novel")}";
+            LOGGER.Info("Url {} => {}", curPage, url);
             TravellingManLinks.Add(url);
             return url;
         }
 
-        private static string TitleParse(string entryTitle, string bookTitle, BookType bookType)
+        private static string CleanAndParseTitle(string entryTitle, string bookTitle, BookType bookType)
         {
             if (OmnibusRegex().IsMatch(entryTitle))
             {
@@ -62,7 +61,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 }
             }
 
-            StringBuilder curTitle = new StringBuilder(TitleParseRegex().Replace(entryTitle, string.Empty));
+            StringBuilder curTitle = new StringBuilder(CleanAndParseTitleRegex().Replace(entryTitle, string.Empty));
             InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "-", " ");
             InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
 
@@ -96,16 +95,17 @@ namespace MangaAndLightNovelWebScrape.Websites
             {
                 curTitle.Replace("Light Novel", string.Empty);
                 int index = curTitle.ToString().AsSpan().IndexOf("Vol");
-                if (index != -1) curTitle.Insert(index, "Novel ");
+                if (index != -1)
+                {
+                    curTitle.Insert(index, "Novel ");
+                }
                 else curTitle.Insert(curTitle.Length, " Novel");
             }
-            else
+            else if (bookTitle.Equals("Boruto", StringComparison.OrdinalIgnoreCase))
             {
-                if (bookTitle.Equals("Boruto", StringComparison.OrdinalIgnoreCase))
-                {
-                    curTitle.Replace("Naruto Next Generations", string.Empty);
-                }
+                curTitle.Replace("Naruto Next Generations", string.Empty);
             }
+
             return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
         }
 
@@ -116,14 +116,11 @@ namespace MangaAndLightNovelWebScrape.Websites
             {
                 HtmlWeb web = new()
                 {
-                    UsingCacheIfExists = true,
-                    UseCookies = true,
-                    OverrideEncoding = Encoding.UTF8
+                    UsingCacheIfExists = true
                 };
                 HtmlDocument doc = new()
                 {
-                    OptionCheckSyntax = false,
-                    OptionDefaultStreamEncoding = Encoding.UTF8
+                    OptionCheckSyntax = false
                 };
 
                 int nextPage = 1;
@@ -149,26 +146,31 @@ namespace MangaAndLightNovelWebScrape.Websites
                     for (int x = 0; x < priceData.Count; x++)
                     {
                         string entryTitle = titleData[x].InnerText.Trim();
-                        // LOGGER.Debug("{} | {}", entryTitle, titleData[x].InnerHtml.Trim());
                         if (!entryTitle.Contains("Banpresto")
                             && !entryTitle.Contains("Nendoroid")
                             && InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
                             && (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
-                            && !(
-                                bookType == BookType.Manga
+                            && (
+                                (bookType == BookType.Manga
                                 && (
-                                    !(!entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) || bookTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase))
+                                    !entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) || 
+                                    bookTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
                                     || (
                                             InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
                                             || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Itachi")
                                         )
                                     )
                                 )
+                                ||
+                                bookType == BookType.LightNovel &&
+                                !entryTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase) || 
+                                bookTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase)
+                                )
                             && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "overlord", entryTitle, "Unimplemented")
                             )        
                         {
                             bool descIsValid = true;
-                            if (!entryTitle.Contains("Volume", StringComparison.OrdinalIgnoreCase) && !entryTitle.Contains("Vol.", StringComparison.OrdinalIgnoreCase) && !entryTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) && !entryTitle.Contains("Comic", StringComparison.OrdinalIgnoreCase))
+                            if (!entryTitle.ContainsAny(["Volume", "Vol.", "Box Set", "Comic"]))
                             {
                                 HtmlNodeCollection descData = web.Load($"https://travellingman.com{doc.DocumentNode.SelectSingleNode($"(//li[@class='list-view-item']/div/a)[{x + 1}]").GetAttributeValue("href", string.Empty)}").DocumentNode.SelectNodes("//div[@class='product-single__description rte'] | //div[@class='product-single__description rte']//p");
                                 StringBuilder desc = new StringBuilder();
@@ -182,7 +184,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                                 TravellingManData.Add(
                                     new EntryModel
                                     (
-                                        TitleParse(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType),
+                                        CleanAndParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType),
                                         priceData[x].InnerText.Trim(),
                                         StockStatus.IS,
                                         WEBSITE_TITLE
@@ -207,7 +209,7 @@ namespace MangaAndLightNovelWebScrape.Websites
             }
             catch (Exception ex)
             {
-                LOGGER.Error("{} ({}) Does Not Exist @ {} \n{}", bookTitle, bookType, WEBSITE_TITLE, ex);
+                LOGGER.Error("{} ({}) Error @ {} \n{}", bookTitle, bookType, WEBSITE_TITLE, ex);
             }
             finally
             {

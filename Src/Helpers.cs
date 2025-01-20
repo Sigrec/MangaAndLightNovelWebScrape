@@ -105,7 +105,7 @@ namespace MangaAndLightNovelWebScrape
             {
                 Region.America => [ AmazonUSA.WEBSITE_TITLE, BooksAMillion.WEBSITE_TITLE, Crunchyroll.WEBSITE_TITLE, InStockTrades.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE, MerryManga.WEBSITE_TITLE, RobertsAnimeCornerStore.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, ],
                 Region.Australia => [ MangaMate.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, ],
-                Region.Britain => [ ForbiddenPlanet.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, SpeedyHen.WEBSITE_TITLE, TravellingMan.WEBSITE_TITLE, Waterstones.WEBSITE_TITLE, ],
+                Region.Britain => [ ForbiddenPlanet.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, TravellingMan.WEBSITE_TITLE, Waterstones.WEBSITE_TITLE, ],
                 Region.Canada => [ Indigo.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, ],
                 Region.Europe => [ SciFier.WEBSITE_TITLE, ],
                 Region.Japan => [ /*AmazonJapan.WEBSITE_TITLE, CDJapan.WEBSITE_TITLE*/ ],
@@ -122,7 +122,7 @@ namespace MangaAndLightNovelWebScrape
             {
                 Region.America => [ Website.AmazonUSA, Website.BooksAMillion, Website.Crunchyroll, Website.InStockTrades, Website.KinokuniyaUSA, Website.MerryManga, Website.RobertsAnimeCornerStore, Website.SciFier ],
                 Region.Australia => [ Website.MangaMate, Website.SciFier ],
-                Region.Britain => [ Website.ForbiddenPlanet, Website.SciFier, Website.SpeedyHen, Website.TravellingMan, Website.Waterstones ],
+                Region.Britain => [ Website.ForbiddenPlanet, Website.SciFier, Website.TravellingMan, Website.Waterstones ],
                 Region.Canada => [ Website.Indigo, Website.SciFier ],
                 Region.Europe => [ Website.SciFier ],
                 Region.Japan => [ /*Website.AmazonJapan, Website.CDJapan*/ ],
@@ -155,7 +155,6 @@ namespace MangaAndLightNovelWebScrape
                     MerryManga.WEBSITE_TITLE => MerryManga.REGION.HasFlag(region),
                     RobertsAnimeCornerStore.WEBSITE_TITLE => RobertsAnimeCornerStore.REGION.HasFlag(region),
                     SciFier.WEBSITE_TITLE => SciFier.REGION.HasFlag(region),
-                    SpeedyHen.WEBSITE_TITLE => SpeedyHen.REGION.HasFlag(region),
                     TravellingMan.WEBSITE_TITLE => TravellingMan.REGION.HasFlag(region),
                     Waterstones.WEBSITE_TITLE => Waterstones.REGION.HasFlag(region),
                     _ => throw new NotImplementedException(),
@@ -196,7 +195,6 @@ namespace MangaAndLightNovelWebScrape
                     Region.Canada => 6,
                     _ => throw new NotImplementedException()
                 }}",
-                SpeedyHen.WEBSITE_TITLE => @"https://www.speedyhen.com/",
                 TravellingMan.WEBSITE_TITLE => @"https://travellingman.com/",
                 Waterstones.WEBSITE_TITLE => @"https://www.waterstones.com/",
                 _ => throw new NotImplementedException()
@@ -234,7 +232,6 @@ namespace MangaAndLightNovelWebScrape
                     Region.Canada => 6,
                     _ => throw new NotImplementedException()
                 }}",
-                Website.SpeedyHen => @"https://www.speedyhen.com/",
                 Website.TravellingMan => @"https://travellingman.com/",
                 Website.Waterstones => @"https://www.waterstones.com/",
                 _ => throw new NotImplementedException()
@@ -266,7 +263,6 @@ namespace MangaAndLightNovelWebScrape
                     Website.MerryManga => MerryManga.REGION.HasFlag(region),
                     Website.RobertsAnimeCornerStore => RobertsAnimeCornerStore.REGION.HasFlag(region),
                     Website.SciFier => SciFier.REGION.HasFlag(region),
-                    Website.SpeedyHen => SpeedyHen.REGION.HasFlag(region),
                     Website.TravellingMan => TravellingMan.REGION.HasFlag(region),
                     Website.Waterstones => Waterstones.REGION.HasFlag(region),
                     _ => throw new NotImplementedException(),

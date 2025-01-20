@@ -200,7 +200,7 @@ namespace MangaAndLightNovelWebScrape
                     }
                     else
                     {
-                        string message = $"{bookTitle} | {bookType} Does Not Exist at {website}";
+                        string message = $"{bookTitle} ({bookType}) Does Not Exist @ {website}";
                         LOGGER.Error(message);  // Log the error message
                         outputFile.WriteLine(message);  // Write the error to the file
                     }
@@ -219,6 +219,8 @@ namespace MangaAndLightNovelWebScrape
             {
                 if (input[x].Entry.Equals(input[x - 1].Entry, StringComparison.OrdinalIgnoreCase))
                 {
+                    LOGGER.Debug("INPUT 1 {}", input[x]);
+                    LOGGER.Debug("INPUT 2 {}", input[x - 1]);
                     if (input[x].ParsePrice() >= input[x - 1].ParsePrice())
                     {
                         LOGGER.Info($"Removed Duplicate {input[x]}");

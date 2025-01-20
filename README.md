@@ -13,7 +13,7 @@ If you want a website or region to be added fill out a [issue request](https://g
 ✅ Crunchyroll
 ✅ InStockTrades
 ✅ Kinokuniya USA (Sometimes Manga entries will be left out because when going to the manga tab it leaves some out)
-✅ MangaMate
+
 ✅ MerryManga
 ✅ RobertsAnimeCornerStore
 ✅ SciFier
@@ -28,10 +28,9 @@ If you want a website or region to be added fill out a [issue request](https://g
 ##### Britain
 ```
 ⌛ AmazonUK (Not Started)
-✅ ForBiddenPlanet
-✅ MangaMate
+✅ ForbiddenPlanet
 ✅ SciFier
-✅ SpeedyHen
+❌ SpeedyHen (No longer supported due to Cloudflare Captcha) 
 ✅ TravellingMan
 ✅ Waterstones
 ```
@@ -40,13 +39,11 @@ If you want a website or region to be added fill out a [issue request](https://g
 ```
 ⌛ AmazonCanada (Not Started)
 ❌ Indigo (Not Working)
-✅ MangaMate
 ✅ SciFier
 ```
 
 ##### Europe
 ```
-✅ MangaMate
 ✅ SciFier
 ```
 

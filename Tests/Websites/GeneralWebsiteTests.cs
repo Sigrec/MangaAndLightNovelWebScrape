@@ -46,8 +46,6 @@ namespace Tests.Websites
 
                 Assert.That(SciFier.REGION.HasFlag(Region.America) && SciFier.REGION.HasFlag(Region.Australia) && SciFier.REGION.HasFlag(Region.Britain) && SciFier.REGION.HasFlag(Region.Canada) && SciFier.REGION.HasFlag(Region.Europe) && !SciFier.REGION.HasFlag(Region.Japan));
 
-                Assert.That(!SpeedyHen.REGION.HasFlag(Region.America) && !SpeedyHen.REGION.HasFlag(Region.Australia) && SpeedyHen.REGION.HasFlag(Region.Britain) && !SpeedyHen.REGION.HasFlag(Region.Canada) && !SpeedyHen.REGION.HasFlag(Region.Europe) && !SpeedyHen.REGION.HasFlag(Region.Japan));
-
                 Assert.That(!Waterstones.REGION.HasFlag(Region.America) && !Waterstones.REGION.HasFlag(Region.Australia) && Waterstones.REGION.HasFlag(Region.Britain) && !Waterstones.REGION.HasFlag(Region.Canada) && !Waterstones.REGION.HasFlag(Region.Europe) && !Waterstones.REGION.HasFlag(Region.Japan));
             });
         }
