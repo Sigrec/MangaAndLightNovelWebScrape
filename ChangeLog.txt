@@ -11,7 +11,8 @@ Planned
 ❌Add some more sites
 
 v4.0.0 - Jan 20th, 2025
-✅Initialization method now accepts parametized list
+⌛Upgrade to .NET 9.0
+✅Initialization method now accepts parametrized list
 ✅Added toggable option on whether to keep a Selenium WebDriver persistent instead of creating and disposing one every run (by default it is false)
 ✅Correctly fixed output type so it's "Library"
 ✅FireFox is the new default webdriver used for scrapes
@@ -21,26 +22,26 @@ v4.0.0 - Jan 20th, 2025
 📜Crunchyroll Fixes/Updates
 -🔥Fixed url generation to prevent unwanted product from being parsed
 -🔥"Back Order" stock status added
--⌛All around performance improvements
+-⌛All-around performance improvements
 📜InStockTrades Fixes/Updates
 -🔥Fixed novel parsing
 -🔥Fixed parsing for volumes with decimals (Vol 9.5)
--⌛All around performance improvements
+-⌛All-around performance improvements
 📜RobertsAnimeCornerStore Fixes/Updates
 -🔥Fixed backorder stockstatus showing as OOS
--⌛All around performance improvements
+-⌛All-around performance improvements
 📜Books-A-Million Fixes/Updates
 -🔥Fixed url generation to get correct entries
 -🔥Fixed box set checking logic
 -🔥Fixed naruto LN parsing when looking for manga
 -🔥Fixed parse of volumes that don't have "Vol" in initial title (ex Jujutsu Kaisen 0)
--⌛All around performance improvements
+-⌛All-around performance improvements
 📜KinokuniyaUSA Fixes/Updates
 -🔥Fixed issue where Kino would not load on FireFox
 -🔥Fixed issue where parsing titles where volume number was proceeded by some text like "special edition" would not parse correctly
 -🔥Correctly label items that are "available for order" as "Backorder (BO)" instead of "In Stock (IS)"
 -🔥Fixed title parsing for light novels
--⌛All around performance improvements
+-⌛All-around performance improvements
 📜SciFier Fixes/Updates
 -🔥Fixed issue where incorrect price would get scraped for entries
 -🔥Properly ignores used copies
@@ -52,7 +53,7 @@ v4.0.0 - Jan 20th, 2025
 -🔥Small fix to parsing for novels
 📜ForbiddenPlanet Fixes/Updates
 -🔥Fixed issue where it would not go to the next page correctly
--🔥Fixed issue where statue entries would be picked up when they shouldn'T
+-🔥Fixed issue where statue entries would be picked up when they shouldn't
 -🔥Fixed issue where "sale" was being picked up as a book format
 📜AmazonUSA Fixes/Updates
 -🔥Complete scrape logic rewrite to fix a bunch of issues for manga
