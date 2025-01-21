@@ -195,7 +195,6 @@ namespace MangaAndLightNovelWebScrape.Websites
                             : BundleParseRegex().Replace(entryTitle, string.Empty);
 
                         string cleanedTitle = ParseAndCleanTitle(entryTitle, titleData[x].InnerText, bookTitle, bookType);
-                        string price = priceData[x].InnerText.Trim();
 
                         // Retrieve stock status in a more efficient manner
                         string stockStatusText = stockStatusData[x].SelectSingleNode("./div[1]/span")?.InnerText.Trim() ?? string.Empty;
@@ -210,7 +209,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                         };
 
                         // Create the EntryModel and add it to CrunchyrollData
-                        CrunchyrollData.Add(new EntryModel(cleanedTitle, price, stockStatus, WEBSITE_TITLE));
+                        CrunchyrollData.Add(new EntryModel(cleanedTitle, $"${priceData[x].GetAttributeValue("content", "ERROR")}", stockStatus, WEBSITE_TITLE));
                     }
                     else
                     {

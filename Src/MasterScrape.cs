@@ -478,7 +478,7 @@ namespace MangaAndLightNovelWebScrape
                         // If the vol numbers are the same and the titles are similar or the same from the if check above, add the lowest price volume to the list
                         if (biggerListCurrentVolNum == EntryModel.GetCurrentVolumeNum(smallerList[y].Entry))
                         {
-                            LOGGER.Debug($"Found Match for {biggerListData.Entry} {smallerList[y].Entry}");
+                            LOGGER.Debug($"Found Match for {biggerListData} | {smallerList[y]}");
                             LOGGER.Debug($"PRICE COMPARISON ({biggerListData.ParsePrice()} > {smallerList[y].ParsePrice()}) -> {biggerListData.ParsePrice() > smallerList[y].ParsePrice()}");
                             // Get the lowest price between the two then add the lowest dataset
                             if (biggerListData.ParsePrice() > smallerList[y].ParsePrice())
@@ -986,7 +986,7 @@ namespace MangaAndLightNovelWebScrape
         /// <param name="stockFilter"></param>
         /// <param name="webScrapeList">The list of websites you want to search at</param>
         /// <returns></returns>
-        public async Task InitializeScrapeAsync(string bookTitle, BookType bookType, HashSet<Website> webScrapeList)
+        public async Task InitializeScrapeAsync(string title, BookType bookType, params HashSet<Website> webScrapeList)
         {
             await Task.Run(async () =>
             {
@@ -1006,7 +1006,7 @@ namespace MangaAndLightNovelWebScrape
                 });
                 
                 // Generate List of Tasks to 
-                GenerateTaskList(webScrapeList, bookTitle.Trim(), bookType, this.IsBooksAMillionMember, this.IsKinokuniyaUSAMember, this.IsIndigoMember);
+                GenerateTaskList(webScrapeList, title.Trim(), bookType, this.IsBooksAMillionMember, this.IsKinokuniyaUSAMember, this.IsIndigoMember);
                 await Task.WhenAll(WebTasks);
 
                 MasterDataList.RemoveAll(x => x.Count == 0); // Clear all lists from websites that didn't have any data
@@ -1094,7 +1094,7 @@ namespace MangaAndLightNovelWebScrape
                             break;
                     }
                 }
-                if (IsDebugEnabled) { this.PrintResultsToLogger(LOGGER, NLog.LogLevel.Info, true, bookTitle, bookType); }
+                if (IsDebugEnabled) { this.PrintResultsToLogger(LOGGER, NLog.LogLevel.Info, true, title, bookType); }
             });
         }
 
@@ -1102,7 +1102,7 @@ namespace MangaAndLightNovelWebScrape
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string title = "One Piece";
+            string bookTitle = "world trigger";
             BookType bookType = BookType.Manga;
             watch.Start();
 
@@ -1113,10 +1113,16 @@ namespace MangaAndLightNovelWebScrape
                 IsBooksAMillionMember: false, 
                 IsKinokuniyaUSAMember: false, 
                 IsIndigoMember: false).EnableDebugMode().EnablePersistentWebDriver();
-            await scrape.InitializeScrapeAsync(title, bookType, [ Website.AmazonUSA ]);
+            await scrape.InitializeScrapeAsync(
+                title: bookTitle, 
+                bookType: bookType, 
+                Website.Crunchyroll,
+                Website.InStockTrades);
             
             watch.Stop();
-            scrape.PrintResultsToConsole(true, title, bookType);
+            scrape.PrintResultsToConsole(
+                isAsciiTable: true, 
+                title: bookTitle, bookType);
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
 

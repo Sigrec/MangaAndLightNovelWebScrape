@@ -29,5 +29,6 @@ dotnet nuget push "C:\MangaAndLightNovelWebScrape\Src\bin\Release\MangaAndLightN
 Move-Item -Path "C:\MangaAndLightNovelWebScrape\Src\README.md" -Destination "C:\MangaAndLightNovelWebScrape"
 
 # Push changes to git
-git add . | git commit -m "v$version"
+git add -A
+git commit -m "v$version"
 git push origin master

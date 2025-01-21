@@ -6,12 +6,18 @@ Legend
 📜 -> Higher level identifier for feature changes
 ❌ -> In-progress feature will be fixed in later release
 
+Planned
+❌See if Indigo can be fixed or not
+❌Add some more sites
+
 v4.0.0 - Jan 20th, 2025
+✅Initialization method now accepts parametized list
 ✅Added toggable option on whether to keep a Selenium WebDriver persistent instead of creating and disposing one every run (by default it is false)
 ✅Correctly fixed output type so it's "Library"
 ✅FireFox is the new default webdriver used for scrapes
 ✅SpeedyHen removed due to Cloudflare Captcha blocking scraping
 🔥Fixed issue where FireFox would not work when site required a user-agent
+🔥Fixed issue where scrape would sometimes fail because it can't parse the price correctly
 📜Crunchyroll Fixes/Updates
 -🔥Fixed url generation to prevent unwanted product from being parsed
 -🔥"Back Order" stock status added
