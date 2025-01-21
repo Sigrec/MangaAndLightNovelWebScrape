@@ -1,5 +1,3 @@
-using Microsoft.Playwright;
-
 namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class KinokuniyaUSA

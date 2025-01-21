@@ -10,7 +10,10 @@ Planned
 ❌See if Indigo can be fixed or not
 ❌Add some more sites
 
-v4.0.0 - Jan 20th, 2025
+v4.0.2 - Jan 20th, 2025
+🔥Remove Playwright package
+
+v4.0.1 - Jan 20th, 2025
 ⌛Upgrade to .NET 9.0
 ✅Initialization method now accepts parametrized list
 ✅Added toggable option on whether to keep a Selenium WebDriver persistent instead of creating and disposing one every run (by default it is false)
