@@ -10,6 +10,8 @@ Planned
 ❌See if Indigo can be fixed or not
 ❌Add some more sites
 
+v4.0.3 - 
+
 v4.0.2 - Jan 20th, 2025
 🔥Remove Playwright package
 

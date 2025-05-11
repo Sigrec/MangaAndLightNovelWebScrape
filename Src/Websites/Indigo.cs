@@ -1,3 +1,5 @@
+using System.Threading;
+
 namespace MangaAndLightNovelWebScrape.Websites
 {
     public partial class Indigo
@@ -41,9 +43,8 @@ namespace MangaAndLightNovelWebScrape.Websites
 
         private string GenerateWebsiteUrl(string bookTitle, BookType bookType)
         {
-            // https://www.indigo.ca/en-ca/books/manga/?q=world+trigger&prefn1=BISACBindingTypeID&prefv1=TP%7CPO&prefn2=Language&prefv2=English&start=0&sz=1000
-            // https://www.indigo.ca/en-ca/books/?q=fullmetal+alchemist+novel&prefn1=Language&prefv1=English&start=0&sz=1000
-            string url = $"https://www.indigo.ca/en-ca/books/?q={bookTitle.Replace(' ', '+')}+{(bookType == BookType.Manga ? string.Empty : "novel")}&prefn1=BISACBindingTypeID&prefv1=TP%7CPO&prefn2=Language&prefv2=English&start=0&sz=1000";
+            // https://www.indigo.ca/en-ca/books/?q=world+trigger+&prefn1=BISACBindingTypeID&prefv1=TP%7CPO&prefn2=Language&prefv2=English&start=0&sz=1000
+            string url = $"https://www.indigo.ca/en-ca/books/?q={bookTitle.Replace(' ', '+')}{(bookType == BookType.Manga ? string.Empty : "+novel")}&prefn1=BISACBindingTypeID&prefv1=TP%7CPO&prefn2=Language&prefv2=English&start=0&sz=1000";
             LOGGER.Info(url);
             IndigoLinks.Add(url);
             return url;
@@ -107,16 +108,24 @@ namespace MangaAndLightNovelWebScrape.Websites
         {
             try
             {
-                HtmlWeb web = new HtmlWeb();
-                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
+                //HtmlWeb web = new HtmlWeb();
+                HtmlDocument doc = new HtmlDocument();
+                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(10));
                 bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
 
-                HtmlDocument doc = web.Load(GenerateWebsiteUrl(bookTitle, bookType));
+                //doc = web.Load(GenerateWebsiteUrl(bookTitle, bookType));
+                driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle, bookType));
+                Thread.Sleep(10000);
+                wait.Until(driver => driver.FindElement(By.CssSelector("div[class='row product-grid mt-4 search-analytics']")));
+                doc.LoadHtml(driver.PageSource);
+
+                LOGGER.Debug("CHECK 0");
                 HtmlDocument innerDoc = new HtmlDocument();
                 HtmlNodeCollection entryLinkData = doc.DocumentNode.SelectNodes(EntryLinkXPath);
                 HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
                 HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
                 HtmlNodeCollection formatData = doc.DocumentNode.SelectNodes(FormatXPath);
+                LOGGER.Debug("CHECK 1");
                 LOGGER.Debug("{} | {} | {}", titleData.Count, priceData.Count, formatData.Count);
 
                 string price = string.Empty;

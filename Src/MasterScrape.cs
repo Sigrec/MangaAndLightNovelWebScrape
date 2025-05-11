@@ -895,7 +895,7 @@ namespace MangaAndLightNovelWebScrape
                             case Website.Indigo:
                                 Indigo ??= new Indigo();
                                 LOGGER.Info($"{Indigo.WEBSITE_TITLE} Going");
-                                WebTasks.Add(Indigo.CreateIndigoTask(bookTitle, bookType, isIndigoMember, MasterDataList, !IsWebDriverPersistent ? SetupBrowserDriver() : PersistentWebDriver));
+                                WebTasks.Add(Indigo.CreateIndigoTask(bookTitle, bookType, isIndigoMember, MasterDataList, !IsWebDriverPersistent ? SetupBrowserDriver(true) : PersistentWebDriver));
                                 break;
                             case Website.MangaMate:
                                 MangaMate ??= new MangaMate();
@@ -1108,21 +1108,23 @@ namespace MangaAndLightNovelWebScrape
 
             MasterScrape scrape = new MasterScrape(
                 Filter: StockStatusFilter.EXCLUDE_NONE_FILTER, 
-                Region: Region.America, 
+                Region: Region.Canada, 
                 Browser: Browser.FireFox, 
                 IsBooksAMillionMember: false, 
                 IsKinokuniyaUSAMember: false, 
                 IsIndigoMember: false).EnableDebugMode().EnablePersistentWebDriver();
+
             await scrape.InitializeScrapeAsync(
                 title: bookTitle, 
                 bookType: bookType, 
-                Website.Crunchyroll,
-                Website.InStockTrades);
+                Website.SciFier);
             
             watch.Stop();
+
             scrape.PrintResultsToConsole(
                 isAsciiTable: true, 
                 title: bookTitle, bookType);
+            
             LOGGER.Info($"Time in Seconds: {(float)watch.ElapsedMilliseconds / 1000}s");
         }
 
