@@ -213,7 +213,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                     }
                     else
                     {
-                        LOGGER.Info("Removed {}", entryTitle);
+                        LOGGER.Debug("Removed {}", entryTitle);
                     }
                 }
             }

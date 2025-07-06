@@ -5,8 +5,8 @@ namespace MangaAndLightNovelWebScrape.Websites
     public partial class MangaMate
     {
         private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
-        private List<string> MangaMateLinks = new List<string>();
-        private List<EntryModel> MangaMateData = new List<EntryModel>();
+        private List<string> MangaMateLinks = [];
+        private List<EntryModel> MangaMateData = [];
         public const string WEBSITE_TITLE = "MangaMate";
         public const Region REGION = Region.Australia;
         private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[@class='grid-product__title grid-product__title--body']");
@@ -125,7 +125,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                                 bookType == BookType.Manga
                                 && (
                                     entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
-                                    ||(
+                                    || (
                                         InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
                                         || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Story")
                                         || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear")
@@ -153,9 +153,15 @@ namespace MangaAndLightNovelWebScrape.Websites
                                     )
                                 );
                             }
-                            else { LOGGER.Info("Removed {}", entryTitle); } 
-                        }  
-                        else { LOGGER.Info("Removed (1) {}", entryTitle); }    
+                            else
+                            {
+                                LOGGER.Info("Removed {}", entryTitle);
+                            }
+                        }
+                        else
+                        {
+                            LOGGER.Info("Removed (1) {}", entryTitle);
+                        }    
                     }
 
                     if (curPageNum < maxPageNum)
@@ -164,12 +170,15 @@ namespace MangaAndLightNovelWebScrape.Websites
                         wait.Until(driver => driver.FindElement(By.XPath("(//div[@class='grid grid--uniform'])[2]")));
                         doc.LoadHtml(driver.PageSource);
                     }
-                    else { break; }
+                    else
+                    {
+                        break;
+                    }
                 }
             }
             catch (Exception ex)
             {
-                LOGGER.Error("{} ({}) Error @ {} \n{}", bookTitle, bookType, WEBSITE_TITLE, ex);
+                LOGGER.Error(ex, "{} ({}) Error @ {}", bookTitle, bookType, WEBSITE_TITLE);
             }
             finally
             {
@@ -181,6 +190,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 { 
                     driver?.Close(); 
                 }
+
                 MangaMateData = InternalHelpers.RemoveDuplicateEntries(MangaMateData);
                 MangaMateData.Sort(EntryModel.VolumeSort);
                 InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, MangaMateData, LOGGER);

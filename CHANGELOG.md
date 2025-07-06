@@ -11,6 +11,12 @@ Planned
 ❌Add some more sites
 
 v4.0.3 - 
+✅Added MangaMart to scrape
+⌛Updated NLog to `6.0.1`
+⌛Updated Selenium.WebDriver to `4.34.0`
+📜MerryManga
+-🔥Fixed issue where Box Sets would be duplicated in return
+-⌛All-around performance improvements
 
 v4.0.2 - Jan 20th, 2025
 🔥Remove Playwright package

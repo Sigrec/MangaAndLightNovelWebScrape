@@ -12,13 +12,14 @@ using OpenQA.Selenium.Firefox;
 using OpenQA.Selenium.Chrome;
 using HtmlAgilityPack;
 using MangaAndLightNovelWebScrape;
+using BenchmarkDotNet.Diagnosers;
 
 public class Program
 {
     public static void Main(string[] args)
     {
         // Dictionary to map website names to their corresponding benchmark classes
-        var websiteBenchmarks = new Dictionary<string[], Type>
+        Dictionary<string[], Type> websiteBenchmarks = new()
         {
             { [ "Crunchyroll", "CR" ], typeof(CrunchyrollBenchmarks) },
             { [ "InStockTrades", "IST" ], typeof(InStockTradesBenchmarks) },
@@ -26,6 +27,8 @@ public class Program
             { [ "BooksAMillion", "BAM" ], typeof(BooksAMillionBenchmarks) },
             { [ "KinokuniyaUSA", "KINOUS" ], typeof(KinokuniyaUSABenchmarks) },
             { [ "SciFier", "SF" ], typeof(SciFierBenchmarks) },
+            { [ "MerryManga", "MERRY" ], typeof(MerryMangaBenchmarks) },
+            { [ "MangaMart", "MART" ], typeof(MangaMartBenchmarks) },
         };
 
 
@@ -54,11 +57,13 @@ public class Program
     {
 
         // Create a custom configuration for BenchmarkDotNet with an output folder
-        var config = ManualConfig.CreateEmpty()
+        ManualConfig config = ManualConfig.CreateEmpty()
             .WithOptions(ConfigOptions.JoinSummary)
             .AddExporter(MarkdownExporter.GitHub)
             .AddLogger(ConsoleLogger.Default)
+            .AddDiagnoser(MemoryDiagnoser.Default)
             .AddColumnProvider(DefaultColumnProviders.Instance)
+            .AddColumn(StatisticColumn.OperationsPerSecond)
             .WithArtifactsPath(GetArtifactsPath(websiteBenchmarks!
                 .FirstOrDefault(entry => entry.Key.Contains(website))
                 .Key.FirstOrDefault())

@@ -13,6 +13,7 @@ If you want a website or region to be added fill out a [issue request](https://g
 ✅ Crunchyroll
 ✅ InStockTrades
 ✅ Kinokuniya USA (Sometimes Manga entries will be left out because when going to the manga tab it leaves some out)
+⌛ MangaMart
 ✅ MerryManga
 ✅ RobertsAnimeCornerStore
 ✅ SciFier
