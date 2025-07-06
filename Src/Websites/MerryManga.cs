@@ -1,18 +1,24 @@
 
-using System.Threading;
+using System.Collections.Frozen;
 
 namespace MangaAndLightNovelWebScrape.Websites
 {
-    public partial class MerryManga
+    public sealed partial class MerryManga
     {
-        private List<string> MerryMangaLinks = new List<string>();
-        private List<EntryModel> MerryMangaData = new List<EntryModel>();
+        private List<string> MerryMangaLinks = [];
+        private List<EntryModel> MerryMangaData = [];
         public const string WEBSITE_TITLE = "MerryManga";
         private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
         public const Region REGION = Region.America;
-        private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//h2[@class='woocommerce-loop-product__title']");
-        private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='price']/ins/span[@class='woocommerce-Price-amount amount']/bdi/text()[1] | //span[@class='price']/span[@class='woocommerce-Price-amount amount']/bdi/text()[1]");
-        private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//li[contains(@class, 'instock')] | //li[contains(@class, 'outofstock')] | //li[contains(@class, 'onbackorder')] | //li[contains(@class, 'preorder')] | //li[contains(@class, 'available_at_warehouse')]");
+
+        private static readonly FrozenSet<string> _stockClasses = FrozenSet.Create(
+            StringComparer.Ordinal,
+            "instock",
+            "outofstock",
+            "onbackorder",
+            "preorder",
+            "available_at_warehouse"
+        );
 
         [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)|Omnibus( \d{1,2})(?:, |\s{1})Vol \d{1,3}-\d{1,3}", RegexOptions.IgnoreCase)] private static partial Regex FixOmnibusRegex();
         [GeneratedRegex(@"(?<=Box Set \d{1}).*", RegexOptions.IgnoreCase)] private static partial Regex FixBoxSetRegex();
@@ -58,53 +64,159 @@ namespace MangaAndLightNovelWebScrape.Websites
 
         private static string ParseTitle(string entryTitle, string bookTitle, BookType bookType)
         {
-            StringBuilder curTitle;
-            if (FixOmnibusRegex().IsMatch(entryTitle))
+            string s = entryTitle;
+
+            if (FixOmnibusRegex().IsMatch(s))
             {
-                entryTitle = FixOmnibusRegex().Replace(entryTitle, "Omnibus$1");
-                if (!entryTitle.Contains("Vol"))
+                s = FixOmnibusRegex().Replace(s, "Omnibus$1");
+                if (!s.Contains("Vol", StringComparison.Ordinal))
                 {
-                    entryTitle = entryTitle.Insert(entryTitle.IndexOf("Omnibus") + 7, " Vol");
+                    int pos = s.IndexOf("Omnibus", StringComparison.Ordinal) + "Omnibus".Length;
+                    s = s.Insert(pos, " Vol");
                 }
             }
-            else if (FixBoxSetRegex().IsMatch(entryTitle))
+            else if (FixBoxSetRegex().IsMatch(s))
             {
-                entryTitle = FixBoxSetRegex().Replace(entryTitle, string.Empty);
-            }
-            
-            curTitle = new StringBuilder(FixTitleRegex().Replace(entryTitle, string.Empty));
-
-            if (bookType == BookType.LightNovel && !curTitle.ToString().Contains("Novel"))
-            {
-                curTitle.Insert(curTitle.ToString().Contains("Vol") ? curTitle.ToString().IndexOf("Vol") : curTitle.Length, " Novel ");
-            }
-            else if (bookType == BookType.Manga)
-            {
-                if (bookTitle.Equals("Boruto", StringComparison.OrdinalIgnoreCase))
-                {
-                    curTitle.Replace("Naruto Next Generations", string.Empty);
-                }
+                s = FixBoxSetRegex().Replace(s, string.Empty);
             }
 
-            InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
-            InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "–", " ");
-            return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString().Trim(), " ");
+            s = FixTitleRegex().Replace(s, string.Empty);
+
+            var sb = new StringBuilder(s);
+
+            if (bookType == BookType.LightNovel && !s.Contains("Novel", StringComparison.Ordinal))
+            {
+                int idx = s.IndexOf("Vol", StringComparison.Ordinal);
+                sb.Insert(idx >= 0 ? idx : sb.Length, " Novel ");
+            }
+            else if (bookType == BookType.Manga && 
+                    bookTitle.Equals("Boruto", StringComparison.OrdinalIgnoreCase))
+            {
+                sb.Replace("Naruto Next Generations", string.Empty);
+            }
+
+            InternalHelpers.RemoveCharacterFromTitle(ref sb, bookTitle, ':');
+            InternalHelpers.ReplaceTextInEntryTitle(ref sb, bookTitle, "–", " ");
+
+            string collapsed = MasterScrape
+                .MultipleWhiteSpaceRegex()
+                .Replace(sb.ToString().Trim(), " ");
+
+            return collapsed;
         }
 
-        private List<EntryModel> GetMerryMangaData(string bookTitle, BookType bookType, WebDriver driver)
+        private void ExtractProductData(
+            HtmlDocument doc,
+            out List<string> titles,
+            out List<string> prices,
+            out List<StockStatus> statuses)
+        {
+            titles   = new List<string>();
+            prices   = new List<string>();
+            statuses = new List<StockStatus>();
+
+            foreach (HtmlNode node in doc.DocumentNode.Descendants())
+            {
+                string nodeName = node.Name;
+
+                // 1) TITLE: <h2 class="woocommerce-loop-product__title">
+                if (nodeName == "h2")
+                {
+                    // //h2[@class='woocommerce-loop-product__title']
+                    string classAttr = node.GetAttributeValue("class", string.Empty);
+                    if (classAttr.Equals("woocommerce-loop-product__title", StringComparison.Ordinal))
+                    {
+                        string text = node.InnerText.Trim();
+                        titles.Add(text);
+                    }
+                }
+
+                // 2) PRICE: match either
+                //    a) <span class="price"> → <ins> → <span class="woocommerce-Price-amount amount"> → <bdi>
+                // or b) <span class="price"> → <span class="woocommerce-Price-amount amount"> → <bdi>
+                if (nodeName == "bdi")
+                {
+                HtmlNode parentNode = node.ParentNode;
+                if (parentNode != null
+                    && parentNode.Name == "span"
+                    && parentNode.GetAttributeValue("class", string.Empty)
+                                .Contains("woocommerce-Price-amount amount", StringComparison.Ordinal))
+                        {
+                            HtmlNode grandParent = parentNode.ParentNode;
+                            if (grandParent != null)
+                            {
+                                // case (a): under <ins>
+                                if (grandParent.Name == "ins")
+                                {
+                                    HtmlNode greatGrand = grandParent.ParentNode;
+                                    if (greatGrand != null
+                                        && greatGrand.Name == "span"
+                                        && greatGrand.GetAttributeValue("class", string.Empty)
+                                                    .Equals("price", StringComparison.Ordinal))
+                                    {
+                                        string text = node.InnerText.Trim();
+                                        prices.Add(text);
+                                    }
+                                }
+                                // case (b): directly under <span class="price">
+                                else if (grandParent.Name == "span"
+                                        && grandParent.GetAttributeValue("class", string.Empty)
+                                                        .Equals("price", StringComparison.Ordinal))
+                                {
+                                    string text = node.InnerText.Trim();
+                                    prices.Add(text);
+                                }
+                            }
+                        }
+                        continue;
+                }
+
+                // 3) STOCK: //li[contains(@class, 'instock')] | //li[contains(@class, 'outofstock')] | //li[contains(@class, 'onbackorder')] | //li[contains(@class, 'preorder')] | //li[contains(@class, 'available_at_warehouse')]
+                if (nodeName == "li")
+                {
+                    string classAttr = node.GetAttributeValue("class", string.Empty);
+                    string[] parts = classAttr.Split(' ');
+                    foreach (string part in parts)
+                    {
+                        if (_stockClasses.Contains(part))
+                        {
+                            StockStatus stockStatus = part switch
+                            {
+                                "instock" or "available_at_warehouse" => StockStatus.IS,
+                                "outofstock" => StockStatus.OOS,
+                                "preorder" => StockStatus.PO,
+                                "onbackorder" => StockStatus.BO,
+                                _ or "Unknown" => StockStatus.NA,
+                            };
+
+                            statuses.Add(stockStatus);
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        internal List<EntryModel> GetMerryMangaData(string bookTitle, BookType bookType, WebDriver driver)
         {
             try
             {
                 bool hasBoxSet = bookType == BookType.Manga;
                 WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
-                Restart:
+            Restart:
                 driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle.ToLower(), bookType, hasBoxSet));
                 wait.Until(driver => driver.FindElement(By.CssSelector("div[class='container main-content']")));
 
                 HtmlDocument doc = new HtmlDocument
                 {
                     OptionCheckSyntax = false,
-                    DisableServerSideCode = true
+                    DisableServerSideCode = true,
+                    OptionFixNestedTags = false,
+                    OptionAutoCloseOnEnd = false,
+                    OptionOutputOptimizeAttributeValues = false,
+                    OptionExtractErrorSourceText = false,
+                    OptionUseIdAttribute = false,
+                    OptionReadEncoding = false
                 };
                 doc.LoadHtml(driver.PageSource);
 
@@ -133,18 +245,21 @@ namespace MangaAndLightNovelWebScrape.Websites
                     doc.LoadHtml(driver.PageSource);
                 }
 
-                bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);   
+                bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
 
                 // Get the page data from the HTML doc
-                HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
-                HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
-                HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
+
+                // HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
+                // HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
+                // HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
+
+                ExtractProductData(doc, out List<string> titleData, out List<string> priceData, out List<StockStatus> stockStatusData);
 
                 for (int x = 0; x < titleData.Count; x++)
                 {
-                    string entryTitle = titleData[x].InnerText.Trim();
+                    string entryTitle = titleData[x];
                     if (
-                        InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle) 
+                        InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
                         && (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
                         && !(
                                 (
@@ -153,7 +268,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                                             InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony")
                                             || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
                                         )
-                                ) 
+                                )
                             ||
                                 (
                                     bookType == BookType.LightNovel
@@ -168,20 +283,16 @@ namespace MangaAndLightNovelWebScrape.Websites
                             new EntryModel
                             (
                                 ParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol").Trim(), bookTitle, bookType),
-                                $"${priceData[x].InnerText.Trim()}",
-                                stockStatusData[x].GetAttributeValue("class", "Unknown").Trim() switch
-                                {
-                                    string status when status.Contains("instock", StringComparison.OrdinalIgnoreCase) || status.Contains("available_at_warehouse", StringComparison.OrdinalIgnoreCase) => StockStatus.IS,
-                                    string status when status.Contains("outofstock", StringComparison.OrdinalIgnoreCase) => StockStatus.OOS,
-                                    string status when status.Contains("preorder", StringComparison.OrdinalIgnoreCase) => StockStatus.PO,
-                                    string status when status.Contains("onbackorder", StringComparison.OrdinalIgnoreCase) => StockStatus.BO,
-                                    _ or "Unknown" => StockStatus.NA,
-                                },
+                                priceData[x],
+                                stockStatusData[x],
                                 WEBSITE_TITLE
                             )
                         );
                     }
-                    else LOGGER.Debug("Removed {}", entryTitle);
+                    else
+                    {
+                        LOGGER.Debug("Removed {}", entryTitle);
+                    }
                 }
 
                 if (hasBoxSet)
@@ -200,11 +311,13 @@ namespace MangaAndLightNovelWebScrape.Websites
                 {
                     driver?.Quit();
                 }
-                else 
-                { 
-                    driver?.Close(); 
+                else
+                {
+                    driver?.Close();
                 }
                 MerryMangaData.Sort(EntryModel.VolumeSort);
+                MerryMangaData.RemoveDuplicates(LOGGER);
+
                 InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, MerryMangaData, LOGGER);
             }
 

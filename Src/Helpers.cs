@@ -103,7 +103,7 @@ namespace MangaAndLightNovelWebScrape
         {
             return region switch
             {
-                Region.America => [ AmazonUSA.WEBSITE_TITLE, BooksAMillion.WEBSITE_TITLE, Crunchyroll.WEBSITE_TITLE, InStockTrades.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE, MerryManga.WEBSITE_TITLE, RobertsAnimeCornerStore.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, ],
+                Region.America => [ AmazonUSA.WEBSITE_TITLE, BooksAMillion.WEBSITE_TITLE, Crunchyroll.WEBSITE_TITLE, InStockTrades.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE, MangaMart.WEBSITE_TITLE, MerryManga.WEBSITE_TITLE, RobertsAnimeCornerStore.WEBSITE_TITLE, SciFier.WEBSITE_TITLE ],
                 Region.Australia => [ MangaMate.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, ],
                 Region.Britain => [ ForbiddenPlanet.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, TravellingMan.WEBSITE_TITLE, Waterstones.WEBSITE_TITLE, ],
                 Region.Canada => [ Indigo.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, ],
@@ -120,7 +120,7 @@ namespace MangaAndLightNovelWebScrape
         {
             return region switch
             {
-                Region.America => [ Website.AmazonUSA, Website.BooksAMillion, Website.Crunchyroll, Website.InStockTrades, Website.KinokuniyaUSA, Website.MerryManga, Website.RobertsAnimeCornerStore, Website.SciFier ],
+                Region.America => [ Website.AmazonUSA, Website.BooksAMillion, Website.Crunchyroll, Website.InStockTrades, Website.KinokuniyaUSA, Website.MangaMart, Website.MerryManga, Website.RobertsAnimeCornerStore, Website.SciFier ],
                 Region.Australia => [ Website.MangaMate, Website.SciFier ],
                 Region.Britain => [ Website.ForbiddenPlanet, Website.SciFier, Website.TravellingMan, Website.Waterstones ],
                 Region.Canada => [ Website.Indigo, Website.SciFier ],
@@ -151,6 +151,7 @@ namespace MangaAndLightNovelWebScrape
                     Indigo.WEBSITE_TITLE => Indigo.REGION.HasFlag(region),
                     InStockTrades.WEBSITE_TITLE => InStockTrades.REGION.HasFlag(region),
                     KinokuniyaUSA.WEBSITE_TITLE => KinokuniyaUSA.REGION.HasFlag(region),
+                    MangaMart.WEBSITE_TITLE => MangaMart.REGION.HasFlag(region),
                     MangaMate.WEBSITE_TITLE => MangaMate.REGION.HasFlag(region),
                     MerryManga.WEBSITE_TITLE => MerryManga.REGION.HasFlag(region),
                     RobertsAnimeCornerStore.WEBSITE_TITLE => RobertsAnimeCornerStore.REGION.HasFlag(region),
@@ -183,6 +184,7 @@ namespace MangaAndLightNovelWebScrape
                 Indigo.WEBSITE_TITLE => @"https://www.indigo.ca/en-ca/",
                 InStockTrades.WEBSITE_TITLE => @"https://www.instocktrades.com/",
                 KinokuniyaUSA.WEBSITE_TITLE => @"https://united-states.kinokuniya.com/",
+                MangaMart.WEBSITE_TITLE => @"https://mangamart.com/",
                 MangaMate.WEBSITE_TITLE => @"https://mangamate.shop/",
                 MerryManga.WEBSITE_TITLE => @"https://www.merrymanga.com/",
                 RobertsAnimeCornerStore.WEBSITE_TITLE => @"https://www.animecornerstore.com/graphicnovels1.html",
@@ -220,6 +222,7 @@ namespace MangaAndLightNovelWebScrape
                 Website.Indigo => @"https://www.indigo.ca/en-ca/",
                 Website.InStockTrades => @"https://www.instocktrades.com/",
                 Website.KinokuniyaUSA => @"https://united-states.kinokuniya.com/",
+                Website.MangaMart => @"https://mangamart.com/",
                 Website.MangaMate => @"https://mangamate.shop/",
                 Website.MerryManga => @"https://www.merrymanga.com/",
                 Website.RobertsAnimeCornerStore => @"https://www.animecornerstore.com/graphicnovels1.html",
@@ -259,6 +262,7 @@ namespace MangaAndLightNovelWebScrape
                     Website.Indigo => Indigo.REGION.HasFlag(region),
                     Website.InStockTrades => InStockTrades.REGION.HasFlag(region),
                     Website.KinokuniyaUSA => KinokuniyaUSA.REGION.HasFlag(region),
+                    Website.MangaMart => MangaMart.REGION.HasFlag(region),
                     Website.MangaMate => MangaMate.REGION.HasFlag(region),
                     Website.MerryManga => MerryManga.REGION.HasFlag(region),
                     Website.RobertsAnimeCornerStore => RobertsAnimeCornerStore.REGION.HasFlag(region),

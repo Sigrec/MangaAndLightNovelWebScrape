@@ -7,6 +7,7 @@ namespace MangaAndLightNovelWebScrape
         internal static char[] trimedChars = [' ', '\'', '!', '-', ',', ':'];
         private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrape");
         [GeneratedRegex(@"[^\w+]")] internal static partial Regex RemoveNonWordsRegex();
+        [GeneratedRegex(@"Vol\s\d{1,3}", RegexOptions.IgnoreCase)] private static partial Regex VolRegex();
 
         internal static List<EntryModel> RemoveDuplicateEntries(List<EntryModel> entries)
         {
@@ -19,6 +20,66 @@ namespace MangaAndLightNovelWebScrape
                 }
             }
             return output;
+        }
+
+        internal static void AddVolToString(this StringBuilder title)
+        {
+            string titleString = title.ToString();
+
+            if (titleString.Contains("Vol", StringComparison.Ordinal) ||
+                titleString.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+
+            Match volNumMatch = MasterScrape.FindVolNumRegex().Match(titleString);
+            if (volNumMatch.Success)
+            {
+                title.Insert(volNumMatch.Index, "Vol ");
+            }
+        }
+
+        internal static void RemoveAfterLastIfMultiple(ref StringBuilder input, char delimiter)
+        {
+            // Quick exit if delimiter not found
+            int count = 0;
+            for (int i = 0; i < input.Length; i++)
+            {
+                if (input[i] == delimiter)
+                {
+                    count++;
+                }
+            }
+
+            if (count <= 1)
+            {
+                return; // Do nothing if there's 1 or fewer occurrences of the delimiter
+            }
+
+            // Find the last occurrence of the delimiter
+            int lastIndex = -1;
+            for (int i = input.Length - 1; i >= 0; i--)
+            {
+                if (input[i] == delimiter)
+                {
+                    lastIndex = i;
+                    break;
+                }
+            }
+
+            // Convert to string once for regex to extract the volume info
+            string inputStr = input.ToString();
+
+            // Look for "Vol ###" after the last delimiter
+            Match match = VolRegex().Match(inputStr, lastIndex + 1);
+            bool volAfterDelimiter = match.Success && match.Index > lastIndex;
+
+            input.Length = lastIndex; // Trim everything after the last delimiter
+
+            if (volAfterDelimiter)
+            {
+                input.Append(' ').Append(match.Value);
+            }
         }
 
         /// <summary>

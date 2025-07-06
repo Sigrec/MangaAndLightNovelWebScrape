@@ -11,8 +11,8 @@ namespace MangaAndLightNovelWebScrape
     /// </summary>
     public partial class MasterScrape
     { 
-        internal List<List<EntryModel>> MasterDataList = new List<List<EntryModel>>();
-        private ConcurrentBag<List<EntryModel>> ResultsList = new ConcurrentBag<List<EntryModel>>();
+        internal List<List<EntryModel>> MasterDataList = [];
+        private ConcurrentBag<List<EntryModel>> ResultsList = [];
         private List<Task> WebTasks = new List<Task>(15);
         private Dictionary<string, string> MasterUrls = [];
         private AmazonUSA AmazonUSA = null;
@@ -28,6 +28,7 @@ namespace MangaAndLightNovelWebScrape
         private SciFier SciFier = null;
         private Waterstones Waterstones = null;
         private ForbiddenPlanet ForbiddenPlanet = null;
+        private MangaMart MangaMart = null;
         private MerryManga MerryManga = null;
         private MangaMate MangaMate = null;
         private WebDriver PersistentWebDriver = null;
@@ -409,6 +410,7 @@ namespace MangaAndLightNovelWebScrape
             AmazonUSA?.ClearData();
             SciFier?.ClearData();
             MerryManga?.ClearData();
+            MangaMart?.ClearData();
         }
 
         private void ClearCanadaWebsiteData()
@@ -646,6 +648,10 @@ namespace MangaAndLightNovelWebScrape
                                 case "scifier":
                                     WebsiteList.Add(Website.SciFier);
                                     break;
+                                case MangaMart.WEBSITE_TITLE:
+                                case "mangamart":
+                                    WebsiteList.Add(Website.MangaMart);
+                                    break;
                                 case MerryManga.WEBSITE_TITLE:
                                 case "merrymanga":
                                     WebsiteList.Add(Website.MerryManga);
@@ -763,6 +769,9 @@ namespace MangaAndLightNovelWebScrape
                     case KinokuniyaUSA.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = KinokuniyaUSA.GetUrl();
                         break;
+                    case MangaMart.WEBSITE_TITLE:
+                        MasterUrls[entry.Website] = MangaMart.GetUrl();
+                        break;
                     case MangaMate.WEBSITE_TITLE:
                         MasterUrls[entry.Website] = MangaMate.GetUrl();
                         break;
@@ -846,6 +855,11 @@ namespace MangaAndLightNovelWebScrape
                                 MerryManga ??= new MerryManga();
                                 LOGGER.Info($"{MerryManga.WEBSITE_TITLE} Going");
                                 WebTasks.Add(MerryManga.CreateMerryMangaTask(bookTitle, bookType, MasterDataList, !IsWebDriverPersistent ? SetupBrowserDriver() : PersistentWebDriver));
+                                break;
+                            case Website.MangaMart:
+                                MangaMart ??= new MangaMart();
+                                LOGGER.Info($"{MangaMart.WEBSITE_TITLE} Going");
+                                WebTasks.Add(MangaMart.CreateMangaMartTask(bookTitle, bookType, MasterDataList, !IsWebDriverPersistent ? SetupBrowserDriver() : PersistentWebDriver));
                                 break;
                             default:
                                 break;
@@ -1102,22 +1116,23 @@ namespace MangaAndLightNovelWebScrape
         private static async Task Main()
         {
             System.Diagnostics.Stopwatch watch = new();
-            string bookTitle = "world trigger";
+            string bookTitle = "Bleach";
             BookType bookType = BookType.Manga;
             watch.Start();
 
             MasterScrape scrape = new MasterScrape(
-                Filter: StockStatusFilter.EXCLUDE_NONE_FILTER, 
-                Region: Region.Canada, 
-                Browser: Browser.FireFox, 
-                IsBooksAMillionMember: false, 
-                IsKinokuniyaUSAMember: false, 
-                IsIndigoMember: false).EnableDebugMode().EnablePersistentWebDriver();
+                Filter: StockStatusFilter.EXCLUDE_NONE_FILTER,
+                Region: Region.America,
+                Browser: Browser.FireFox,
+                IsBooksAMillionMember: false,
+                IsKinokuniyaUSAMember: false,
+                IsIndigoMember: false)
+            .EnableDebugMode();
 
             await scrape.InitializeScrapeAsync(
                 title: bookTitle, 
                 bookType: bookType, 
-                Website.SciFier);
+                webScrapeList: Website.MangaMart);
             
             watch.Stop();
 

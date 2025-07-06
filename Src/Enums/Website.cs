@@ -39,6 +39,10 @@ namespace MangaAndLightNovelWebScrape.Enums
         /// </summary>
         KinokuniyaUSA,
         /// <summary>
+        /// America
+        /// </summary>
+        MangaMart,
+        /// <summary>
         /// Australia
         /// </summary>
         MangaMate,

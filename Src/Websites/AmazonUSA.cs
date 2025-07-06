@@ -314,6 +314,7 @@ namespace MangaAndLightNovelWebScrape.Websites
                 }
                 AmazonUSAData.Sort(EntryModel.VolumeSort);
                 AmazonUSAData.RemoveDuplicates(LOGGER);
+                
                 if (bookType == BookType.Manga && AmazonUSAData.Any(entry => entry.Entry.ContainsAny(["Vol", "Box Set"])))
                 {
                     AmazonUSAData.RemoveAll(entry => entry.Entry.Equals(bookTitle, StringComparison.OrdinalIgnoreCase));
