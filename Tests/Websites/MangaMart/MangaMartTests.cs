@@ -1,12 +1,12 @@
-namespace Tests.Websites;
+namespace Tests.Websites.MangaMart;
 
 [TestFixture, Description("Validations for MangaMart")]
 [Author("Sean (Alias -> Prem or Sigrec)")]
 [SetUICulture("en")]
 public class MangaMartTests
 {
-    private MasterScrape Scrape;
-    private static readonly HashSet<Website> WebsiteList = [ Website.MangaMart ];
+    private static MasterScrape Scrape;
+    private static readonly HashSet<Website> WebsiteList = [Website.MangaMart];
 
     [OneTimeSetUp]
     public void OneTimeSetUp()
@@ -52,5 +52,13 @@ public class MangaMartTests
 
         await Scrape.InitializeScrapeAsync(title, bookType, WebsiteList);
         Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList($@"C:\MangaAndLightNovelWebScrape\Tests\Websites\MangaMart\{expectedFilePath}.txt")));
+    }
+    
+    [Test]
+    public void RegionValidation_Test()
+    {
+        Assert.That(
+            MangaAndLightNovelWebScrape.Websites.MangaMart.REGION.HasFlag(Region.America) && !MangaAndLightNovelWebScrape.Websites.MangaMart.REGION.HasFlag(Region.Australia) && !MangaAndLightNovelWebScrape.Websites.MangaMart.REGION.HasFlag(Region.Britain) && !MangaAndLightNovelWebScrape.Websites.MangaMart.REGION.HasFlag(Region.Canada) && !MangaAndLightNovelWebScrape.Websites.MangaMart.REGION.HasFlag(Region.Europe) && !MangaAndLightNovelWebScrape.Websites.MangaMart.REGION.HasFlag(Region.Japan)
+        );
     }
 }

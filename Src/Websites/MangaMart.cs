@@ -1,13 +1,10 @@
+using System.Net;
+
 namespace MangaAndLightNovelWebScrape.Websites;
 
-public partial class MangaMart
+internal sealed partial class MangaMart : IWebsite
 {
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
-    private readonly List<string> MangaMartLinks = [];
-    private readonly List<EntryModel> MangaMartData = [];
-    public const string WEBSITE_TITLE = "MangaMart";
-    public const string WEBSITE_URL = "https://mangamart.com";
-    public const Region REGION = Region.America;
 
     private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//a[@class='product-item__title text--strong link']");
     private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='price' or @class='price price--highlight']/text()[2]");
@@ -20,38 +17,37 @@ public partial class MangaMart
     [GeneratedRegex(@"(?<=Box\s*Set\s*\d{1,3}).*", RegexOptions.IgnoreCase)] private static partial Regex BoxSetTitleCleanRegex();
     [GeneratedRegex(@"\((?:Omnibus|\d{1,3}-in-\d{1,3}) Edition\)", RegexOptions.IgnoreCase)] private static partial Regex OmnibusTitleCleanRegex();
 
-    internal void ClearData()
-    {
-        MangaMartLinks.Clear();
-        MangaMartData.Clear();
-    }
+    /// <inheritdoc />
+    public const string TITLE = "MangaMart";
 
-    internal async Task CreateMangaMartTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> MasterDataList, WebDriver driver)
+    /// <inheritdoc />
+    public const string BASE_URL = "https://mangamart.com";
+
+    /// <inheritdoc />
+    public const Region REGION = Region.America;
+
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
     {
-        await Task.Run(() =>
+        return Task.Run(() =>
         {
-            MasterDataList.Add(GetMangaMartData(bookTitle, bookType, driver));
+            WebDriver driver = MasterScrape.SetupBrowserDriver(browser);
+            (List<EntryModel> Data, List<string> Links) = GetData(bookTitle, bookType, driver);
+            masterDataList.Add(Data);
+            masterLinkList.TryAdd(Website.MangaMart, Links[0]);
         });
     }
 
-    internal string GetUrl()
-    {
-        return MangaMartLinks.Count != 0 ? MangaMartLinks[0] : $"{WEBSITE_TITLE} Has no Link";
-    }
-
-    private string GenerateWebsiteUrl(BookType bookType, string bookTitle, uint curPageNum)
+    private static string GenerateWebsiteUrl(BookType bookType, string bookTitle, uint curPageNum)
     {
         // https://mangamart.com/search?type=product&q=jujutsu+kaisen&page=2
         // https://mangamart.com/search?type=product&q=overlord+novel
-        string url = $"{WEBSITE_URL}/search?type=product&q={Uri.EscapeDataString(bookTitle)}{(bookType == BookType.Manga ? string.Empty : "+novel")}&page={curPageNum}";
-        MangaMartLinks.Add(url);
+        string url = $"{BASE_URL}/search?type=product&q={Uri.EscapeDataString(bookTitle)}{(bookType == BookType.Manga ? string.Empty : "+novel")}&page={curPageNum}";
         LOGGER.Info("URL #{} -> {}", curPageNum, url);
         return url;
     }
 
     private static string ParseAndCleanTitle(string entryTitle, string bookTitle, BookType bookType)
     {
-
         if (entryTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
         {
             entryTitle = BoxSetTitleCleanRegex().Replace(entryTitle, string.Empty);
@@ -60,9 +56,8 @@ public partial class MangaMart
         {
             entryTitle = OmnibusTitleCleanRegex().Replace(entryTitle, "Omnibus");
         }
-        LOGGER.Debug("TITLE = {}", entryTitle);
 
-        StringBuilder curTitle = new StringBuilder(ParseAndCleanTitleRegex().Replace(entryTitle, string.Empty));
+        StringBuilder curTitle = new(ParseAndCleanTitleRegex().Replace(entryTitle, string.Empty));
 
         if (bookType == BookType.LightNovel)
         {
@@ -86,21 +81,40 @@ public partial class MangaMart
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
     }
 
-    internal List<EntryModel> GetMangaMartData(string bookTitle, BookType bookType, WebDriver driver)
+    public (List<EntryModel> Data, List<string> Links) GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
     {
+        List<EntryModel> data = [];
+        List<string> links = [];
+
         try
         {
-            WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
-            HtmlWeb web = new() { UsingCacheIfExists = true, UseCookies = true };
+            WebDriverWait wait = new(driver!, TimeSpan.FromSeconds(60));
+            HtmlWeb _html = new()
+            {
+                UsingCacheIfExists = true,
+                AutoDetectEncoding = false,
+                OverrideEncoding = Encoding.UTF8,
+                UseCookies = false,
+                PreRequest = request =>
+                {
+                    HttpWebRequest http = request;
+                    http.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+                    http.KeepAlive = true;
+                    http.Timeout = 10_000;
+                    return true;
+                }
+            };
             HtmlDocument doc = new();
 
             // Load the document once after preparation.
             uint curPageNum = 1;
-            driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookType, bookTitle, curPageNum));
+            string url = GenerateWebsiteUrl(bookType, bookTitle, curPageNum);
+            links.Add(url);
+            driver!.Navigate().GoToUrl(url);
             wait.Until(driver => driver.FindElement(By.CssSelector("div[class='product-list product-list--collection']")));
             doc.LoadHtml(driver.PageSource);
 
-            bool bookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
+            bool bookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
             HtmlNode pageNode = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
             uint maxPageNum = pageNode != null ? pageNode.GetAttributeValue<uint>("data-page", 0) : 0;
             LOGGER.Debug("Max Pages = {}", maxPageNum);
@@ -115,7 +129,7 @@ public partial class MangaMart
                 {
                     string entryTitle = titleData[x].InnerText.Trim();
 
-                    bool shouldRemoveEntry = !InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle) || (!bookTitleRemovalCheck && MasterScrape.EntryRemovalRegex().IsMatch(entryTitle));
+                    bool shouldRemoveEntry = !InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle) || (!bookTitleRemovalCheck && InternalHelpers.ShouldRemoveEntry(entryTitle));
 
                     if (bookType == BookType.Manga)
                     {
@@ -132,7 +146,7 @@ public partial class MangaMart
                             string urlPath = titleData[x].GetAttributeValue<string>("href", string.Empty);
                             if (!string.IsNullOrWhiteSpace(urlPath))
                             {
-                                HtmlNode descNode = web.Load($"https://mangamart.com/{urlPath}").DocumentNode.SelectSingleNode(EntryTitleDesc);
+                                HtmlNode descNode = _html.Load($"https://mangamart.com/{urlPath}").DocumentNode.SelectSingleNode(EntryTitleDesc);
                                 string innerText = descNode.InnerText;
                                 if (descNode != null && (innerText.Contains("Light Novel", StringComparison.OrdinalIgnoreCase) || innerText.Contains("novels", StringComparison.OrdinalIgnoreCase)))
                                 {
@@ -149,7 +163,7 @@ public partial class MangaMart
 
                     if (!shouldRemoveEntry)
                     {
-                        HtmlNode stockStatusNode = stockStatusData[x].SelectNodes(".//strong")?.FirstOrDefault();
+                        HtmlNode? stockStatusNode = stockStatusData![x].SelectNodes(".//strong")?.FirstOrDefault();
                         StockStatus stockStatus = (stockStatusNode != null ? stockStatusNode.InnerText : string.Empty) switch
                         {
                             "PRE-ORDER" => StockStatus.PO,
@@ -157,13 +171,13 @@ public partial class MangaMart
                             _ => StockStatus.IS,
                         };
 
-                        MangaMartData.Add(
+                        data.Add(
                             new EntryModel
                             (
                                 ParseAndCleanTitle(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType),
                                 priceData[x].InnerText.Trim(),
                                 stockStatus,
-                                WEBSITE_TITLE
+                                TITLE
                             )
                         );
                     }
@@ -176,7 +190,9 @@ public partial class MangaMart
                 if (curPageNum < maxPageNum)
                 {
                     curPageNum++;
-                    driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookType, bookTitle, curPageNum));
+                    url = GenerateWebsiteUrl(bookType, bookTitle, curPageNum);
+                    links.Add(url);
+                    driver.Navigate().GoToUrl(url);
                     wait.Until(driver => driver.FindElement(By.CssSelector("div[class='product-list product-list--collection']")));
                     doc.LoadHtml(driver.PageSource);
                 }
@@ -188,23 +204,17 @@ public partial class MangaMart
         }
         catch (Exception ex)
         {
-            LOGGER.Error("{} ({}) Error @ {} \n{}", bookTitle, bookType, WEBSITE_TITLE, ex);
+            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
         }
         finally
         {
-            if (!MasterScrape.IsWebDriverPersistent)
-            {
-                driver?.Quit();
-            }
-            else
-            {
-                driver?.Close();
-            }
-            MangaMartData.Sort(EntryModel.VolumeSort);
-            MangaMartData.RemoveDuplicates(LOGGER);
-            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, MangaMartData, LOGGER);
+            data.TrimExcess();
+            links.TrimExcess();
+            data.Sort(EntryModel.VolumeSort);
+            data.RemoveDuplicates(LOGGER);
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
         }
 
-        return MangaMartData;
+        return (data, links);
     }
 }

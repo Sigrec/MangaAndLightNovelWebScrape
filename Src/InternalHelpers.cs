@@ -1,5 +1,4 @@
 using System.Collections.Frozen;
-using System.Diagnostics;
 
 namespace MangaAndLightNovelWebScrape;
 
@@ -11,7 +10,7 @@ internal static partial class InternalHelpers
 
     private static readonly FrozenSet<string> _entryRemovalTerms = new[]
     {
-        "Bluray", "Blu-ray", "Encyclopedia", "Anthology", "Official", "Character", "Guide",
+        "Bluray", "Blu-ray", "Choose Path", "Encyclopedia", "Anthology", "Official", "Character", "Guide",
         "Illustration", "Anime Profiles", "Choose Your Path", "Compendium",
         "Artbook", "Art Book", "Error", "Advertising", "(Osi)", "Ani-manga",
         "Anime", "Bilingual", "Game Book", "Theatrical", "Figure", "SEGA",
@@ -107,8 +106,9 @@ internal static partial class InternalHelpers
         BookType bookType,
         ConcurrentBag<List<EntryModel>> masterBag,
         ConcurrentDictionary<Website, string> masterDict,
-        (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default,
-        Browser? browser = null)
+        Browser browser,
+        Region curRegion,
+        (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships)
     {
         foreach (Website site in sites)
         {
@@ -119,7 +119,10 @@ internal static partial class InternalHelpers
                 bookType,
                 masterBag,
                 masterDict,
-                browser);
+                browser,
+                curRegion,
+                memberships
+            );
 
             webTasks.Add(task);
         }
@@ -132,6 +135,15 @@ internal static partial class InternalHelpers
             Website.Crunchyroll => new Crunchyroll(),
             Website.RobertsAnimeCornerStore => new RobertsAnimeCornerStore(),
             Website.InStockTrades => new InStockTrades(),
+            Website.MangaMart => new MangaMart(),
+            Website.AmazonUSA => new AmazonUSA(),
+            Website.BooksAMillion => new BooksAMillion(),
+            Website.ForbiddenPlanet => new ForbiddenPlanet(),
+            Website.Indigo => new Indigo(),
+            Website.KinokuniyaUSA => new KinokuniyaUSA(),
+            Website.MangaMate => new MangaMate(),
+            Website.MerryManga => new MerryManga(),
+            Website.SciFier => new SciFier(),
             _ => throw new ArgumentOutOfRangeException(nameof(site), site, "No scraper registered for this site")
         };
     }
@@ -214,7 +226,7 @@ internal static partial class InternalHelpers
     /// </summary>
     /// <param name="bookTitle">The title inputed by the user to initialize the scrape</param>
     /// <param name="curTitle">The current title scraped from the website</param>
-    internal static bool BookTitleContainsEntryTitle(string bookTitle, string curTitle)
+    internal static bool EntryTitleContainsBookTitle(string bookTitle, string curTitle)
     {
         return RemoveNonWordsRegex().Replace(curTitle, string.Empty).Contains(RemoveNonWordsRegex().Replace(bookTitle, string.Empty), StringComparison.OrdinalIgnoreCase);
     }
@@ -376,7 +388,7 @@ internal static partial class InternalHelpers
     /// </summary>
     /// <param name="pTrimChars">Array of additional chars to be truncated. A little bit more efficient than using char[]</param>
     /// <returns></returns>
-    internal static StringBuilder TrimEnd(this StringBuilder pStringBuilder, HashSet<char> pTrimChars = null)
+    internal static StringBuilder TrimEnd(this StringBuilder pStringBuilder, HashSet<char>? pTrimChars = null)
     {
         if (pStringBuilder == null || pStringBuilder.Length == 0)
         {

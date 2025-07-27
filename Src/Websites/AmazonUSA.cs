@@ -2,15 +2,19 @@ using System.Collections.Frozen;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
-public sealed partial class AmazonUSA
+internal sealed partial class AmazonUSA : IWebsite
 {
-    private readonly List<string> AmazonUSALinks = [];
-    private readonly List<EntryModel> AmazonUSAData = [];
-    public const string WEBSITE_TITLE = "Amazon USA";
-    public const string WEBSITE_URL = "https://www.amazon.com";
-    public const Region REGION = Region.America;
-    public const string WEBSITE_LINK = "https://www.amazon.com/Manga-Comics-Graphic-Novels-Books/b?ie=UTF8&node=4367";
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+    public const string WEBSITE_LINK = "https://www.amazon.com/Manga-Comics-Graphic-Novels-Books/b?ie=UTF8&node=4367";
+
+    /// <inheritdoc />
+    public const string TITLE = "Amazon USA";
+
+    /// <inheritdoc />
+    public const string BASE_URL = "https://www.amazon.com";
+
+    /// <inheritdoc />
+    public const Region REGION = Region.America;
 
     private static readonly FrozenSet<string> _titleRemovalStrings
         = new[]
@@ -20,7 +24,7 @@ public sealed partial class AmazonUSA
             "books Collection", "Novel Set", "ESPINAS",
             "nº", "BOOKS COVER", "Free Comic Book",
             "n.", "v. ", "CN:", "Reedición",
-            "Català", "SHONEN JUMP", "Adventure"
+            "Català", "SHONEN JUMP", "Adventure", "Collection"
         }
         .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
@@ -48,23 +52,15 @@ public sealed partial class AmazonUSA
     [GeneratedRegex(@"\((.*)\)|:(.*)", RegexOptions.IgnoreCase)] private static partial Regex ExtractTextRegex();
     [GeneratedRegex(@"(\d{1,3}) Special Edition.*", RegexOptions.IgnoreCase)] private static partial Regex SpecialEditionRegex();
 
-    internal async Task CreateAmazonUSATask(string bookTitle, BookType book, ConcurrentBag<List<EntryModel>> MasterDataList, WebDriver driver)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
     {
-        await Task.Run(() => 
+        return Task.Run(() =>
         {
-            MasterDataList.Add(GetAmazonUSAData(bookTitle, book, driver));
+            WebDriver driver = MasterScrape.SetupBrowserDriver(browser, true);
+            (List<EntryModel> Data, List<string> Links) = GetData(bookTitle, bookType, driver);
+            masterDataList.Add(Data);
+            masterLinkList.TryAdd(Website.AmazonUSA, Links[0]);
         });
-    }
-
-    internal string GetUrl()
-    {
-        return AmazonUSALinks.Count != 0 ? AmazonUSALinks[0] : $"{WEBSITE_TITLE} Has no Link";
-    }
-    
-    internal void ClearData()
-    {
-        AmazonUSALinks.Clear();
-        AmazonUSAData.Clear();
     }
 
     private string GenerateWebsiteUrl(BookType bookType, uint curPage, string bookTitle)
@@ -72,17 +68,16 @@ public sealed partial class AmazonUSA
         string url = string.Empty;
         if (bookType == BookType.Manga)
         {
-            url = $"{WEBSITE_URL}/s?k={bookTitle.Replace(" ", "+")}&i=stripbooks&rh=n%3A4367%2Cp_n_feature_twenty-five_browse-bin%3A3291437011&dc&qid=1737329343&rnid=3291435011&xpid=Ef0ZD0_P2z6bY&ref=sr_nr_p_n_feature_twenty-five_browse-bin_1&ds=v1%3AYfGmdgzyqhb9%2B1eRHQnAhWhv0FWR5vsvtbRzuVaB6b0&page={curPage}";
+            url = $"{BASE_URL}/s?k={bookTitle.Replace(" ", "+")}&i=stripbooks&rh=n%3A4367%2Cp_n_feature_twenty-five_browse-bin%3A3291437011&dc&qid=1737329343&rnid=3291435011&xpid=Ef0ZD0_P2z6bY&ref=sr_nr_p_n_feature_twenty-five_browse-bin_1&ds=v1%3AYfGmdgzyqhb9%2B1eRHQnAhWhv0FWR5vsvtbRzuVaB6b0&page={curPage}";
         }
         else if (bookType == BookType.LightNovel)
         {
             // url = $"https://www.amazon.com/s?k={bookTitle.Replace(" ", "+")}+%28light+novel%29&i=stripbooks&rh=n%3A283155%2Cp_n_feature_nine_browse-bin%3A3291437011%2Cp_n_condition-type%3A1294423011&dc&page={curPage}&crid=37IOUUTCBCGQW&qid=1719069790&rnid=1294421011&ref=sr_pg_{curPage}";
 
-            url = $"{WEBSITE_URL}/s?k={bookTitle.Replace(" ", "+")}+%28light+novel%29&i=stripbooks&rh=n%3A283155%2Cp_n_feature_twenty-five_browse-bin%3A3291437011&dc&ds=v1%3AFRPeeHRJgdHaBhqfCUtrUe8N2WmARxSv1FZdQ%2FAbsIc&crid=21DLI0M90JJLE&qid=1737329715&rnid=3291435011&sprefix={bookTitle.Replace(" ", "+")}+light+novel+%2Cstripbooks%2C153&ref=sr_nr_p_n_feature_twenty-five_browse-bin_1";
+            url = $"{BASE_URL}/s?k={bookTitle.Replace(" ", "+")}+%28light+novel%29&i=stripbooks&rh=n%3A283155%2Cp_n_feature_twenty-five_browse-bin%3A3291437011&dc&ds=v1%3AFRPeeHRJgdHaBhqfCUtrUe8N2WmARxSv1FZdQ%2FAbsIc&crid=21DLI0M90JJLE&qid=1737329715&rnid=3291435011&sprefix={bookTitle.Replace(" ", "+")}+light+novel+%2Cstripbooks%2C153&ref=sr_nr_p_n_feature_twenty-five_browse-bin_1";
         }
 
         LOGGER.Info(url);
-        AmazonUSALinks.Add(url);
         return url;
     }
 
@@ -211,14 +206,22 @@ public sealed partial class AmazonUSA
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(parsedTitle.ToString(), " ").Trim();
     }
 
-    internal List<EntryModel> GetAmazonUSAData(string bookTitle, BookType bookType, WebDriver driver)
+    // TODO - Need to finish checking tests and cleaning
+    public (List<EntryModel> Data, List<string> Links) GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
     {
+        List<EntryModel> data = [];
+        List<string> links = [];
+        WebDriverWait wait = new(driver!, TimeSpan.FromSeconds(60));
+
         try
         {
-            WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
             uint curPage = 1;
+            string url = GenerateWebsiteUrl(bookType, curPage, bookTitle);
+            links.Add(url);
+
             HtmlDocument doc = new() { OptionCheckSyntax = false };
-            driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookType, curPage, bookTitle));
+
+            driver!.Navigate().GoToUrl(url);
             wait.Until(driver => driver.FindElement(By.XPath("//div[@class='s-main-slot s-result-list s-search-results sg-row']/div[last()]")));
             doc.LoadHtml(driver.PageSource);
 
@@ -230,18 +233,23 @@ public sealed partial class AmazonUSA
             {
                 HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
                 HtmlNodeCollection entryInfoData = doc.DocumentNode.SelectNodes(EntryInfoXPath);
+                if (titleData is null || entryInfoData is null)
+                {
+                    break;
+                }
+
                 HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
-                
+
                 LOGGER.Debug("{} | {}", titleData != null ? titleData.Count : "null", entryInfoData != null ? entryInfoData.Count : "null");
 
-                int entryCount = Math.Min(titleData.Count, entryInfoData.Count);
+                int entryCount = Math.Min(titleData!.Count, entryInfoData!.Count);
                 for (int x = 0; x < entryCount; x++)
                 {
                     string entryTitle = titleData[x].InnerText.Trim();
                     string entryInfo = entryInfoData[x].InnerText.Trim();
                     LOGGER.Debug("BEFORE ({}) = {} | {}", x, entryTitle, entryInfo);
 
-                    if (InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
+                    if (InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
                         && (!InternalHelpers.ShouldRemoveEntry(entryTitle, _titleRemovalStrings) || BookTitleRemovalCheck)
                         && !EntryTitleCheckRegex().IsMatch(entryTitle)
                         && entryInfo.ContainsAny(_validPriceStrings)
@@ -285,7 +293,7 @@ public sealed partial class AmazonUSA
 
                         if (!string.IsNullOrWhiteSpace(price))
                         {
-                            AmazonUSAData.Add(
+                            data.Add(
                                 new EntryModel
                                     (
                                         CleanAndParseTitle(FormatVolumeRegex().Replace(entryTitle, "Vol"), bookType, bookTitle),
@@ -296,7 +304,7 @@ public sealed partial class AmazonUSA
                                             string curStatus when curStatus.Contains("Pre-order", StringComparison.OrdinalIgnoreCase) => StockStatus.PO,
                                             _ => StockStatus.IS,
                                         },
-                                        WEBSITE_TITLE
+                                        TITLE
                                     )
                                 );
                         }
@@ -313,7 +321,9 @@ public sealed partial class AmazonUSA
 
                 if (curPage < maxPage)
                 {
-                    driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookType, ++curPage, bookTitle));
+                    url = GenerateWebsiteUrl(bookType, ++curPage, bookTitle);
+                    links.Add(url);
+                    driver.Navigate().GoToUrl(url);
                     wait.Until(driver => driver.FindElement(By.XPath("//div[@class='s-main-slot s-result-list s-search-results sg-row']/div[last()]")));
                     doc.LoadHtml(driver.PageSource);
                 }
@@ -325,27 +335,23 @@ public sealed partial class AmazonUSA
         }
         catch (Exception ex)
         {
-            LOGGER.Error("{} ({}) Error @ {} \n{}", bookTitle, bookType, WEBSITE_TITLE, ex);
+            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
         }
         finally
         {
-            if (!MasterScrape.IsWebDriverPersistent)
+            driver?.Quit();
+            data.TrimExcess();
+            links.TrimExcess();
+            data.Sort(EntryModel.VolumeSort);
+            data.RemoveDuplicates(LOGGER);
+
+            if (bookType == BookType.Manga && data.Any(entry => entry.Entry.ContainsAny(["Vol", "Box Set"])))
             {
-                driver?.Quit();
+                data.RemoveAll(entry => entry.Entry.Equals(bookTitle, StringComparison.OrdinalIgnoreCase));
             }
-            else 
-            { 
-                driver?.Close(); 
-            }
-            AmazonUSAData.Sort(EntryModel.VolumeSort);
-            AmazonUSAData.RemoveDuplicates(LOGGER);
-            
-            if (bookType == BookType.Manga && AmazonUSAData.Any(entry => entry.Entry.ContainsAny(["Vol", "Box Set"])))
-            {
-                AmazonUSAData.RemoveAll(entry => entry.Entry.Equals(bookTitle, StringComparison.OrdinalIgnoreCase));
-            }
-            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, AmazonUSAData, LOGGER);
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
         }
-        return AmazonUSAData;
+
+        return (data, links);
     }
 }

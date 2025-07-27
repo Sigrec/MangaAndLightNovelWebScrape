@@ -1,23 +1,12 @@
+using System.Collections.Frozen;
 using System.Net;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
-public partial class SciFier
+internal sealed partial class SciFier : IWebsite
 {
-    private HashSet<string> SciFierLinks = [];
-    private List<EntryModel> SciFierData = [];
-    public const string WEBSITE_TITLE = "SciFier";
-    public const string WEBSITE_URL = "https://scifier.com";
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
-    public const Region REGION = Region.America | Region.Europe | Region.Britain | Region.Canada | Region.Australia;
-    private static readonly Dictionary<Region, ushort> CURRENCY_DICTIONARY = new Dictionary<Region, ushort>
-    {
-        {Region.Britain, 1},
-        {Region.America, 2},
-        {Region.Australia, 3},
-        {Region.Europe, 5},
-        {Region.Canada, 6}
-    };
+
     private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//ul[@class='productGrid']//h3[@class='card-title']/a");
     private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//div[@class='card-body']//span[contains(@class, 'price price--withTax price--main')]");
     private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//a[@aria-label='Next']");
@@ -34,32 +23,38 @@ public partial class SciFier
     [GeneratedRegex(@"\((?:\d{1}-in-\d{1}|Omnibus) Edition\)|:[\w\s]+\d{1,3}-\d{1,3}-\d{1,3}|Omnibus (\d{1,3})")]private static partial Regex OmnibusRegex();
     [GeneratedRegex(@"[$£€]\d{1,3}\.\d{1,2} - ([$£€]\d{1,3}\.\d{1,2})")] private static partial Regex PriceRangeRegex();
     [GeneratedRegex(@"Vol\.|Volume", RegexOptions.IgnoreCase)] private static partial Regex FixVolumeRegex();
+    
+    /// <inheritdoc />
+    public const string TITLE = "SciFier";
 
-    protected internal async Task CreateSciFierTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> MasterDataList, Region curRegion)
+    /// <inheritdoc />
+    public const string BASE_URL = "https://scifier.com";
+
+    /// <inheritdoc />
+    public const Region REGION = Region.America | Region.Europe | Region.Britain | Region.Canada | Region.Australia;
+
+    private static readonly FrozenDictionary<Region, ushort> CURRENCY_DICTIONARY = new Dictionary<Region, ushort>
     {
-        await Task.Run(() => 
+        {Region.Britain, 1},
+        {Region.America, 2},
+        {Region.Australia, 3},
+        {Region.Europe, 5},
+        {Region.Canada, 6}
+    }.ToFrozenDictionary();
+
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
+    {
+        return Task.Run(() =>
         {
-            MasterDataList.Add(GetSciFierData(bookTitle, bookType, curRegion));
+            WebDriver driver = MasterScrape.SetupBrowserDriver(browser);
+            (List<EntryModel> Data, List<string> Links) = GetData(bookTitle, bookType, driver, curRegion: curRegion);
+            masterDataList.Add(Data);
+            masterLinkList.TryAdd(Website.SciFier, Links[0]);
         });
     }
 
-    protected internal HashSet<string> GetUrls()
-    {
-        if (SciFierLinks.Count == 0)
-        {
-            LOGGER.Warn("No Links Found");
-        }
-        return SciFierLinks;
-    }
-    
-    protected internal void ClearData()
-    {
-        SciFierLinks.Clear();
-        SciFierData.Clear();
-    }
-
     // Has issues where the search is not very strict unforunate
-    private string GenerateWebsiteUrl(string bookTitle, BookType bookType, Region curRegion, bool letterIsFrontHalf)
+    private static string GenerateWebsiteUrl(string bookTitle, BookType bookType, Region curRegion, bool letterIsFrontHalf)
     {
         // https://scifier.com/search.php?setCurrencyId=4&section=product&search_query_adv=jujutsu+kaisen&searchsubs=ON&brand=&price_from=&price_to=&featured=&category%5B%5D=2060&section=product
 
@@ -70,14 +65,14 @@ public partial class SciFier
         string url;
         if (bookType == BookType.Manga)
         {
-            url = $"{WEBSITE_URL}/search.php?setCurrencyId={CURRENCY_DICTIONARY[curRegion]}&section=product&search_query_adv={bookTitle.Replace(' ', '+')}&searchsubs=ON&brand=&price_from=&price_to=&featured=&category%5B%5D=2060&section=product&limit=100&sort=alpha{(letterIsFrontHalf ? "asc" : "desc")}&mode=6";
+            url = $"{BASE_URL}/search.php?setCurrencyId={CURRENCY_DICTIONARY[curRegion]}&section=product&search_query_adv={bookTitle.Replace(' ', '+')}&searchsubs=ON&brand=&price_from=&price_to=&featured=&category%5B%5D=2060&section=product&limit=100&sort=alpha{(letterIsFrontHalf ? "asc" : "desc")}&mode=6";
         }
         else
         {
-            url = $"{WEBSITE_URL}/search.php?setCurrencyId={CURRENCY_DICTIONARY[curRegion]}&search_query_adv={bookTitle.Replace(' ', '+')}+light+novels&searchsubs=ON&brand=&price_from=&price_to=&section=product";
+            url = $"{BASE_URL}/search.php?setCurrencyId={CURRENCY_DICTIONARY[curRegion]}&search_query_adv={bookTitle.Replace(' ', '+')}+light+novels&searchsubs=ON&brand=&price_from=&price_to=&section=product";
         }
 
-        LOGGER.Info($"Initial Url = {url}");
+        LOGGER.Info($"Url = {url}");
         return url;
     }
 
@@ -141,16 +136,36 @@ public partial class SciFier
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ");
     }
 
-    internal List<EntryModel> GetSciFierData(string bookTitle, BookType bookType, Region curRegion)
+    public (List<EntryModel> Data, List<string> Links) GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
     {
+        List<EntryModel> data = [];
+        List<string> links = [];
+        
         try
         {
-            HtmlWeb web = new() { UsingCacheIfExists = true };
+            HtmlWeb _html = new()
+            {
+                UsingCacheIfExists = true,
+                AutoDetectEncoding = false,
+                OverrideEncoding = Encoding.UTF8,
+                UseCookies = false,
+                PreRequest = request =>
+                {
+                    HttpWebRequest http = request;
+                    http.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+                    http.KeepAlive = true;
+                    http.Timeout = 10_000;
+                    return true;
+                }
+            };
+
             bool letterIsFrontHalf = char.IsDigit(bookTitle[0]) || (bookTitle[0] & 0b11111) <= 13;
-            string url = GenerateWebsiteUrl(bookTitle, bookType, curRegion, letterIsFrontHalf);
             bool ShouldEndEarly = false, IsSingleName = true;
-            HtmlDocument doc = web.Load(url);
-            bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
+            string url = GenerateWebsiteUrl(bookTitle, bookType, curRegion, letterIsFrontHalf);
+            links.Add(url);
+            
+            HtmlDocument doc = _html.Load(url);
+            bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
 
             while (true)
             {
@@ -181,10 +196,10 @@ public partial class SciFier
                 for (int x = 0; x < titleData.Count; x++)
                 {
                     string entryTitle = FixVolumeRegex().Replace(titleData[x].InnerText.Trim(), "Vol");
-                    
+                    LOGGER.Debug("{} | {} | {}", bookTitle, entryTitle, InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle));
                     if (
-                        (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
-                        && InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
+                        (!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck)
+                        && InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
                         && !entryTitle.Contains("USED COPY", StringComparison.OrdinalIgnoreCase)
                         && (
                                 (
@@ -208,7 +223,7 @@ public partial class SciFier
                     {
                         if (bookType == BookType.LightNovel && !entryTitle.Contains("novel", StringComparison.OrdinalIgnoreCase))
                         {
-                            if (!web.Load(titleData[x].GetAttributeValue("href", "ERROR")).DocumentNode.SelectSingleNode(EntryDescXPath).InnerText.ContainsAny(["novel series", "series of prose novels"]))
+                            if (!_html.Load(titleData[x].GetAttributeValue("href", "ERROR")).DocumentNode.SelectSingleNode(EntryDescXPath).InnerText.ContainsAny(["novel series", "series of prose novels"]))
                             {
                                 LOGGER.Info("Removed (3) {}", entryTitle);
                                 continue;
@@ -230,13 +245,13 @@ public partial class SciFier
                             LOGGER.Debug("IsSingleName = {} | {}", IsSingleName, entryTitle);
                         }
                         entryTitle = !IsSingleName ? RemoveAuthorAndIdRegex().Replace(entryTitle, string.Empty) : RemoveAuthorAndIdSingleRegex().Replace(entryTitle, string.Empty);
-                        if (InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle))
+                        if (InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle))
                         {
                             entryTitle = WebUtility.HtmlDecode(entryTitle);
                             string price = priceData[x].InnerText.Trim();
                             string priceCheck = PriceRangeRegex().Match(price).Groups[1].Value;
-                            SciFierLinks.Add(url);
-                            SciFierData.Add(
+                            links.Add(url);
+                            data.Add(
                                 new EntryModel
                                 (
                                     CleanAndParseTitle(FixVolumeRegex().Replace(WebUtility.HtmlDecode(entryTitle), "Vol"), bookTitle, bookType),
@@ -246,8 +261,8 @@ public partial class SciFier
                                         string status when status.Contains("Pre-Order", StringComparison.OrdinalIgnoreCase) => StockStatus.PO,
                                         string status when status.Contains("Add to Cart", StringComparison.OrdinalIgnoreCase) => StockStatus.IS,
                                         _ => StockStatus.OOS
-                                    }, 
-                                    WEBSITE_TITLE
+                                    },
+                                    TITLE
                                 )
                             );
                         }
@@ -261,12 +276,12 @@ public partial class SciFier
                         LOGGER.Info("Removed (1) {}", entryTitle);
                     }
                 }
-                
-                EndEarly:
+
+            EndEarly:
                 if (!ShouldEndEarly && pageCheck != null)
                 {
                     url = $"https://scifier.com{WebUtility.HtmlDecode(pageCheck.GetAttributeValue("href", "Url Error"))}";
-                    doc = web.Load(url);
+                    doc = _html.Load(url);
                     LOGGER.Info($"Next Page => {url}");
                 }
                 else
@@ -277,15 +292,20 @@ public partial class SciFier
         }
         catch (Exception ex)
         {
-            LOGGER.Error("{} ({}) Error @ {} \n{}", bookTitle, bookType, WEBSITE_TITLE, ex);
+            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
         }
-        
-        SciFierData.Sort(EntryModel.VolumeSort);
-        if(bookType == BookType.Manga && SciFierData.Any(entry => entry.Entry.Contains("Vol")))
+        finally
         {
-            SciFierData.RemoveAll(entry => !entry.Entry.ContainsAny(["Vol", "Box Set", "Color", "Comic", "Anniversary"]) && !(entry.ParsePrice() > 50));
+            data.TrimExcess();
+            links.TrimExcess();
+            data.Sort(EntryModel.VolumeSort);
+            if (bookType == BookType.Manga && data.Any(entry => entry.Entry.Contains("Vol")))
+            {
+                data.RemoveAll(entry => !entry.Entry.ContainsAny(["Vol", "Box Set", "Color", "Comic", "Anniversary"]) && !(entry.ParsePrice() > 50));
+            }
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
         }
-        InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, SciFierData, LOGGER); 
-        return SciFierData;
+
+        return (data, links);
     }
 }

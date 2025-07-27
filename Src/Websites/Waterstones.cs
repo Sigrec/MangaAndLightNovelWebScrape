@@ -153,7 +153,7 @@ public partial class Waterstones
                 LOGGER.Debug("Entry has {} Page(s)", maxPageNum);
             }
 
-            bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
+            bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
             while (true)
             {
                 // Get page data
@@ -172,8 +172,8 @@ public partial class Waterstones
                     }
 
                     if (
-                        InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
-                        && (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
+                        InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
+                        && (!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck)
                         && !(
                             bookType == BookType.Manga
                             && (

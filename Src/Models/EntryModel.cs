@@ -2,14 +2,14 @@ using NLog.Common;
 
 namespace MangaAndLightNovelWebScrape
 {
-    public sealed partial class EntryModel : IEquatable<EntryModel>
+    public partial struct EntryModel : IEquatable<EntryModel>
     {
         public string Entry { get; set; }
         public string Price { get; set; }
         public StockStatus StockStatus { get; set; }
         public string  Website { get; set; }
         private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrape");
-        internal static VolumeSort VolumeSort = new VolumeSort();
+        internal static VolumeSort VolumeSort = new();
         // [GeneratedRegex(@"[Vol|Box Set].*?(\d+).*")]  private static partial Regex VolumeNumRegex();
         [GeneratedRegex(@"(?:.*(?<int> \d{1,3})|.*(?<double> \d{1,3}\.\d{1,3}))(?:\s+Novel$|$)|(?:.*(?<int> \d{1,3})-\d{1,3})")] private static partial Regex ExtractDoubleRegex();
 
@@ -164,18 +164,23 @@ namespace MangaAndLightNovelWebScrape
             return result <= maxDistance ? result : -1;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            return Equals(obj as EntryModel);
+            // only true if the boxed obj is an EntryModel
+            if (obj is EntryModel other)
+            {
+                return Equals(other);
+            }
+
+            return false;
         }
 
         public bool Equals(EntryModel other)
         {
-            return other is not null &&
-                   Entry == other.Entry &&
-                   Price == other.Price &&
-                //    StockStatus == other.StockStatus &&
-                   Website == other.Website;
+            // compare all fields you care about
+            return Entry       == other.Entry
+                && Price       == other.Price
+                && Website     == other.Website;
         }
 
         public override int GetHashCode()

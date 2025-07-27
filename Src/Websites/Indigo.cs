@@ -2,15 +2,10 @@ using System.Threading;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
-public partial class Indigo
+internal sealed partial class Indigo : IWebsite
 {
-    public List<string> IndigoLinks = [];
-    public List<EntryModel> IndigoData = [];
-    public const string WEBSITE_TITLE = "Indigo";
-    public const string WEBSITE_URL = "https://www.indigo.ca";
-    private const decimal PLUM_DISCOUNT = 0.1M;
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
-    public const Region REGION = Region.Canada;
+
     private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//a[@class='link secondary']");
     private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='price-wrapper']/span/span");
     private static readonly XPathExpression EntryLinkXPath = XPathExpression.Compile("//a[@class='link secondary']");
@@ -23,31 +18,32 @@ public partial class Indigo
     [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)|Omnibus\s+(\d{1,3}).*")] private static partial Regex OmnibusRegex();
     [GeneratedRegex(@"Vol\.|Vols\.|Volume", RegexOptions.IgnoreCase)] private static partial Regex FixVolumeRegex();
 
-    protected internal async Task CreateIndigoTask(string bookTitle, BookType book, bool isMember, ConcurrentBag<List<EntryModel>> MasterDataList, WebDriver driver)
+    /// <inheritdoc />
+    public const string TITLE = "Indigo";
+
+    /// <inheritdoc />
+    public const string BASE_URL = "https://www.indigo.ca";
+
+    /// <inheritdoc />
+    public const Region REGION = Region.Canada;
+    private const decimal PLUM_DISCOUNT = 0.1M;
+    
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
     {
-        await Task.Run(() => 
+        return Task.Run(() =>
         {
-            MasterDataList.Add(GetIndigoData(bookTitle, book, isMember, driver));
+            WebDriver driver = MasterScrape.SetupBrowserDriver(browser);
+            (List<EntryModel> Data, List<string> Links) = GetData(bookTitle, bookType, driver, memberships.IsIndigoMember);
+            masterDataList.Add(Data);
+            masterLinkList.TryAdd(Website.MangaMart, Links[0]);
         });
     }
 
-    protected internal void ClearData()
-    {
-        IndigoLinks.Clear();
-        IndigoData.Clear();
-    }
-
-    protected internal string GetUrl()
-    {
-        return IndigoLinks.Count != 0 ? IndigoLinks[0] : $"{WEBSITE_TITLE} Has no Link"; 
-    }
-
-    private string GenerateWebsiteUrl(string bookTitle, BookType bookType)
+    private static string GenerateWebsiteUrl(string bookTitle, BookType bookType)
     {
         // https://www.indigo.ca/en-ca/books/?q=world+trigger+&prefn1=BISACBindingTypeID&prefv1=TP%7CPO&prefn2=Language&prefv2=English&start=0&sz=1000
-        string url = $"{WEBSITE_URL}/en-ca/books/?q={bookTitle.Replace(' ', '+')}{(bookType == BookType.Manga ? string.Empty : "+novel")}&prefn1=BISACBindingTypeID&prefv1=TP%7CPO&prefn2=Language&prefv2=English&start=0&sz=1000";
+        string url = $"{BASE_URL}/en-ca/books/?q={bookTitle.Replace(' ', '+')}{(bookType == BookType.Manga ? string.Empty : "+novel")}&prefn1=BISACBindingTypeID&prefv1=TP%7CPO&prefn2=Language&prefv2=English&start=0&sz=1000";
         LOGGER.Info(url);
-        IndigoLinks.Add(url);
         return url;
     }
 
@@ -105,39 +101,44 @@ public partial class Indigo
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ");
     }
 
-    private List<EntryModel> GetIndigoData(string bookTitle, BookType bookType, bool isMember, WebDriver driver)
+    // TODO - Indigo still not working need to fix
+    public (List<EntryModel> Data, List<string> Links) GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
     {
+        List<EntryModel> data = [];
+        List<string> links = [];
+
         try
         {
             //HtmlWeb web = new HtmlWeb();
-            HtmlDocument doc = new HtmlDocument();
-            WebDriverWait wait = new(driver, TimeSpan.FromSeconds(10));
-            bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
+            HtmlDocument doc = new();
+            WebDriverWait wait = new(driver!, TimeSpan.FromSeconds(10));
+            bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
 
-            //doc = web.Load(GenerateWebsiteUrl(bookTitle, bookType));
-            driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle, bookType));
+            string url = GenerateWebsiteUrl(bookTitle, bookType);
+            links.Add(url);
+
+            //doc = web.Load(url);
+            driver!.Navigate().GoToUrl(url);
             Thread.Sleep(10000);
             wait.Until(driver => driver.FindElement(By.CssSelector("div[class='row product-grid mt-4 search-analytics']")));
             doc.LoadHtml(driver.PageSource);
 
-            LOGGER.Debug("CHECK 0");
-            HtmlDocument innerDoc = new HtmlDocument();
+            HtmlDocument innerDoc = new();
             HtmlNodeCollection entryLinkData = doc.DocumentNode.SelectNodes(EntryLinkXPath);
             HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
             HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
             HtmlNodeCollection formatData = doc.DocumentNode.SelectNodes(FormatXPath);
-            LOGGER.Debug("CHECK 1");
             LOGGER.Debug("{} | {} | {}", titleData.Count, priceData.Count, formatData.Count);
 
             string price = string.Empty;
-            for(int x = 0; x < titleData.Count; x++)
+            for (int x = 0; x < titleData.Count; x++)
             {
                 string entryTitle = titleData[x].InnerText.Trim();
                 string titleDesc = titleData[x].GetAttributeValue("data-adobe-tracking", "Book Type Error");
                 string format = formatData[x].InnerText.Trim();
-                // LOGGER.Debug("{} | {} | {} | {}", bookTitle, entryTitle, !MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck, InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle));
-                if ((!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
-                    && InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
+                // LOGGER.Debug("{} | {} | {} | {}", bookTitle, entryTitle, !InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck, InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle));
+                if ((!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck)
+                    && InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
                     && !entryTitle.Contains("library edition", StringComparison.OrdinalIgnoreCase)
                     && !format.ContainsAny(["eBook", "Binding", "Picture", "Board", "Audio", "Mass Market", "Toy", "Bound"])
                     && (
@@ -146,16 +147,16 @@ public partial class Indigo
                             && !entryTitle.Contains("Light Novel", StringComparison.OrdinalIgnoreCase)
                             && (
                                     entryTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase)
-                                    || 
+                                    ||
                                     !titleDesc.Contains("novel", StringComparison.OrdinalIgnoreCase)
                                 )
                             && !(
-                                    InternalHelpers.RemoveUnintendedVolumes(bookTitle, "One Piece", entryTitle, "Ace's Story") 
+                                    InternalHelpers.RemoveUnintendedVolumes(bookTitle, "One Piece", entryTitle, "Ace's Story")
                                     || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear Your Own World")
                                     || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony", "Flame Dragon Knight")
                                     || (InternalHelpers.RemoveUnintendedVolumes(bookTitle, "attack on titan", entryTitle, "Kuklo Unbound", "Lost Girls") && !entryTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase))
                                     || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
-                            )   
+                            )
                         )
                         ||
                         (
@@ -174,8 +175,8 @@ public partial class Indigo
                     // LOGGER.Debug(innerDoc.Text);
 
                     price = priceData[x].InnerText.Trim();
-                    LOGGER.Debug("{} | {}", entryTitle, price);
-                    IndigoData.Add(
+                    // LOGGER.Debug("{} | {}", entryTitle, price);
+                    data.Add(
                         new EntryModel(
                             ParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType),
                             isMember ? $"${EntryModel.ApplyDiscount(Convert.ToDecimal(price[1..]), PLUM_DISCOUNT)}" : price,
@@ -186,7 +187,7 @@ public partial class Indigo
                                 string status when status.Contains("Out of stock", StringComparison.OrdinalIgnoreCase) => StockStatus.OOS,
                                 _ => StockStatus.NA
                             },
-                            WEBSITE_TITLE
+                            TITLE
                         )
                     );
                 }
@@ -196,23 +197,17 @@ public partial class Indigo
         }
         catch (Exception ex)
         {
-            LOGGER.Error("{} ({}) Error @ {} \n{}", bookTitle, bookType, WEBSITE_TITLE, ex);
+            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
         }
         finally
         {
-            if (!MasterScrape.IsWebDriverPersistent)
-            {
-                driver?.Quit();
-            }
-            else 
-            { 
-                driver?.Close(); 
-            }
-            IndigoData = IndigoData.Distinct().ToList();
-            IndigoData.Sort(EntryModel.VolumeSort);
-            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, IndigoData, LOGGER);
+            data.TrimExcess();
+            links.TrimExcess();
+            data.Sort(EntryModel.VolumeSort);
+            data.RemoveDuplicates(LOGGER);
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
         }
 
-        return IndigoData;
+        return (data, links);
     }
 }

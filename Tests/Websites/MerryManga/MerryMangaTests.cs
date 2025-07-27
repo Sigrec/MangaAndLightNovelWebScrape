@@ -1,12 +1,12 @@
-namespace Tests.Websites;
+namespace Tests.Websites.MerryManga;
 
 [TestFixture, Description("Validations for MerryManga")]
 [Author("Sean (Alias -> Prem or Sigrec)")]
 [SetUICulture("en")]
 public class MerryMangaTests
 {
-    private MasterScrape Scrape;
-    private static readonly HashSet<Website> WebsiteList = new HashSet<Website> { Website.MerryManga };
+    private static MasterScrape Scrape;
+    private static readonly HashSet<Website> WebsiteList = [Website.MerryManga];
 
     [OneTimeSetUp]
     public void OneTimeSetUp()
@@ -54,5 +54,13 @@ public class MerryMangaTests
 
         await Scrape.InitializeScrapeAsync(title, bookType, WebsiteList);
         Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList($@"C:\MangaAndLightNovelWebScrape\Tests\Websites\MerryManga\MerryManga{fileName}.txt")));
+    }
+
+    [Test]
+    public void RegionValidation_Test()
+    {
+        Assert.That(
+            MangaAndLightNovelWebScrape.Websites.MerryManga.REGION.HasFlag(Region.America) && !MangaAndLightNovelWebScrape.Websites.MerryManga.REGION.HasFlag(Region.Australia) && !MangaAndLightNovelWebScrape.Websites.MerryManga.REGION.HasFlag(Region.Britain) && !MangaAndLightNovelWebScrape.Websites.MerryManga.REGION.HasFlag(Region.Canada) && !MangaAndLightNovelWebScrape.Websites.MerryManga.REGION.HasFlag(Region.Europe) && !MangaAndLightNovelWebScrape.Websites.MerryManga.REGION.HasFlag(Region.Japan)
+        );
     }
 }

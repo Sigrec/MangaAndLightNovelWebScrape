@@ -3,17 +3,26 @@ using System.Collections.Frozen;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
-public sealed partial class MerryManga
+internal sealed partial class MerryManga : IWebsite
 {
-    private readonly List<string> MerryMangaLinks = [];
-    private readonly List<EntryModel> MerryMangaData = [];
-    public const string WEBSITE_TITLE = "MerryManga";
-    public const string WEBSITE_URL = "https://www.merrymanga.com";
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+
+    [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)|Omnibus( \d{1,2})(?:, |\s{1})Vol \d{1,3}-\d{1,3}", RegexOptions.IgnoreCase)] private static partial Regex FixOmnibusRegex();
+    [GeneratedRegex(@"(?<=Box Set \d{1}).*", RegexOptions.IgnoreCase)] private static partial Regex FixBoxSetRegex();
+    [GeneratedRegex(@" \(.*\)|,")] private static partial Regex FixTitleRegex();
+    [GeneratedRegex(@"Vol\.", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
+
+    /// <inheritdoc />
+    public const string TITLE = "MerryManga";
+
+    /// <inheritdoc />
+    public const string BASE_URL = "https://www.merrymanga.com";
+
+    /// <inheritdoc />
     public const Region REGION = Region.America;
 
     private static readonly FrozenSet<string> _stockClasses = FrozenSet.Create(
-        StringComparer.Ordinal,
+        StringComparer.OrdinalIgnoreCase,
         "instock",
         "outofstock",
         "onbackorder",
@@ -21,45 +30,31 @@ public sealed partial class MerryManga
         "available_at_warehouse"
     );
 
-    [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)|Omnibus( \d{1,2})(?:, |\s{1})Vol \d{1,3}-\d{1,3}", RegexOptions.IgnoreCase)] private static partial Regex FixOmnibusRegex();
-    [GeneratedRegex(@"(?<=Box Set \d{1}).*", RegexOptions.IgnoreCase)] private static partial Regex FixBoxSetRegex();
-    [GeneratedRegex(@" \(.*\)|,")] private static partial Regex FixTitleRegex();
-    [GeneratedRegex(@"Vol\.", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
-
-    internal async Task CreateMerryMangaTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> MasterDataList, WebDriver driver)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
     {
-        await Task.Run(() => 
+        return Task.Run(() =>
         {
-            MasterDataList.Add(GetMerryMangaData(bookTitle, bookType, driver));
+            WebDriver driver = MasterScrape.SetupBrowserDriver(browser);
+            (List<EntryModel> Data, List<string> Links) = GetData(bookTitle, bookType, driver);
+            masterDataList.Add(Data);
+            masterLinkList.TryAdd(Website.MerryManga, Links[0]);
         });
     }
 
-    internal void ClearData()
-    {
-        MerryMangaLinks.Clear();
-        MerryMangaData.Clear();
-    }
-
-    internal string GetUrl()
-    {
-        return string.Join(" , ", MerryMangaLinks);
-    }
-
-    // https://www.merrymanga.com/?s=jujutsu+kaisen&post_type=product&orderby=date&_categories=manga
     // https://www.merrymanga.com/?s=Naruto&post_type=product&_categories=box-sets
-    private string GenerateWebsiteUrl(string bookTitle, BookType bookType, bool hasBoxSet)
+    // https://www.merrymanga.com/?s=jujutsu+kaisen&post_type=product&orderby=release_date&_categories=manga
+    private static string GenerateWebsiteUrl(string bookTitle, BookType bookType, bool hasBoxSet)
     {
         string url;
         if (hasBoxSet && bookType != BookType.LightNovel)
         {
-            url = $"{WEBSITE_URL}/?s={InternalHelpers.FilterBookTitle(bookTitle.Replace(" ", "+"))}&post_type=product&orderby=date&_categories=box-sets";
+            url = $"{BASE_URL}/?s={bookTitle.Replace(" ", "+")}&post_type=product&orderby=release_date&_categories=box-sets";
         }
         else
         {
-            url = $"{WEBSITE_URL}/?s={InternalHelpers.FilterBookTitle(bookTitle.Replace(" ", "+"))}&post_type=product&orderby=date&_categories={(bookType == BookType.Manga ? "manga" : "light-novels")}";
+            url = $"{BASE_URL}/?s={bookTitle.Replace(" ", "+")}&post_type=product&orderby=release_date&_categories={(bookType == BookType.Manga ? "manga" : "light-novels")}";
         }
         LOGGER.Info(url);
-        MerryMangaLinks.Add(url);
         return url;
     }
 
@@ -112,9 +107,9 @@ public sealed partial class MerryManga
         out List<string> prices,
         out List<StockStatus> statuses)
     {
-        titles   = new List<string>();
-        prices   = new List<string>();
-        statuses = new List<StockStatus>();
+        titles = [];
+        prices = [];
+        statuses = [];
 
         foreach (HtmlNode node in doc.DocumentNode.Descendants())
         {
@@ -198,17 +193,23 @@ public sealed partial class MerryManga
         }
     }
 
-    internal List<EntryModel> GetMerryMangaData(string bookTitle, BookType bookType, WebDriver driver)
+    public (List<EntryModel> Data, List<string> Links) GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
     {
+        List<EntryModel> data = [];
+        List<string> links = [];
+
         try
         {
             bool hasBoxSet = bookType == BookType.Manga;
-            WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
+            WebDriverWait wait = new(driver!, TimeSpan.FromSeconds(60));
         Restart:
-            driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle.ToLower(), bookType, hasBoxSet));
+            string url = GenerateWebsiteUrl(bookTitle.ToLower(), bookType, hasBoxSet);
+            links.Add(url);
+
+            driver!.Navigate().GoToUrl(url);
             wait.Until(driver => driver.FindElement(By.CssSelector("div[class='container main-content']")));
 
-            HtmlDocument doc = new HtmlDocument
+            HtmlDocument doc = new()
             {
                 OptionCheckSyntax = false,
                 DisableServerSideCode = true,
@@ -224,9 +225,12 @@ public sealed partial class MerryManga
             if (hasBoxSet && doc.Text.Contains("No products were found matching your selection."))
             {
                 LOGGER.Warn("No Entries Found, Checking Manga Only Link");
-                MerryMangaLinks.Clear();
                 hasBoxSet = false;
-                driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle.ToLower(), bookType, hasBoxSet));
+                url = GenerateWebsiteUrl(bookTitle.ToLower(), bookType, hasBoxSet);
+                links.Clear();
+                links.Add(url);
+
+                driver.Navigate().GoToUrl(url);
                 wait.Until(driver => driver.FindElement(By.CssSelector("div[class='container main-content']")));
             }
 
@@ -246,7 +250,7 @@ public sealed partial class MerryManga
                 doc.LoadHtml(driver.PageSource);
             }
 
-            bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
+            bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
 
             // Get the page data from the HTML doc
 
@@ -260,8 +264,8 @@ public sealed partial class MerryManga
             {
                 string entryTitle = titleData[x];
                 if (
-                    InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
-                    && (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
+                    InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
+                    && (!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck)
                     && !(
                             (
                                 bookType == BookType.Manga
@@ -280,13 +284,13 @@ public sealed partial class MerryManga
                         )
                     )
                 {
-                    MerryMangaData.Add(
+                    data.Add(
                         new EntryModel
                         (
                             ParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol").Trim(), bookTitle, bookType),
                             priceData[x],
                             stockStatusData[x],
-                            WEBSITE_TITLE
+                            TITLE
                         )
                     );
                 }
@@ -304,24 +308,19 @@ public sealed partial class MerryManga
         }
         catch (Exception ex)
         {
-            LOGGER.Error("{} ({}) Error @ {} \n{}", bookTitle, bookType, WEBSITE_TITLE, ex);
+            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
         }
         finally
         {
-            if (!MasterScrape.IsWebDriverPersistent)
-            {
-                driver?.Quit();
-            }
-            else
-            {
-                driver?.Close();
-            }
-            MerryMangaData.Sort(EntryModel.VolumeSort);
-            MerryMangaData.RemoveDuplicates(LOGGER);
+            driver?.Quit();
+            data.TrimExcess();
+            links.TrimExcess();
+            data.Sort(EntryModel.VolumeSort);
+            data.RemoveDuplicates(LOGGER);
 
-            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, MerryMangaData, LOGGER);
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
         }
 
-        return MerryMangaData;
+        return (data, links);
     }
 }

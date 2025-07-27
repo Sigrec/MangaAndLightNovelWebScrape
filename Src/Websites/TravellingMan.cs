@@ -125,7 +125,7 @@ public partial class TravellingMan
             };
 
             int nextPage = 1;
-            bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
+            bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
             for(int x = 0; x < DescRemovalStrings.Count; x++)
             {
                 if (bookTitle.Contains(DescRemovalStrings[x])) DescRemovalStrings.RemoveAt(x);
@@ -149,8 +149,8 @@ public partial class TravellingMan
                     string entryTitle = titleData[x].InnerText.Trim();
                     if (!entryTitle.Contains("Banpresto")
                         && !entryTitle.Contains("Nendoroid")
-                        && InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
-                        && (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
+                        && InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
+                        && (!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck)
                         && (
                             (bookType == BookType.Manga
                             && (

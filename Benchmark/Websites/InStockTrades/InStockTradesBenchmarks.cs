@@ -1,40 +1,29 @@
 using BenchmarkDotNet.Attributes;
 using MangaAndLightNovelWebScrape.Enums;
-using MangaAndLightNovelWebScrape.Websites;
 
-namespace Benchmark.Websites
+namespace Benchmark.Websites.InStockTrades;
+
+[MemoryDiagnoser]
+public class InStockTradesBenchmarks
 {
-    [MemoryDiagnoser]
-    public class InStockTradesBenchmarks
+    private MangaAndLightNovelWebScrape.Websites.InStockTrades? _instance;
+
+    [GlobalSetup]
+    public void Setup()
     {
-        private InStockTrades? _instance;
+        _instance = new MangaAndLightNovelWebScrape.Websites.InStockTrades();
+    }
 
-        [GlobalSetup]
-        public void Setup()
-        {
-            _instance = new InStockTrades(); // Initialize your instance here
-        }
+    [GlobalCleanup]
+    public void Cleanup()
+    {
+        _instance = null;
+    }
 
-        // Global cleanup to run once after all benchmarks
-        [GlobalCleanup]
-        public void Cleanup()
-        {
-            _instance = null; // Cleanup if necessary
-        }
-
-        [Benchmark]
-        [WarmupCount(20)]
-        public void GetMangaBenchmark()
-        {
-            // Call the method you want to benchmark
-            _instance?.GetInStockTradesData("one piece", BookType.Manga);
-        }
-
-        // [Benchmark]
-        // public void GetLightNovelBenchmark()
-        // {
-        //     // Call the method you want to benchmark
-        //     _instance.GetInStockTradesData("one piece", BookType.LightNovel);
-        // }
+    [Benchmark]
+    [WarmupCount(20)]
+    public void GetMangaBenchmark()
+    {
+        _instance!.GetData("one piece", BookType.Manga);
     }
 }

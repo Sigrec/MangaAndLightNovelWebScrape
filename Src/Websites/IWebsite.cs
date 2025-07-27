@@ -25,21 +25,6 @@ public interface IWebsite
     static Region REGION { get; }
 
     /// <summary>
-    /// Whether this website requires a WebDriver instance.
-    /// </summary>
-    static bool NEEDS_WEB_DRIVER { get; }
-
-    /// <summary>
-    /// Whether this website should set a custom User-Agent header.
-    /// </summary>
-    static bool NEEDS_USER_AGENT { get; }
-
-    /// <summary>
-    /// Whether this website honors a membership flag in its logic.
-    /// </summary>
-    static bool HAS_MEMBERSHIP { get; }
-
-    /// <summary>
     /// Asynchronously creates or enqueues a scraping task for the given title and book type.
     /// Must add data to the master data and link collections in this method
     /// </summary>
@@ -48,14 +33,17 @@ public interface IWebsite
         BookType bookType,
         ConcurrentBag<List<EntryModel>> masterDataList,
         ConcurrentDictionary<Website, string> masterLinkList,
-        Browser? browser = null);
+        Browser browser,
+        Region curRegion,
+        (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default);
 
     /// <summary>
     /// Performs a synchronous scrape and returns the scraped entries.
     /// </summary>
-    static abstract (List<EntryModel> Data, List<string> Links) GetData(
+    (List<EntryModel> Data, List<string> Links) GetData(
         string bookTitle,
         BookType bookType,
         WebDriver? driver = null,
-        bool isMember = false);
+        bool isMember = false,
+        Region curRegion = Region.America);
 }

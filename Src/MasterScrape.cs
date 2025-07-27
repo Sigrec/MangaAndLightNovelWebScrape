@@ -16,23 +16,8 @@ public sealed partial class MasterScrape
     private readonly ConcurrentBag<List<EntryModel>> _masterDataList = [];
     private readonly ConcurrentDictionary<Website, string> _masterLinkDict = [];
     private readonly List<Task> _webTasks = new(15);
-    private readonly Dictionary<string, string> MasterUrls = [];
-    private AmazonUSA AmazonUSA = null;
-    private BooksAMillion BooksAMillion = null;
-    private TravellingMan TravellingMan = null;
-    private InStockTrades InStockTrades = null;
-    private KinokuniyaUSA KinokuniyaUSA = null;
-    private RobertsAnimeCornerStore RobertsAnimeCornerStore = null;
-    private Indigo Indigo = null;
-    private AmazonJapan AmazonJapan = null;
-    private CDJapan CDJapan = null;
-    private SciFier SciFier = null;
-    private Waterstones Waterstones = null;
-    private ForbiddenPlanet ForbiddenPlanet = null;
-    private MangaMart MangaMart = null;
-    private MerryManga MerryManga = null;
-    private MangaMate MangaMate = null;
-    private WebDriver PersistentWebDriver = null;
+
+    // private WebDriver? PersistentWebDriver = null;
 
     /// <summary>
     /// The current region of the Scrape
@@ -82,34 +67,34 @@ public sealed partial class MasterScrape
         this.IsIndigoMember = IsIndigoMember;
     }
 
-    /// <summary>
-    /// Enables a persistent WebDriver instance for subsequent scrapes.
-    /// If no driver exists, initializes one.
-    /// </summary>
-    /// <returns>The current <see cref="MasterScrape"/> instance.</returns>
-    public MasterScrape EnablePersistentWebDriver()
-    {
-        LOGGER.Info("Enabling persistent WebDriver");
-        IsWebDriverPersistent = true;
+    // /// <summary>
+    // /// Enables a persistent WebDriver instance for subsequent scrapes.
+    // /// If no driver exists, initializes one.
+    // /// </summary>
+    // /// <returns>The current <see cref="MasterScrape"/> instance.</returns>
+    // public MasterScrape EnablePersistentWebDriver()
+    // {
+    //     LOGGER.Info("Enabling persistent WebDriver");
+    //     IsWebDriverPersistent = true;
 
-        PersistentWebDriver ??= SetupBrowserDriver(this.Browser, true);
+    //     PersistentWebDriver ??= SetupBrowserDriver(this.Browser, true);
 
-        return this;
-    }
+    //     return this;
+    // }
 
-    /// <summary>
-    /// Disables the persistent WebDriver so the driver will dispose/quit after every run.
-    /// </summary>
-    /// <returns>The current <see cref="MasterScrape"/> instance.</returns>
-    public MasterScrape DisablePersistentWebDriver()
-    {
-        LOGGER.Info("Disabling persistent WebDriver");
-        IsWebDriverPersistent = false;
-        PersistentWebDriver?.Quit();
-        PersistentWebDriver = null;
+    // /// <summary>
+    // /// Disables the persistent WebDriver so the driver will dispose/quit after every run.
+    // /// </summary>
+    // /// <returns>The current <see cref="MasterScrape"/> instance.</returns>
+    // public MasterScrape DisablePersistentWebDriver()
+    // {
+    //     LOGGER.Info("Disabling persistent WebDriver");
+    //     IsWebDriverPersistent = false;
+    //     PersistentWebDriver?.Quit();
+    //     PersistentWebDriver = null;
 
-        return this;
-    }
+    //     return this;
+    // }
 
     /// <summary>
     /// Disables debug mode, preventing debug outputs to files.
@@ -184,17 +169,17 @@ public sealed partial class MasterScrape
 
         if (IsBooksAMillionMember)
         {
-            memberships.Add(BooksAMillion.WEBSITE_TITLE);
+            memberships.Add(BooksAMillion.TITLE);
         }
 
         if (IsKinokuniyaUSAMember)
         {
-            memberships.Add(KinokuniyaUSA.WEBSITE_TITLE);
+            memberships.Add(KinokuniyaUSA.TITLE);
         }
 
         if (IsIndigoMember)
         {
-            memberships.Add(Indigo.WEBSITE_TITLE);
+            memberships.Add(Indigo.TITLE);
         }
 
         return memberships.AsReadOnly();
@@ -513,7 +498,7 @@ public sealed partial class MasterScrape
     /// <returns>The final list of data containing all available lowest price volumes between the two websites</returns>
     private static List<EntryModel> PriceComparison(List<EntryModel> smallerList, List<EntryModel> biggerList)
     {
-        List<EntryModel> finalData = new List<EntryModel>(); // The final list of data containing all available volumes for the series from the website with the lowest price
+        List<EntryModel> finalData = []; // The final list of data containing all available volumes for the series from the website with the lowest price
         bool sameVolumeCheck; // Determines whether a match has been found where the 2 volumes are the same to compare prices for
         int nextVolPos = 0; // The position of the next volume and then proceeding volumes to check if there is a volume to compare
         double biggerListCurrentVolNum; // The current vol number from the website with the bigger list of volumes that is being checked
@@ -539,17 +524,17 @@ public sealed partial class MasterScrape
                     // If the vol numbers are the same and the titles are similar or the same from the if check above, add the lowest price volume to the list
                     if (biggerListCurrentVolNum == EntryModel.GetCurrentVolumeNum(smallerList[y].Entry))
                     {
-                        LOGGER.Debug($"Found Match for {biggerListData} | {smallerList[y]}");
-                        LOGGER.Debug($"PRICE COMPARISON ({biggerListData.ParsePrice()} > {smallerList[y].ParsePrice()}) -> {biggerListData.ParsePrice() > smallerList[y].ParsePrice()}");
+                        // LOGGER.Debug($"Found Match for {biggerListData} | {smallerList[y]}");
+                        // LOGGER.Debug($"PRICE COMPARISON ({biggerListData.ParsePrice()} > {smallerList[y].ParsePrice()}) -> {biggerListData.ParsePrice() > smallerList[y].ParsePrice()}");
                         // Get the lowest price between the two then add the lowest dataset
                         if (biggerListData.ParsePrice() > smallerList[y].ParsePrice())
                         {
-                            LOGGER.Debug($"Add Match SmallerList {smallerList[y]}");
+                            // LOGGER.Debug($"Add Match SmallerList {smallerList[y]}");
                             finalData.Add(smallerList[y]);
                         }
                         else
                         {
-                            LOGGER.Debug($"Add Match BiggerList {biggerListData}");
+                            // LOGGER.Debug($"Add Match BiggerList {biggerListData}");
                             finalData.Add(biggerListData);
                         }
                         smallerList.RemoveAt(y);
@@ -564,7 +549,7 @@ public sealed partial class MasterScrape
 
             if (!sameVolumeCheck) // If the current volume number in the bigger list has no match in the smaller list (same volume number and name) then add it
             {
-                LOGGER.Debug($"Add No Match {biggerListData}");
+                // LOGGER.Debug($"Add No Match {biggerListData}");
                 finalData.Add(biggerListData);
             }
         }
@@ -784,13 +769,13 @@ public sealed partial class MasterScrape
                 $"Website{plural} [{siteListString}] not supported in region \"{this.Region}\".");
         }
 
-        LOGGER.Info("Starting scrape for {Title} ({BookType}), against website [{Websites}]", title, bookType, string.Join(',', siteList));
+        LOGGER.Info("Starting scrape for {Title} ({BookType}), against website(s) [{Websites}]", title, bookType, string.Join(',', siteList));
         LOGGER.Info("Region set to {0}", this.Region);
         LOGGER.Info("Running on {0} browser", this.Browser);
 
-        // 1) Clear prior data and URLs
-        _masterDataList.Clear();
+        // 1) Clear prior URLs
         _masterLinkDict.Clear();
+        _masterDataList.Clear();
 
         // 2) Kick off the individual scraping tasks
         _webTasks.ScheduleScrapes(
@@ -799,6 +784,8 @@ public sealed partial class MasterScrape
             bookType,
             _masterDataList,
             _masterLinkDict,
+            this.Browser,
+            this.Region,
             (this.IsBooksAMillionMember, this.IsKinokuniyaUSAMember, this.IsIndigoMember)
         );
         await Task.WhenAll(_webTasks);
@@ -823,14 +810,12 @@ public sealed partial class MasterScrape
             }
         }
 
-        // 6) Price comparisons (exactly as before), but operating on currentLists
+        // 6) Price comparisons
         if (currentLists.Count > 1) // While there is still 2 or more lists of data to compare prices continue
         {
             LOGGER.Debug("Starting price comparisons");
-            int pos = 0; // The position of the new lists of data after comparing
             int initialMasterDataListCount;
-            List<Task<List<EntryModel>>> comparisonTasks = new();
-
+            List<Task<List<EntryModel>>> comparisonTasks = new(currentLists.Count / 2 + currentLists.Count);
             while (currentLists.Count > 1)
             {
                 currentLists.Sort((a, b) => a.Count.CompareTo(b.Count));
@@ -840,18 +825,20 @@ public sealed partial class MasterScrape
                     List<EntryModel> smaller = currentLists[i];
                     List<EntryModel> larger = currentLists[i + 1];
                     comparisonTasks.Add(Task.Run(() => PriceComparison(smaller, larger)));
-                    pos++;
                 }
 
                 currentLists.AddRange(await Task.WhenAll(comparisonTasks));
-
-                currentLists.RemoveRange(0, initialMasterDataListCount % 2 == 0 ? initialMasterDataListCount : initialMasterDataListCount - 1); // Shrink List
-                pos = 0;
+                currentLists.RemoveRange(0, initialMasterDataListCount % 2 == 0 ? initialMasterDataListCount : initialMasterDataListCount - 1);
+                comparisonTasks.Clear();
             }
         }
 
         _masterDataList.Clear();
-        _masterDataList.Add(currentLists[0]);
+        if (currentLists.Count > 0)
+        {
+            _masterDataList.Add(currentLists[0]);
+        }
+        currentLists.Clear();
 
         // 7) Optional debug dump
         if (IsDebugEnabled)
@@ -872,20 +859,20 @@ public sealed partial class MasterScrape
 
         MasterScrape scrape = new MasterScrape(
             Filter: StockStatusFilter.EXCLUDE_NONE_FILTER,
-            Region: Region.America,
+            Region: Region.Britain,
             Browser: Browser.FireFox,
-            IsBooksAMillionMember: false,
-            IsKinokuniyaUSAMember: false,
+            IsBooksAMillionMember: true,
+            IsKinokuniyaUSAMember: true,
             IsIndigoMember: false)
         .EnableDebugMode();
 
-        string title = "One Piece";
+        string title = "jujutsu kaisen";
         BookType bookType = BookType.Manga;
 
         await scrape.InitializeScrapeAsync(
             title: title,
             bookType: bookType,
-            siteList: [Website.InStockTrades]);
+            siteList: [Website.SciFier]);
 
         stopwatch.Stop();
 

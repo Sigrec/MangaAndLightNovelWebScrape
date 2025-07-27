@@ -19,22 +19,13 @@ internal sealed partial class Crunchyroll : IWebsite
     /// <inheritdoc />
     public const Region REGION = Region.America;
 
-    /// <inheritdoc />
-    public const bool NEEDS_WEB_DRIVER = false;
-
-    /// <inheritdoc />
-    public const bool NEEDS_USER_AGENT = false;
-
-    /// <inheritdoc />
-    public const bool HAS_MEMBERSHIP = false;
-
     [GeneratedRegex(@"Volume", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
     [GeneratedRegex(@",|\(.*?\)| Manga| Graphic Novel|:|(?<=(?:Vol|Box Set)\s+\d{1,3}(?:\.\d)?\s+).*|Hardcover", RegexOptions.IgnoreCase)] private static partial Regex ParseAndCleanTitleRegex();
     [GeneratedRegex(@",| Manga| Graphic Novel|:|(?:Vol|Box Set)\s+\d{1,3}(\.\d)?[^\d]+.*|Hardcover", RegexOptions.IgnoreCase)] private static partial Regex BundleParseRegex();
     [GeneratedRegex(@"(?:\d-in-\d|Omnibus) Edition", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
     [GeneratedRegex(@"\((\d{1,3}-\d{1,3})\) Bundle", RegexOptions.IgnoreCase)] private static partial Regex BundleVolRegex();
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser? browser = null)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships)
     {
         return Task.Run(() =>
         {
@@ -136,15 +127,15 @@ internal sealed partial class Crunchyroll : IWebsite
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
     }
 
-    public static (List<EntryModel> Data, List<string> Links) GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false)
+    public (List<EntryModel> Data, List<string> Links) GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
     {
         List<EntryModel> data = [];
         List<string> links = [];
-        
+
         try
         {
             // Initialize once and reuse if necessary.
-            HtmlWeb web = new()
+            HtmlWeb _html = new()
             {
                 UsingCacheIfExists = true,
                 AutoDetectEncoding = false,
@@ -168,7 +159,7 @@ internal sealed partial class Crunchyroll : IWebsite
             // Load the document once after preparation.
             string url = GenerateWebsiteUrl(bookType, bookTitle);
             links.Add(url);
-            doc = web.Load(url);
+            doc = _html.Load(url);
             doc.OptionCheckSyntax = false;
             doc.OptionFixNestedTags = false;
             doc.OptionAutoCloseOnEnd = true;
@@ -186,7 +177,7 @@ internal sealed partial class Crunchyroll : IWebsite
 
                 url = GenerateWebsiteUrl(bookType, bookTitle, true);
                 links.Add(url);
-                doc = web.Load(url);
+                doc = _html.Load(url);
                 titleData = doc.DocumentNode.SelectNodes(TitleXPath);
                 priceData = doc.DocumentNode.SelectNodes(PriceXPath);
                 stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
@@ -196,7 +187,7 @@ internal sealed partial class Crunchyroll : IWebsite
             {
                 string entryTitle = WebUtility.HtmlDecode(titleData[x].InnerText.Trim());
                 // First check: does the book title contain the entry title?
-                if (!InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle))
+                if (!InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle))
                 {
                     LOGGER.Debug("Removed (1) {}", entryTitle);
                     continue;
@@ -256,11 +247,16 @@ internal sealed partial class Crunchyroll : IWebsite
         }
         catch (Exception ex)
         {
-            LOGGER.Error("{} ({}) Error @ {} \n{}", bookTitle, bookType, TITLE, ex);
+            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
         }
-
-        data.Sort(EntryModel.VolumeSort);
-        InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
+        finally
+        {
+            data.TrimExcess();
+            links.TrimExcess();
+            data.Sort(EntryModel.VolumeSort);
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
+        }
+        
         return (data, links);
     }
 }

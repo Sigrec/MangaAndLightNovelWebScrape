@@ -1,16 +1,12 @@
+using System.Collections.Frozen;
 using System.Net;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
-public partial class ForbiddenPlanet
+internal sealed partial class ForbiddenPlanet : IWebsite
 {
-    private List<string> ForbiddenPlanetLinks = [];
-    private List<EntryModel> ForbiddenPlanetData = [];
-    public const string WEBSITE_TITLE = "Forbidden Planet";
-    public const string WEBSITE_URL = "https://forbiddenplanet.com";
-    public const Region REGION = Region.Britain;
-    private static readonly List<string> DescRemovalStrings = [ "novel", "original stories", "collecting issues"];
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+    
     private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[@class='full']/ul/li/section/header/div[2]/h3/a");
     private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='clr-price']");
     private static readonly XPathExpression MinorPriceXPath = XPathExpression.Compile("(//div[@class='full']/ul/li/section/header/div[2])/p/span[2]");
@@ -27,30 +23,31 @@ public partial class ForbiddenPlanet
     [GeneratedRegex(@"\((.*?Anniversary.*?)\)")] private static partial Regex AnniversaryMatchRegex();
     [GeneratedRegex(@"Volumes|Volume|Vol\.|Volumr", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
 
-    protected internal async Task CreateForbiddenPlanetTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> MasterDataList, WebDriver driver)
+    /// <inheritdoc />
+    public const string TITLE = "Forbidden Planet";
+
+    /// <inheritdoc />
+    public const string BASE_URL = "https://forbiddenplanet.com";
+
+    /// <inheritdoc />
+    public const Region REGION = Region.Britain;
+    
+    private static readonly FrozenSet<string> DescRemovalStrings = ["novel", "original stories", "collecting issues"];
+
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
     {
-        await Task.Run(() => 
+        return Task.Run(() =>
         {
-            MasterDataList.Add(GetForbiddenPlanetData(bookTitle, bookType, driver));
+            WebDriver driver = MasterScrape.SetupBrowserDriver(browser, true);
+            (List<EntryModel> Data, List<string> Links) = GetData(bookTitle, bookType, driver);
+            masterDataList.Add(Data);
+            masterLinkList.TryAdd(Website.ForbiddenPlanet, Links[0]);
         });
     }
-
-    protected internal string GetUrl()
-    {
-        return ForbiddenPlanetLinks.Count != 0 ? ForbiddenPlanetLinks[0] : $"{WEBSITE_TITLE} Has no Link";
-    }
-    
-    protected internal void ClearData()
-    {
-        ForbiddenPlanetLinks.Clear();
-        ForbiddenPlanetData.Clear();
-    }
-
     private string GenerateWebsiteUrl(BookType bookType, string entryTitle, bool isSecondCategory)
     {
         // https://forbiddenplanet.com/catalog/?q=Naruto&show_out_of_stock=on&sort=release-date-asc&page=1
-        string url = $"{WEBSITE_URL}/catalog/{(!isSecondCategory ? "manga" : "comics-and-graphic-novels")}/?q={(bookType == BookType.Manga ? InternalHelpers.FilterBookTitle(entryTitle) : $"{InternalHelpers.FilterBookTitle(entryTitle)}%20light%20novel")}&show_out_of_stock=on&sort=release-date-asc&page=1";
-        ForbiddenPlanetLinks.Add(url);
+        string url = $"{BASE_URL}/catalog/{(!isSecondCategory ? "manga" : "comics-and-graphic-novels")}/?q={(bookType == BookType.Manga ? InternalHelpers.FilterBookTitle(entryTitle) : $"{InternalHelpers.FilterBookTitle(entryTitle)}%20light%20novel")}&show_out_of_stock=on&sort=release-date-asc&page=1";
         LOGGER.Info($"Url = {url}");
         return url;
     }
@@ -197,21 +194,37 @@ public partial class ForbiddenPlanet
         return curTitle.ToString();
     }
 
-    internal List<EntryModel> GetForbiddenPlanetData(string bookTitle, BookType bookType, WebDriver driver)
+    public (List<EntryModel> Data, List<string> Links) GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
     {
+        List<EntryModel> data = [];
+        List<string> links = [];
+
         try
         {
-            WebDriverWait wait = new(driver, TimeSpan.FromSeconds(60));
-            HtmlDocument doc = new HtmlDocument();
-            HtmlWeb web = new()
+            WebDriverWait wait = new(driver!, TimeSpan.FromSeconds(60));
+            HtmlDocument doc = new();
+            HtmlWeb _html = new()
             {
                 UsingCacheIfExists = true,
-                UseCookies = true
+                AutoDetectEncoding = false,
+                OverrideEncoding = Encoding.UTF8,
+                UseCookies = false,
+                PreRequest = request =>
+                {
+                    HttpWebRequest http = request;
+                    http.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+                    http.KeepAlive = true;
+                    http.Timeout = 10_000;
+                    return true;
+                }
             };
-            bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
+
+            bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
             bool isSecondCategory = false;
 
-            driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookType, bookTitle, isSecondCategory));
+            string url = GenerateWebsiteUrl(bookType, bookTitle, isSecondCategory);
+            links.Add(url);
+            driver!.Navigate().GoToUrl(url);
             wait.Until(driver => driver.FindElement(By.CssSelector("div[class='full']")));
 
             while (true)
@@ -229,13 +242,14 @@ public partial class ForbiddenPlanet
                 {
                     string bookFormat = bookFormatData[x].InnerText;
                     string entryTitle = titleData[x].GetDirectInnerText();
-                    LOGGER.Debug("(-1) {} | {} | {}", entryTitle, bookFormat, minorPriceData[x].InnerText);
+                    // LOGGER.Debug("(-1) {} | {} | {}", entryTitle, bookFormat, minorPriceData[x].InnerText);
+
                     if (
-                        InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
-                        && (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
-                        &&  (
+                        InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
+                        && (!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck)
+                        && (
                                 (
-                                bookType == BookType.Manga 
+                                bookType == BookType.Manga
                                 && (
                                         !entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
                                         && (bookFormat.Equals("Manga") || bookFormat.Equals("Graphic Novel"))
@@ -256,7 +270,7 @@ public partial class ForbiddenPlanet
                         bool descIsValid = true;
                         if (bookType == BookType.Manga && (entryTitle.Contains("Hardcover") || !entryTitle.ContainsAny(["Vol", "Box Set", "Comic"])))
                         {
-                            HtmlNodeCollection descData = web.Load($"https://forbiddenplanet.com{doc.DocumentNode.SelectSingleNode($"(//a[@class='block one-whole clearfix dfbx dfbx--fdc link-banner link--black'])[{x + 1}]").GetAttributeValue("href", string.Empty)}").DocumentNode.SelectNodes("//div[@id='product-description']/p");
+                            HtmlNodeCollection descData = _html.Load($"https://forbiddenplanet.com{doc.DocumentNode.SelectSingleNode($"(//a[@class='block one-whole clearfix dfbx dfbx--fdc link-banner link--black'])[{x + 1}]").GetAttributeValue("href", string.Empty)}").DocumentNode.SelectNodes("//div[@id='product-description']/p");
                             StringBuilder desc = new StringBuilder();
                             foreach (HtmlNode node in descData) { desc.AppendLine(node.InnerText); }
                             // LOGGER.Debug("Checking Desc {} => {}", entryTitle, desc.ToString());
@@ -265,17 +279,17 @@ public partial class ForbiddenPlanet
 
                         if (descIsValid)
                         {
-                            ForbiddenPlanetData.Add(
+                            data.Add(
                                 new EntryModel(
                                     WebUtility.HtmlDecode(CleanAndParseTitle(bookTitle, entryTitle, bookType)),
-                                    $"{priceData[x].GetDirectInnerText()}{minorPriceData[x].InnerText}", 
+                                    $"{priceData[x].GetDirectInnerText()}{minorPriceData[x].InnerText}",
                                     stockStatusData[x].InnerText switch
                                     {
                                         "Pre-Order" => StockStatus.PO,
                                         "Currently Unavailable" => StockStatus.OOS,
-                                         _ => StockStatus.IS
+                                        _ => StockStatus.IS
                                     },
-                                    WEBSITE_TITLE
+                                    TITLE
                                 )
                             );
                         }
@@ -295,7 +309,10 @@ public partial class ForbiddenPlanet
                 {
                     isSecondCategory = true;
                     LOGGER.Info("Checking Comics & Graphic Novel Cateogry");
-                    driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookType, bookTitle, isSecondCategory));
+                    url = GenerateWebsiteUrl(bookType, bookTitle, isSecondCategory);
+                    links.Add(url);
+
+                    driver.Navigate().GoToUrl(url);
                     LOGGER.Info("Next Page (2nd Category) => {}", driver.Url);
                     wait.Until(driver => driver.FindElement(By.CssSelector("div[class='full']")));
                 }
@@ -307,22 +324,18 @@ public partial class ForbiddenPlanet
         }
         catch (Exception ex)
         {
-            LOGGER.Error("{} ({}) Error @ {} \n{}", bookTitle, bookType, WEBSITE_TITLE, ex);
+            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
         }
         finally
         {
-            if (!MasterScrape.IsWebDriverPersistent)
-            {
-                driver?.Quit();
-            }
-            else 
-            { 
-                driver?.Close(); 
-            }
-            ForbiddenPlanetData.Sort(EntryModel.VolumeSort);
-            ForbiddenPlanetData.RemoveDuplicates(LOGGER);
-            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, ForbiddenPlanetData, LOGGER);
+            driver?.Quit();
+            data.TrimExcess();
+            links.TrimExcess();
+            data.Sort(EntryModel.VolumeSort);
+            data.RemoveDuplicates(LOGGER);
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
         }
-        return ForbiddenPlanetData;
+
+        return (data, links);
     }
 }

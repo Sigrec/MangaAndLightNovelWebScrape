@@ -18,6 +18,7 @@ v4.1.0 -
 ⌛Updated a bunch of collections to be `Frozen` for perf
 📜InStockTrades
 -🔥Fixed boxset numbering
+-🔥Fixed series not being scrapped if they have amerpand `&`
 📜Crunchyroll
 -🔥Fixed stockstatus mapping, no longer always maps to Backorder (BO)
 -🔥Fixed issue where Blu-ray and Funko pop entries would nto be removed properly
@@ -29,6 +30,10 @@ v4.1.0 -
 -🔥Fixed issue where the price would not get parsed correctly causing no items to be returned
 -🔥Fixed issue where some series would have leading text after the volume number
 -🔥Fixed issues with some box set parsing
+📜MangaMate
+-🔥Fixed issue with page loading preventing the scrape from working
+📜MerryManga
+-🔥Fixed issue with page loading preventing the scrape from working
 
 v4.0.2 - Jan 20th, 2025
 🔥Remove Playwright package

@@ -1,45 +1,35 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Diagnosers;
+using MangaAndLightNovelWebScrape;
 using MangaAndLightNovelWebScrape.Enums;
-using MangaAndLightNovelWebScrape.Websites;
 using OpenQA.Selenium;
 
-namespace Benchmark.Websites
+namespace Benchmark.Websites.MangaMart;
+
+[MemoryDiagnoser]
+public class MangaMartBenchmarks
 {
-    [MemoryDiagnoser]
-    public class MangaMartBenchmarks
+    private MangaAndLightNovelWebScrape.Websites.MangaMart? _instance;
+    private WebDriver? _driver;
+
+    [GlobalSetup]
+    public void Setup()
     {
-        private MangaMart? _instance;
-        private WebDriver? _driver;
+        _instance = new MangaAndLightNovelWebScrape.Websites.MangaMart();
+        _driver = MasterScrape.SetupBrowserDriver(Browser.FireFox, true);
+    }
 
-        [GlobalSetup]
-        public void Setup()
-        {
-            _instance = new MangaMart(); // Initialize your instance here
-            _driver = Program.SetupBrowserDriver(true);
-        }
+    [GlobalCleanup]
+    public void Cleanup()
+    {
+        _driver?.Quit();
+        _instance = null;
+    }
 
-        // Global cleanup to run once after all benchmarks
-        [GlobalCleanup]
-        public void Cleanup()
-        {
-            _driver?.Quit();
-            _instance = null; // Cleanup if necessary
-        }
-
-        [Benchmark]
-        [WarmupCount(5)]
-        public void GetMangaBenchmark()
-        {
-            // Call the method you want to benchmark
-            _instance?.GetMangaMartData("one piece", BookType.Manga, _driver);
-        }
-
-        // [Benchmark]
-        // public void GetLightNovelBenchmark()
-        // {
-        //     // Call the method you want to benchmark
-        //     _instance.GetMangaMartData("one piece", BookType.LightNovel);
-        // }
+    [Benchmark]
+    [WarmupCount(5)]
+    public void GetMangaBenchmark()
+    {
+        _instance?.GetMangaMartData("one piece", BookType.Manga, _driver!);
     }
 }

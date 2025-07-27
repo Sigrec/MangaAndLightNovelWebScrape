@@ -41,6 +41,14 @@ public class CrunchyrollTests
         new object[] { "Blade & Bastard", BookType.LightNovel, "Blade&BastardNovelData", false },
     ];
 
+    [Test]
+    public void RegionValidation_Test()
+    {
+        Assert.That(
+            MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.America) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Australia) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Britain) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Canada) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Europe) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Japan)
+        );
+    }
+
     [TestCaseSource(nameof(ScrapeTestCases))]
     public async Task Crunchyroll_Scrape_Test(string title, BookType bookType, string fileName, bool skip)
     {

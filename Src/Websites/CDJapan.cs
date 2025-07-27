@@ -1,6 +1,6 @@
 namespace MangaAndLightNovelWebScrape.Websites;
 
-public partial class CDJapan
+internal sealed partial class CDJapan
 {
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
     public const Region REGION = Region.Japan;
@@ -75,7 +75,7 @@ public partial class CDJapan
             HtmlWeb web = new();
             HtmlDocument doc = new();
             int currPageNum = 1;
-            bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
+            bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
 
             while (true)
             {
@@ -90,8 +90,8 @@ public partial class CDJapan
                 for (int x = 0; x < titleData.Count; x++)
                 {
                     string titleText = titleData[x].InnerText.Replace(altTitle, bookTitle, StringComparison.OrdinalIgnoreCase);
-                    if (InternalHelpers.BookTitleContainsEntryTitle(bookTitle, titleText) 
-                    && (!MasterScrape.EntryRemovalRegex().IsMatch(titleText) || BookTitleRemovalCheck) 
+                    if (InternalHelpers.EntryTitleContainsBookTitle(bookTitle, titleText) 
+                    && (!InternalHelpers.ShouldRemoveEntry(titleText) || BookTitleRemovalCheck) 
                     && !titleText.Contains("Manga Set"))
                     {
                         CDJapanData.Add(
