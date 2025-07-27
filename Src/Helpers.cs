@@ -1,279 +1,185 @@
-using GraphQL.Client.Abstractions.Utilities;
-using MangaAndLightNovelWebScrape.Models;
+﻿using MangaAndLightNovelWebScrape.Models;
+using System.Collections.Frozen;
 
 namespace MangaAndLightNovelWebScrape
 {
-    public class Helpers
+    public static class Helpers
     {
-        /// <summary>
-        /// Gets the Browser Enum (Chrome, Edge, or FireFox) based on a string (ignores case)
-        /// </summary>
+        // ─── Generic Enum Parser ─────────────────────────────────────────────────
+
+        internal static T ParseEnum<T>(string value) where T : struct, Enum
+            => Enum.TryParse(value, true, out T result)
+               ? result
+               : throw new ArgumentException($"Invalid {typeof(T).Name}: '{value}'", nameof(value));
+
         public static Browser GetBrowserFromString(string browser)
-        {
-            return browser switch
-            {
-                string curBrowser when curBrowser.Equals("Chrome", StringComparison.OrdinalIgnoreCase) => Browser.Chrome,
-                string curBrowser when curBrowser.Equals("Edge", StringComparison.OrdinalIgnoreCase) => Browser.Edge,
-                string curBrowser when curBrowser.Equals("FireFox", StringComparison.OrdinalIgnoreCase) => Browser.FireFox,
-                _ => throw new Exception(),
-            };
-        }
+            => ParseEnum<Browser>(browser);
 
-        /// <summary>
-        /// Gets the array of websites that have a membership for a given region as strings
-        /// </summary>
-        public static string[] GetMembershipWebsitesForRegionAsString(Region region)
-        {
-            return region switch
-            {
-                Region.America => [ BooksAMillion.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE ],
-                Region.Canada => [ Indigo.WEBSITE_TITLE ],
-                Region.Australia or Region.Britain or Region.Canada or Region.Japan or  _ => [ ]
-            };
-        }
-
-        /// <summary>
-        /// Gets the array of websites that have a membership for a given region
-        /// </summary>
-        public static Website[] GetMembershipWebsitesForRegion(Region region)
-        {
-            return region switch
-            {
-                Region.America => [ Website.BooksAMillion, Website.InStockTrades, Website.KinokuniyaUSA ],
-                Region.Canada => [ Website.Indigo ],
-                Region.Australia or Region.Britain or Region.Canada or Region.Japan or  _ => [ ]
-            };
-        }
-
-        /// <summary>
-        /// Gets Region Enum from a string (ignores case)
-        /// </summary>
         public static Region GetRegionFromString(string region)
-        {
-            return region switch
-            {
-                string curBrowser when curBrowser.Equals("America", StringComparison.OrdinalIgnoreCase) => Region.America,
-                string curBrowser when curBrowser.Equals("Australia", StringComparison.OrdinalIgnoreCase) => Region.Australia,
-                string curBrowser when curBrowser.Equals("Britain", StringComparison.OrdinalIgnoreCase) => Region.Britain,
-                string curBrowser when curBrowser.Equals("Canada", StringComparison.OrdinalIgnoreCase) => Region.Canada,
-                string curBrowser when curBrowser.Equals("Europe", StringComparison.OrdinalIgnoreCase) => Region.Europe,
-                string curBrowser when curBrowser.Equals("Japan", StringComparison.OrdinalIgnoreCase) => Region.Japan,
-                _ => throw new Exception(),
-            };
-        }
+            => ParseEnum<Region>(region);
 
-        /// <summary>
-        /// Gets StockStatus Enum from a string (ignores case)
-        /// </summary>
-        public static StockStatus GetStockStatusFromString(string stockStatus)
-        {
-            return stockStatus.ToLowerCase() switch
-            {
-                "is" or "instock" => StockStatus.IS,
-                "po" or "Pre-Order" or "preorder" => StockStatus.PO,
-                "oos" or "outofstock" => StockStatus.OOS,
-                "bo" or "backorder" => StockStatus.BO,
-                _ => StockStatus.NA
-            };
-        }
+        // ─── StockStatus & Filters ────────────────────────────────────────────────
 
-        /// <summary>
-        /// Gets the StockStatusFilter from a given string
-        /// </summary>
-        /// <param name="stockStatusFilter">Stockstatus as a string</param>
-        public static StockStatus[] GetStockStatusFilterFromString(string stockStatusFilter)
-        {
-            return stockStatusFilter switch
+        internal static readonly FrozenDictionary<string, StockStatus> StockStatusMap
+            = new Dictionary<string, StockStatus>(StringComparer.OrdinalIgnoreCase)
             {
-                "Exclude All" or "all"=> StockStatusFilter.EXCLUDE_ALL_FILTER,
-                "Exclude OOS & PO" or "OOS & PO" => StockStatusFilter.EXCLUDE_OOS_AND_PO_FILTER,
-                "Exclude OOS & BO" or "OOS & BO" => StockStatusFilter.EXCLUDE_OOS_AND_BO_FILTER,
-                "Exclude PO & BO" or "PO & BO" => StockStatusFilter.EXCLUDE_PO_AND_BO_FILTER,
-                "Exclude OOS" or "OOS" or "oos"=> StockStatusFilter.EXCLUDE_OOS_FILTER,
-                "Exclude PO" or "PO" or "po"=> StockStatusFilter.EXCLUDE_PO_FILTER,
-                "Exclude BO" or "BO" or "bo"=> StockStatusFilter.EXCLUDE_BO_FILTER,
-                _ => StockStatusFilter.EXCLUDE_NONE_FILTER
-            };
-        }
+                ["is"] = StockStatus.IS,
+                ["instock"] = StockStatus.IS,
+                ["po"] = StockStatus.PO,
+                ["pre-order"] = StockStatus.PO,
+                ["preorder"] = StockStatus.PO,
+                ["oos"] = StockStatus.OOS,
+                ["outofstock"] = StockStatus.OOS,
+                ["bo"] = StockStatus.BO,
+                ["backorder"] = StockStatus.BO,
+            }.ToFrozenDictionary();
 
-        /// <summary>
-        /// Gets the array of Websites available for a specific region as strings where the strings are the const WEBSITE_TITLE of a Website class
-        /// </summary>
+        public static StockStatus GetStockStatusFromString(string status)
+            => StockStatusMap.TryGetValue(status, out StockStatus st)
+               ? st
+               : StockStatus.NA;
+
+        internal static readonly FrozenDictionary<string, StockStatus[]> StockFilterMap
+            = new Dictionary<string, StockStatus[]>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["exclude all"] = StockStatusFilter.EXCLUDE_ALL_FILTER,
+                ["all"] = StockStatusFilter.EXCLUDE_ALL_FILTER,
+                ["exclude oos & po"] = StockStatusFilter.EXCLUDE_OOS_AND_PO_FILTER,
+                ["oos & po"] = StockStatusFilter.EXCLUDE_OOS_AND_PO_FILTER,
+                ["exclude oos & bo"] = StockStatusFilter.EXCLUDE_OOS_AND_BO_FILTER,
+                ["oos & bo"] = StockStatusFilter.EXCLUDE_OOS_AND_BO_FILTER,
+                ["exclude po & bo"] = StockStatusFilter.EXCLUDE_PO_AND_BO_FILTER,
+                ["po & bo"] = StockStatusFilter.EXCLUDE_PO_AND_BO_FILTER,
+                ["exclude oos"] = StockStatusFilter.EXCLUDE_OOS_FILTER,
+                ["oos"] = StockStatusFilter.EXCLUDE_OOS_FILTER,
+                ["exclude po"] = StockStatusFilter.EXCLUDE_PO_FILTER,
+                ["po"] = StockStatusFilter.EXCLUDE_PO_FILTER,
+                ["exclude bo"] = StockStatusFilter.EXCLUDE_BO_FILTER,
+                ["bo"] = StockStatusFilter.EXCLUDE_BO_FILTER,
+            }.ToFrozenDictionary();
+
+        public static StockStatus[] GetStockStatusFilterFromString(string filter)
+            => StockFilterMap.TryGetValue(filter, out StockStatus[]? arr)
+               ? arr
+               : StockStatusFilter.EXCLUDE_NONE_FILTER;
+
+        // ─── Websites & Regions ───────────────────────────────────────────────────
+
+        internal static readonly FrozenDictionary<Region, Website[]> WebsitesByRegion
+            = new Dictionary<Region, Website[]>
+            {
+                [Region.America] =
+                [
+                    Website.AmazonUSA, Website.BooksAMillion, Website.Crunchyroll,
+                    Website.InStockTrades, Website.KinokuniyaUSA, Website.MangaMart,
+                    Website.MerryManga, Website.RobertsAnimeCornerStore, Website.SciFier
+                ],
+                [Region.Australia] =
+                [
+                    Website.MangaMate, Website.SciFier
+                ],
+                [Region.Britain] =
+                [
+                    Website.ForbiddenPlanet, Website.SciFier,
+                    Website.TravellingMan, Website.Waterstones
+                ],
+                [Region.Canada] =
+                [
+                    Website.Indigo, Website.SciFier
+                ],
+                [Region.Europe] =
+                [
+                    Website.SciFier
+                ],
+                [Region.Japan] = []
+            }.ToFrozenDictionary();
+
+        internal static readonly FrozenDictionary<Region, Website[]> MembershipSitesByRegion
+            = new Dictionary<Region, Website[]>
+            {
+                [Region.America] = [Website.BooksAMillion, Website.KinokuniyaUSA],
+                [Region.Canada] = [Website.Indigo]
+            }.ToFrozenDictionary();
+
+        internal static readonly FrozenDictionary<string, Website> WebsiteTitleMap
+            = new Dictionary<string, Website>(StringComparer.OrdinalIgnoreCase)
+            {
+                [AmazonUSA.WEBSITE_TITLE] = Website.AmazonUSA,
+                [BooksAMillion.WEBSITE_TITLE] = Website.BooksAMillion,
+                [Crunchyroll.TITLE] = Website.Crunchyroll,
+                [InStockTrades.TITLE] = Website.InStockTrades,
+                [KinokuniyaUSA.WEBSITE_TITLE] = Website.KinokuniyaUSA,
+                [MangaMart.WEBSITE_TITLE] = Website.MangaMart,
+                [MangaMate.WEBSITE_TITLE] = Website.MangaMate,
+                [MerryManga.WEBSITE_TITLE] = Website.MerryManga,
+                [RobertsAnimeCornerStore.TITLE] = Website.RobertsAnimeCornerStore,
+                [SciFier.WEBSITE_TITLE] = Website.SciFier,
+                [ForbiddenPlanet.WEBSITE_TITLE] = Website.ForbiddenPlanet,
+                [TravellingMan.WEBSITE_TITLE] = Website.TravellingMan,
+                [Waterstones.WEBSITE_TITLE] = Website.Waterstones,
+                [Indigo.WEBSITE_TITLE] = Website.Indigo,
+            }.ToFrozenDictionary();
+
+        public static Website GetWebsiteFromString(string title)
+            => WebsiteTitleMap.TryGetValue(title, out Website w)
+               ? w
+               : throw new ArgumentException($"Unknown website: '{title}'", nameof(title));
+
+        public static Website[] GetRegionWebsiteList(Region region)
+            => WebsitesByRegion.TryGetValue(region, out Website[]? arr) ? arr : [];
+
         public static string[] GetRegionWebsiteListAsString(Region region)
-        {
-            return region switch
-            {
-                Region.America => [ AmazonUSA.WEBSITE_TITLE, BooksAMillion.WEBSITE_TITLE, Crunchyroll.WEBSITE_TITLE, InStockTrades.WEBSITE_TITLE, KinokuniyaUSA.WEBSITE_TITLE, MangaMart.WEBSITE_TITLE, MerryManga.WEBSITE_TITLE, RobertsAnimeCornerStore.WEBSITE_TITLE, SciFier.WEBSITE_TITLE ],
-                Region.Australia => [ MangaMate.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, ],
-                Region.Britain => [ ForbiddenPlanet.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, TravellingMan.WEBSITE_TITLE, Waterstones.WEBSITE_TITLE, ],
-                Region.Canada => [ Indigo.WEBSITE_TITLE, SciFier.WEBSITE_TITLE, ],
-                Region.Europe => [ SciFier.WEBSITE_TITLE, ],
-                Region.Japan => [ /*AmazonJapan.WEBSITE_TITLE, CDJapan.WEBSITE_TITLE*/ ],
-                _ => [ ]
-            };
-        }
+            => [.. GetRegionWebsiteList(region).Select(w => w.ToString())];
 
-        /// <summary>
-        /// Gets the array of Websites available for a specific region as Website Enums
-        /// </summary>
-        public static HashSet<Website> GetRegionWebsiteList(Region region)
-        {
-            return region switch
-            {
-                Region.America => [ Website.AmazonUSA, Website.BooksAMillion, Website.Crunchyroll, Website.InStockTrades, Website.KinokuniyaUSA, Website.MangaMart, Website.MerryManga, Website.RobertsAnimeCornerStore, Website.SciFier ],
-                Region.Australia => [ Website.MangaMate, Website.SciFier ],
-                Region.Britain => [ Website.ForbiddenPlanet, Website.SciFier, Website.TravellingMan, Website.Waterstones ],
-                Region.Canada => [ Website.Indigo, Website.SciFier ],
-                Region.Europe => [ Website.SciFier ],
-                Region.Japan => [ /*Website.AmazonJapan, Website.CDJapan*/ ],
-                _ => [ ],
-            };
-        }
+        public static Website[] GetMembershipWebsitesForRegion(Region region)
+            => MembershipSitesByRegion.TryGetValue(region, out Website[]? arr) ? arr : [];
 
-        /// <summary>
-        /// Checks whether a given website list contains valid websites for a given region based on the websites WEBSITE_TITLE
-        /// </summary>
-        /// <param name="region">The region to check against</param>
-        /// <param name="input">The list of websites </param>
-        /// <returns>True if the given list is a valid list for the region, false otherwise</returns>
+        public static string[] GetMembershipWebsitesForRegionAsString(Region region)
+            => [.. GetMembershipWebsitesForRegion(region).Select(w => w.ToString())];
+
         public static bool IsWebsiteListValid(Region region, IEnumerable<string> input)
-        {
-            foreach (string website in input)
-            {
-                bool isValid = website.ToString() switch
-                {
-                    AmazonJapan.WEBSITE_TITLE => AmazonJapan.REGION.HasFlag(region),
-                    AmazonUSA.WEBSITE_TITLE => AmazonUSA.REGION.HasFlag(region),
-                    BooksAMillion.WEBSITE_TITLE => BooksAMillion.REGION.HasFlag(region),
-                    CDJapan.WEBSITE_TITLE => CDJapan.REGION.HasFlag(region),
-                    Crunchyroll.WEBSITE_TITLE => Crunchyroll.REGION.HasFlag(region),
-                    ForbiddenPlanet.WEBSITE_TITLE => ForbiddenPlanet.REGION.HasFlag(region),
-                    Indigo.WEBSITE_TITLE => Indigo.REGION.HasFlag(region),
-                    InStockTrades.WEBSITE_TITLE => InStockTrades.REGION.HasFlag(region),
-                    KinokuniyaUSA.WEBSITE_TITLE => KinokuniyaUSA.REGION.HasFlag(region),
-                    MangaMart.WEBSITE_TITLE => MangaMart.REGION.HasFlag(region),
-                    MangaMate.WEBSITE_TITLE => MangaMate.REGION.HasFlag(region),
-                    MerryManga.WEBSITE_TITLE => MerryManga.REGION.HasFlag(region),
-                    RobertsAnimeCornerStore.WEBSITE_TITLE => RobertsAnimeCornerStore.REGION.HasFlag(region),
-                    SciFier.WEBSITE_TITLE => SciFier.REGION.HasFlag(region),
-                    TravellingMan.WEBSITE_TITLE => TravellingMan.REGION.HasFlag(region),
-                    Waterstones.WEBSITE_TITLE => Waterstones.REGION.HasFlag(region),
-                    _ => throw new NotImplementedException(),
-                };
-                if (!isValid) { return false; }
-            }
-            return true;
-        }
+            => input.Select(GetWebsiteFromString).All(w => WebsitesByRegion[region].Contains(w));
 
-        /// <summary>
-        /// Gets a websites link/url
-        /// </summary>
-        /// <param name="website">The website to get the link/url for</param>
-        /// <param name="curRegion">The region if the website has a different link/url based on region</param>
-        /// <returns></returns>
-        public static string GetWebsiteLink(string website, Region curRegion = Region.America)
-        {
-            return website switch
-            {
-                AmazonJapan.WEBSITE_TITLE => @"https://www.amazon.co.jp/",
-                AmazonUSA.WEBSITE_TITLE => @"https://www.amazon.com/",
-                BooksAMillion.WEBSITE_TITLE => @"https://www.booksamillion.com/",
-                CDJapan.WEBSITE_TITLE => @"https://www.cdjapan.co.jp/",
-                Crunchyroll.WEBSITE_TITLE => @"https://store.crunchyroll.com/",
-                ForbiddenPlanet.WEBSITE_TITLE => @"https://forbiddenplanet.com/",
-                Indigo.WEBSITE_TITLE => @"https://www.indigo.ca/en-ca/",
-                InStockTrades.WEBSITE_TITLE => @"https://www.instocktrades.com/",
-                KinokuniyaUSA.WEBSITE_TITLE => @"https://united-states.kinokuniya.com/",
-                MangaMart.WEBSITE_TITLE => @"https://mangamart.com/",
-                MangaMate.WEBSITE_TITLE => @"https://mangamate.shop/",
-                MerryManga.WEBSITE_TITLE => @"https://www.merrymanga.com/",
-                RobertsAnimeCornerStore.WEBSITE_TITLE => @"https://www.animecornerstore.com/graphicnovels1.html",
-                SciFier.WEBSITE_TITLE => @$"https://scifier.com/?setCurrencyId={curRegion switch
-                {
-                    Region.Britain => 1,
-                    Region.America => 2,
-                    Region.Australia => 3,
-                    Region.Europe => 5,
-                    Region.Canada => 6,
-                    _ => throw new NotImplementedException()
-                }}",
-                TravellingMan.WEBSITE_TITLE => @"https://travellingman.com/",
-                Waterstones.WEBSITE_TITLE => @"https://www.waterstones.com/",
-                _ => throw new NotImplementedException()
-            };
-        }
-
-        /// <summary>
-        /// Gets a websites link/url
-        /// </summary>
-        /// <param name="website">The website to get the link/url for</param>
-        /// <param name="curRegion">The region if the website has a different link/url based on region</param>
-        /// <returns></returns>
-        public static string GetWebsiteLink(Website website, Region curRegion = Region.America)
-        {
-            return website switch
-            {
-                Website.AmazonJapan => @"https://www.amazon.co.jp/",
-                Website.AmazonUSA => @"https://www.amazon.com/",
-                Website.BooksAMillion => @"https://www.booksamillion.com/",
-                Website.CDJapan => @"https://www.cdjapan.co.jp/",
-                Website.Crunchyroll => @"https://store.crunchyroll.com/",
-                Website.ForbiddenPlanet => @"https://forbiddenplanet.com/",
-                Website.Indigo => @"https://www.indigo.ca/en-ca/",
-                Website.InStockTrades => @"https://www.instocktrades.com/",
-                Website.KinokuniyaUSA => @"https://united-states.kinokuniya.com/",
-                Website.MangaMart => @"https://mangamart.com/",
-                Website.MangaMate => @"https://mangamate.shop/",
-                Website.MerryManga => @"https://www.merrymanga.com/",
-                Website.RobertsAnimeCornerStore => @"https://www.animecornerstore.com/graphicnovels1.html",
-                Website.SciFier => @$"https://scifier.com/?setCurrencyId={curRegion switch
-                {
-                    Region.Britain => 1,
-                    Region.America => 2,
-                    Region.Australia => 3,
-                    Region.Europe => 5,
-                    Region.Canada => 6,
-                    _ => throw new NotImplementedException()
-                }}",
-                Website.TravellingMan => @"https://travellingman.com/",
-                Website.Waterstones => @"https://www.waterstones.com/",
-                _ => throw new NotImplementedException()
-            };
-        }
-
-        /// <summary>
-        /// Checks whether a given website list contains valid websites for a given region based on the website enum
-        /// </summary>
-        /// <param name="region">The region to check against</param>
-        /// <param name="input">The list of websites </param>
-        /// <returns>True if the given list is a valid list for the region, false otherwise</returns>
         public static bool IsWebsiteListValid(Region region, IEnumerable<Website> input)
+            => input.All(w => WebsitesByRegion[region].Contains(w));
+
+        public static string GetWebsiteLink(Website site, Region region = Region.America)
         {
-            foreach (Website website in input)
+            if (site == Website.SciFier)
             {
-                bool isValid = website switch
+                int id = region switch
                 {
-                    Website.AmazonJapan => AmazonJapan.REGION.HasFlag(region),
-                    Website.AmazonUSA => AmazonUSA.REGION.HasFlag(region),
-                    Website.BooksAMillion => BooksAMillion.REGION.HasFlag(region),
-                    Website.CDJapan => CDJapan.REGION.HasFlag(region),
-                    Website.Crunchyroll => Crunchyroll.REGION.HasFlag(region),
-                    Website.ForbiddenPlanet => ForbiddenPlanet.REGION.HasFlag(region),
-                    Website.Indigo => Indigo.REGION.HasFlag(region),
-                    Website.InStockTrades => InStockTrades.REGION.HasFlag(region),
-                    Website.KinokuniyaUSA => KinokuniyaUSA.REGION.HasFlag(region),
-                    Website.MangaMart => MangaMart.REGION.HasFlag(region),
-                    Website.MangaMate => MangaMate.REGION.HasFlag(region),
-                    Website.MerryManga => MerryManga.REGION.HasFlag(region),
-                    Website.RobertsAnimeCornerStore => RobertsAnimeCornerStore.REGION.HasFlag(region),
-                    Website.SciFier => SciFier.REGION.HasFlag(region),
-                    Website.TravellingMan => TravellingMan.REGION.HasFlag(region),
-                    Website.Waterstones => Waterstones.REGION.HasFlag(region),
-                    _ => throw new NotImplementedException(),
+                    Region.Britain => 1,
+                    Region.America => 2,
+                    Region.Australia => 3,
+                    Region.Europe => 5,
+                    Region.Canada => 6,
+                    _ => throw new ArgumentOutOfRangeException(nameof(region))
                 };
-                if (!isValid) { return false; }
+                return $"{SciFier.WEBSITE_URL}/?setCurrencyId={id}";
             }
-            return true;
+
+            return site switch
+            {
+                Website.AmazonUSA => AmazonUSA.WEBSITE_URL,
+                Website.BooksAMillion => BooksAMillion.WEBSITE_URL,
+                Website.CDJapan => CDJapan.WEBSITE_URL,
+                Website.Crunchyroll => Crunchyroll.BASE_URL,
+                Website.ForbiddenPlanet => ForbiddenPlanet.WEBSITE_URL,
+                Website.Indigo => Indigo.WEBSITE_URL,
+                Website.InStockTrades => InStockTrades.BASE_URL,
+                Website.KinokuniyaUSA => KinokuniyaUSA.WEBSITE_URL,
+                Website.MangaMart => MangaMart.WEBSITE_URL,
+                Website.MangaMate => MangaMate.WEBSITE_URL,
+                Website.MerryManga => MerryManga.WEBSITE_URL,
+                Website.RobertsAnimeCornerStore => RobertsAnimeCornerStore.BASE_URL,
+                Website.TravellingMan => TravellingMan.WEBSITE_URL,
+                Website.Waterstones => Waterstones.WEBSITE_URL,
+                _ => throw new NotImplementedException($"No URL for {site}")
+            };
         }
+
+        public static string GetWebsiteLink(string title, Region region = Region.America)
+            => GetWebsiteLink(GetWebsiteFromString(title), region);
     }
 }

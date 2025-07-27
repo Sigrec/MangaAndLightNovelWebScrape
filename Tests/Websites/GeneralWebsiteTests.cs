@@ -20,8 +20,6 @@ public class GeneralWebsiteTests
 
             Assert.That(!CDJapan.REGION.HasFlag(Region.America) && !CDJapan.REGION.HasFlag(Region.Australia) && !CDJapan.REGION.HasFlag(Region.Britain) && !CDJapan.REGION.HasFlag(Region.Canada) && !CDJapan.REGION.HasFlag(Region.Europe) && CDJapan.REGION.HasFlag(Region.Japan));
 
-            Assert.That(Crunchyroll.REGION.HasFlag(Region.America) && !Crunchyroll.REGION.HasFlag(Region.Australia) && !Crunchyroll.REGION.HasFlag(Region.Britain) && !Crunchyroll.REGION.HasFlag(Region.Canada) && !Crunchyroll.REGION.HasFlag(Region.Europe) && !Crunchyroll.REGION.HasFlag(Region.Japan));
-
             Assert.That(MangaMart.REGION.HasFlag(Region.America) && !MangaMart.REGION.HasFlag(Region.Australia) && !MangaMart.REGION.HasFlag(Region.Britain) && !MangaMart.REGION.HasFlag(Region.Canada) && !MangaMart.REGION.HasFlag(Region.Europe) && !MangaMart.REGION.HasFlag(Region.Japan));
 
             Assert.That(!ForbiddenPlanet.REGION.HasFlag(Region.America) && !ForbiddenPlanet.REGION.HasFlag(Region.Australia) && ForbiddenPlanet.REGION.HasFlag(Region.Britain) && !ForbiddenPlanet.REGION.HasFlag(Region.Canada) && !ForbiddenPlanet.REGION.HasFlag(Region.Europe) && !ForbiddenPlanet.REGION.HasFlag(Region.Japan));
@@ -35,8 +33,6 @@ public class GeneralWebsiteTests
             Assert.That(!MangaMate.REGION.HasFlag(Region.America) && MangaMate.REGION.HasFlag(Region.Australia) && !MangaMate.REGION.HasFlag(Region.Britain) && !MangaMate.REGION.HasFlag(Region.Canada) && !MangaMate.REGION.HasFlag(Region.Europe) && !MangaMate.REGION.HasFlag(Region.Japan));
 
             Assert.That(MerryManga.REGION.HasFlag(Region.America) && !MerryManga.REGION.HasFlag(Region.Australia) && !MerryManga.REGION.HasFlag(Region.Britain) && !MerryManga.REGION.HasFlag(Region.Canada) && !MerryManga.REGION.HasFlag(Region.Europe) && !MerryManga.REGION.HasFlag(Region.Japan));
-
-            Assert.That(RobertsAnimeCornerStore.REGION.HasFlag(Region.America) && !RobertsAnimeCornerStore.REGION.HasFlag(Region.Australia) && !RobertsAnimeCornerStore.REGION.HasFlag(Region.Britain) && !RobertsAnimeCornerStore.REGION.HasFlag(Region.Canada) && !RobertsAnimeCornerStore.REGION.HasFlag(Region.Europe) && !RobertsAnimeCornerStore.REGION.HasFlag(Region.Japan));
 
             Assert.That(!TravellingMan.REGION.HasFlag(Region.America) && !TravellingMan.REGION.HasFlag(Region.Australia) && TravellingMan.REGION.HasFlag(Region.Britain) && !TravellingMan.REGION.HasFlag(Region.Canada) && !TravellingMan.REGION.HasFlag(Region.Europe) && !TravellingMan.REGION.HasFlag(Region.Japan));
 

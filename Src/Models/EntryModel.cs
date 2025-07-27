@@ -2,7 +2,7 @@ using NLog.Common;
 
 namespace MangaAndLightNovelWebScrape
 {
-    public partial class EntryModel : IEquatable<EntryModel>
+    public sealed partial class EntryModel : IEquatable<EntryModel>
     {
         public string Entry { get; set; }
         public string Price { get; set; }

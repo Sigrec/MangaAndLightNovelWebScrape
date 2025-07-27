@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Benchmark/Benchmark.csproj" />
+  <Project Path="Src/MangaAndLightNovelWebScrape.csproj" />
+  <Project Path="Tests/Tests.csproj" />
+</Solution>

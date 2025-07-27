@@ -10,13 +10,25 @@ Planned
 ❌See if Indigo can be fixed or not
 ❌Add some more sites
 
-v4.0.3 - 
+v4.1.0 - 
+✅Improved comments for public facing members
 ✅Added MangaMart to scrape
-⌛Updated NLog to `6.0.1`
-⌛Updated Selenium.WebDriver to `4.34.0`
+✅Added urls to all objects as a const string
+✅Created a `IWebsite` interface for all sites
+⌛Updated a bunch of collections to be `Frozen` for perf
+📜InStockTrades
+-🔥Fixed boxset numbering
+📜Crunchyroll
+-🔥Fixed stockstatus mapping, no longer always maps to Backorder (BO)
+-🔥Fixed issue where Blu-ray and Funko pop entries would nto be removed properly
+-🔥Fixed wgere some titles would get scrapped due to html encoded characters
 📜MerryManga
 -🔥Fixed issue where Box Sets would be duplicated in return
 -⌛All-around performance improvements
+📜AmazonUSA
+-🔥Fixed issue where the price would not get parsed correctly causing no items to be returned
+-🔥Fixed issue where some series would have leading text after the volume number
+-🔥Fixed issues with some box set parsing
 
 v4.0.2 - Jan 20th, 2025
 🔥Remove Playwright package

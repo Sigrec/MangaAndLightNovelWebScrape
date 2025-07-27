@@ -1,4 +1,4 @@
-# [MangaAndLightNovelWebScrape](https://www.nuget.org/packages/MangaAndLightNovelWebScrape/4.0.2#readme-body-tab)
+# [MangaAndLightNovelWebScrape](https://www.nuget.org/packages/MangaAndLightNovelWebScrape/4.1.0#readme-body-tab)
 ### *(Manga & Light Novel Web Scrape Framework for .NET) - [ChangeLog](https://github.com/Sigrec/MangaAndLightNovelWebScrape/blob/master/ChangeLog.txt)*
 .NET Library that scrapes various websites based on a region for manga or light novel data for a specifc user inputted series. Then it compares the various prices for each available entry across the websites chosen and outputs a list of the entries available and the website and price for the cheapest entry.
 ***
@@ -13,7 +13,7 @@ If you want a website or region to be added fill out a [issue request](https://g
 ✅ Crunchyroll
 ✅ InStockTrades
 ✅ Kinokuniya USA (Sometimes Manga entries will be left out because when going to the manga tab it leaves some out)
-⌛ MangaMart
+✅ MangaMart
 ✅ MerryManga
 ✅ RobertsAnimeCornerStore
 ✅ SciFier

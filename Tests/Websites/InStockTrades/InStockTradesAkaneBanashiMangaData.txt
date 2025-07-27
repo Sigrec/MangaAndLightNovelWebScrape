@@ -5,3 +5,6 @@
 [Akane Banashi Vol 6, $8.39, IS, InStockTrades]
 [Akane Banashi Vol 7, $8.39, IS, InStockTrades]
 [Akane Banashi Vol 8, $8.39, IS, InStockTrades]
+[Akane Banashi Vol 9, $8.39, IS, InStockTrades]
+[Akane Banashi Vol 10, $8.39, IS, InStockTrades]
+[Akane Banashi Vol 11, $8.39, IS, InStockTrades]
