@@ -14,7 +14,7 @@ v4.1.0 -
 ✅Improved comments for public facing members
 ✅Added MangaMart to scrape
 ✅Added urls to all objects as a const string
-✅Created a `IWebsite` interface for all sites
+✅Created a `IWebsite` interface for all sites for better code structure
 ⌛Updated a bunch of collections to be `Frozen` for perf
 📜InStockTrades
 -🔥Fixed boxset numbering
@@ -24,16 +24,21 @@ v4.1.0 -
 -🔥Fixed issue where Blu-ray and Funko pop entries would nto be removed properly
 -🔥Fixed wgere some titles would get scrapped due to html encoded characters
 📜MerryManga
+-🔥Fixed issue with page loading preventing the scrape from working
 -🔥Fixed issue where Box Sets would be duplicated in return
 -⌛All-around performance improvements
-📜AmazonUSA
+❌AmazonUSA
 -🔥Fixed issue where the price would not get parsed correctly causing no items to be returned
 -🔥Fixed issue where some series would have leading text after the volume number
 -🔥Fixed issues with some box set parsing
-📜MangaMate
+❌MangaMate
 -🔥Fixed issue with page loading preventing the scrape from working
-📜MerryManga
--🔥Fixed issue with page loading preventing the scrape from working
+📜Forbidden Planet
+-🔥Fixed issue where some web encoded characters would not get parsed causing no data to be returned
+-🔥Fixed issue where it would not parse titles correctly that had text after `:`
+-🔥Fixed issue where light novel parsing would not work correctly
+📜Books-A-Million
+-🔥Fixed issue where series with http codes like ampersand would not get scraped
 
 v4.0.2 - Jan 20th, 2025
 🔥Remove Playwright package

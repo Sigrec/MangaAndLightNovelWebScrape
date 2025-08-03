@@ -1,4 +1,4 @@
-# [MangaAndLightNovelWebScrape](https://www.nuget.org/packages/MangaAndLightNovelWebScrape/4.1.0#readme-body-tab)
+# [MangaAndLightNovelWebScrape](https://www.nuget.org/packages/MangaAndLightNovelWebScrape/5.0.0#readme-body-tab)
 ### *(Manga & Light Novel Web Scrape Framework for .NET) - [ChangeLog](https://github.com/Sigrec/MangaAndLightNovelWebScrape/blob/master/ChangeLog.txt)*
 .NET Library that scrapes various websites based on a region for manga or light novel data for a specifc user inputted series. Then it compares the various prices for each available entry across the websites chosen and outputs a list of the entries available and the website and price for the cheapest entry.
 ***
@@ -54,7 +54,8 @@ If you want a website or region to be added fill out a [issue request](https://g
 ```
  
 ***
-#### Demo
+
+### Demo
 ```cs
 // Create the MasterScrape object it defaults to America Region, Chrome Browser, 
 // & all memberships are default false (it is better to set them), 
@@ -93,17 +94,10 @@ MasterScrape Scrape = new MasterScrape(
     IsIndigoMember: true
 )
 .EnableDebugMode()
-.EnablePersistentWebDriver();
 ```
-##### Initializating Scrape
-```cs
-// Initialize the Scrape using strings
-await scrape.InitializeScrapeAsync(
-    title: "one piece",
-    bookType: BookType.Manga,
-    scrape.GenerateWebsiteList([ RobertsAnimeCornerStore.WEBSITE_TITLE, Crunchyroll.WEBSITE_TITLE ]),
-);
 
+#### Initializating Scrape
+```cs
 // Initialize the Scrape using enums
 await scrape.InitializeScrapeAsync(
     title: "one piece",
@@ -111,7 +105,7 @@ await scrape.InitializeScrapeAsync(
     [ Website.RobertsAnimeCornerStore, Website.Crunchyroll ],
 );
 
-// Initialize the Scrape using params
+// Initialize the Scrape using enum params
 await scrape.InitializeScrapeAsync(
     title: "one piece",
     bookType: BookType.Manga,
@@ -119,7 +113,8 @@ await scrape.InitializeScrapeAsync(
     Website.Crunchyroll,
 );
 ```
-##### Getting Results
+
+#### Getting Results
 ```cs
 // Get Final data Results
 List<EntryModel> resultData = scrape.GetResults();

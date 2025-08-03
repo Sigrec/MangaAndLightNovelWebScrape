@@ -1,20 +1,24 @@
+using System.Collections.Frozen;
+using System.Net;
+
 namespace MangaAndLightNovelWebScrape.Websites;
 
 internal sealed partial class BooksAMillion : IWebsite
 {
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
 
-    private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[@class='search-item-title']/a");
-    private static readonly XPathExpression BookQualityXPath = XPathExpression.Compile("//div[@class='productInfoText']");
-    private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='our-price']");
-    private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='availability_search_results']");
-    private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//ul[@class='search-page-list']//a[@title='Next']");
+    private static readonly XPathExpression _titleXPath = XPathExpression.Compile("//div[@class='search-item-title']/a");
+    private static readonly XPathExpression _descXPath = XPathExpression.Compile("//div[@id='pdpOverview']/div/div");
+    private static readonly XPathExpression _bookQualityXPath = XPathExpression.Compile("//div[@class='productInfoText']");
+    private static readonly XPathExpression _pricexPath = XPathExpression.Compile("//span[@class='our-price']");
+    private static readonly XPathExpression _stockStatusXPath = XPathExpression.Compile("//div[@class='availability_search_results']");
+    private static readonly XPathExpression _pageCheckXPath = XPathExpression.Compile("//ul[@class='search-page-list']//a[@title='Next']");
 
     [GeneratedRegex(@"V\d{1,3}", RegexOptions.IgnoreCase)] private static partial Regex MangaRemovalRegex();
     [GeneratedRegex(@"(?<=Box Set).*|:|\!|,|Includes.*|--The Manga|The Manga|\d+-\d+|\(Manga\) |(?<=Omnibus\s\d{1,3})[^\d.].*|\d{1,3}\s+\d{1,3}\s+\&\s+(\d{1,3})|\d{1,3},\s+\d{1,3}\s+\&\s+(\d{1,3})", RegexOptions.IgnoreCase)] private static partial Regex MangaFilterTitleRegex();
     [GeneratedRegex(@":|\!|,|Includes.*|\d+-\d+|\d+, \d+ \& \d+", RegexOptions.IgnoreCase)] private static partial Regex NovelFilterTitleRegex();
     [GeneratedRegex(@"(?<=Vol\s+\d+)[^\d\.].*|\(.*?\)$|\[.*?\]|Manga ", RegexOptions.IgnoreCase)] private static partial Regex CleanFilterTitleRegex();
-    [GeneratedRegex(@"Box Set (\d+)", RegexOptions.IgnoreCase)] private static partial Regex VolNumberRegex();
+    [GeneratedRegex(@"Box Set (\d+)", RegexOptions.IgnoreCase)] private static partial Regex BoxSetNumberRegex();
     [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)|3-In-1 V\d+|Vols\.|\d{1,3}-In-\d{1,3}|\d{1,3}-\d{1,3}", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
     [GeneratedRegex(@"3-In-1 V(\d+)|\d{1,3}-In-\d{1,3}|(?:\d{1,3}-(\d{1,3}))$|\d{1,3},\s+\d{1,3}\s+\&\s+(\d{1,3})|\d{1,3}\s+\d{1,3}\s+\&\s+(\d{1,3})", RegexOptions.IgnoreCase)] private static partial Regex OmnibusMatchRegex();
     [GeneratedRegex(@"Vol\.|Volumes|Volume|Vols\.|Vols", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
@@ -30,36 +34,42 @@ internal sealed partial class BooksAMillion : IWebsite
 
     private const decimal MEMBERSHIP_DISCOUNT = 0.1M;
 
+    private static readonly FrozenSet<string> _mangaDescExcludeVals = [ "Novel", ];
+    private static readonly FrozenSet<string> _mangaIncludeVals = [ "Vol", "Box Set", "BOXSET", "Comic", "Anniversary" ];
+    private static readonly FrozenSet<string> _boxSetIncludeVals = ["Boxset", "Box Set"];
+    private static readonly FrozenSet<string> _novelIncludeVals = [ "Light Novel", "Novel", ];
+    private static readonly FrozenSet<string> _novelExcludeVals = [ "Manga", "Volumes", "Vol" ];
+
     public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships)
     {
-        return Task.Run(() =>
+        return Task.Run(async () =>
         {
             WebDriver driver = MasterScrape.SetupBrowserDriver(browser, true);
-            (List<EntryModel> Data, List<string> Links) = GetData(bookTitle, bookType, driver, memberships.IsBooksAMillionMember);
+            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, driver, memberships.IsBooksAMillionMember);
             masterDataList.Add(Data);
             masterLinkList.TryAdd(Website.BooksAMillion, Links[0]);
         });
     }
 
-    private static string GenerateWebsiteUrl(string bookTitle, bool boxsetCheck, BookType bookType, int pageNum)
+    private static string GenerateWebsiteUrl(string bookTitle, bool boxSetCheck, BookType bookType, int pageNum)
     {
         // Initialize a StringBuilder
         StringBuilder stringBuilder = new($"{BASE_URL}/search2?");
 
+        bookTitle = InternalHelpers.FilterBookTitle(bookTitle.Replace(" ", "+"));
         if (bookType == BookType.LightNovel)
         {
-            // https://www.booksamillion.com/search2?query=naruto%20light%20novel&filters[product_type]=Books
-            stringBuilder.Append($"query={InternalHelpers.FilterBookTitle(bookTitle)}");
-            stringBuilder.Append($"{(boxsetCheck ? "%20light%20novel%20box%20set" : "%20light%20novel")}&filters[product_type]=Books&page={pageNum}");
+            // https://www.booksamillion.com/search2?query=classroom+of+the+elite+light+novel&filters%5Bproduct_type%5D=Books
+            // https://www.booksamillion.com/search2?query=Overlord+light+novel
+            // https://www.booksamillion.com/search2?query=Overlord+light+novel;filters[product_type]=Books&page=1
+            stringBuilder.Append($"query={bookTitle}");
+            stringBuilder.Append($"{(boxSetCheck ? "+light+novel+box+set" : "+light+novel")};filters[product_type]=Books;page={pageNum}");
         }
         else
         {
-            // https://www.booksamillion.com/search2?query=naruto;filters%5Bproduct_type%5D=Books
+            // https://www.booksamillion.com/search2?query=2.5+dimensional+seduction;filters[product_type]=Books&filters[content_lang]=English
 
-            // https://www.booksamillion.com/search2?id=9351450074874&query=one+piece+box+set&filters%5Bproduct_type%5D=Books
-            // https://www.booksamillion.com/search2?id=9351450074874&query=naruto+box+set&filters%5Bproduct_type%5D=Books
-
-            stringBuilder.Append($"query={InternalHelpers.FilterBookTitle(bookTitle)}{(boxsetCheck ? "manga%20box%20set" : "%20manga")};filters%5Bproduct_type%5D=Books;page={pageNum}");
+            stringBuilder.Append($"query={bookTitle}{(boxSetCheck ? "manga+box+set" : "+manga")};filters[product_type]=Books&filters[content_lang]=English;page={pageNum}");
         }
 
         // Convert StringBuilder to string
@@ -71,81 +81,90 @@ internal sealed partial class BooksAMillion : IWebsite
     private static string CleanAndParseTitle(string entryTitle, BookType bookType, string bookTitle)
     {
         StringBuilder curTitle;
+
         if (bookType == BookType.LightNovel)
         {
             entryTitle = CleanFilterTitleRegex().Replace(NovelFilterTitleRegex().Replace(entryTitle, string.Empty), string.Empty);
-            curTitle = new StringBuilder(entryTitle).Replace("(Novel)", "Novel").Replace("(Light Novel)", "Novel");
-            entryTitle = curTitle.ToString();
-            if (!entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase))
+            curTitle = new StringBuilder(entryTitle.Length)
+                .Append(entryTitle)
+                .Replace("(Novel)", "Novel")
+                .Replace("(Light Novel)", "Novel");
+
+            ReadOnlySpan<char> curSpan = curTitle.ToString();
+
+            if (!curSpan.Contains("Novel", StringComparison.OrdinalIgnoreCase))
             {
-                int volIndex = entryTitle.IndexOf("Vol");
-                int boxSetIndex = entryTitle.IndexOf("Box Set");
+                int volIndex = curSpan.IndexOf("Vol", StringComparison.OrdinalIgnoreCase);
+                int boxSetIndex = curSpan.IndexOf("Box Set", StringComparison.OrdinalIgnoreCase);
+
                 if (volIndex != -1)
-                {
                     curTitle.Insert(volIndex, "Novel ");
-                }
                 else if (boxSetIndex != -1)
-                {
                     curTitle.Insert(boxSetIndex, "Novel ");
-                }
                 else
-                {
                     curTitle.Append(" Novel");
-                }
             }
         }
         else
         {
-            if (entryTitle.Contains("Omnibus") || 
-                entryTitle.Contains("3-in-1", StringComparison.CurrentCultureIgnoreCase) || 
-                entryTitle.Contains("2-in-1", StringComparison.CurrentCultureIgnoreCase))
+            ReadOnlySpan<char> rawSpan = entryTitle;
+
+            if (rawSpan.Contains("Omnibus", StringComparison.CurrentCultureIgnoreCase) || 
+                rawSpan.Contains("3-in-1", StringComparison.CurrentCultureIgnoreCase) || 
+                rawSpan.Contains("2-in-1", StringComparison.CurrentCultureIgnoreCase))
             {
                 entryTitle = OmnibusRegex().Replace(entryTitle, "Omnibus");
             }
-            
+
             curTitle = new StringBuilder(CleanFilterTitleRegex().Replace(MangaFilterTitleRegex().Replace(entryTitle, string.Empty), string.Empty));
             string entryTitleCleaned = curTitle.ToString().Trim();
+            ReadOnlySpan<char> cleanedSpan = entryTitleCleaned;
 
             if (bookTitle.Equals("Boruto", StringComparison.OrdinalIgnoreCase))
             {
                 curTitle.Replace("Naruto Next Generations", string.Empty);
             }
 
-            if (entryTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) || 
-                entryTitle.Contains("BOXSET", StringComparison.OrdinalIgnoreCase))
+            ReadOnlySpan<char> entrySpan = entryTitle;
+
+            if (entrySpan.Contains("Box Set", StringComparison.OrdinalIgnoreCase) || entrySpan.Contains("BOXSET", StringComparison.OrdinalIgnoreCase))
             {
-                if (entryTitleCleaned.Equals("NARUTO BOXSET V01-V27"))
+                if (entryTitleCleaned.Contains("V01-V27", StringComparison.OrdinalIgnoreCase))
                 {
                     curTitle.Replace("NARUTO BOXSET V01-V27", "Naruto Box Set 1");
                 }
                 else
                 {
-                    string boxSetNum = VolNumberRegex().Match(entryTitle).Groups[1].Value;
+                    string boxSetNum = BoxSetNumberRegex().Match(entryTitle).Groups[1].Value;
                     if (!bookTitle.ContainsAny(["attack on titan"]))
                     {
-                        curTitle.AppendFormat(" {0}", !string.IsNullOrWhiteSpace(boxSetNum) ? boxSetNum : '1');
+                        curTitle.Append(' ');
+                        curTitle.Append(!string.IsNullOrWhiteSpace(boxSetNum) ? boxSetNum : "1");
                     }
                 }
             }
             else if (OmnibusMatchRegex().IsMatch(entryTitle))
             {
-                GroupCollection omnibusMatch = OmnibusMatchRegex().Match(entryTitle).Groups;
-                string firstOmniNum = omnibusMatch[1].Value.TrimStart('0');
-                string secondOmniNum = omnibusMatch[2].Value;
-                string thirdOmniNum = omnibusMatch[3].Value;
+                var match = OmnibusMatchRegex().Match(entryTitle);
+                GroupCollection groups = match.Groups;
+                string firstOmniNum = groups[1].Value.TrimStart('0');
+                string secondOmniNum = groups[2].Value;
+                string thirdOmniNum = groups[3].Value;
+
                 LOGGER.Debug("{} | {} | {} | {}", entryTitleCleaned, firstOmniNum, secondOmniNum, thirdOmniNum);
 
-                if (!entryTitleCleaned.Contains(" Omnibus", StringComparison.OrdinalIgnoreCase))
+                if (!cleanedSpan.Contains(" Omnibus", StringComparison.OrdinalIgnoreCase))
                 {
-                    curTitle.Insert(entryTitleCleaned.IndexOf("Vol", StringComparison.OrdinalIgnoreCase), "Omnibus ");
+                    int volPos = cleanedSpan.IndexOf("Vol", StringComparison.OrdinalIgnoreCase);
+                    if (volPos != -1)
+                        curTitle.Insert(volPos, "Omnibus ");
                 }
-                
-                if (!entryTitleCleaned.Contains(" Vol", StringComparison.OrdinalIgnoreCase))
-                {
+
+                if (!cleanedSpan.Contains(" Vol", StringComparison.OrdinalIgnoreCase))
                     curTitle.Append("Vol ");
-                }
-                
-                if (!char.IsDigit(curTitle.ToString().Trim()[^1]))
+
+                ReadOnlySpan<char> trimmed = curTitle.ToString().Trim();
+                if (!char.IsDigit(trimmed[^1]))
                 {
                     if (!string.IsNullOrWhiteSpace(firstOmniNum))
                     {
@@ -161,36 +180,36 @@ internal sealed partial class BooksAMillion : IWebsite
                     }
                 }
             }
-            else if (!entryTitleCleaned.Contains("Vol", StringComparison.OrdinalIgnoreCase) &&
-                     !entryTitleCleaned.Contains("Box Set", StringComparison.OrdinalIgnoreCase) &&
-                     MasterScrape.FindVolNumRegex().IsMatch(entryTitleCleaned))
+            else if (!cleanedSpan.Contains("Vol", StringComparison.OrdinalIgnoreCase) &&
+                    !cleanedSpan.Contains("Box Set", StringComparison.OrdinalIgnoreCase) &&
+                    MasterScrape.FindVolNumRegex().IsMatch(entryTitleCleaned))
             {
-                curTitle.Insert(MasterScrape.FindVolNumRegex().Match(entryTitleCleaned).Index, "Vol ");
+                Match match = MasterScrape.FindVolNumRegex().Match(entryTitleCleaned);
+                curTitle.Insert(match.Index, "Vol ");
             }
-            LOGGER.Debug("{}", curTitle.ToString());
 
-            if (entryTitle.Contains("Stall", StringComparison.OrdinalIgnoreCase) && 
-                !bookTitle.Contains("Stall", StringComparison.OrdinalIgnoreCase))
+            if (entrySpan.Contains("Stall", StringComparison.OrdinalIgnoreCase) && 
+                !bookTitle.AsSpan().Contains("Stall", StringComparison.OrdinalIgnoreCase))
             {
-                int volIndex = curTitle.ToString().LastIndexOf("Vol", StringComparison.OrdinalIgnoreCase);
+                string temp = curTitle.ToString();
+                int volIndex = temp.LastIndexOf("Vol", StringComparison.OrdinalIgnoreCase);
                 if (volIndex != -1)
-                {
                     curTitle.Remove(volIndex, curTitle.Length - volIndex);
-                }
             }
         }
 
-        entryTitle = curTitle.ToString();
-        if (entryTitle.Contains("vols.", StringComparison.OrdinalIgnoreCase))
+        string final = curTitle.ToString();
+
+        if (final.AsSpan().Contains("vols.", StringComparison.OrdinalIgnoreCase))
         {
-            int index = entryTitle.IndexOf("vols.", StringComparison.OrdinalIgnoreCase);
+            int index = final.IndexOf("vols.", StringComparison.OrdinalIgnoreCase);
             curTitle.Remove(index, curTitle.Length - index);
         }
 
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString().Trim(), " ");
     }
 
-    public (List<EntryModel> Data, List<string> Links) GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
     {
         List<EntryModel> data = [];
         List<string> links = [];
@@ -198,12 +217,24 @@ internal sealed partial class BooksAMillion : IWebsite
         try
         {
             WebDriverWait wait = new(driver!, TimeSpan.FromSeconds(60));
+            HtmlDocument doc = new()
+            {
+                OptionCheckSyntax = false,
+                OptionFixNestedTags = false,
+                OptionAutoCloseOnEnd = true
+            };
 
-            HtmlDocument doc = new();
-            bool boxsetCheck = false, boxsetValidation = false;
-            bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+            HtmlDocument descDoc = new()
+            {
+                OptionCheckSyntax = false,
+                OptionFixNestedTags = false,
+                OptionAutoCloseOnEnd = true
+            };
+
+            bool boxSetCheck = false, boxsetValidation = false;
+            bool bookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
             int pageNum = 1;
-            string curUrl = GenerateWebsiteUrl(bookTitle, boxsetCheck, bookType, pageNum);
+            string curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, pageNum);
             LOGGER.Info($"Initial Url {curUrl}");
             links.Add(curUrl);
             driver!.Navigate().GoToUrl(curUrl);
@@ -216,62 +247,93 @@ internal sealed partial class BooksAMillion : IWebsite
 
             while (true)
             {
-                wait.Until(e => e.FindElement(By.ClassName("search-results")));
+                wait.Until(e => e.FindElement(By.ClassName("search-item-title")));
 
                 // Initialize the html doc for crawling
                 doc.LoadHtml(driver.PageSource);
 
                 // Get the page data from the HTML doc
-                HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
-                HtmlNodeCollection bookQuality = doc.DocumentNode.SelectNodes(BookQualityXPath);
-                HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
-                HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
-                HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
+                HtmlNodeCollection? titleData = doc.DocumentNode.SelectNodes(_titleXPath);
+                HtmlNodeCollection? bookQuality = doc.DocumentNode.SelectNodes(_bookQualityXPath);
+                HtmlNodeCollection? priceData = doc.DocumentNode.SelectNodes(_pricexPath);
+                HtmlNodeCollection? stockStatusData = doc.DocumentNode.SelectNodes(_stockStatusXPath);
+                HtmlNode? pageCheck = doc.DocumentNode.SelectSingleNode(_pageCheckXPath);
 
-                for (int x = 0; x < titleData.Count; x++)
+                // LOGGER.Debug("{} | {} | {} | {} | {}", titleData?.Count, bookQuality?.Count, priceData?.Count, stockStatusData?.Count, pageCheck is null);
+
+                if (titleData is null || bookQuality is null || priceData is null || stockStatusData is null)
                 {
-                    string entryTitle = titleData[x].InnerText.Trim();
-                    if (!boxsetValidation && entryTitle.Contains(bookTitle, StringComparison.OrdinalIgnoreCase) && (entryTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase) || entryTitle.Contains("BOXSET", StringComparison.OrdinalIgnoreCase)) && (bookType == BookType.Manga || (bookType == BookType.LightNovel && !entryTitle.ContainsAny(["Manga", "Volumes", "Vol"]) && !MangaRemovalRegex().IsMatch(entryTitle))))
+                    LOGGER.Info("One of the helm node collections returned no data");
+                    break;
+                }
+
+                for (int x = 0; x < titleData!.Count; x++)
+                {
+                    string? entryTitle = WebUtility.HtmlDecode(titleData[x]?.InnerText?.Trim());
+                    if (entryTitle is null)
+                    {
+                        LOGGER.Debug("Entry Title = {} is null", entryTitle);
+                        continue;
+                    }
+                    
+                    if (!boxsetValidation && entryTitle.Contains(bookTitle, StringComparison.OrdinalIgnoreCase) && entryTitle.ContainsAny(_boxSetIncludeVals) && (bookType == BookType.Manga || (bookType == BookType.LightNovel && !entryTitle.ContainsAny(["Manga", "Volumes", "Vol"]) && !MangaRemovalRegex().IsMatch(entryTitle))))
                     {
                         boxsetValidation = true;
                         continue;
                     }
 
-                    LOGGER.Debug("{} | {} | {} | {}", entryTitle, !InternalHelpers.ShouldRemoveEntry(entryTitle), InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle), !bookQuality[x].InnerText.Contains("Library Binding"));
+                    LOGGER.Debug("{} | {} | {} | {} | {}", entryTitle, InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle), bookType == BookType.LightNovel && entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase), !bookQuality[x].InnerText.Contains("Library Binding"), (
+                                bookType == BookType.LightNovel &&
+                                (entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) ||
+                                !entryTitle.ContainsAny(_novelExcludeVals) &&
+                                !MangaRemovalRegex().IsMatch(entryTitle))
+                            ));
 
-                    if ((!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck || entryTitle.Contains("[With")) &&
+                    if (InternalHelpers.ShouldRemoveEntry(entryTitle) && !bookTitleRemovalCheck)
+                    {
+                        LOGGER.Debug("Removed {}", entryTitle);
+                        continue;
+                    }
+
+                    if (
                         InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle) &&
                         !bookQuality[x].InnerText.Contains("Library Binding") &&
-                        (titleData.Count == 1 && !boxsetCheck ||
-                        bookType == BookType.Manga &&
+                        (
+                            titleData.Count == 1 && !boxSetCheck ||
                             (
-                                (entryTitle.Equals(bookTitle, StringComparison.OrdinalIgnoreCase) && pageNum == 1) ||
-                                entryTitle.ContainsAny(["Vol", "Box Set", "BOXSET", "Comic"]) ||
-                                (!entryTitle.ContainsAny(["Vol", "Box Set", "BOXSET", "Comic"]) &&
-                                (pageNum > 1 || entryTitle.Any(char.IsDigit) &&
-                                !bookTitle.Any(char.IsDigit)))
-                            )
-                            &&
-                            (!(
-                                entryTitle.Contains("(Light Novel", StringComparison.OrdinalIgnoreCase) ||
-                                InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony") ||
-                                InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Attack on Titan", entryTitle, "Adventure", "Fly") ||
-                                InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto", "Story", "Team 7 Character", "Dragon Rider")
+                                bookType == BookType.Manga &&
+                                (
+                                    (entryTitle.Equals(bookTitle, StringComparison.OrdinalIgnoreCase) && pageNum == 1) ||
+                                    entryTitle.ContainsAny(_mangaIncludeVals) ||
+                                    (!entryTitle.ContainsAny(_mangaIncludeVals) &&
+                                    (pageNum > 1 || entryTitle.Any(char.IsDigit) &&
+                                    !bookTitle.Any(char.IsDigit)))
+                                )
+                                &&
+                                (!(
+                                    entryTitle.Contains("(Light Novel", StringComparison.OrdinalIgnoreCase) ||
+                                    InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony") ||
+                                    InternalHelpers.RemoveUnintendedVolumes(bookTitle, "attack on titan", entryTitle, ["harsh mistress"]) ||
+                                    InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto", "Story", "Team 7 Character", "Dragon Rider")
+                                )
+                                ||
+                                (
+                                    InternalHelpers.RemoveUnintendedVolumes(bookTitle, "One Piece", entryTitle, "Wanted")
+                                ))
                             )
                             ||
                             (
-                                InternalHelpers.RemoveUnintendedVolumes(bookTitle, "One Piece", entryTitle, "Wanted")
-                            ))
-                        ||
-                        bookType == BookType.LightNovel &&
-                        (entryTitle.ContainsAny(["Light Novel", "Novel",]) ||
-                        !entryTitle.ContainsAny(["Manga", "Volumes", "Vol"]) &&
-                        !MangaRemovalRegex().IsMatch(entryTitle)))
+                                bookType == BookType.LightNovel &&
+                                (entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) ||
+                                !entryTitle.ContainsAny(_novelExcludeVals) &&
+                                !MangaRemovalRegex().IsMatch(entryTitle))
+                            )
+                        )
                     )
                     {
-                        if (!entryTitle.ContainsAny(["Boxset", "Box Set"]) && MangaRemovalRegex().IsMatch(entryTitle))
+                        if (!entryTitle.ContainsAny(_boxSetIncludeVals) && MangaRemovalRegex().IsMatch(entryTitle))
                         {
-                            LOGGER.Info("Removed (2) {}", entryTitle);
+                            LOGGER.Debug("Removed (2) {}", entryTitle);
                             continue;
                         }
 
@@ -281,15 +343,29 @@ internal sealed partial class BooksAMillion : IWebsite
                             bookTitle
                         );
 
-                        if (!data.Exists(entry => entry.Entry.Equals(entryTitle)))
+                        string price = priceData[x].InnerText.Trim();
+                        if (!string.IsNullOrWhiteSpace(price) && decimal.TryParse(price[1..], out decimal priceVal))
                         {
-                            decimal priceVal = Convert.ToDecimal(priceData[x].InnerText.Trim()[1..]);
-
                             ReadOnlySpan<char> stockText = stockStatusData[x].InnerText.AsSpan();
                             StockStatus stockStatus = stockText.Contains("In Stock", StringComparison.OrdinalIgnoreCase) ? StockStatus.IS :
                             stockText.Contains("Preorder", StringComparison.OrdinalIgnoreCase) ? StockStatus.PO :
                             stockText.Contains("On Order", StringComparison.OrdinalIgnoreCase) ? StockStatus.BO :
                             StockStatus.OOS;
+
+                            if (bookType == BookType.Manga && !entryTitle.ContainsAny(_mangaIncludeVals))
+                            {
+                                string link = titleData[x].GetAttributeValue("href", "ERROR");
+                                LOGGER.Debug("Desc link = {}", link);
+                                driver.Navigate().GoToUrl($@"{link}");
+                                wait.Until(driver => driver.FindElement(By.Id("pdpOverview")));
+                                descDoc.LoadHtml(driver.PageSource);
+                                HtmlNode? desc = descDoc.DocumentNode.SelectSingleNode(_descXPath);
+                                if (desc is null || desc.InnerText.ContainsAny(_mangaDescExcludeVals))
+                                {
+                                    LOGGER.Debug("Removed (3) {}", entryTitle);
+                                    continue;
+                                }
+                            }
 
                             data.Add(
                                 new EntryModel
@@ -303,12 +379,12 @@ internal sealed partial class BooksAMillion : IWebsite
                         }
                         else
                         {
-                            LOGGER.Info("Removed (3) {}", entryTitle);
+                            LOGGER.Debug("Removed (4) {}", entryTitle);
                         }
                     }
                     else
                     {
-                        LOGGER.Info("Removed (1) {}", entryTitle);
+                        LOGGER.Debug("Removed (1) {}", entryTitle);
                     }
                 }
 
@@ -316,20 +392,20 @@ internal sealed partial class BooksAMillion : IWebsite
                 {
                     // driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath($"//ul[@class='search-page-list']//a[@title='Next']"))));
                     // wait.Until(e => e.FindElement(By.Id("content")));
-                    curUrl = GenerateWebsiteUrl(bookTitle, boxsetCheck, bookType, ++pageNum);
+                    curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, ++pageNum);
                     links.Add(curUrl);
                     driver.Navigate().GoToUrl(curUrl);
                     LOGGER.Info($"Next Page {driver.Url}");
                 }
                 else
                 {
-                    if (boxsetValidation && !boxsetCheck)
+                    if (boxsetValidation && !boxSetCheck)
                     {
-                        boxsetCheck = true;
+                        boxSetCheck = true;
                         pageNum = 1;
-                        curUrl = GenerateWebsiteUrl(bookTitle, boxsetCheck, bookType, pageNum);
+                        curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, pageNum);
                         links.Add(curUrl);
-                        LOGGER.Info("Initial Box Set Url: {}", curUrl);
+                        LOGGER.Info("Box Set Url: {}", curUrl);
                         driver.Navigate().GoToUrl(curUrl);
                     }
                     else
@@ -338,18 +414,21 @@ internal sealed partial class BooksAMillion : IWebsite
                     }
                 }
             }
+
+            data.TrimExcess();
+            links.TrimExcess();
+            data.Sort(EntryModel.VolumeSort);
+            data.RemoveDuplicates(LOGGER);
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
         }
         catch (Exception ex)
         {
             LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
+            throw;
         }
         finally
         {
             driver?.Quit();
-            data.TrimExcess();
-            links.TrimExcess();
-            data.Sort(EntryModel.VolumeSort);
-            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
         }
 
         return (data, links);

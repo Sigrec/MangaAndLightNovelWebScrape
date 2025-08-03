@@ -16,7 +16,6 @@ public class BooksAMillionBenchmarks
     public void Setup()
     {
         _instance = new MangaAndLightNovelWebScrape.Websites.BooksAMillion();
-        _driver = MasterScrape.SetupBrowserDriver(Browser.FireFox, true);
     }
 
     [GlobalCleanup]
@@ -27,9 +26,10 @@ public class BooksAMillionBenchmarks
     }
 
     [Benchmark]
-    [WarmupCount(1)]
-    public void GetMangaBenchmark()
+    [WarmupCount(3)]
+    public async Task GetMangaDataBenchmark()
     {
-        _instance?.GetData("one piece", BookType.Manga, true, _driver!);
+        _driver = MasterScrape.SetupBrowserDriver(Browser.FireFox, true);
+        await _instance!.GetData("one piece", BookType.Manga, _driver!, true);
     }
 }

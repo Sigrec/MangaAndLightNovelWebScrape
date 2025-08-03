@@ -40,7 +40,7 @@ public interface IWebsite
     /// <summary>
     /// Performs a synchronous scrape and returns the scraped entries.
     /// </summary>
-    (List<EntryModel> Data, List<string> Links) GetData(
+    Task<(List<EntryModel> Data, List<string> Links)> GetData(
         string bookTitle,
         BookType bookType,
         WebDriver? driver = null,

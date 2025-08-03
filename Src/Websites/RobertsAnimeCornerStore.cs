@@ -27,9 +27,9 @@ internal sealed partial class RobertsAnimeCornerStore : IWebsite
 
     public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
     {
-        return Task.Run(() =>
+        return Task.Run(async () =>
         {
-            (List<EntryModel> Data, List<string> Links) = GetData(bookTitle, bookType);
+            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType);
             masterDataList.Add(Data);
             masterLinkList.TryAdd(Website.RobertsAnimeCornerStore, Links.Last());
         });
@@ -234,7 +234,7 @@ internal sealed partial class RobertsAnimeCornerStore : IWebsite
         return result;
     }
 
-    public (List<EntryModel> Data, List<string> Links) GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
     {
         List<EntryModel> data = [];
         List<string> links = [];

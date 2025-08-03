@@ -27,9 +27,9 @@ internal sealed partial class Crunchyroll : IWebsite
 
     public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships)
     {
-        return Task.Run(() =>
+        return Task.Run(async () =>
         {
-            (List<EntryModel> Data, List<string> Links) = GetData(bookTitle, bookType);
+            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType);
             masterDataList.Add(Data);
             masterLinkList.TryAdd(Website.Crunchyroll, Links[0]);
         });
@@ -46,11 +46,11 @@ internal sealed partial class Crunchyroll : IWebsite
         bookTitle = InternalHelpers.FilterBookTitle(bookTitle);
         string url = bookType == BookType.Manga
             ? (retry
-                ? $"{BASE_URL}/search?q={bookTitle}&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Specialty%20Books%7CManga%7CBundles&sz={int.MaxValue}"
-                : $"{BASE_URL}/collections/{bookTitle}/?prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Specialty%20Books%7CManga%7CBundles&sz={int.MaxValue}")
+                ? $"{BASE_URL}/collections/{bookTitle}/?prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Specialty%20Books%7CManga%7CBundles&sz={int.MaxValue}"
+                : $"{BASE_URL}/search?q={bookTitle}&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Specialty%20Books%7CManga%7CBundles&sz={int.MaxValue}")
             : (retry
-                ? $"{BASE_URL}/search?q={bookTitle}&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Novels&sz={int.MaxValue}"
-                : $"{BASE_URL}/collections/{bookTitle}/?prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Novels&sz={int.MaxValue}");
+                ? $"{BASE_URL}/collections/{bookTitle}/?prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Novels&sz={int.MaxValue}" :
+                $"{BASE_URL}/search?q={bookTitle}&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Novels&sz={int.MaxValue}");
 
         LOGGER.Info(url);
         return url;
@@ -127,7 +127,7 @@ internal sealed partial class Crunchyroll : IWebsite
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
     }
 
-    public (List<EntryModel> Data, List<string> Links) GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
     {
         List<EntryModel> data = [];
         List<string> links = [];

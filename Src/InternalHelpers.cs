@@ -17,7 +17,7 @@ internal static partial class InternalHelpers
         "Poster", "Statue", "IMPORT", "Trace", "Bookmarks", "Music Book",
         "Retrospective", "Notebook", "Journal", "Art of", "the Anime",
         "Calendar", "Adventure Book", "Coloring Book", "Sketchbook", "PLUSH",
-        "Pirate Recipes", "Exclusive", "Hobby", "Model Kit", "Funko POP"
+        "Pirate Recipes", "Exclusive", "Hobby", "Model Kit", "Funko POP", "Creator of the", "the Movie"
     }
     .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
@@ -52,23 +52,6 @@ internal static partial class InternalHelpers
         else
         {
             combinedTerms = _entryRemovalTerms;
-        }
-
-        // Quick bailout: check first‐letter match for any term
-        char first = char.ToUpperInvariant(title[0]);
-        bool hasMatchingFirst = false;
-        foreach (string term in combinedTerms)
-        {
-            if (char.ToUpperInvariant(term[0]) == first)
-            {
-                hasMatchingFirst = true;
-                break;
-            }
-        }
-
-        if (!hasMatchingFirst)
-        {
-            return false;
         }
 
         // Full substring scan (case‐insensitive)
@@ -248,7 +231,7 @@ internal static partial class InternalHelpers
         return RemoveNonWordsRegex().Replace(curTitle, string.Empty).StartsWith(RemoveNonWordsRegex().Replace(bookTitle, string.Empty), StringComparison.OrdinalIgnoreCase);
     }
 
-    internal static void ReplaceMultipleTextInEntryTitle (ref StringBuilder curTitle, string bookTitle, string[] containsText, string replaceText)
+    internal static void ReplaceMultipleTextInEntryTitle (ref StringBuilder curTitle, string bookTitle, IEnumerable<string> containsText, string replaceText)
     {
         foreach (string text in containsText)
         {
@@ -404,10 +387,14 @@ internal static partial class InternalHelpers
             if (pTrimChars == null)
             {
                 if (char.IsWhiteSpace(lChar) == false)
+                {
                     break;
+                }
             }
             else if ((char.IsWhiteSpace(lChar) == false) && (pTrimChars.Contains(lChar) == false))
+            {
                 break;
+            }
         }
 
         if (i < pStringBuilder.Length - 1)
@@ -446,7 +433,7 @@ internal static partial class InternalHelpers
 
     internal static bool ContainsAny(this string input, IEnumerable<string> values)
     {
-        return values.Any(val => input.Contains(val, StringComparison.OrdinalIgnoreCase));
+        return values.AsValueEnumerable().Any(val => input.Contains(val, StringComparison.OrdinalIgnoreCase));
     }
 
     internal static void RemoveDuplicates(this List<EntryModel> input, Logger LOGGER)

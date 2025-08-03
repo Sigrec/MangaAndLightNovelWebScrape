@@ -22,8 +22,8 @@ public class RobertsAnimeCornerStoreBenchmarks
 
     [Benchmark]
     [WarmupCount(20)]
-    public void GetMangaBenchmark()
+    public async Task GetMangaBenchmark()
     {
-        _instance!.GetData("one piece", BookType.Manga);
+        await _instance!.GetData("one piece", BookType.Manga);
     }
 }

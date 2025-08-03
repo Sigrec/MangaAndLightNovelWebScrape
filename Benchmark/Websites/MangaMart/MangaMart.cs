@@ -30,6 +30,6 @@ public class MangaMartBenchmarks
     [WarmupCount(5)]
     public void GetMangaBenchmark()
     {
-        _instance?.GetMangaMartData("one piece", BookType.Manga, _driver!);
+        _instance?.GetData("one piece", BookType.Manga, _driver!);
     }
 }

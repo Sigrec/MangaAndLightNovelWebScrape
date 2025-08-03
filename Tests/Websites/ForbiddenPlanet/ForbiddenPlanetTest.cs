@@ -40,7 +40,8 @@ public class ForbiddenPlanetTests
         new object[] { "Toilet-bound Hanako-kun", BookType.Manga, "ToiletMangaData", false },
         new object[] { "classroom of the elite", BookType.LightNovel, "COTENovelData", false },
         new object[] { "Boruto", BookType.Manga, "BorutoMangaData", false },
-        new object[] { "Noragami", BookType.Manga, "NoragamiMangaData", false }
+        new object[] { "Noragami", BookType.Manga, "NoragamiMangaData", false },
+        new object[] { "Blade & Bastard", BookType.LightNovel, "Blade&BastardNovelData", false }
     ];
 
     [TestCaseSource(nameof(ScrapeTestCases))]

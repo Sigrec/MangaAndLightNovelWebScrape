@@ -27,12 +27,12 @@ public class SciFierTests
         new object[] { "Dragon Quest: The Adventure of Dai", BookType.Manga, Region.Canada, "AdventuresOfDaiMangaData", false },
         new object[] { "one piece", BookType.Manga, Region.Canada, "OnePieceMangaData", false },
         new object[] { "Naruto", BookType.Manga, Region.Britain, "NarutoMangaData", false },
-        new object[] { "Naruto", BookType.LightNovel, Region.America, "NarutoNovelData", false }, 
+        new object[] { "Naruto", BookType.LightNovel, Region.America, "NarutoNovelData", false },
         new object[] { "Bleach", BookType.Manga, Region.Europe, "BleachMangaData", false },
-        new object[] { "attack on titan", BookType.Manga, Region.America, "AttackOnTitanMangaData", false }, 
+        new object[] { "attack on titan", BookType.Manga, Region.America, "AttackOnTitanMangaData", false },
         new object[] { "Goodbye, Eri", BookType.Manga, Region.America, "GoodbyeEriMangaData", false },
         new object[] { "2.5 Dimensional Seduction", BookType.Manga, Region.America, "DimensionalSeductionMangaData", false },
-        new object[] { "Overlord", BookType.LightNovel, Region.Britain, "OverlordNovelData", false }, 
+        new object[] { "Overlord", BookType.LightNovel, Region.Britain, "OverlordNovelData", false },
         new object[] { "overlord", BookType.Manga, Region.Europe, "OverlordMangaData", false },
         new object[] { "07-ghost", BookType.Manga, Region.America, "07GhostMangaData", false },
         new object[] { "fullmetal alchemist", BookType.Manga, Region.America, "FMABMangaData", false },
@@ -55,5 +55,13 @@ public class SciFierTests
         Scrape.Region = region;
         await Scrape.InitializeScrapeAsync(title, bookType, WebsiteList);
         Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList($@"C:\MangaAndLightNovelWebScrape\Tests\Websites\SciFier\SciFier{expectedFilePath}.txt")));
+    }
+    
+    [Test]
+    public void RegionValidation_Test()
+    {
+        Assert.That(
+            MangaAndLightNovelWebScrape.Websites.SciFier.REGION.HasFlag(Region.America) && MangaAndLightNovelWebScrape.Websites.SciFier.REGION.HasFlag(Region.Australia) && MangaAndLightNovelWebScrape.Websites.SciFier.REGION.HasFlag(Region.Britain) && MangaAndLightNovelWebScrape.Websites.SciFier.REGION.HasFlag(Region.Canada) && MangaAndLightNovelWebScrape.Websites.SciFier.REGION.HasFlag(Region.Europe) && !MangaAndLightNovelWebScrape.Websites.SciFier.REGION.HasFlag(Region.Japan)
+        );
     }
 }

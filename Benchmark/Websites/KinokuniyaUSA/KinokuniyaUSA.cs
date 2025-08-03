@@ -28,8 +28,8 @@ public class KinokuniyaUSABenchmarks
 
     [Benchmark]
     [WarmupCount(5)]
-    public void GetMangaBenchmark()
+    public async Task GetMangaBenchmark()
     {
-        _instance?.GetKinokuniyaUSAData("one piece", BookType.Manga, true, _driver!);
+        await _instance!.GetData("one piece", BookType.Manga, _driver!, true);
     }
 }

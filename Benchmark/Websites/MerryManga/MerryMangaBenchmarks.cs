@@ -28,8 +28,8 @@ public class MerryMangaBenchmarks
 
     [Benchmark]
     [WarmupCount(5)]
-    public void GetMangaBenchmark()
+    public async Task GetMangaBenchmark()
     {
-        _instance?.GetMerryMangaData("one piece", BookType.Manga, _driver!);
+        await _instance!.GetData("one piece", BookType.Manga, _driver!);
     }
 }

@@ -6,7 +6,7 @@ namespace Tests.Websites.Crunchyroll;
 public class CrunchyrollTests
 {
     private MasterScrape Scrape;
-    private readonly HashSet<Website> WebsiteList = [ Website.Crunchyroll ];
+    private readonly HashSet<Website> WebsiteList = [Website.Crunchyroll];
 
     [OneTimeSetUp]
     public void OneTimeSetUp()
@@ -30,7 +30,7 @@ public class CrunchyrollTests
         new object[] { "Bleach", BookType.Manga, "BleachMangaData", false },
         new object[] { "attack on titan", BookType.Manga, "AttackOnTitanMangaData", false },
         new object[] { "Goodbye, Eri", BookType.Manga, "GoodbyeEriMangaData", false },
-        new object[] {"2.5 Dimensional Seduction", BookType.Manga, "DimensionalSeductionMangaData", false},
+        new object[] { "2.5 Dimensional Seduction", BookType.Manga, "DimensionalSeductionMangaData", false},
         new object[] { "overlord", BookType.Manga, "OverlordMangaData", false },
         new object[] { "Overlord", BookType.LightNovel, "OverlordNovelData", false },
         new object[] { "fullmetal alchemist", BookType.Manga, "FMABMangaData", false },
@@ -40,14 +40,6 @@ public class CrunchyrollTests
         new object[] { "Boruto", BookType.Manga, "BorutoMangaData", false },
         new object[] { "Blade & Bastard", BookType.LightNovel, "Blade&BastardNovelData", false },
     ];
-
-    [Test]
-    public void RegionValidation_Test()
-    {
-        Assert.That(
-            MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.America) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Australia) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Britain) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Canada) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Europe) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Japan)
-        );
-    }
 
     [TestCaseSource(nameof(ScrapeTestCases))]
     public async Task Crunchyroll_Scrape_Test(string title, BookType bookType, string fileName, bool skip)
@@ -60,5 +52,13 @@ public class CrunchyrollTests
 
         await Scrape.InitializeScrapeAsync(title, bookType, WebsiteList);
         Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList($@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\Crunchyroll{fileName}.txt")));
+    }
+    
+    [Test]
+    public void RegionValidation_Test()
+    {
+        Assert.That(
+            MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.America) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Australia) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Britain) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Canada) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Europe) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Japan)
+        );
     }
 }

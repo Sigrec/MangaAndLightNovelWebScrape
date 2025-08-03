@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using MangaAndLightNovelWebScrape.Enums;
 
@@ -22,8 +23,8 @@ public class SciFierBenchmarks
 
     [Benchmark]
     [WarmupCount(10)]
-    public void GetMangaBenchmark()
+    public async Task GetMangaBenchmark()
     {
-        _instance?.GetSciFierData("one piece", BookType.Manga, Region.America);
+        await _instance!.GetData("one piece", BookType.Manga, curRegion: Region.America);
     }
 }

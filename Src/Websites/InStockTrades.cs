@@ -17,8 +17,8 @@ internal sealed partial class InStockTrades : IWebsite
     private static readonly FrozenSet<string> _excludeMangaFilters = [ " Novel ", " Sc " ];
     private static readonly FrozenSet<string> _excludeNovelFilters = ["Manga", " GN", " Ed TP"];
     private static readonly FrozenSet<string> _oneShotCheckFilter = [ "Vol", "Box Set", "Manga" ];
-    private static readonly string[] _novelMultiples = ["Light Novel", "Novel Sc", "L Novel"];
-    private static readonly string[] _edVolMultiples = ["Ed Vol", "Ed HC Vol"];
+    private static readonly FrozenSet<string> _novelMultiples = ["Light Novel", "Novel Sc", "L Novel"];
+    private static readonly FrozenSet<string> _edVolMultiples = ["Ed Vol", "Ed HC Vol"];
 
     [GeneratedRegex(@" GN| TP| HC| Manga|(?<=Vol).*|(?<=Box Set).*|\(.*\)", RegexOptions.IgnoreCase)]  private static partial Regex TitleRegex();
     [GeneratedRegex(@" HC| TP|\(.*\)|(?<=Vol (?:\d{1,3}|\d{1,3}.\d{1,3}) ).*|(?<=Box Set (?:\d{1,3}|\d{1,3}.\d{1,3}) ).*", RegexOptions.IgnoreCase)]  private static partial Regex CleanTitleRegex();
@@ -36,9 +36,9 @@ internal sealed partial class InStockTrades : IWebsite
 
     public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships)
     {
-        return Task.Run(() =>
+        return Task.Run(async () =>
         {
-            (List<EntryModel> Data, List<string> Links) = GetData(bookTitle, bookType);
+            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType);
             masterDataList.Add(Data);
             masterLinkList.TryAdd(Website.InStockTrades, Links[0]);
         });
@@ -59,8 +59,8 @@ internal sealed partial class InStockTrades : IWebsite
         string   entryTitle,
         BookType bookType)
     {
-        ReadOnlySpan<char> entrySpan     = entryTitle.AsSpan();
-        ReadOnlySpan<char> bookSpan      = bookTitle.AsSpan();
+        ReadOnlySpan<char> entrySpan = entryTitle.AsSpan();
+        ReadOnlySpan<char> bookSpan = bookTitle.AsSpan();
 
         bool isBoxSet = entrySpan.IndexOf("Box Set".AsSpan(), StringComparison.OrdinalIgnoreCase) >= 0;
         bool hasSeason = entrySpan.IndexOf("Season".AsSpan(), StringComparison.OrdinalIgnoreCase) >= 0;
@@ -80,8 +80,8 @@ internal sealed partial class InStockTrades : IWebsite
         {
             curTitle.Replace("Vol ", string.Empty);
             string snapshot = curTitle.ToString();
-            Match match    = VolNumberRegex().Match(snapshot);
-            volGroup       = !string.IsNullOrWhiteSpace(match.Groups[3].Value)
+            Match match = VolNumberRegex().Match(snapshot);
+            volGroup = !string.IsNullOrWhiteSpace(match.Groups[3].Value)
                 ? match.Groups[3].Value
                 : match.Groups[2].Value;
 
@@ -105,16 +105,23 @@ internal sealed partial class InStockTrades : IWebsite
 
             if (needsVol)
             {
-                string snapshot = curTitle.ToString();
-                Match vm       = VolNumberRegex().Match(snapshot);
+                string snapshot = curTitle.ToString().Trim();
+                Match vm = VolNumberRegex().Match(snapshot);
 
-                if (!string.IsNullOrWhiteSpace(vm.Groups[1].Value))
+                if (!char.IsDigit(snapshot[^1]) && !hasSpecialEd)
                 {
-                    curTitle.Insert(vm.Index, $"Vol {vm.Groups[1].Value}");
+                    if (!string.IsNullOrWhiteSpace(vm.Groups[1].Value))
+                    {
+                        curTitle.Insert(vm.Index, $"Vol {vm.Groups[1].Value}");
+                    }
+                    else if (!string.IsNullOrWhiteSpace(vm.Groups[2].Value))
+                    {
+                        curTitle.Insert(vm.Index, $"Vol {vm.Groups[2].Value}");
+                    }
                 }
-                else if (!string.IsNullOrWhiteSpace(vm.Groups[2].Value))
+                else
                 {
-                    curTitle.Insert(vm.Index, $"Vol {vm.Groups[2].Value}");
+                    curTitle.Insert(vm.Index, "Vol ");
                 }
             }
 
@@ -190,7 +197,7 @@ internal sealed partial class InStockTrades : IWebsite
         }
     }
 
-    public (List<EntryModel> Data, List<string> Links) GetData(
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(
         string bookTitle,
         BookType bookType,
         WebDriver? driver = null,
@@ -275,6 +282,7 @@ internal sealed partial class InStockTrades : IWebsite
                     {
                         entryTitle = entryTitle.Replace(" Adv ", " Adventure ");
                     }
+                    LOGGER.Debug("{}", entryTitle);
 
                     // Precompute flags once
                     isOneShot = count == 1 && !entryTitle.ContainsAny(_oneShotCheckFilter);
@@ -315,9 +323,7 @@ internal sealed partial class InStockTrades : IWebsite
                     }
                     else if (LOGGER.IsDebugEnabled)
                     {
-                        LOGGER.Debug(
-                            "Removed {0} | BookValid={1} | MangaValid={2} | NovelValid={3}",
-                            entryTitle, validBook, validManga, validNovel);
+                        LOGGER.Debug("Removed {0}", entryTitle);
                     }
                 }
 
@@ -345,8 +351,7 @@ internal sealed partial class InStockTrades : IWebsite
             data.TrimExcess();
             links.TrimExcess();
             data.Sort(EntryModel.VolumeSort);
-            InternalHelpers.PrintWebsiteData(
-                TITLE, bookTitle, bookType, data, LOGGER);
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
         }
 
         return (data, links);

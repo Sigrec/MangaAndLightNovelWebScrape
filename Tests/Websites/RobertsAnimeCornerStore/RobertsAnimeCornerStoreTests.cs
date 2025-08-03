@@ -20,14 +20,6 @@ public class RobertsAnimeCornerStoreTests
         Scrape = null;
     }
 
-    [Test]
-    public void RegionValidation_Test()
-    {
-        Assert.That(
-            MangaAndLightNovelWebScrape.Websites.RobertsAnimeCornerStore.REGION.HasFlag(Region.America) && !MangaAndLightNovelWebScrape.Websites.RobertsAnimeCornerStore.REGION.HasFlag(Region.Australia) && !MangaAndLightNovelWebScrape.Websites.RobertsAnimeCornerStore.REGION.HasFlag(Region.Britain) && !MangaAndLightNovelWebScrape.Websites.RobertsAnimeCornerStore.REGION.HasFlag(Region.Canada) && !MangaAndLightNovelWebScrape.Websites.RobertsAnimeCornerStore.REGION.HasFlag(Region.Europe) && !MangaAndLightNovelWebScrape.Websites.RobertsAnimeCornerStore.REGION.HasFlag(Region.Japan)
-        );
-    }
-
     private static readonly object[] ScrapeTestCases =
     [
         new object[] { "Akane-Banashi", BookType.Manga, "AkaneBanashiMangaData", false },
@@ -61,5 +53,13 @@ public class RobertsAnimeCornerStoreTests
 
         await Scrape.InitializeScrapeAsync(title, bookType, WebsiteList);
         Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(@$"C:\MangaAndLightNovelWebScrape\Tests\Websites\RobertsAnimeCornerStore\RobertsAnimeCornerStore{expectedFilePath}.txt")));
+    }
+
+    [Test]
+    public void RegionValidation_Test()
+    {
+        Assert.That(
+            MangaAndLightNovelWebScrape.Websites.RobertsAnimeCornerStore.REGION.HasFlag(Region.America) && !MangaAndLightNovelWebScrape.Websites.RobertsAnimeCornerStore.REGION.HasFlag(Region.Australia) && !MangaAndLightNovelWebScrape.Websites.RobertsAnimeCornerStore.REGION.HasFlag(Region.Britain) && !MangaAndLightNovelWebScrape.Websites.RobertsAnimeCornerStore.REGION.HasFlag(Region.Canada) && !MangaAndLightNovelWebScrape.Websites.RobertsAnimeCornerStore.REGION.HasFlag(Region.Europe) && !MangaAndLightNovelWebScrape.Websites.RobertsAnimeCornerStore.REGION.HasFlag(Region.Japan)
+        );
     }
 }

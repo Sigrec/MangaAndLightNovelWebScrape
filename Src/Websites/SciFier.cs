@@ -44,10 +44,10 @@ internal sealed partial class SciFier : IWebsite
 
     public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
     {
-        return Task.Run(() =>
+        return Task.Run(async () =>
         {
             WebDriver driver = MasterScrape.SetupBrowserDriver(browser);
-            (List<EntryModel> Data, List<string> Links) = GetData(bookTitle, bookType, driver, curRegion: curRegion);
+            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, driver, curRegion: curRegion);
             masterDataList.Add(Data);
             masterLinkList.TryAdd(Website.SciFier, Links[0]);
         });
@@ -136,7 +136,7 @@ internal sealed partial class SciFier : IWebsite
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ");
     }
 
-    public (List<EntryModel> Data, List<string> Links) GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
     {
         List<EntryModel> data = [];
         List<string> links = [];

@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using MangaAndLightNovelWebScrape.Enums;
 
@@ -22,8 +23,8 @@ public class InStockTradesBenchmarks
 
     [Benchmark]
     [WarmupCount(20)]
-    public void GetMangaBenchmark()
+    public async Task GetMangaBenchmark()
     {
-        _instance!.GetData("one piece", BookType.Manga);
+        await _instance!.GetData("one piece", BookType.Manga);
     }
 }

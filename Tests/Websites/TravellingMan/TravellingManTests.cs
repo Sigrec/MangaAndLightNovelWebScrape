@@ -1,60 +1,67 @@
-namespace Tests.Websites
+namespace Tests.Websites.TravellingMan;
+
+[TestFixture, Description("Validations for TravellingMan")]
+[Author("Sean (Alias -> Prem or Sigrec)")]
+[SetUICulture("en")]
+public class TravellingManTests
 {
-    [TestFixture, Description("Validations for TravellingMan")]
-    [Author("Sean (Alias -> Prem or Sigrec)")]
-    [SetUICulture("en")]
-    public class TravellingManTests
+    private MasterScrape Scrape;
+    private static readonly HashSet<Website> WebsiteList = [Website.TravellingMan];
+
+    [OneTimeSetUp]
+    public void OneTimeSetUp()
     {
-        private MasterScrape Scrape;
-        private static readonly HashSet<Website> WebsiteList = [Website.TravellingMan];
+        Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain);
+    }
 
-        [OneTimeSetUp]
-        public void OneTimeSetUp()
+    [OneTimeTearDown]
+    public void TearDown()
+    {
+        Scrape = null;
+    }
+
+    private static readonly object[] ScrapeTestCases =
+    [
+        new object[] { "Akane-Banashi", BookType.Manga, "AkaneBanashiMangaData", false },
+        new object[] { "Jujutsu Kaisen", BookType.Manga, "JujutsuKaisenMangaData", false },
+        new object[] { "Dragon Quest: The Adventure of Dai", BookType.Manga, "AdventuresOfDaiMangaData", true },
+        new object[] { "One Piece", BookType.Manga, "OnePieceMangaData", false },
+        new object[] { "Naruto", BookType.Manga, "NarutoMangaData", false },
+        new object[] { "Naruto", BookType.LightNovel, "NarutoNovelData", false },
+        new object[] { "Bleach", BookType.Manga, "BleachMangaData", false },
+        new object[] { "Attack on Titan", BookType.Manga, "AttackOnTitanMangaData", false },
+        new object[] { "Goodbye, Eri", BookType.Manga, "GoodbyeEriMangaData", false },
+        new object[] { "2.5 Dimensional Seduction", BookType.Manga, "DimensionalSeductionMangaData", true },
+        new object[] { "Overlord", BookType.LightNovel, "OverlordNovelData", false },
+        new object[] { "overlord", BookType.Manga, "OverlordMangaData", false },
+        new object[] { "07-ghost", BookType.Manga, "07GhostMangaData", true },
+        new object[] { "Fullmetal Alchemist", BookType.Manga, "FMABMangaData", false },
+        new object[] { "Berserk", BookType.Manga, "BerserkMangaData", false },
+        new object[] { "Toilet-bound Hanako-kun", BookType.Manga, "ToiletMangaData", false },
+        new object[] { "classroom of the elite", BookType.LightNovel, "COTENovelData", false },
+        new object[] { "classroom of the elite", BookType.Manga, "COTENovelData", false },
+        new object[] { "Boruto", BookType.Manga, "BorutoMangaData", false }
+    ];
+
+    [TestCaseSource(nameof(ScrapeTestCases))]
+    public async Task TravellingMan_Scrape_Test(string title, BookType bookType, string expectedFilePath, bool skip)
+    {
+        if (skip)
         {
-            Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER, Region.Britain);
+            Assert.Ignore($"Test skipped: {title}");
+            return;
         }
 
-        [OneTimeTearDown]
-        public void TearDown()
-        {
-            Scrape = null;
-        }
+        // Initialize scraping process and compare results with expected data
+        await Scrape.InitializeScrapeAsync(title, bookType, WebsiteList);
+        Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList($@"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingMan{expectedFilePath}.txt")));
+    }
 
-        private static readonly object[] ScrapeTestCases =
-        [
-            new object[] { "Akane-Banashi", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManAkaneBanashiMangaData.txt", false },
-            new object[] { "Jujutsu Kaisen", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManJujutsuKaisenMangaData.txt", false },
-            new object[] { "Dragon Quest: The Adventure of Dai", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManAdventuresOfDaiMangaData.txt", true },
-            new object[] { "One Piece", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManOnePieceMangaData.txt", false },
-            new object[] { "Naruto", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManNarutoMangaData.txt", false },
-            new object[] { "Naruto", BookType.LightNovel, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManNarutoNovelData.txt", false },
-            new object[] { "Bleach", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManBleachMangaData.txt", false },
-            new object[] { "Attack on Titan", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManAttackOnTitanMangaData.txt", false },
-            new object[] { "Goodbye, Eri", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManGoodbyeEriMangaData.txt", false },
-            new object[] { "2.5 Dimensional Seduction", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManDimensionalSeductionMangaData.txt", true },
-            new object[] { "Overlord", BookType.LightNovel, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManOverlordNovelData.txt", false },
-            new object[] { "overlord", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManOverlordMangaData.txt", false },
-            new object[] { "07-ghost", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingMan07GhostMangaData.txt", true },
-            new object[] { "Fullmetal Alchemist", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManFMABMangaData.txt", false },
-            new object[] { "Berserk", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManBerserkMangaData.txt", false },
-            new object[] { "Toilet-bound Hanako-kun", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManToiletMangaData.txt", false },
-            new object[] { "classroom of the elite", BookType.LightNovel, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManCOTENovelData.txt", false },
-            new object[] { "classroom of the elite", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManCOTENovelData.txt", false },
-            new object[] { "Boruto", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\TravellingMan\TravellingManBorutoMangaData.txt", false }
-        ];
-
-        [TestCaseSource(nameof(ScrapeTestCases))]
-        public async Task TravellingMan_Scrape_Test(string title, BookType bookType, string expectedFilePath, bool skip)
-        {
-            if (skip)
-            {
-                Assert.Ignore($"Test skipped: {title}");
-                return;
-            }
-
-            // Initialize scraping process and compare results with expected data
-            await Scrape.InitializeScrapeAsync(title, bookType, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(expectedFilePath)));
-        }
+    [Test]
+    public void RegionValidation_Test()
+    {
+        Assert.That(
+            !MangaAndLightNovelWebScrape.Websites.TravellingMan.REGION.HasFlag(Region.America) && !MangaAndLightNovelWebScrape.Websites.TravellingMan.REGION.HasFlag(Region.Australia) && MangaAndLightNovelWebScrape.Websites.TravellingMan.REGION.HasFlag(Region.Britain) && !MangaAndLightNovelWebScrape.Websites.TravellingMan.REGION.HasFlag(Region.Canada) && !MangaAndLightNovelWebScrape.Websites.TravellingMan.REGION.HasFlag(Region.Europe) && !MangaAndLightNovelWebScrape.Websites.TravellingMan.REGION.HasFlag(Region.Japan)
+        );
     }
 }

@@ -861,18 +861,18 @@ public sealed partial class MasterScrape
             Filter: StockStatusFilter.EXCLUDE_NONE_FILTER,
             Region: Region.Britain,
             Browser: Browser.FireFox,
-            IsBooksAMillionMember: true,
+            IsBooksAMillionMember: false,
             IsKinokuniyaUSAMember: true,
             IsIndigoMember: false)
         .EnableDebugMode();
 
-        string title = "jujutsu kaisen";
+        string title = "Naruto";
         BookType bookType = BookType.Manga;
 
         await scrape.InitializeScrapeAsync(
             title: title,
             bookType: bookType,
-            siteList: [Website.SciFier]);
+            siteList: [Website.ForbiddenPlanet]);
 
         stopwatch.Stop();
 
