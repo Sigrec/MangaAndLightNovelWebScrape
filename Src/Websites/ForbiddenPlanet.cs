@@ -1,5 +1,7 @@
 using System.Collections.Frozen;
 using System.Net;
+using MangaAndLightNovelWebScrape.Services;
+using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
@@ -34,12 +36,12 @@ internal sealed partial class ForbiddenPlanet : IWebsite
     
     private static readonly FrozenSet<string> DescRemovalStrings = ["novel", "original stories", "collecting issues"];
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
     {
         return Task.Run(async () =>
-        {
-            WebDriver driver = MasterScrape.SetupBrowserDriver(browser, true);
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, driver);
+        {            
+            IPage page = await PlaywrightFactory.GetPageAsync(browser!);
+            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page);
             masterDataList.Add(Data);
             masterLinkList.TryAdd(Website.ForbiddenPlanet, Links[0]);
         });
@@ -219,42 +221,26 @@ internal sealed partial class ForbiddenPlanet : IWebsite
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
     }
 
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
     {
         List<EntryModel> data = [];
         List<string> links = [];
 
         try
         {
-            WebDriverWait wait = new(driver!, TimeSpan.FromSeconds(60));
-            HtmlDocument doc = new();
-            HtmlWeb _html = new()
-            {
-                UsingCacheIfExists = true,
-                AutoDetectEncoding = false,
-                OverrideEncoding = Encoding.UTF8,
-                UseCookies = false,
-                PreRequest = request =>
-                {
-                    HttpWebRequest http = request;
-                    http.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-                    http.KeepAlive = true;
-                    http.Timeout = 10_000;
-                    return true;
-                }
-            };
-
+            HtmlDocument doc = HtmlFactory.CreateDocument();
+            HtmlWeb html = HtmlFactory.CreateWeb();
             bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
             bool isSecondCategory = false;
 
             string url = GenerateWebsiteUrl(bookType, bookTitle, isSecondCategory);
             links.Add(url);
-            driver!.Navigate().GoToUrl(url);
-            wait.Until(driver => driver.FindElement(By.CssSelector("div[class='full']")));
+            // driver!.Navigate().GoToUrl(url);
+            // wait.Until(driver => driver.FindElement(By.CssSelector("div[class='full']")));
 
             while (true)
             {
-                doc.LoadHtml(driver.PageSource);
+                // doc.LoadHtml(driver.PageSource);
                 HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
                 HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
                 HtmlNodeCollection minorPriceData = doc.DocumentNode.SelectNodes(MinorPriceXPath);
@@ -295,7 +281,7 @@ internal sealed partial class ForbiddenPlanet : IWebsite
                         bool descIsValid = true;
                         if (bookType == BookType.Manga && (entryTitle.Contains("Hardcover") || !entryTitle.ContainsAny(["Vol", "Box Set", "Comic"])))
                         {
-                            HtmlNodeCollection descData = (await _html.LoadFromWebAsync($"https://forbiddenplanet.com{doc.DocumentNode.SelectSingleNode($"(//a[@class='block one-whole clearfix dfbx dfbx--fdc link-banner link--black'])[{x + 1}]").GetAttributeValue("href", string.Empty)}")).DocumentNode.SelectNodes("//div[@id='product-description']/p");
+                            HtmlNodeCollection descData = (await html.LoadFromWebAsync($"https://forbiddenplanet.com{doc.DocumentNode.SelectSingleNode($"(//a[@class='block one-whole clearfix dfbx dfbx--fdc link-banner link--black'])[{x + 1}]").GetAttributeValue("href", string.Empty)}")).DocumentNode.SelectNodes("//div[@id='product-description']/p");
                             StringBuilder desc = new();
                             foreach (HtmlNode node in descData) { desc.AppendLine(node.InnerText); }
                             LOGGER.Debug("Checking Desc {} => {}", entryTitle, desc.ToString());
@@ -334,9 +320,9 @@ internal sealed partial class ForbiddenPlanet : IWebsite
                 if (pageCheck != null)
                 {
                     // driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("(//a[@class='product-list__pagination__next'])[1]"))));
-                    driver.Navigate().GoToUrl($"https://forbiddenplanet.com{wait.Until(driver => driver.FindElement(By.XPath("(//a[@class='product-list__pagination__next'])[1]"))).GetDomAttribute("href")}");
-                    LOGGER.Info("Next Page => {}", driver.Url);
-                    wait.Until(driver => driver.FindElement(By.CssSelector("div[class='full']")));
+                    // driver.Navigate().GoToUrl($"https://forbiddenplanet.com{wait.Until(driver => driver.FindElement(By.XPath("(//a[@class='product-list__pagination__next'])[1]"))).GetDomAttribute("href")}");
+                    // LOGGER.Info("Next Page => {}", driver.Url);
+                    // wait.Until(driver => driver.FindElement(By.CssSelector("div[class='full']")));
                 }
                 else if (!isSecondCategory)
                 {
@@ -345,9 +331,9 @@ internal sealed partial class ForbiddenPlanet : IWebsite
                     url = GenerateWebsiteUrl(bookType, bookTitle, isSecondCategory);
                     links.Add(url);
 
-                    driver.Navigate().GoToUrl(url);
-                    LOGGER.Info("Next Page (2nd Category) => {}", driver.Url);
-                    wait.Until(driver => driver.FindElement(By.CssSelector("div[class='full']")));
+                    // driver.Navigate().GoToUrl(url);
+                    // LOGGER.Info("Next Page (2nd Category) => {}", driver.Url);
+                    // wait.Until(driver => driver.FindElement(By.CssSelector("div[class='full']")));
                 }
                 else
                 {
@@ -364,10 +350,6 @@ internal sealed partial class ForbiddenPlanet : IWebsite
         catch (Exception ex)
         {
             LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
-        }
-        finally
-        {
-            driver?.Quit();
         }
 
         return (data, links);

@@ -1,5 +1,7 @@
 using System.Collections.Frozen;
 using System.Net;
+using MangaAndLightNovelWebScrape.Services;
+using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
@@ -40,12 +42,12 @@ internal sealed partial class BooksAMillion : IWebsite
     private static readonly FrozenSet<string> _novelIncludeVals = [ "Light Novel", "Novel", ];
     private static readonly FrozenSet<string> _novelExcludeVals = [ "Manga", "Volumes", "Vol" ];
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships)
     {
         return Task.Run(async () =>
         {
-            WebDriver driver = MasterScrape.SetupBrowserDriver(browser, true);
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, driver, memberships.IsBooksAMillionMember);
+            IPage page = await PlaywrightFactory.GetPageAsync(browser!);
+            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page, memberships.IsBooksAMillionMember);
             masterDataList.Add(Data);
             masterLinkList.TryAdd(Website.BooksAMillion, Links[0]);
         });
@@ -209,27 +211,16 @@ internal sealed partial class BooksAMillion : IWebsite
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString().Trim(), " ");
     }
 
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
     {
         List<EntryModel> data = [];
         List<string> links = [];
 
         try
         {
-            WebDriverWait wait = new(driver!, TimeSpan.FromSeconds(60));
-            HtmlDocument doc = new()
-            {
-                OptionCheckSyntax = false,
-                OptionFixNestedTags = false,
-                OptionAutoCloseOnEnd = true
-            };
+            HtmlDocument doc = HtmlFactory.CreateDocument();
 
-            HtmlDocument descDoc = new()
-            {
-                OptionCheckSyntax = false,
-                OptionFixNestedTags = false,
-                OptionAutoCloseOnEnd = true
-            };
+            HtmlDocument descDoc = HtmlFactory.CreateDocument();
 
             bool boxSetCheck = false, boxsetValidation = false;
             bool bookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
@@ -237,20 +228,20 @@ internal sealed partial class BooksAMillion : IWebsite
             string curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, pageNum);
             LOGGER.Info($"Initial Url {curUrl}");
             links.Add(curUrl);
-            driver!.Navigate().GoToUrl(curUrl);
+            // driver!.Navigate().GoToUrl(curUrl);
 
-            // Check for promotion popup and clear them if it exist
-            if (driver.FindElements(By.ClassName("ltkpopup-container")).Count != 0)
-            {
-                driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.ClassName("ltkpopup-close"))));
-            }
+            // // Check for promotion popup and clear them if it exist
+            // if (driver.FindElements(By.ClassName("ltkpopup-container")).Count != 0)
+            // {
+            //     driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.ClassName("ltkpopup-close"))));
+            // }
 
             while (true)
             {
-                wait.Until(e => e.FindElement(By.ClassName("search-item-title")));
+                // wait.Until(e => e.FindElement(By.ClassName("search-item-title")));
 
-                // Initialize the html doc for crawling
-                doc.LoadHtml(driver.PageSource);
+                // // Initialize the html doc for crawling
+                // doc.LoadHtml(driver.PageSource);
 
                 // Get the page data from the HTML doc
                 HtmlNodeCollection? titleData = doc.DocumentNode.SelectNodes(_titleXPath);
@@ -356,9 +347,9 @@ internal sealed partial class BooksAMillion : IWebsite
                             {
                                 string link = titleData[x].GetAttributeValue("href", "ERROR");
                                 LOGGER.Debug("Desc link = {}", link);
-                                driver.Navigate().GoToUrl($@"{link}");
-                                wait.Until(driver => driver.FindElement(By.Id("pdpOverview")));
-                                descDoc.LoadHtml(driver.PageSource);
+                                // driver.Navigate().GoToUrl($@"{link}");
+                                // wait.Until(driver => driver.FindElement(By.Id("pdpOverview")));
+                                // descDoc.LoadHtml(driver.PageSource);
                                 HtmlNode? desc = descDoc.DocumentNode.SelectSingleNode(_descXPath);
                                 if (desc is null || desc.InnerText.ContainsAny(_mangaDescExcludeVals))
                                 {
@@ -394,8 +385,8 @@ internal sealed partial class BooksAMillion : IWebsite
                     // wait.Until(e => e.FindElement(By.Id("content")));
                     curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, ++pageNum);
                     links.Add(curUrl);
-                    driver.Navigate().GoToUrl(curUrl);
-                    LOGGER.Info($"Next Page {driver.Url}");
+                    // driver.Navigate().GoToUrl(curUrl);
+                    // LOGGER.Info($"Next Page {driver.Url}");
                 }
                 else
                 {
@@ -406,7 +397,7 @@ internal sealed partial class BooksAMillion : IWebsite
                         curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, pageNum);
                         links.Add(curUrl);
                         LOGGER.Info("Box Set Url: {}", curUrl);
-                        driver.Navigate().GoToUrl(curUrl);
+                        // driver.Navigate().GoToUrl(curUrl);
                     }
                     else
                     {
@@ -425,10 +416,6 @@ internal sealed partial class BooksAMillion : IWebsite
         {
             LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
             throw;
-        }
-        finally
-        {
-            driver?.Quit();
         }
 
         return (data, links);

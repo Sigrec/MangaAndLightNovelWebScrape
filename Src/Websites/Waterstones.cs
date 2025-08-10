@@ -1,12 +1,19 @@
+using MangaAndLightNovelWebScrape.Services;
+using Microsoft.Playwright;
+
 namespace MangaAndLightNovelWebScrape.Websites;
 
-public partial class Waterstones
+public partial class Waterstones : IWebsite
 {
-    private List<string> WaterstonesLinks = [];
-    private List<EntryModel> WaterstonesData = [];
-    public const string WEBSITE_TITLE = "Waterstones";
-    public const string WEBSITE_URL = "https://www.waterstones.com";
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+
+    /// <inheritdoc />
+    public const string TITLE = "Waterstones";
+
+    /// <inheritdoc />
+    public const string BASE_URL = "https://www.waterstones.com";
+
+    /// <inheritdoc />
     public const Region REGION = Region.Britain;
 
     private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//a[contains(@class, 'title link-invert')]");
@@ -25,23 +32,15 @@ public partial class Waterstones
     [GeneratedRegex(@"(?:Vol \d{1,3})$", RegexOptions.IgnoreCase)] private static partial Regex FullTitleCheckRegex();
     [GeneratedRegex(@"Vol\.|Volume|v\.", RegexOptions.IgnoreCase)] private static partial Regex FixVolumeRegex();
 
-    internal async Task CreateWaterstonesTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> MasterDataList, WebDriver driver)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
     {
-        await Task.Run(() => 
+        return Task.Run(async () =>
         {
-            MasterDataList.Add(GetWaterstonesData(bookTitle, bookType, driver));
+            IPage page = await PlaywrightFactory.GetPageAsync(browser!);
+            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page);
+            masterDataList.Add(Data);
+            masterLinkList.TryAdd(Website.MerryManga, Links[0]);
         });
-    }
-
-    internal void ClearData()
-    {
-        WaterstonesLinks.Clear();
-        WaterstonesData.Clear();
-    }
-
-    internal string GetUrl()
-    {
-        return WaterstonesLinks.Count != 0 ? WaterstonesLinks[0] : $"{WEBSITE_TITLE} Has no Link";
     }
 
     private string GenerateWebsiteUrl(string bookTitle, BookType bookType, ushort pageNum, bool isOneShot)
@@ -51,16 +50,15 @@ public partial class Waterstones
         if (!isOneShot)
         {
             // https://www.waterstones.com/books/search/term/jujutsu+kaisen/category/394/facet/347/sort/pub-date-asc/page/1
-            url = $"{(bookType == BookType.Manga ? $"{WEBSITE_URL}/books/search/term/{bookTitle}/category/394/facet/347/sort/pub-date-asc/page1//page/{pageNum}" : $"https://www.waterstones.com/books/search/term/{bookTitle}+novel")}";
+            url = $"{(bookType == BookType.Manga ? $"{BASE_URL}/books/search/term/{bookTitle}/category/394/facet/347/sort/pub-date-asc/page1//page/{pageNum}" : $"https://www.waterstones.com/books/search/term/{bookTitle}+novel")}";
             LOGGER.Info($"Url Page {pageNum} = {url}");
         }
         else
         {
             // https://www.waterstones.com/books/search/term/Goodbye+Eri
-            url = $"{WEBSITE_URL}/books/search/term/{bookTitle}";
+            url = $"{BASE_URL}/books/search/term/{bookTitle}";
             LOGGER.Info($"OneShot Url = {url}");
         }
-        WaterstonesLinks.Add(url);
         return url;
     }
 
@@ -123,27 +121,29 @@ public partial class Waterstones
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
     }
 
-    private List<EntryModel> GetWaterstonesData(string bookTitle, BookType bookType, WebDriver driver)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
     {
+        List<EntryModel> data = [];
+        List<string> links = [];
+
         try
         {
-            WebDriverWait wait = new(driver, TimeSpan.FromSeconds(5));
             ushort pageNum = 1, maxPageNum = 1;
             bool isOneShot = false;
 
-            driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle.Replace(",", string.Empty).Replace(" " , "+"), bookType, pageNum, isOneShot));
+            // driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle.Replace(",", string.Empty).Replace(" " , "+"), bookType, pageNum, isOneShot));
             HtmlDocument doc = new()
             {
                 OptionCheckSyntax = false
             };
-            doc.LoadHtml(driver.PageSource);
+            // doc.LoadHtml(driver.PageSource);
 
             HtmlNode oneShotCheckNode = doc.DocumentNode.SelectSingleNode(OneShotCheckXPath);
             if (oneShotCheckNode != null && oneShotCheckNode.InnerText.Contains("No results"))
             {
                 isOneShot = true;
-                driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle.Replace(",", string.Empty).Replace(" " , "+"), bookType, pageNum, isOneShot));
-                doc.LoadHtml(driver.PageSource);
+                // driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle.Replace(",", string.Empty).Replace(" " , "+"), bookType, pageNum, isOneShot));
+                // doc.LoadHtml(driver.PageSource);
             }
             else
             {
@@ -167,8 +167,8 @@ public partial class Waterstones
                     if (!isOneShot && ((entryTitle.EndsWith('…') && !FullTitleCheckRegex().IsMatch(entryTitle[..entryTitle.IndexOf('…')])) || !entryTitle.Contains("Vol"))) // Check to see if title is cutoff
                     {
                         string oldTitle = entryTitle;
-                        driver.Navigate().GoToUrl($"{WEBSITE_URL}/{titleData[x].GetAttributeValue("href", "Error")}");
-                        entryTitle = FixVolumeRegex().Replace(wait.Until(driver => driver.FindElement(By.Id("scope_book_title"))).Text, " Vol");
+                        // driver.Navigate().GoToUrl($"{BASE_URL}/{titleData[x].GetAttributeValue("href", "Error")}");
+                        // entryTitle = FixVolumeRegex().Replace(wait.Until(driver => driver.FindElement(By.Id("scope_book_title"))).Text, " Vol");
                     }
 
                     if (
@@ -178,12 +178,12 @@ public partial class Waterstones
                             bookType == BookType.Manga
                             && (
                                     (
-                                        entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) 
+                                        entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
                                         && !bookTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
                                     )
                                     ||
                                     (
-                                        entryTitle.Contains("NoVoll", StringComparison.OrdinalIgnoreCase) 
+                                        entryTitle.Contains("NoVoll", StringComparison.OrdinalIgnoreCase)
                                         && !bookTitle.Contains("NoVoll", StringComparison.OrdinalIgnoreCase)
                                     )
                                     || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Bleachers")
@@ -196,7 +196,7 @@ public partial class Waterstones
                         )
                     {
                         string price = priceData[x].InnerText.Trim();
-                        WaterstonesData.Add(
+                        data.Add(
                             new EntryModel
                             (
                                 ParseTitle(FixTitleRegex().Replace(entryTitle, string.Empty), bookTitle, bookType),
@@ -207,7 +207,7 @@ public partial class Waterstones
                                     string status when status.Contains("Pre-order", StringComparison.OrdinalIgnoreCase) => StockStatus.PO,
                                     _ => StockStatus.OOS,
                                 },
-                                WEBSITE_TITLE
+                                TITLE
                             )
                         );
                     }
@@ -216,37 +216,27 @@ public partial class Waterstones
                         LOGGER.Info("Removed {}", entryTitle);
                     }
                 }
-                
+
                 if (!isOneShot && pageNum < maxPageNum)
                 {
                     pageNum++;
-                    driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle.Replace(",", string.Empty).Replace(" " , "+"), bookType, pageNum, isOneShot));
-                    doc.LoadHtml(driver.PageSource);
+                    // driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle.Replace(",", string.Empty).Replace(" ", "+"), bookType, pageNum, isOneShot));
+                    // doc.LoadHtml(driver.PageSource);
                 }
                 else
                 {
                     break;
                 }
             }
+
+            data.Sort(EntryModel.VolumeSort);
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
         }
         catch (Exception ex)
         {
-            LOGGER.Error("{} ({}) Error @ {} \n{}", bookTitle, bookType, WEBSITE_TITLE, ex);
-        }
-        finally
-        {
-            if (!MasterScrape.IsWebDriverPersistent)
-            {
-                driver?.Quit();
-            }
-            else 
-            { 
-                driver?.Close(); 
-            }
+            LOGGER.Error("{} ({}) Error @ {} \n{}", bookTitle, bookType, TITLE, ex);
         }
 
-        WaterstonesData.Sort(EntryModel.VolumeSort);
-        InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, WaterstonesData, LOGGER);
-        return WaterstonesData;
+        return (data, links);
     }
 }

@@ -1,4 +1,5 @@
-using System.Net;
+using MangaAndLightNovelWebScrape.Services;
+using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
@@ -26,12 +27,12 @@ internal sealed partial class MangaMate : IWebsite
     /// <inheritdoc />
     public const Region REGION = Region.Australia;
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
     {
         return Task.Run(async () =>
         {
-            WebDriver driver = MasterScrape.SetupBrowserDriver(browser);
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, driver);
+            IPage page = await PlaywrightFactory.GetPageAsync(browser!);
+            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page);
             masterDataList.Add(Data);
             masterLinkList.TryAdd(Website.MangaMate, Links[0]);
         });
@@ -79,73 +80,99 @@ internal sealed partial class MangaMate : IWebsite
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
     }
 
-    // TODO - Could use perf improvements
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
+    private static async Task WaitForProductPageLoad(IPage page)
+    {
+        // Wait for the product grid you were waiting on in Selenium
+        ILocator grid = page.Locator("(//div[@class='grid grid--uniform'])[2]");
+        await grid.WaitForAsync();
+    }
+
+    private static async Task<(string Html, uint MaxPageNum)> GetInitialData(IPage page, string url)
+    {
+        await page.GotoAsync(url, new PageGotoOptions
+        {
+            WaitUntil = WaitUntilState.DOMContentLoaded
+        });
+
+        await WaitForProductPageLoad(page);
+
+        // Get the max page number (//span[@class='page'][last()])
+        uint maxPageNum = 1;
+        ILocator pages = page.Locator("//span[@class='page']").Last;
+        int count = await pages.CountAsync();
+        if (count > 0)
+        {
+            string? lastText = await pages.Nth(count - 1).TextContentAsync();
+            if (!string.IsNullOrWhiteSpace(lastText) && uint.TryParse(lastText.Trim(), out uint parsed))
+            {
+                maxPageNum = parsed;
+            }
+        }
+        LOGGER.Info("Max Page Num = {Num}", maxPageNum);
+
+        // Open currency dropdown: //button[@aria-controls='CurrencyList-toolbar']
+        ILocator currencyBtn = page.Locator("//button[@aria-controls='CurrencyList-toolbar']");
+        await currencyBtn.ClickAsync();
+
+        // Ensure it's open (aria-expanded == "true")
+        await page
+            .Locator("button[aria-controls='CurrencyList-toolbar'][aria-expanded='true']")
+            .WaitForAsync();
+
+        await page.Locator("button[aria-controls='CurrencyList-toolbar'][aria-expanded='true']").WaitForAsync();
+
+        // Find the controlled menu *by id* from aria-controls, then click AUD inside it
+        string? menuId = await currencyBtn.GetAttributeAsync("aria-controls");   // e.g., "CurrencyList-toolbar"
+        ILocator menu = page.Locator($"#{menuId}");
+        await menu.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Visible });
+
+        // Now select the AUD option *within that menu only*
+        await menu.Locator("a.disclosure-list__option[data-value='AU']").First.ClickAsync();
+
+
+        // Wait for the page to settle and grid to be present again
+        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+        // await WaitForProductPageLoad(page);
+
+        LOGGER.Info("Clicked AUD Currency");
+        return (await page.ContentAsync(), maxPageNum);
+    }
+
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
     {
         List<EntryModel> data = [];
         List<string> links = [];
 
         try
         {
-            HtmlWeb _html = new()
-            {
-                UsingCacheIfExists = true,
-                AutoDetectEncoding = false,
-                OverrideEncoding = Encoding.UTF8,
-                UseCookies = false,
-                PreRequest = request =>
-                {
-                    HttpWebRequest http = request;
-                    http.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-                    http.KeepAlive = true;
-                    http.Timeout = 10_000;
-                    return true;
-                }
-            };
-            HtmlDocument doc = new() { OptionCheckSyntax = false };
-            WebDriverWait wait = new(driver!, TimeSpan.FromSeconds(30));
+            HtmlWeb html = HtmlFactory.CreateWeb();
+            HtmlDocument doc = HtmlFactory.CreateDocument();
+            XPathNavigator nav = doc.DocumentNode.CreateNavigator();
 
             ushort curPageNum = 1;
             bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
             string url = GenerateWebsiteUrl(bookTitle, bookType, curPageNum);
             links.Add(url);
 
-            driver!.Navigate().GoToUrl(url);
-            wait.Until(driver => driver.FindElement(By.XPath("(//div[@class='grid grid--uniform'])[2]")));
+            (string Html, uint MaxPageNum) = await GetInitialData(page!, url);
+            doc.LoadHtml(Html);
 
-            ushort maxPageNum = 1;
-            maxPageNum = ushort.Parse(driver.FindElement(By.XPath("//span[@class='page'][last()]")).Text.Trim());
-
-            // Open currency dropdown
-            driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("//button[@aria-controls='CurrencyList-toolbar']"))));
-
-            // Ensure it's open and clickable
-            wait.Until(driver => driver.FindElement(
-                By.XPath("//button[@aria-controls='CurrencyList-toolbar']"))
-                .GetDomAttribute("aria-expanded")?.Equals("true") ?? false);
-
-            // Click the AUD currency
-            driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("//a[@data-value='AU'][1]"))));
-
-            // Wait for page load
-            wait.Until(driver => driver.FindElement(By.XPath("(//div[@class='grid grid--uniform'])[2]")));
-
-            // Close the popup
-            // driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("//button[@class='recommendation-modal__close-button']"))));
-            LOGGER.Info("Clicked AUD Currency");
-
-            doc.LoadHtml(driver.PageSource);
             while (true)
             {
-                HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
-                HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
-                HtmlNodeCollection stockstatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
-                HtmlNodeCollection stockstatusData2 = doc.DocumentNode.SelectNodes(StockStatusXPath2);
-                HtmlNodeCollection entryLinkData = doc.DocumentNode.SelectNodes(EntryLinkXPath);
+                XPathNodeIterator titleData = nav.Select(TitleXPath);
+                XPathNodeIterator priceData = nav.Select(PriceXPath);
+                XPathNodeIterator stockstatusData = nav.Select(StockStatusXPath);
+                XPathNodeIterator stockstatusData2 = nav.Select(StockStatusXPath2);
+                XPathNodeIterator entryLinkData = nav.Select(EntryLinkXPath);
 
-                for (int x = 0; x < titleData.Count; x++)
+                while (titleData.MoveNext())
                 {
-                    string entryTitle = titleData[x].InnerText.Trim();
+                    priceData.MoveNext();
+                    stockstatusData.MoveNext();
+                    stockstatusData2.MoveNext();
+                    entryLinkData.MoveNext();
+
+                    string entryTitle = titleData.Current!.Value.Trim();
                     if (InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
                         && (!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck)
                         && !(
@@ -161,17 +188,22 @@ internal sealed partial class MangaMate : IWebsite
                         )
                     )
                     {
-                        string type = _html.Load($"https://mangamate.shop{entryLinkData[x].GetAttributeValue("href", "error")}").DocumentNode.SelectSingleNode(EntryTypeXPath).InnerText.Trim();
+                        string? type = (await html.LoadFromWebAsync($"https://mangamate.shop{entryLinkData.Current!.GetAttribute("href", string.Empty)}")).DocumentNode.CreateNavigator().SelectSingleNode(EntryTypeXPath)?.Value;
+                        if (type is null)
+                        {
+                            continue;
+                        }
+                        type = type.Trim();
                         // LOGGER.Debug("{} | {}", entryTitle, type);
 
-                        if ((bookType == BookType.Manga && (type.Equals("Manga") || type.Equals("Box Set"))) || (bookType == BookType.LightNovel && (type.Equals("Novel") || type.Equals("Box Set"))))
+                        if ((bookType == BookType.Manga && (type.Equals("Manga", StringComparison.OrdinalIgnoreCase) || type.Equals("Box Set", StringComparison.OrdinalIgnoreCase))) || (bookType == BookType.LightNovel && (type.Equals("Novel", StringComparison.OrdinalIgnoreCase) || type.Equals("Box Set", StringComparison.OrdinalIgnoreCase))))
                         {
                             data.Add(
                                 new EntryModel
                                 (
                                     ParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType),
-                                    priceData[x].InnerText.Trim(),
-                                    stockstatusData2[x].GetAttributeValue("class", "error").Contains("preorder") ? StockStatus.PO : stockstatusData[x].InnerText.Trim() switch
+                                    priceData.Current!.Value.Trim(),
+                                    stockstatusData2.Current!.GetAttribute("class", "error").Contains("preorder") ? StockStatus.PO : stockstatusData.Current!.Value.Trim() switch
                                     {
                                         "Sold Out" => StockStatus.OOS,
                                         _ => StockStatus.IS
@@ -191,33 +223,34 @@ internal sealed partial class MangaMate : IWebsite
                     }
                 }
 
-                if (curPageNum < maxPageNum)
+                if (curPageNum < MaxPageNum)
                 {
                     url = GenerateWebsiteUrl(bookTitle, bookType, ++curPageNum);
                     links.Add(url);
-                    driver.Navigate().GoToUrl(url);
-                    wait.Until(driver => driver.FindElement(By.XPath("(//div[@class='grid grid--uniform'])[2]")));
-                    doc.LoadHtml(driver.PageSource);
+                    await page!.GotoAsync(url, new PageGotoOptions
+                    {
+                        WaitUntil = WaitUntilState.DOMContentLoaded
+                    });
+                    await WaitForProductPageLoad(page);
+                    doc.LoadHtml(await page.ContentAsync());
                 }
                 else
                 {
                     break;
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
-        }
-        finally
-        {
-            driver?.Quit();
+
             data.TrimExcess();
             links.TrimExcess();
             data = InternalHelpers.RemoveDuplicateEntries(data);
             data.Sort(EntryModel.VolumeSort);
             InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
         }
+        catch (Exception ex)
+        {
+            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
+        }
+
         return (data, links);
     }
 }

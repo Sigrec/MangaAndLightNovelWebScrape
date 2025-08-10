@@ -12,10 +12,12 @@ Planned
 
 v4.1.0 - 
 ✅Improved comments for public facing members
-✅Added MangaMart to scrape
+✅Added `MangaMart` to scrape for `America` region
 ✅Added urls to all objects as a const string
 ✅Created a `IWebsite` interface for all sites for better code structure
+❌Removed `Selenium` in favor of `Playwright`
 ⌛Updated a bunch of collections to be `Frozen` for perf
+📜RobertsAnimeCornerStore
 📜InStockTrades
 -🔥Fixed boxset numbering
 -🔥Fixed series not being scrapped if they have amerpand `&`
@@ -32,12 +34,12 @@ v4.1.0 -
 -🔥Fixed issue where some series would have leading text after the volume number
 -🔥Fixed issues with some box set parsing
 ❌MangaMate
--🔥Fixed issue with page loading preventing the scrape from working
-📜Forbidden Planet
+-🔥Fixed issue with page loading preventing the scrape from working due to series that don't have multiple pages
+❌Forbidden Planet
 -🔥Fixed issue where some web encoded characters would not get parsed causing no data to be returned
 -🔥Fixed issue where it would not parse titles correctly that had text after `:`
 -🔥Fixed issue where light novel parsing would not work correctly
-📜Books-A-Million
+❌Books-A-Million
 -🔥Fixed issue where series with http codes like ampersand would not get scraped
 
 v4.0.2 - Jan 20th, 2025

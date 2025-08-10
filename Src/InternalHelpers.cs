@@ -1,4 +1,5 @@
 using System.Collections.Frozen;
+using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape;
 
@@ -20,6 +21,11 @@ internal static partial class InternalHelpers
         "Pirate Recipes", "Exclusive", "Hobby", "Model Kit", "Funko POP", "Creator of the", "the Movie"
     }
     .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+
+    internal static bool NeedPlaywright(HashSet<Website> siteList)
+    {
+        return siteList.ContainsAny([ Website.KinokuniyaUSA, Website.BooksAMillion, Website.AmazonUSA, Website.MerryManga, Website.ForbiddenPlanet, Website.MangaMate, Website.MangaMart, Website.Waterstones, Website.AmazonJapan, Website.TravellingMan ]);
+    }
 
     /// <summary>
     /// Determines whether the given <paramref name="title"/> contains any of the
@@ -89,7 +95,7 @@ internal static partial class InternalHelpers
         BookType bookType,
         ConcurrentBag<List<EntryModel>> masterBag,
         ConcurrentDictionary<Website, string> masterDict,
-        Browser browser,
+        IBrowser? browser,
         Region curRegion,
         (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships)
     {
@@ -434,6 +440,18 @@ internal static partial class InternalHelpers
     internal static bool ContainsAny(this string input, IEnumerable<string> values)
     {
         return values.AsValueEnumerable().Any(val => input.Contains(val, StringComparison.OrdinalIgnoreCase));
+    }
+
+    internal static bool ContainsAny<T>(this HashSet<T> values, IEnumerable<T> input)
+    {
+        foreach (T element in input)
+        {
+            if (values.Contains(element))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     internal static void RemoveDuplicates(this List<EntryModel> input, Logger LOGGER)

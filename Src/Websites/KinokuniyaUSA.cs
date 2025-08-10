@@ -1,4 +1,6 @@
 using System.Collections.Frozen;
+using MangaAndLightNovelWebScrape.Services;
+using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
@@ -43,12 +45,12 @@ internal sealed partial class KinokuniyaUSA : IWebsite
     //https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=overlord+novel&taxon=&x=33&y=8&per_page=100&form_taxon=109
     //https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=classroom+of+the+elite&taxon=&x=33&y=8&per_page=100&form_taxon=109
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships)
     {
         return Task.Run(async () =>
         {
-            WebDriver driver = MasterScrape.SetupBrowserDriver(browser);
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, driver, memberships.IsKinokuniyaUSAMember);
+            IPage page = await PlaywrightFactory.GetPageAsync(browser!);
+            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page, memberships.IsKinokuniyaUSAMember);
             masterDataList.Add(Data);
             masterLinkList.TryAdd(Website.KinokuniyaUSA, Links[0]);
         });
@@ -61,23 +63,23 @@ internal sealed partial class KinokuniyaUSA : IWebsite
         return url;
     }
 
-    private static void WaitForPageLoad(WebDriverWait wait)
-    {
-        wait.Until(d =>
-        {
-            try
-            {
-                IWebElement element = d.FindElement(By.Id("loading"));
-                string? style = element.GetDomAttribute("style");
-                return style != null && style.Contains("display: none;");
-            }
-            catch (NoSuchElementException)
-            {
-                LOGGER.Warn("Loading Failed");
-                return true;
-            }
-        });
-    }
+    // private static void WaitForPageLoad(WebDriverWait wait)
+    // {
+    //     wait.Until(d =>
+    //     {
+    //         try
+    //         {
+    //             IWebElement element = d.FindElement(By.Id("loading"));
+    //             string? style = element.GetDomAttribute("style");
+    //             return style != null && style.Contains("display: none;");
+    //         }
+    //         catch (NoSuchElementException)
+    //         {
+    //             LOGGER.Warn("Loading Failed");
+    //             return true;
+    //         }
+    //     });
+    // }
 
     private static string ParseAndCleanTitle(string entryTitle, BookType bookType, string bookTitle, string entryDesc, bool oneShotCheck)
     {
@@ -181,7 +183,7 @@ internal sealed partial class KinokuniyaUSA : IWebsite
         }
     }
     
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
     {
         List<EntryModel> data = [];
         List<string> links = [];
@@ -192,30 +194,29 @@ internal sealed partial class KinokuniyaUSA : IWebsite
             bool oneShotCheck = false;
             string entryTitle, entryDesc;
             bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
-            HtmlDocument doc = new();
+            HtmlDocument doc = HtmlFactory.CreateDocument();
 
-            WebDriverWait wait = new(driver!, TimeSpan.FromSeconds(60));
             string url = GenerateWebsiteUrl(bookTitle, bookType);
             links.Add(url);
-            driver!.Navigate().GoToUrl(url);
-            WaitForPageLoad(wait);
+            // driver!.Navigate().GoToUrl(url);
+            // WaitForPageLoad(wait);
 
-            // Click the list display mode so it shows stock status data with entry
-            driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.LinkText("List"))));
-            WaitForPageLoad(wait);
-            LOGGER.Info("Clicked List Mode");
+            // // Click the list display mode so it shows stock status data with entry
+            // driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.LinkText("List"))));
+            // WaitForPageLoad(wait);
+            // LOGGER.Info("Clicked List Mode");
 
-            if (bookType == BookType.Manga)
-            {
-                // Click the Manga
-                driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.LinkText("Manga"))));
-                WaitForPageLoad(wait);
-                LOGGER.Info("Clicked Manga");
-            }
+            // if (bookType == BookType.Manga)
+            // {
+            //     // Click the Manga
+            //     driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.LinkText("Manga"))));
+            //     WaitForPageLoad(wait);
+            //     LOGGER.Info("Clicked Manga");
+            // }
 
             while (true)
             {
-                doc.LoadHtml(driver.PageSource);
+                // doc.LoadHtml(driver.PageSource);
 
                 // Get the page data from the HTML doc
                 HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
@@ -299,9 +300,9 @@ internal sealed partial class KinokuniyaUSA : IWebsite
                 {
                     curPageNum++;
                     LOGGER.Debug("Going to Page {}", curPageNum);
-                    driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.ClassName("pagerArrowR"))));
-                    WaitForPageLoad(wait);
-                    LOGGER.Info("Page {} = {}", curPageNum, driver.Url);
+                    // driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.ClassName("pagerArrowR"))));
+                    // WaitForPageLoad(wait);
+                    // LOGGER.Info("Page {} = {}", curPageNum, driver.Url);
                 }
                 else
                 {

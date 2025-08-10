@@ -1,3 +1,5 @@
+using Microsoft.Playwright;
+
 namespace MangaAndLightNovelWebScrape.Websites;
 
 /// <summary>
@@ -33,7 +35,7 @@ public interface IWebsite
         BookType bookType,
         ConcurrentBag<List<EntryModel>> masterDataList,
         ConcurrentDictionary<Website, string> masterLinkList,
-        Browser browser,
+        IBrowser? browser,
         Region curRegion,
         (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default);
 
@@ -43,7 +45,7 @@ public interface IWebsite
     Task<(List<EntryModel> Data, List<string> Links)> GetData(
         string bookTitle,
         BookType bookType,
-        WebDriver? driver = null,
+        IPage? page = null,
         bool isMember = false,
         Region curRegion = Region.America);
 }

@@ -1,5 +1,7 @@
 using System.Collections.Frozen;
 using System.Net;
+using MangaAndLightNovelWebScrape.Services;
+using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
@@ -34,7 +36,7 @@ internal sealed partial class InStockTrades : IWebsite
     /// <inheritdoc />
     public const Region REGION = Region.America;
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships)
     {
         return Task.Run(async () =>
         {
@@ -157,6 +159,8 @@ internal sealed partial class InStockTrades : IWebsite
             ref curTitle, bookTitle, new[] { " Annv Book", " Ann" }, " Anniversary Edition");
         InternalHelpers.ReplaceTextInEntryTitle(
             ref curTitle, bookTitle, "Deluxe Edition", "Deluxe");
+        InternalHelpers.ReplaceTextInEntryTitle(
+            ref curTitle, bookTitle, "Coll", "Collector");
 
         string mid = curTitle.ToString();
         if (!mid.Contains("Special Edition", StringComparison.Ordinal) 
@@ -200,7 +204,7 @@ internal sealed partial class InStockTrades : IWebsite
     public async Task<(List<EntryModel> Data, List<string> Links)> GetData(
         string bookTitle,
         BookType bookType,
-        WebDriver? driver = null,
+        IPage? page = null,
         bool isMember = false,
         Region curRegion = Region.America)
     {
@@ -212,34 +216,20 @@ internal sealed partial class InStockTrades : IWebsite
 
         uint maxPages = 0;
         uint curPageNum = 1;
-        bool isOneShot = false;
-
         List<EntryModel> data = [];
         List<string> links = [];
 
         try
         {
             // First page: build URL, load, and get maxPages
-            HtmlWeb _html = new()
-            {
-                UsingCacheIfExists = true,
-                AutoDetectEncoding = false,
-                OverrideEncoding = Encoding.UTF8,
-                UseCookies = false,
-                PreRequest = request =>
-                {
-                    HttpWebRequest http = request;
-                    http.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-                    http.KeepAlive = true;
-                    http.Timeout = 10_000;
-                    return true;
-                }
-            };
+            HtmlWeb html = HtmlFactory.CreateWeb();
 
             string url = GenerateWebsiteUrl(curPageNum, bookTitle);
             links.Add(url);
 
-            HtmlDocument doc = _html.Load(url);
+            HtmlDocument doc = await html.LoadFromWebAsync(url);
+            doc.ConfigurePerf();
+
             HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
             if (pageCheck != null &&
                 uint.TryParse(pageCheck.GetAttributeValue("data-max", "0"), out uint parsed))
@@ -285,7 +275,7 @@ internal sealed partial class InStockTrades : IWebsite
                     LOGGER.Debug("{}", entryTitle);
 
                     // Precompute flags once
-                    isOneShot = count == 1 && !entryTitle.ContainsAny(_oneShotCheckFilter);
+                    bool isOneShot = count == 1 && !entryTitle.ContainsAny(_oneShotCheckFilter);
 
                     // Book‐title validity
                     bool validBook = (titleRemovalCheck ||
@@ -333,7 +323,7 @@ internal sealed partial class InStockTrades : IWebsite
                     curPageNum++;
                     url = GenerateWebsiteUrl(curPageNum, bookTitle);
                     links.Add(url);
-                    doc = _html.Load(url);
+                    doc = html.Load(url);
                 }
                 else
                 {

@@ -1,5 +1,7 @@
 using System.Globalization;
 using System.Net;
+using MangaAndLightNovelWebScrape.Services;
+using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
@@ -25,7 +27,7 @@ internal sealed partial class RobertsAnimeCornerStore : IWebsite
     /// <inheritdoc />
     public const Region REGION = Region.America;
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
     {
         return Task.Run(async () =>
         {
@@ -205,7 +207,7 @@ internal sealed partial class RobertsAnimeCornerStore : IWebsite
             }
 
             temp = temp.Trim();
-            if (temp.IndexOf("Vol", StringComparison.Ordinal) >= 0)
+            if (temp.Contains("Vol"))
             {
                 temp = temp.Replace(
                     "Vol",
@@ -234,7 +236,7 @@ internal sealed partial class RobertsAnimeCornerStore : IWebsite
         return result;
     }
 
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
     {
         List<EntryModel> data = [];
         List<string> links = [];
@@ -242,26 +244,10 @@ internal sealed partial class RobertsAnimeCornerStore : IWebsite
         try
         {
             // Start scraping the URL where the data is found
-            HtmlWeb _html = new()
-            {
-                UsingCacheIfExists = true,
-                AutoDetectEncoding = false,
-                OverrideEncoding = Encoding.UTF8,
-                UseCookies = false,
-                PreRequest = request =>
-                {
-                    HttpWebRequest http = request;
-                    http.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-                    http.KeepAlive = true;
-                    http.Timeout = 10_000;
-                    return true;
-                }
-            };
+            HtmlWeb html = HtmlFactory.CreateWeb();
 
-            HtmlDocument doc = _html.Load(GenerateWebsiteUrl(bookTitle));
-            doc.OptionCheckSyntax = false;
-            doc.OptionFixNestedTags = false;
-            doc.OptionAutoCloseOnEnd = true;
+            HtmlDocument doc = await html.LoadFromWebAsync(GenerateWebsiteUrl(bookTitle));
+            doc.ConfigurePerf();
 
             int bookTitleSpaceCount = bookTitle.AsSpan().Count(" ");
             HtmlNodeCollection? seriesData = doc.DocumentNode.SelectNodes(SeriesTitleXPath);
@@ -292,7 +278,7 @@ internal sealed partial class RobertsAnimeCornerStore : IWebsite
                 foreach (string link in links)
                 {
                     LOGGER.Info($"Url = {link}");
-                    doc = _html.Load(link);
+                    doc = html.Load(link);
 
                     List<HtmlNode> titleData = doc.DocumentNode
                         .SelectNodes(TitleXPath)?

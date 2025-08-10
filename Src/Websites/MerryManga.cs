@@ -1,5 +1,8 @@
 
 using System.Collections.Frozen;
+using System.Threading;
+using MangaAndLightNovelWebScrape.Services;
+using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
@@ -30,12 +33,12 @@ internal sealed partial class MerryManga : IWebsite
         "available_at_warehouse"
     );
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
     {
         return Task.Run(async () =>
         {
-            WebDriver driver = MasterScrape.SetupBrowserDriver(browser);
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, driver);
+            IPage page = await PlaywrightFactory.GetPageAsync(browser!);
+            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page);
             masterDataList.Add(Data);
             masterLinkList.TryAdd(Website.MerryManga, Links[0]);
         });
@@ -101,7 +104,7 @@ internal sealed partial class MerryManga : IWebsite
         return collapsed;
     }
 
-    private void ExtractProductData(
+    private static void ExtractProductData(
         HtmlDocument doc,
         out List<string> titles,
         out List<string> prices,
@@ -120,10 +123,11 @@ internal sealed partial class MerryManga : IWebsite
             {
                 // //h2[@class='woocommerce-loop-product__title']
                 string classAttr = node.GetAttributeValue("class", string.Empty);
-                if (classAttr.Equals("woocommerce-loop-product__title", StringComparison.Ordinal))
+                if (classAttr.Equals("woocommerce-loop-product__title", StringComparison.OrdinalIgnoreCase))
                 {
                     string text = node.InnerText.Trim();
                     titles.Add(text);
+                    LOGGER.Debug(text);
                 }
             }
 
@@ -133,22 +137,22 @@ internal sealed partial class MerryManga : IWebsite
             if (nodeName == "bdi")
             {
             HtmlNode parentNode = node.ParentNode;
-            if (parentNode != null
+            if (parentNode is not null
                 && parentNode.Name == "span"
                 && parentNode.GetAttributeValue("class", string.Empty)
-                            .Contains("woocommerce-Price-amount amount", StringComparison.Ordinal))
+                            .Contains("woocommerce-Price-amount amount", StringComparison.OrdinalIgnoreCase))
                     {
                         HtmlNode grandParent = parentNode.ParentNode;
-                        if (grandParent != null)
+                        if (grandParent is not null)
                         {
                             // case (a): under <ins>
                             if (grandParent.Name == "ins")
                             {
                                 HtmlNode greatGrand = grandParent.ParentNode;
-                                if (greatGrand != null
+                                if (greatGrand is not null
                                     && greatGrand.Name == "span"
                                     && greatGrand.GetAttributeValue("class", string.Empty)
-                                                .Equals("price", StringComparison.Ordinal))
+                                                .Equals("price", StringComparison.OrdinalIgnoreCase))
                                 {
                                     string text = node.InnerText.Trim();
                                     prices.Add(text);
@@ -157,7 +161,7 @@ internal sealed partial class MerryManga : IWebsite
                             // case (b): directly under <span class="price">
                             else if (grandParent.Name == "span"
                                     && grandParent.GetAttributeValue("class", string.Empty)
-                                                    .Equals("price", StringComparison.Ordinal))
+                                                    .Equals("price", StringComparison.OrdinalIgnoreCase))
                             {
                                 string text = node.InnerText.Trim();
                                 prices.Add(text);
@@ -193,70 +197,118 @@ internal sealed partial class MerryManga : IWebsite
         }
     }
 
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
+    private static async Task CheckAndProceedIfRated18Async(IPage page)
+    {
+        ILocator heading = page.Locator("h2.popup_heading");
+
+        // Wait a short moment to see if it appears (optional)
+        if (await heading.CountAsync() > 0)
+        {
+            string text = (await heading.First.InnerTextAsync()).Trim();
+
+            if (text.Equals("This product is rated 18+", StringComparison.OrdinalIgnoreCase))
+            {
+                await page.Locator("button.btn_submit#submit").ClickAsync();
+                LOGGER.Info("Proceeded from 18+ popup");
+            }
+        }
+    }
+
+    // TODO: Needs perf improvments
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
     {
         List<EntryModel> data = [];
         List<string> links = [];
 
         try
         {
-            bool hasBoxSet = bookType == BookType.Manga;
-            WebDriverWait wait = new(driver!, TimeSpan.FromSeconds(60));
+            bool hasBoxSet = true;
         Restart:
             string url = GenerateWebsiteUrl(bookTitle.ToLower(), bookType, hasBoxSet);
             links.Add(url);
 
-            driver!.Navigate().GoToUrl(url);
-            wait.Until(driver => driver.FindElement(By.CssSelector("div[class='container main-content']")));
-
-            HtmlDocument doc = new()
+            await page!.GotoAsync(url, new PageGotoOptions
             {
-                OptionCheckSyntax = false,
-                DisableServerSideCode = true,
-                OptionFixNestedTags = false,
-                OptionAutoCloseOnEnd = false,
-                OptionOutputOptimizeAttributeValues = false,
-                OptionExtractErrorSourceText = false,
-                OptionUseIdAttribute = false,
-                OptionReadEncoding = false
-            };
-            doc.LoadHtml(driver.PageSource);
+                WaitUntil = WaitUntilState.DOMContentLoaded
+            });
+            await page.WaitForSelectorAsync("div.container.main-content");
+            // wait.Until(driver => driver.FindElement(By.CssSelector("div[class='container main-content']")));
+
+            HtmlDocument doc = HtmlFactory.CreateDocument();
+            doc.LoadHtml(await page.ContentAsync());
 
             if (hasBoxSet && doc.Text.Contains("No products were found matching your selection."))
             {
-                LOGGER.Warn("No Entries Found, Checking Manga Only Link");
+                LOGGER.Info("No box set entries found, Checking Manga Only Link");
                 hasBoxSet = false;
                 url = GenerateWebsiteUrl(bookTitle.ToLower(), bookType, hasBoxSet);
                 links.Clear();
                 links.Add(url);
 
-                driver.Navigate().GoToUrl(url);
-                wait.Until(driver => driver.FindElement(By.CssSelector("div[class='container main-content']")));
+                await page.GotoAsync(url, new PageGotoOptions
+                {
+                    WaitUntil = WaitUntilState.DOMContentLoaded
+                });
+                await page.WaitForSelectorAsync("div.container.main-content");
             }
 
-            if (driver.FindElements(By.ClassName("facetwp-load-more")).Count != 0)
+            await CheckAndProceedIfRated18Async(page);
+
+            // Load all data
+            if (await page.Locator("button.facetwp-load-more:not(.facetwp-hidden)").CountAsync() > 0)
             {
-                // LOGGER.Info("Loading More Entries...");
-                while (wait.Until(driver => driver.FindElements(By.ClassName("facetwp-load-more"))).Count != 0)
+                ILocator visibleBtn = page.Locator("button.facetwp-load-more:not(.facetwp-hidden)");
+                ILocator hiddenBtn = page.Locator("button.facetwp-load-more.facetwp-hidden");
+                ILocator pager = page.Locator("div.facetwp-facet.facetwp-facet-load_more.facetwp-type-pager");
+                ILocator noProducts = page.Locator("div.woocommerce-info"); // <-- "No products were found..." banner
+
+                // While the *visible* load-more button exists:
+                while (true)
                 {
-                    LOGGER.Info("Loading More Entries...");
-                    if (driver.FindElements(By.ClassName("woocommerce-info")).Count == 1 || driver.FindElements(By.CssSelector("button[class='facetwp-load-more facetwp-hidden']")).Count == 1)
+                    if (await noProducts.CountAsync() > 0)
+                    {
+                        string text = (await noProducts.First.InnerTextAsync()).Trim();
+                        if (text.Equals("No products were found matching your selection.", StringComparison.OrdinalIgnoreCase))
+                        {
+                            break;
+                        }
+                    }
+
+                    LOGGER.Info("Loading more entries...");
+                    // no visible button -> done
+                    if (await visibleBtn.CountAsync() == 0) break;
+
+                    // click the visible button (use Force if header still intercepts)
+                    await visibleBtn.First.ClickAsync();
+
+                    // wait until the pager is attached (your requirement)
+                    await pager.First.WaitForAsync(new LocatorWaitForOptions
+                    {
+                        State = WaitForSelectorState.Attached,
+                        Timeout = 5000
+                    });
+
+                    // after the click, wait for EITHER: hidden button appears OR visible button detaches
+                    Task tHidden = hiddenBtn.First.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached, Timeout = 4000 });
+                    Task tGone = visibleBtn.First.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Detached, Timeout = 4000 });
+                    await Task.WhenAny(tHidden, tGone);
+
+                    // small settle so class flip/DOM swap can complete
+                    await page.WaitForTimeoutAsync(50);
+
+                    // break conditions
+                    if (await hiddenBtn.CountAsync() > 0 || await visibleBtn.CountAsync() == 0)
                     {
                         break;
                     }
-                    driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.ClassName("facetwp-load-more"))));
-                    wait.Until(driver => driver.FindElement(By.CssSelector("div[class='facetwp-facet facetwp-facet-load_more facetwp-type-pager']")).Displayed);
                 }
-                doc.LoadHtml(driver.PageSource);
+
+                LOGGER.Info("Finished loading more entries");
+                string html = await page.ContentAsync();
+                doc.LoadHtml(html);
             }
 
             bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
-
-            // Get the page data from the HTML doc
-
-            // HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
-            // HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
-            // HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
 
             ExtractProductData(doc, out List<string> titleData, out List<string> priceData, out List<StockStatus> stockStatusData);
 
@@ -298,6 +350,7 @@ internal sealed partial class MerryManga : IWebsite
                 {
                     LOGGER.Debug("Removed {}", entryTitle);
                 }
+                LOGGER.Debug("CHECK 1");
             }
 
             if (hasBoxSet)
@@ -305,20 +358,16 @@ internal sealed partial class MerryManga : IWebsite
                 hasBoxSet = false;
                 goto Restart;
             }
-        }
-        catch (Exception ex)
-        {
-            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
-        }
-        finally
-        {
-            driver?.Quit();
+
             data.TrimExcess();
             links.TrimExcess();
             data.Sort(EntryModel.VolumeSort);
             data.RemoveDuplicates(LOGGER);
-
             InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
+        }
+        catch (Exception ex)
+        {
+            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
         }
 
         return (data, links);

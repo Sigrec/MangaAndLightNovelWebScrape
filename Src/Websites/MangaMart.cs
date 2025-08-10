@@ -1,4 +1,7 @@
 using System.Net;
+using System.Threading;
+using MangaAndLightNovelWebScrape.Services;
+using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
@@ -6,10 +9,11 @@ internal sealed partial class MangaMart : IWebsite
 {
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
 
-    private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//a[@class='product-item__title text--strong link']");
+    private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[contains(concat(' ', normalize-space(@class), ' '), ' product-item ')]" +
+        "//a[contains(concat(' ', normalize-space(@class), ' '), ' product-item__title ')]");
     private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='price' or @class='price price--highlight']/text()[2]");
-    private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//a[contains(@class, 'product-item__image-wrapper')]");
-    private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("(//div[@class='pagination__nav']//a)[last()]");
+    private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='bss_pl_img ']//span[@class='bss_pl_text_hover_text bss_pl_text_hover_link_disable']/div/strong");
+    private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("(//a[@class='pagination__nav-item link'])[last()]");
     private static readonly XPathExpression EntryTitleDesc = XPathExpression.Compile("//div[@class='rte text--pull']");
 
     [GeneratedRegex(@"\b(?:Vols?|Volume)\b\.?", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
@@ -26,12 +30,12 @@ internal sealed partial class MangaMart : IWebsite
     /// <inheritdoc />
     public const Region REGION = Region.America;
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
     {
         return Task.Run(async () =>
         {
-            WebDriver driver = MasterScrape.SetupBrowserDriver(browser);
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, driver);
+            IPage page = await PlaywrightFactory.GetPageAsync(browser!);
+            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page);
             masterDataList.Add(Data);
             masterLinkList.TryAdd(Website.MangaMart, Links[0]);
         });
@@ -81,53 +85,103 @@ internal sealed partial class MangaMart : IWebsite
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
     }
 
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
+    private static async Task WaitForStableLastItemAsync(
+        IPage page,
+        string selector = "a.product-item__title.text--strong.link",
+        int timeoutMs = 30000,
+        int pollMs = 250)
+    {
+        ILocator items = page.Locator(selector);
+
+        Int32 previousCount = -1;
+        DateTime deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+
+        while (DateTime.UtcNow < deadline)
+        {
+            Int32 count = await items.CountAsync();
+
+            // no items yet → keep waiting
+            if (count == 0)
+            {
+                previousCount = 0;
+                await Task.Delay(pollMs);
+                continue;
+            }
+
+            // if the page is still appending more, update previousCount and keep waiting
+            if (count != previousCount)
+            {
+                previousCount = count;
+                await Task.Delay(pollMs);
+                continue;
+            }
+
+            // finally, once the count is stable, return when the last is visible
+            ILocator last = items.Nth(count - 1);
+            if (await last.IsVisibleAsync())
+                return;
+
+            // not visible yet → keep polling
+            await Task.Delay(pollMs);
+        }
+
+        throw new TimeoutException($"WaitForStableLastItemAsync timed out after {timeoutMs} ms for selector: {selector}");
+    }
+
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
     {
         List<EntryModel> data = [];
         List<string> links = [];
 
         try
         {
-            WebDriverWait wait = new(driver!, TimeSpan.FromSeconds(60));
-            HtmlWeb _html = new()
-            {
-                UsingCacheIfExists = true,
-                AutoDetectEncoding = false,
-                OverrideEncoding = Encoding.UTF8,
-                UseCookies = false,
-                PreRequest = request =>
-                {
-                    HttpWebRequest http = request;
-                    http.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-                    http.KeepAlive = true;
-                    http.Timeout = 10_000;
-                    return true;
-                }
-            };
-            HtmlDocument doc = new();
+            HtmlWeb html = HtmlFactory.CreateWeb();
+            HtmlDocument doc = HtmlFactory.CreateDocument();
 
             // Load the document once after preparation.
             uint curPageNum = 1;
             string url = GenerateWebsiteUrl(bookType, bookTitle, curPageNum);
-            links.Add(url);
-            driver!.Navigate().GoToUrl(url);
-            wait.Until(driver => driver.FindElement(By.CssSelector("div[class='product-list product-list--collection']")));
-            doc.LoadHtml(driver.PageSource);
-
             bool bookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
-            HtmlNode pageNode = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
-            uint maxPageNum = pageNode != null ? pageNode.GetAttributeValue<uint>("data-page", 0) : 0;
+
+            links.Add(url);
+
+            await page!.GotoAsync(url, new PageGotoOptions
+            {
+                WaitUntil = WaitUntilState.DOMContentLoaded
+            });
+            await WaitForStableLastItemAsync(page);
+            // await page.WaitForSelectorAsync("a.product-item__title.text--strong.link");
+            await page.WaitForSelectorAsync(
+                "span.bss_pl_text_hover_text div strong",
+                new PageWaitForSelectorOptions
+                {
+                    State = WaitForSelectorState.Attached,
+                    Timeout = 5_000
+                }
+            );
+
+            doc.LoadHtml(await page.ContentAsync());
+
+            XPathNavigator nav = doc.DocumentNode.CreateNavigator();
+            XPathNavigator? pageNode = nav.SelectSingleNode(PageCheckXPath);
+            int maxPageNum = pageNode is not null ? pageNode.ValueAsInt : 1;
             LOGGER.Debug("Max Pages = {}", maxPageNum);
 
-            while (true)
+            while (curPageNum <= maxPageNum)
             {
-                HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
-                HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
-                HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
+                XPathNodeIterator titleData = nav.Select(TitleXPath);
+                XPathNodeIterator priceData = nav.Select(PriceXPath);
+                XPathNodeIterator stockStatusData = nav.Select(StockStatusXPath);
 
-                for (int x = 0; x < titleData.Count; x++)
+                while (titleData.MoveNext())
                 {
-                    string entryTitle = titleData[x].InnerText.Trim();
+                    priceData.MoveNext();
+                    stockStatusData.MoveNext();
+                    string? entryTitle = WebUtility.HtmlDecode(titleData.Current?.Value)?.Trim();
+                    if (entryTitle is null)
+                    {
+                        continue;
+                    }
 
                     bool shouldRemoveEntry = !InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle) || (!bookTitleRemovalCheck && InternalHelpers.ShouldRemoveEntry(entryTitle));
 
@@ -143,12 +197,12 @@ internal sealed partial class MangaMart : IWebsite
                         if (!shouldRemoveEntry && !entryTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase))
                         {
                             LOGGER.Debug("Checking {} for Novel", entryTitle);
-                            string urlPath = titleData[x].GetAttributeValue<string>("href", string.Empty);
+                            string urlPath = titleData.Current!.GetAttribute("href", string.Empty);
                             if (!string.IsNullOrWhiteSpace(urlPath))
                             {
-                                HtmlNode descNode = _html.Load($"https://mangamart.com/{urlPath}").DocumentNode.SelectSingleNode(EntryTitleDesc);
-                                string innerText = descNode.InnerText;
-                                if (descNode != null && (innerText.Contains("Light Novel", StringComparison.OrdinalIgnoreCase) || innerText.Contains("novels", StringComparison.OrdinalIgnoreCase)))
+                                HtmlNode? descNode = (await html.LoadFromWebAsync($"https://mangamart.com/{urlPath}")).DocumentNode.SelectSingleNode(EntryTitleDesc);
+                                string? innerText = descNode?.InnerText;
+                                if (descNode is not null && innerText is not null && (innerText.Contains("Light Novel", StringComparison.OrdinalIgnoreCase) || innerText.Contains("novels", StringComparison.OrdinalIgnoreCase)))
                                 {
                                     LOGGER.Debug("Found Novel entry in Manga Scrape");
                                     shouldRemoveEntry = true;
@@ -163,19 +217,20 @@ internal sealed partial class MangaMart : IWebsite
 
                     if (!shouldRemoveEntry)
                     {
-                        HtmlNode? stockStatusNode = stockStatusData![x].SelectNodes(".//strong")?.FirstOrDefault();
-                        StockStatus stockStatus = (stockStatusNode != null ? stockStatusNode.InnerText : string.Empty) switch
+                        string stockStatusNode = stockStatusData.Current?.Value.Trim() ?? string.Empty;
+                        StockStatus stockStatus = stockStatusNode switch
                         {
                             "PRE-ORDER" => StockStatus.PO,
                             "BACK-ORDER" => StockStatus.BO,
                             _ => StockStatus.IS,
                         };
+                        // LOGGER.Debug("{} | {} | {}", entryTitle, string.IsNullOrWhiteSpace(stockStatusNode), stockStatusNode);
 
                         data.Add(
                             new EntryModel
                             (
                                 ParseAndCleanTitle(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType),
-                                priceData[x].InnerText.Trim(),
+                                priceData.Current!.Value,
                                 stockStatus,
                                 TITLE
                             )
@@ -183,36 +238,35 @@ internal sealed partial class MangaMart : IWebsite
                     }
                     else
                     {
+
                         LOGGER.Debug("Removed {}", entryTitle);
                     }
                 }
 
-                if (curPageNum < maxPageNum)
+                curPageNum++;
+                if (curPageNum <= maxPageNum)
                 {
-                    curPageNum++;
                     url = GenerateWebsiteUrl(bookType, bookTitle, curPageNum);
                     links.Add(url);
-                    driver.Navigate().GoToUrl(url);
-                    wait.Until(driver => driver.FindElement(By.CssSelector("div[class='product-list product-list--collection']")));
-                    doc.LoadHtml(driver.PageSource);
-                }
-                else
-                {
-                    break;
+                    await page!.GotoAsync(url, new PageGotoOptions
+                    {
+                        WaitUntil = WaitUntilState.DOMContentLoaded
+                    });
+                    // WaitForStableLastItem(wait);
+                    await page.WaitForSelectorAsync("a.product-item__title.text--strong.link");
+                    doc.LoadHtml(await page.ContentAsync());
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
-        }
-        finally
-        {
+
             data.TrimExcess();
             links.TrimExcess();
             data.Sort(EntryModel.VolumeSort);
             data.RemoveDuplicates(LOGGER);
             InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
+        }
+        catch (Exception ex)
+        {
+            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
         }
 
         return (data, links);

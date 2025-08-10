@@ -1,4 +1,6 @@
 using System.Collections.Frozen;
+using MangaAndLightNovelWebScrape.Services;
+using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
@@ -52,12 +54,12 @@ internal sealed partial class AmazonUSA : IWebsite
     [GeneratedRegex(@"\((.*)\)|:(.*)", RegexOptions.IgnoreCase)] private static partial Regex ExtractTextRegex();
     [GeneratedRegex(@"(\d{1,3}) Special Edition.*", RegexOptions.IgnoreCase)] private static partial Regex SpecialEditionRegex();
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
     {
         return Task.Run(async () =>
         {
-            WebDriver driver = MasterScrape.SetupBrowserDriver(browser, true);
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, driver);
+            IPage page = await PlaywrightFactory.GetPageAsync(browser!);
+            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page);
             masterDataList.Add(Data);
             masterLinkList.TryAdd(Website.AmazonUSA, Links[0]);
         });
@@ -207,11 +209,10 @@ internal sealed partial class AmazonUSA : IWebsite
     }
 
     // TODO - Need to finish checking tests and cleaning
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
     {
         List<EntryModel> data = [];
         List<string> links = [];
-        WebDriverWait wait = new(driver!, TimeSpan.FromSeconds(60));
 
         try
         {
@@ -219,11 +220,7 @@ internal sealed partial class AmazonUSA : IWebsite
             string url = GenerateWebsiteUrl(bookType, curPage, bookTitle);
             links.Add(url);
 
-            HtmlDocument doc = new() { OptionCheckSyntax = false };
-
-            driver!.Navigate().GoToUrl(url);
-            wait.Until(driver => driver.FindElement(By.XPath("//div[@class='s-main-slot s-result-list s-search-results sg-row']/div[last()]")));
-            doc.LoadHtml(driver.PageSource);
+            HtmlDocument doc = HtmlFactory.CreateDocument();
 
             HtmlNodeCollection pageNums = doc.DocumentNode.SelectNodes(PageCheckXPath);
             uint maxPage = pageNums != null ? Convert.ToUInt32(pageNums.Last().InnerText.Trim()) : 0;
@@ -323,9 +320,9 @@ internal sealed partial class AmazonUSA : IWebsite
                 {
                     url = GenerateWebsiteUrl(bookType, ++curPage, bookTitle);
                     links.Add(url);
-                    driver.Navigate().GoToUrl(url);
-                    wait.Until(driver => driver.FindElement(By.XPath("//div[@class='s-main-slot s-result-list s-search-results sg-row']/div[last()]")));
-                    doc.LoadHtml(driver.PageSource);
+                    // driver.Navigate().GoToUrl(url);
+                    // wait.Until(driver => driver.FindElement(By.XPath("//div[@class='s-main-slot s-result-list s-search-results sg-row']/div[last()]")));
+                    // doc.LoadHtml(driver.PageSource);
                 }
                 else
                 {
@@ -339,7 +336,6 @@ internal sealed partial class AmazonUSA : IWebsite
         }
         finally
         {
-            driver?.Quit();
             data.TrimExcess();
             links.TrimExcess();
             data.Sort(EntryModel.VolumeSort);

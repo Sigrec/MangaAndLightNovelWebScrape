@@ -1,4 +1,6 @@
 using System.Net;
+using MangaAndLightNovelWebScrape.Services;
+using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
@@ -25,7 +27,7 @@ internal sealed partial class Crunchyroll : IWebsite
     [GeneratedRegex(@"(?:\d-in-\d|Omnibus) Edition", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
     [GeneratedRegex(@"\((\d{1,3}-\d{1,3})\) Bundle", RegexOptions.IgnoreCase)] private static partial Regex BundleVolRegex();
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships)
     {
         return Task.Run(async () =>
         {
@@ -127,7 +129,7 @@ internal sealed partial class Crunchyroll : IWebsite
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
     }
 
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
     {
         List<EntryModel> data = [];
         List<string> links = [];
@@ -135,23 +137,7 @@ internal sealed partial class Crunchyroll : IWebsite
         try
         {
             // Initialize once and reuse if necessary.
-            HtmlWeb _html = new()
-            {
-                UsingCacheIfExists = true,
-                AutoDetectEncoding = false,
-                OverrideEncoding = Encoding.UTF8,
-                UseCookies = false,
-                PreRequest = request =>
-                {
-                    HttpWebRequest http = request;
-                    http.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-                    http.KeepAlive = true;
-                    http.Timeout = 10_000;
-                    return true;
-                }
-            };
-
-            HtmlDocument doc;
+            HtmlWeb html = HtmlFactory.CreateWeb();
 
             bool bookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
             LOGGER.Debug(bookTitleRemovalCheck);
@@ -159,10 +145,9 @@ internal sealed partial class Crunchyroll : IWebsite
             // Load the document once after preparation.
             string url = GenerateWebsiteUrl(bookType, bookTitle);
             links.Add(url);
-            doc = _html.Load(url);
-            doc.OptionCheckSyntax = false;
-            doc.OptionFixNestedTags = false;
-            doc.OptionAutoCloseOnEnd = true;
+
+            HtmlDocument doc = await html.LoadFromWebAsync(url);
+            doc.ConfigurePerf();
 
             // Get the page data from the HTML doc
             HtmlNodeCollection? titleData = doc.DocumentNode.SelectNodes(TitleXPath);
@@ -177,7 +162,7 @@ internal sealed partial class Crunchyroll : IWebsite
 
                 url = GenerateWebsiteUrl(bookType, bookTitle, true);
                 links.Add(url);
-                doc = _html.Load(url);
+                doc = html.Load(url);
                 titleData = doc.DocumentNode.SelectNodes(TitleXPath);
                 priceData = doc.DocumentNode.SelectNodes(PriceXPath);
                 stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);

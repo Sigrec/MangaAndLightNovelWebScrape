@@ -116,7 +116,7 @@ public static class Helpers
             [SciFier.TITLE] = Website.SciFier,
             [ForbiddenPlanet.TITLE] = Website.ForbiddenPlanet,
             [TravellingMan.WEBSITE_TITLE] = Website.TravellingMan,
-            [Waterstones.WEBSITE_TITLE] = Website.Waterstones,
+            [Waterstones.TITLE] = Website.Waterstones,
             [Indigo.TITLE] = Website.Indigo,
         }.ToFrozenDictionary();
 
@@ -174,7 +174,7 @@ public static class Helpers
             Website.MerryManga => MerryManga.BASE_URL,
             Website.RobertsAnimeCornerStore => RobertsAnimeCornerStore.BASE_URL,
             Website.TravellingMan => TravellingMan.WEBSITE_URL,
-            Website.Waterstones => Waterstones.WEBSITE_URL,
+            Website.Waterstones => Waterstones.BASE_URL,
             _ => throw new NotImplementedException($"No URL for {site}")
         };
     }

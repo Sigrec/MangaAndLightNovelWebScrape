@@ -1,5 +1,7 @@
 using System.Collections.Frozen;
 using System.Net;
+using MangaAndLightNovelWebScrape.Services;
+using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
@@ -42,12 +44,12 @@ internal sealed partial class SciFier : IWebsite
         {Region.Canada, 6}
     }.ToFrozenDictionary();
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
     {
         return Task.Run(async () =>
         {
-            WebDriver driver = MasterScrape.SetupBrowserDriver(browser);
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, driver, curRegion: curRegion);
+            IPage page = await PlaywrightFactory.GetPageAsync(browser!);
+            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page, curRegion: curRegion);
             masterDataList.Add(Data);
             masterLinkList.TryAdd(Website.SciFier, Links[0]);
         });
@@ -136,35 +138,23 @@ internal sealed partial class SciFier : IWebsite
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ");
     }
 
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
     {
         List<EntryModel> data = [];
         List<string> links = [];
         
         try
         {
-            HtmlWeb _html = new()
-            {
-                UsingCacheIfExists = true,
-                AutoDetectEncoding = false,
-                OverrideEncoding = Encoding.UTF8,
-                UseCookies = false,
-                PreRequest = request =>
-                {
-                    HttpWebRequest http = request;
-                    http.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
-                    http.KeepAlive = true;
-                    http.Timeout = 10_000;
-                    return true;
-                }
-            };
+            HtmlWeb html = HtmlFactory.CreateWeb();
 
             bool letterIsFrontHalf = char.IsDigit(bookTitle[0]) || (bookTitle[0] & 0b11111) <= 13;
             bool ShouldEndEarly = false, IsSingleName = true;
             string url = GenerateWebsiteUrl(bookTitle, bookType, curRegion, letterIsFrontHalf);
             links.Add(url);
+
+            HtmlDocument doc = await html.LoadFromWebAsync(url);
+            doc.ConfigurePerf();
             
-            HtmlDocument doc = _html.Load(url);
             bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
 
             while (true)
@@ -223,7 +213,7 @@ internal sealed partial class SciFier : IWebsite
                     {
                         if (bookType == BookType.LightNovel && !entryTitle.Contains("novel", StringComparison.OrdinalIgnoreCase))
                         {
-                            if (!_html.Load(titleData[x].GetAttributeValue("href", "ERROR")).DocumentNode.SelectSingleNode(EntryDescXPath).InnerText.ContainsAny(["novel series", "series of prose novels"]))
+                            if (!html.Load(titleData[x].GetAttributeValue("href", "ERROR")).DocumentNode.SelectSingleNode(EntryDescXPath).InnerText.ContainsAny(["novel series", "series of prose novels"]))
                             {
                                 LOGGER.Info("Removed (3) {}", entryTitle);
                                 continue;
@@ -281,7 +271,7 @@ internal sealed partial class SciFier : IWebsite
                 if (!ShouldEndEarly && pageCheck != null)
                 {
                     url = $"https://scifier.com{WebUtility.HtmlDecode(pageCheck.GetAttributeValue("href", "Url Error"))}";
-                    doc = _html.Load(url);
+                    doc = html.Load(url);
                     LOGGER.Info($"Next Page => {url}");
                 }
                 else

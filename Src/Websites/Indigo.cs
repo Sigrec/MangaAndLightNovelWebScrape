@@ -1,4 +1,6 @@
 using System.Threading;
+using MangaAndLightNovelWebScrape.Services;
+using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
@@ -28,12 +30,12 @@ internal sealed partial class Indigo : IWebsite
     public const Region REGION = Region.Canada;
     private const decimal PLUM_DISCOUNT = 0.1M;
     
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, Browser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
     {
         return Task.Run(async () =>
         {
-            WebDriver driver = MasterScrape.SetupBrowserDriver(browser);
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, driver, memberships.IsIndigoMember);
+            IPage page = await PlaywrightFactory.GetPageAsync(browser!);
+            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page, memberships.IsIndigoMember);
             masterDataList.Add(Data);
             masterLinkList.TryAdd(Website.MangaMart, Links[0]);
         });
@@ -102,7 +104,7 @@ internal sealed partial class Indigo : IWebsite
     }
 
     // TODO - Indigo still not working need to fix
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, WebDriver? driver = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
     {
         List<EntryModel> data = [];
         List<string> links = [];
@@ -110,18 +112,17 @@ internal sealed partial class Indigo : IWebsite
         try
         {
             //HtmlWeb web = new HtmlWeb();
-            HtmlDocument doc = new();
-            WebDriverWait wait = new(driver!, TimeSpan.FromSeconds(10));
+            HtmlDocument doc = HtmlFactory.CreateDocument();
             bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
 
             string url = GenerateWebsiteUrl(bookTitle, bookType);
             links.Add(url);
 
             //doc = web.Load(url);
-            driver!.Navigate().GoToUrl(url);
-            Thread.Sleep(10000);
-            wait.Until(driver => driver.FindElement(By.CssSelector("div[class='row product-grid mt-4 search-analytics']")));
-            doc.LoadHtml(driver.PageSource);
+            // driver!.Navigate().GoToUrl(url);
+            // Thread.Sleep(10000);
+            // wait.Until(driver => driver.FindElement(By.CssSelector("div[class='row product-grid mt-4 search-analytics']")));
+            // doc.LoadHtml(driver.PageSource);
 
             HtmlDocument innerDoc = new();
             HtmlNodeCollection entryLinkData = doc.DocumentNode.SelectNodes(EntryLinkXPath);
@@ -169,9 +170,9 @@ internal sealed partial class Indigo : IWebsite
                         )
                     )
                 {
-                    driver.Navigate().GoToUrl($"https://www.indigo.ca{entryLinkData[x].GetAttributeValue("href", "error")}");
-                    wait.Until(driver => driver.FindElements(By.CssSelector("p[class='delivery-option-details mouse']")));
-                    innerDoc.LoadHtml(driver.PageSource);
+                    // driver.Navigate().GoToUrl($"https://www.indigo.ca{entryLinkData[x].GetAttributeValue("href", "error")}");
+                    // wait.Until(driver => driver.FindElements(By.CssSelector("p[class='delivery-option-details mouse']")));
+                    // innerDoc.LoadHtml(driver.PageSource);
                     // LOGGER.Debug(innerDoc.Text);
 
                     price = priceData[x].InnerText.Trim();
@@ -194,18 +195,15 @@ internal sealed partial class Indigo : IWebsite
                 else { LOGGER.Info("Removed {}", entryTitle); }
             }
 
-        }
-        catch (Exception ex)
-        {
-            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
-        }
-        finally
-        {
             data.TrimExcess();
             links.TrimExcess();
             data.Sort(EntryModel.VolumeSort);
             data.RemoveDuplicates(LOGGER);
             InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
+        }
+        catch (Exception ex)
+        {
+            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
         }
 
         return (data, links);

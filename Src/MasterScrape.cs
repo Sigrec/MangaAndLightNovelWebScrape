@@ -1,10 +1,8 @@
-using OpenQA.Selenium.Firefox;
-using OpenQA.Selenium.Edge;
-using OpenQA.Selenium.Chrome;
 using MangaAndLightNovelWebScrape.Models;
-using OpenQA.Selenium.Chromium;
 using System.Diagnostics;
 using System.Collections.ObjectModel;
+using MangaAndLightNovelWebScrape.Services;
+using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape;
 
@@ -42,17 +40,12 @@ public sealed partial class MasterScrape
 
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
     
-    // "--headless=new", 
-    private static readonly string[] CHROME_BROWSER_ARGUMENTS = ["--headless=new", "--disable-cookies", "--enable-automation", "--no-sandbox", "--disable-infobars", "--disable-dev-shm-usage", "--disable-extensions", "--inprivate", "--incognito", "--disable-logging", "--disable-notifications", "--disable-logging", "--silent", "--disable-gpu", "--blink-settings=imagesEnabled=false", "--disable-software-rasterizer", "--disable-webrtc"];
-    // "-headless",
-    private static readonly string[] FIREFOX_BROWSER_ARGUMENTS = [ "-headless" ];
-    
     [GeneratedRegex(@"\d{1,3}(?:\.\d{1})?$")] internal static partial Regex FindVolNumRegex();
     [GeneratedRegex(@"Vol \d{1,3}(?:\.\d{1})?$")] internal static partial Regex FindVolWithNumRegex();
     [GeneratedRegex(@"\s{2,}|(?:--|\u2014)\s*| - ")] internal static partial Regex MultipleWhiteSpaceRegex();
     [GeneratedRegex(@"(?:Encyclopedia|Anthology|Official|Character|Guide|Illustration|Anime Profiles|Choose Your Path|Compendium|Art(?:book| Book)|Error|Advertising|\(Osi\)|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA|Poster|Statue|IMPORT|Trace|Bookmarks|Music Book|Retrospective|Notebook(?: Journal|)|[^\w]Art of |the Anime|Calendar|Adventure (?:Book)|Coloring Book|Sketchbook|Notebook|PLUSH|Pirate Recipes|Exclusive|Hobby|Model\s+Kit)", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
 
-    public MasterScrape(StockStatus[] Filter, Region Region = Region.America, Browser Browser = Browser.FireFox, bool IsBooksAMillionMember = false, bool IsKinokuniyaUSAMember = false, bool IsIndigoMember = false)
+    public MasterScrape(StockStatus[] Filter, Region Region = Region.America, Browser Browser = Browser.Edge, bool IsBooksAMillionMember = false, bool IsKinokuniyaUSAMember = false, bool IsIndigoMember = false)
     {
         this.Filter = Filter;
         this.Region = Region;
@@ -567,126 +560,6 @@ public sealed partial class MasterScrape
     }
 
     /// <summary>
-    /// Configures and returns a WebDriver instance (Edge, Chrome, or Firefox)
-    /// with shared settings for geolocation, notifications, and optional user‑agent spoofing.
-    /// </summary>
-    /// <param name="needsUserAgent">
-    ///   If <c>true</c>, overrides the browser’s user‑agent string.
-    /// </param>
-    /// <param name="forceFireFox">
-    ///   If <c>true</c>, always returns a Firefox driver regardless of the configured browser.
-    /// </param>
-    /// <returns>A configured <see cref="WebDriver"/> for the target browser.</returns>
-    internal static WebDriver SetupBrowserDriver(Browser browser, bool needsUserAgent = false, bool forceFireFox = false)
-    {
-        Browser target = forceFireFox
-            ? Browser.FireFox
-            : browser;
-
-        // Pre‑fetch the UA string only if needed
-        string userAgent = needsUserAgent
-            ? new HtmlWeb().UserAgent
-            : string.Empty;
-
-        // 1) Chromium‐based browsers (Edge & Chrome)
-        if (target != Browser.FireFox)
-        {
-            // Choose service & options based on target
-            DriverService service;
-            ChromiumOptions options;
-
-            if (target == Browser.Edge)
-            {
-                service = EdgeDriverService.CreateDefaultService();
-                options = new EdgeOptions()
-                {
-                    PageLoadStrategy = PageLoadStrategy.Normal
-                };
-            }
-            else
-            {
-                service = ChromeDriverService.CreateDefaultService();
-                options = new ChromeOptions()
-                {
-                    PageLoadStrategy = PageLoadStrategy.Normal
-                };
-            }
-
-            // Common service settings
-            service.HideCommandPromptWindow = true;
-
-            // Common browser settings
-            options.AddArguments(CHROME_BROWSER_ARGUMENTS);
-            options.AddExcludedArgument("disable-popup-blocking");
-            options.AddUserProfilePreference("profile.default_content_settings.geolocation", 2);
-            options.AddUserProfilePreference("profile.default_content_setting_values.notifications", 2);
-
-            if (needsUserAgent)
-            {
-                options.AddArgument("user-agent=" + userAgent);
-            }
-
-            // Instantiate appropriate driver
-            if (target == Browser.Edge)
-            {
-                return new EdgeDriver((EdgeDriverService)service, (EdgeOptions)options);
-            }
-            else
-            {
-                return new ChromeDriver((ChromeDriverService)service, (ChromeOptions)options);
-            }
-        }
-
-        // 2) Firefox
-        FirefoxDriverService firefoxService = FirefoxDriverService.CreateDefaultService();
-        firefoxService.HideCommandPromptWindow = true;
-
-        FirefoxOptions firefoxOptions = new()
-        {
-            PageLoadStrategy = PageLoadStrategy.Normal,
-            AcceptInsecureCertificates = true
-        };
-
-        // Common FF preferences
-        firefoxOptions.AddArguments(FIREFOX_BROWSER_ARGUMENTS);
-        firefoxOptions.SetPreference("javascript.enabled", true);
-        firefoxOptions.SetPreference("media.peerconnection.enabled", false);
-        firefoxOptions.SetPreference("devtools.console.stdout.content", false);
-        firefoxOptions.SetPreference("profile.default_content_settings.geolocation", 2);
-        firefoxOptions.SetPreference("profile.default_content_setting_values.notifications", 2);
-        firefoxOptions.SetPreference("dom.webdriver.enabled", false);
-        firefoxOptions.SetPreference("browser.safebrowsing.enabled", false);
-        firefoxOptions.SetPreference("layers.acceleration.disabled", true);
-        firefoxOptions.SetPreference("privacy.trackingprotection.enabled", false);
-        firefoxOptions.SetPreference("webgl.disabled", true);
-        firefoxOptions.SetPreference("extensions.enabled", false);
-        firefoxOptions.SetPreference("app.update.enabled", false);
-        firefoxOptions.SetPreference("useAutomationExtension", false);
-
-        // Performance/tweaks
-        firefoxOptions.SetPreference("browser.preferences.animateFadeIn", false);
-        firefoxOptions.SetPreference("toolkit.cosmeticAnimations.enabled", false);
-        firefoxOptions.SetPreference("layout.css.prefers-reduced-motion.enabled", true);
-        firefoxOptions.SetPreference("browser.sessionstore.restore_on_demand", true);
-        firefoxOptions.SetPreference("browser.sessionstore.max_tabs_undo", 0);
-        firefoxOptions.SetPreference("datareporting.healthreport.service.enabled", false);
-        firefoxOptions.SetPreference("toolkit.telemetry.enabled", false);
-        firefoxOptions.SetPreference("toolkit.telemetry.unified", false);
-        firefoxOptions.SetPreference("app.shield.optoutstudies.enabled", false);
-        firefoxOptions.SetPreference("browser.sessionhistory.max_entries", 0);
-        firefoxOptions.SetPreference("dom.disable_open_during_load", true);
-        firefoxOptions.SetPreference("dom.popup_allowed_events", string.Empty);
-        firefoxOptions.SetPreference("security.dialog_enable_delay", 0);
-
-        if (needsUserAgent)
-        {
-            firefoxOptions.SetPreference("general.useragent.override", userAgent);
-        }
-
-        return new FirefoxDriver(firefoxService, firefoxOptions);
-    }
-
-    /// <summary>
     /// Generates a set of <see cref="Website"/> enums based on provided title strings
     /// and a target region. Unrecognized or out‑of‑region titles are ignored.
     /// </summary>
@@ -731,7 +604,7 @@ public sealed partial class MasterScrape
 
         return websiteList;
     }
-    
+
     /// <summary>
     /// Initializes and runs the web‐scrape, populating the master data and URL dictionaries.
     /// Applies optional stock filters, compares prices across sites, and prepares the final results.
@@ -764,91 +637,108 @@ public sealed partial class MasterScrape
         if (!Helpers.IsWebsiteListValid(this.Region, siteList))
         {
             string siteListString = string.Join(", ", siteList);
-            string plural   = siteList.Count > 1 ? "s" : string.Empty;
+            string plural = siteList.Count > 1 ? "s" : string.Empty;
             throw new ArgumentException(
                 $"Website{plural} [{siteListString}] not supported in region \"{this.Region}\".");
         }
 
-        LOGGER.Info("Starting scrape for {Title} ({BookType}), against website(s) [{Websites}]", title, bookType, string.Join(',', siteList));
-        LOGGER.Info("Region set to {0}", this.Region);
-        LOGGER.Info("Running on {0} browser", this.Browser);
-
-        // 1) Clear prior URLs
-        _masterLinkDict.Clear();
-        _masterDataList.Clear();
-
-        // 2) Kick off the individual scraping tasks
-        _webTasks.ScheduleScrapes(
-            siteList,
-            title, 
-            bookType,
-            _masterDataList,
-            _masterLinkDict,
-            this.Browser,
-            this.Region,
-            (this.IsBooksAMillionMember, this.IsKinokuniyaUSAMember, this.IsIndigoMember)
-        );
-        await Task.WhenAll(_webTasks);
-        _webTasks.Clear();
-
-        // 3) Snapshot your concurrent bag into a List<T>
-        List<List<EntryModel>> currentLists = [.. _masterDataList];
-
-        // 4) Remove any empty result‐sets
-        currentLists.RemoveAll(inner => inner.Count == 0);
-
-        // 5) Apply stock‑status filters
-        if (this.Filter != StockStatusFilter.EXCLUDE_NONE_FILTER
-            && currentLists.Count > 0)
+        IBrowser? browser = null;
+        if (InternalHelpers.NeedPlaywright(siteList))
         {
-            LOGGER.Info("Applying stock filters");
-            foreach (List<EntryModel> entryList in currentLists)
-            {
-                entryList.RemoveAll(e =>
-                    this.Filter.Contains(e.StockStatus) ||
-                    e.StockStatus == StockStatus.NA);
-            }
+            browser = await PlaywrightFactory.SetupPlaywrightBrowserAsync(this.Browser);
         }
 
-        // 6) Price comparisons
-        if (currentLists.Count > 1) // While there is still 2 or more lists of data to compare prices continue
+        try
         {
-            LOGGER.Debug("Starting price comparisons");
-            int initialMasterDataListCount;
-            List<Task<List<EntryModel>>> comparisonTasks = new(currentLists.Count / 2 + currentLists.Count);
-            while (currentLists.Count > 1)
-            {
-                currentLists.Sort((a, b) => a.Count.CompareTo(b.Count));
-                initialMasterDataListCount = currentLists.Count;
-                for (int i = 0; i < currentLists.Count - 1; i += 2)
-                {
-                    List<EntryModel> smaller = currentLists[i];
-                    List<EntryModel> larger = currentLists[i + 1];
-                    comparisonTasks.Add(Task.Run(() => PriceComparison(smaller, larger)));
-                }
+            LOGGER.Info("Starting scrape for {Title} ({BookType}), against website(s) [{Websites}]", title, bookType, string.Join(',', siteList));
+            LOGGER.Info("Region set to {0}", this.Region);
+            LOGGER.Info("Running on {0} browser", this.Browser);
 
-                currentLists.AddRange(await Task.WhenAll(comparisonTasks));
-                currentLists.RemoveRange(0, initialMasterDataListCount % 2 == 0 ? initialMasterDataListCount : initialMasterDataListCount - 1);
-                comparisonTasks.Clear();
-            }
-        }
+            // 1) Clear prior URLs
+            _masterLinkDict.Clear();
+            _masterDataList.Clear();
 
-        _masterDataList.Clear();
-        if (currentLists.Count > 0)
-        {
-            _masterDataList.Add(currentLists[0]);
-        }
-        currentLists.Clear();
-
-        // 7) Optional debug dump
-        if (IsDebugEnabled)
-        {
-            PrintResultsToLogger(
-                LOGGER,
-                NLog.LogLevel.Info,
-                true,
+            // 2) Kick off the individual scraping tasks
+            _webTasks.ScheduleScrapes(
+                siteList,
                 title,
-                bookType);
+                bookType,
+                _masterDataList,
+                _masterLinkDict,
+                browser,
+                this.Region,
+                (this.IsBooksAMillionMember, this.IsKinokuniyaUSAMember, this.IsIndigoMember)
+            );
+            await Task.WhenAll(_webTasks);
+            _webTasks.Clear();
+
+            // 3) Snapshot concurrent bag into a List<T>
+            List<List<EntryModel>> currentLists = [.. _masterDataList];
+
+            // 4) Remove any empty result‐sets
+            currentLists.RemoveAll(inner => inner.Count == 0);
+
+            // 5) Apply stock‑status filters
+            if (this.Filter != StockStatusFilter.EXCLUDE_NONE_FILTER
+                && currentLists.Count > 0)
+            {
+                LOGGER.Info("Applying stock filters");
+                foreach (List<EntryModel> entryList in currentLists)
+                {
+                    entryList.RemoveAll(e =>
+                        this.Filter.Contains(e.StockStatus) ||
+                        e.StockStatus == StockStatus.NA);
+                }
+            }
+
+            // 6) Price comparisons
+            if (currentLists.Count > 1) // While there is still 2 or more lists of data to compare prices continue
+            {
+                LOGGER.Debug("Starting price comparisons");
+                int initialMasterDataListCount;
+                List<Task<List<EntryModel>>> comparisonTasks = new(currentLists.Count / 2 + currentLists.Count);
+                while (currentLists.Count > 1)
+                {
+                    currentLists.Sort((a, b) => a.Count.CompareTo(b.Count));
+                    initialMasterDataListCount = currentLists.Count;
+                    for (int i = 0; i < currentLists.Count - 1; i += 2)
+                    {
+                        List<EntryModel> smaller = currentLists[i];
+                        List<EntryModel> larger = currentLists[i + 1];
+                        comparisonTasks.Add(Task.Run(() => PriceComparison(smaller, larger)));
+                    }
+
+                    currentLists.AddRange(await Task.WhenAll(comparisonTasks));
+                    currentLists.RemoveRange(0, initialMasterDataListCount % 2 == 0 ? initialMasterDataListCount : initialMasterDataListCount - 1);
+                    comparisonTasks.Clear();
+                }
+            }
+
+            _masterDataList.Clear();
+            if (currentLists.Count > 0)
+            {
+                _masterDataList.Add(currentLists[0]);
+            }
+            currentLists.Clear();
+
+            // 7) Optional debug dump
+            if (IsDebugEnabled)
+            {
+                PrintResultsToLogger(
+                    LOGGER,
+                    LogLevel.Info,
+                    true,
+                    title,
+                    bookType);
+            }
+        }
+        catch (Exception ex)
+        {
+            LOGGER.Error(ex, "Unknown error thrown during scrape execution");
+        }
+        finally
+        {
+            if (browser is not null) await browser.CloseAsync();
         }
     }
 
@@ -859,20 +749,20 @@ public sealed partial class MasterScrape
 
         MasterScrape scrape = new MasterScrape(
             Filter: StockStatusFilter.EXCLUDE_NONE_FILTER,
-            Region: Region.Britain,
-            Browser: Browser.FireFox,
+            Region: Region.America,
+            Browser: Browser.Edge,
             IsBooksAMillionMember: false,
             IsKinokuniyaUSAMember: true,
             IsIndigoMember: false)
         .EnableDebugMode();
 
-        string title = "Naruto";
+        string title = "Toilet-bound Hanako-kun";
         BookType bookType = BookType.Manga;
 
         await scrape.InitializeScrapeAsync(
             title: title,
             bookType: bookType,
-            siteList: [Website.ForbiddenPlanet]);
+            siteList: [Website.MangaMart]);
 
         stopwatch.Stop();
 
