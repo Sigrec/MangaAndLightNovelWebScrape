@@ -63,23 +63,36 @@ internal sealed partial class KinokuniyaUSA : IWebsite
         return url;
     }
 
-    // private static void WaitForPageLoad(WebDriverWait wait)
-    // {
-    //     wait.Until(d =>
-    //     {
-    //         try
-    //         {
-    //             IWebElement element = d.FindElement(By.Id("loading"));
-    //             string? style = element.GetDomAttribute("style");
-    //             return style != null && style.Contains("display: none;");
-    //         }
-    //         catch (NoSuchElementException)
-    //         {
-    //             LOGGER.Warn("Loading Failed");
-    //             return true;
-    //         }
-    //     });
-    // }
+    private static async Task WaitForPageLoad(IPage page, int timeoutMilliseconds = 30000)
+    {
+        // The locator for your loading element
+        ILocator loadingElement = page.Locator("#loading");
+
+        DateTime startTime = DateTime.Now;
+        TimeSpan maxTime = TimeSpan.FromMilliseconds(timeoutMilliseconds);
+
+        // Loop until the element is hidden or the timeout is reached
+        while (true)
+        {
+            // Check if the element is hidden
+            bool isHidden = await loadingElement.IsHiddenAsync();
+
+            if (isHidden)
+            {
+                return; // The element is hidden, success!
+            }
+
+            // If it's not hidden, check if we've run out of time
+            if (DateTime.Now - startTime > maxTime)
+            {
+                // Throw an exception if the element doesn't disappear in time
+                throw new TimeoutException("The loading element did not disappear within the specified timeout.");
+            }
+
+            // Wait a short duration before checking again
+            await Task.Delay(100);
+        }
+    }
 
     private static string ParseAndCleanTitle(string entryTitle, BookType bookType, string bookTitle, string entryDesc, bool oneShotCheck)
     {
@@ -198,25 +211,32 @@ internal sealed partial class KinokuniyaUSA : IWebsite
 
             string url = GenerateWebsiteUrl(bookTitle, bookType);
             links.Add(url);
-            // driver!.Navigate().GoToUrl(url);
-            // WaitForPageLoad(wait);
+            await page!.GotoAsync(url, new PageGotoOptions
+            {
+                WaitUntil = WaitUntilState.DOMContentLoaded
+            });
+            await WaitForPageLoad(page);
 
             // // Click the list display mode so it shows stock status data with entry
             // driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.LinkText("List"))));
-            // WaitForPageLoad(wait);
-            // LOGGER.Info("Clicked List Mode");
+            // WaitForPageLoad(page);
+            await page.GetByRole(AriaRole.Link, new() { Name = "List" }).ClickAsync();
+            await WaitForPageLoad(page);
+            LOGGER.Info("Clicked List Mode");
 
-            // if (bookType == BookType.Manga)
-            // {
-            //     // Click the Manga
-            //     driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.LinkText("Manga"))));
-            //     WaitForPageLoad(wait);
-            //     LOGGER.Info("Clicked Manga");
-            // }
+            if (bookType == BookType.Manga)
+            {
+                // Click the Manga
+                // driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.LinkText("Manga"))));
+                // WaitForPageLoad(page);
+                await page.GetByRole(AriaRole.Link, new() { Name = "Manga" }).ClickAsync();
+                await WaitForPageLoad(page);
+                LOGGER.Info("Clicked Manga");
+            }
 
             while (true)
             {
-                // doc.LoadHtml(driver.PageSource);
+                doc.LoadHtml(await page.ContentAsync());
 
                 // Get the page data from the HTML doc
                 HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
@@ -299,10 +319,11 @@ internal sealed partial class KinokuniyaUSA : IWebsite
                 if (curPageNum != maxPageCount)
                 {
                     curPageNum++;
-                    LOGGER.Debug("Going to Page {}", curPageNum);
                     // driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.ClassName("pagerArrowR"))));
-                    // WaitForPageLoad(wait);
-                    // LOGGER.Info("Page {} = {}", curPageNum, driver.Url);
+                    await page.Locator(".pagerArrowR").ClickAsync();
+                    await WaitForPageLoad(page);
+                    // WaitForPageLoad(page);
+                    LOGGER.Info("Page {} = {}", curPageNum, page.Url);
                 }
                 else
                 {

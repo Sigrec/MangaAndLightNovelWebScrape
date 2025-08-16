@@ -7,12 +7,12 @@ internal sealed partial class MangaMate : IWebsite
 {
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
 
-    private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[@class='grid-product__title grid-product__title--body']");
-    private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//div[@class='grid-product__price']/text()[3]");
-    private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='grid-product__content']/div[1]");
-    private static readonly XPathExpression StockStatusXPath2 = XPathExpression.Compile("//div[@class='grid-product__image-mask']/div[1]");
-    private static readonly XPathExpression EntryLinkXPath = XPathExpression.Compile("//div[@class='grid__item-image-wrapper']/a");
-    private static readonly XPathExpression EntryTypeXPath = XPathExpression.Compile("//div[@class='product-block'][4]/div/span/table//tr[4]/td[2]");
+    private static readonly XPathExpression _titleXPath = XPathExpression.Compile("//div[@class='grid-product__title grid-product__title--body']");
+    private static readonly XPathExpression _priceXPath = XPathExpression.Compile("//div[@class='grid-product__price']/text()[3]");
+    private static readonly XPathExpression _stockStatusXPath = XPathExpression.Compile("//div[@class='grid-product__content']/div[1]");
+    private static readonly XPathExpression _stockStatusXPath2 = XPathExpression.Compile("//div[@class='grid-product__image-mask']/div[1]");
+    private static readonly XPathExpression _entryLinkXPath = XPathExpression.Compile("//div[@class='grid__item-image-wrapper']/a");
+    private static readonly XPathExpression _entryTypeXPath = XPathExpression.Compile("//div[@class='product-block'][4]/div/span/table//tr[4]/td[2]");
 
     [GeneratedRegex(@"The Manga|\(.*\)|Manga", RegexOptions.IgnoreCase)] private static partial Regex TitleParseRegex();
     [GeneratedRegex(@"Vol\.", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
@@ -85,6 +85,13 @@ internal sealed partial class MangaMate : IWebsite
         // Wait for the product grid you were waiting on in Selenium
         ILocator grid = page.Locator("(//div[@class='grid grid--uniform'])[2]");
         await grid.WaitForAsync();
+        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        await page.ScrollToBottomUntilStableAsync(
+                "//li[@class='support-links product-list__list__separator owl-off bg-white phl phr pht pb brdr--top brdr--top--thin brdr--top--dotted']", // <- something that appears for each item
+                maxScrolls: 60,
+                stabilityMs: 900,
+                stepPx: 1400
+            );
     }
 
     private static async Task<(string Html, uint MaxPageNum)> GetInitialData(IPage page, string url)
@@ -135,6 +142,7 @@ internal sealed partial class MangaMate : IWebsite
         // await WaitForProductPageLoad(page);
 
         LOGGER.Info("Clicked AUD Currency");
+        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
         return (await page.ContentAsync(), maxPageNum);
     }
 
@@ -159,11 +167,11 @@ internal sealed partial class MangaMate : IWebsite
 
             while (true)
             {
-                XPathNodeIterator titleData = nav.Select(TitleXPath);
-                XPathNodeIterator priceData = nav.Select(PriceXPath);
-                XPathNodeIterator stockstatusData = nav.Select(StockStatusXPath);
-                XPathNodeIterator stockstatusData2 = nav.Select(StockStatusXPath2);
-                XPathNodeIterator entryLinkData = nav.Select(EntryLinkXPath);
+                XPathNodeIterator titleData = nav.Select(_titleXPath);
+                XPathNodeIterator priceData = nav.Select(_priceXPath);
+                XPathNodeIterator stockstatusData = nav.Select(_stockStatusXPath);
+                XPathNodeIterator stockstatusData2 = nav.Select(_stockStatusXPath2);
+                XPathNodeIterator entryLinkData = nav.Select(_entryLinkXPath);
 
                 while (titleData.MoveNext())
                 {
@@ -188,7 +196,7 @@ internal sealed partial class MangaMate : IWebsite
                         )
                     )
                     {
-                        string? type = (await html.LoadFromWebAsync($"https://mangamate.shop{entryLinkData.Current!.GetAttribute("href", string.Empty)}")).DocumentNode.CreateNavigator().SelectSingleNode(EntryTypeXPath)?.Value;
+                        string? type = (await html.LoadFromWebAsync($"https://mangamate.shop{entryLinkData.Current!.GetAttribute("href", string.Empty)}")).DocumentNode.CreateNavigator().SelectSingleNode(_entryTypeXPath)?.Value;
                         if (type is null)
                         {
                             continue;

@@ -9,12 +9,12 @@ internal sealed partial class ForbiddenPlanet : IWebsite
 {
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
     
-    private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[@class='full']/ul/li/section/header/div[2]/h3/a");
-    private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='clr-price']");
-    private static readonly XPathExpression MinorPriceXPath = XPathExpression.Compile("(//div[@class='full']/ul/li/section/header/div[2])/p/span[2]");
-    private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='full']/ul/li/section/header/div/ul");
-    private static readonly XPathExpression BookFormatXPath = XPathExpression.Compile("(//div[@class='full']/ul/li/section/header/div[1])/p[1]");
-    private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("(//a[@class='product-list__pagination__next'])[1]");
+    private static readonly XPathExpression _titleXPath = XPathExpression.Compile("//div[@class='full']/ul/li/section/header/div[2]/h3/a/text()");
+    private static readonly XPathExpression _priceXPath = XPathExpression.Compile("//span[@class='clr-price']/text()");
+    private static readonly XPathExpression _minorPriceXPath = XPathExpression.Compile("(//div[@class='full']/ul/li/section/header/div[2])/p/span[2]");
+    private static readonly XPathExpression _stockStatusXPath = XPathExpression.Compile("//div[@class='full']/ul/li/section/header/div/ul");
+    private static readonly XPathExpression _bookFormatXPath = XPathExpression.Compile("(//div[@class='full']/ul/li/section/header/div[1])/p[1]");
+    private static readonly XPathExpression _pageCheckXPath = XPathExpression.Compile("(//a[@class='product-list__pagination__next'])[1]");
 
     [GeneratedRegex(@"The Manga|\(Hardcover\)|:(?:.*):|\(.*\)", RegexOptions.IgnoreCase)] internal static partial Regex CleanAndParseTitleRegex();
     [GeneratedRegex(@"\(Hardcover\)|The Manga", RegexOptions.IgnoreCase)] internal static partial Regex ColorCleanAndParseTitleRegex();
@@ -24,6 +24,7 @@ internal sealed partial class ForbiddenPlanet : IWebsite
     [GeneratedRegex(@"(?<=(?:Vol|Box Set)\s+(?:\d{1,3}|\d{1,3}.\d{1}))[^\d{1,3}.]+.*")] private static partial Regex RemoveAfterVolNumRegex();
     [GeneratedRegex(@"\((.*?Anniversary.*?)\)")] private static partial Regex AnniversaryMatchRegex();
     [GeneratedRegex(@"Volumes|Volume|Vol\.|Volumr", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
+    [GeneratedRegex(@"(?:\(Deluxe(?::|\s*)|Deluxe\s*Edition:).*", RegexOptions.IgnoreCase)] internal static partial Regex DeluxeEditionRegex();
 
     /// <inheritdoc />
     public const string TITLE = "Forbidden Planet";
@@ -40,13 +41,14 @@ internal sealed partial class ForbiddenPlanet : IWebsite
     {
         return Task.Run(async () =>
         {            
-            IPage page = await PlaywrightFactory.GetPageAsync(browser!);
+            IPage page = await PlaywrightFactory.GetPageAsync(browser!, true);
             (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page);
             masterDataList.Add(Data);
             masterLinkList.TryAdd(Website.ForbiddenPlanet, Links[0]);
         });
     }
-    private string GenerateWebsiteUrl(BookType bookType, string entryTitle, bool isSecondCategory)
+
+    private static string GenerateWebsiteUrl(BookType bookType, string entryTitle, bool isSecondCategory)
     {
         // https://forbiddenplanet.com/catalog/?q=Naruto&show_out_of_stock=on&sort=release-date-asc&page=1
         string url = $"{BASE_URL}/catalog/{(!isSecondCategory ? "manga" : "comics-and-graphic-novels")}/?q={(bookType == BookType.Manga ? InternalHelpers.FilterBookTitle(entryTitle) : $"{InternalHelpers.FilterBookTitle(entryTitle)}%20light%20novel")}&show_out_of_stock=on&sort=release-date-asc&page=1";
@@ -138,11 +140,11 @@ internal sealed partial class ForbiddenPlanet : IWebsite
 
         if (entryTitle.Contains("Deluxe", StringComparison.OrdinalIgnoreCase))
         {
-            curTitle.Replace("Deluxe: ", "Deluxe Edition").Replace("Deluxe Edition: ", "Deluxe Edition");
-            string snapshot = curTitle.ToString();
-            if (!snapshot.Contains("Deluxe Edition Vol"))
+            entryTitle = DeluxeEditionRegex().Replace(entryTitle, "Deluxe Edition");
+            ReadOnlySpan<char> entryTitleSpan = entryTitle.AsSpan();
+            if (!entryTitleSpan.Contains("Deluxe Edition Vol", StringComparison.OrdinalIgnoreCase))
             {
-                int index = snapshot.AsSpan().IndexOf("Vol");
+                int index = entryTitleSpan.IndexOf("Vol");
                 if (index != -1)
                 {
                     curTitle.Insert(index, "Deluxe Edition ");
@@ -221,6 +223,59 @@ internal sealed partial class ForbiddenPlanet : IWebsite
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
     }
 
+    private static async Task BypassCookiesAsync(IPage page)
+    {
+        try
+        {
+            // Wait for up to 5 seconds for the button to become visible
+            await page.WaitForSelectorAsync("button.button--brand.button--lg.brad.mql.mt", new PageWaitForSelectorOptions { State = WaitForSelectorState.Visible, Timeout = 5000 });
+
+            // Now that we know it's visible, get a locator and click it
+            await page.ClickAsync("button.button--brand.button--lg.brad.mql.mt");
+        }
+        catch (PlaywrightException) { }
+    }
+
+    private static async Task LoadAllEntries(IPage page)
+    {
+        ILocator? loadAllButton = page.Locator("button.load-all.button--brand.brad--sm");
+        while (await loadAllButton.IsVisibleAsync() && await loadAllButton.IsEnabledAsync())
+        {
+            LOGGER.Info("Loading all entries...");
+            await loadAllButton.ClickAsync();
+            await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+            await page.ScrollToBottomUntilStableAsync(
+                "//li[@class='support-links product-list__list__separator owl-off bg-white phl phr pht pb brdr--top brdr--top--thin brdr--top--dotted']", // <- something that appears for each item
+                maxScrolls: 60,
+                stabilityMs: 900,
+                stepPx: 1400
+            );
+        }
+
+        int clickCount = 0;
+        ILocator? loadMoreButton = page.Locator("button.load-more.button--brand.brad--sm");
+        ILocator? separatorLiLocator = page.Locator("//li[@class='support-links product-list__list__separator owl-off bg-white phl phr pht pb brdr--top brdr--top--thin brdr--top--dotted']");
+        while (await loadMoreButton.IsVisibleAsync() && await loadMoreButton.IsEnabledAsync())
+        {
+            LOGGER.Info("Loading more entries...");
+            await loadMoreButton.ClickAsync();
+            await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+            clickCount++;
+            await page.ScrollToBottomUntilStableAsync(
+                "//li[@class='support-links product-list__list__separator owl-off bg-white phl phr pht pb brdr--top brdr--top--thin brdr--top--dotted']", // <- something that appears for each item
+                maxScrolls: 60,
+                stabilityMs: 900,
+                stepPx: 1400
+            );
+
+            int currentLiCount = await separatorLiLocator.CountAsync();
+            int expectedLiCount = 1 + clickCount;
+
+            if (currentLiCount != expectedLiCount) break;
+        }
+        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+    }
+
     public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
     {
         List<EntryModel> data = [];
@@ -229,120 +284,139 @@ internal sealed partial class ForbiddenPlanet : IWebsite
         try
         {
             HtmlDocument doc = HtmlFactory.CreateDocument();
+            XPathNavigator nav = doc.DocumentNode.CreateNavigator();
             HtmlWeb html = HtmlFactory.CreateWeb();
             bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
             bool isSecondCategory = false;
 
             string url = GenerateWebsiteUrl(bookType, bookTitle, isSecondCategory);
             links.Add(url);
-            // driver!.Navigate().GoToUrl(url);
-            // wait.Until(driver => driver.FindElement(By.CssSelector("div[class='full']")));
 
-            while (true)
+            await page!.GotoAsync(url, new PageGotoOptions
             {
-                // doc.LoadHtml(driver.PageSource);
-                HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
-                HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
-                HtmlNodeCollection minorPriceData = doc.DocumentNode.SelectNodes(MinorPriceXPath);
-                HtmlNodeCollection bookFormatData = doc.DocumentNode.SelectNodes(BookFormatXPath);
-                HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
-                HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
-               // LOGGER.Debug("{} | {} | {} | {} | {}", titleData.Count, priceData.Count, minorPriceData.Count, bookFormatData.Count, stockStatusData.Count);
+                WaitUntil = WaitUntilState.DOMContentLoaded
+            });
+            await BypassCookiesAsync(page);
+            await LoadAllEntries(page);
+            await page.WaitForSelectorAsync("div.full");
 
-                for (int x = 0; x < titleData.Count; x++)
+        Restart:
+            doc.LoadHtml(await page.ContentAsync());
+            XPathNodeIterator titleData = nav.Select(_titleXPath);
+            XPathNodeIterator priceData = nav.Select(_priceXPath);
+            XPathNodeIterator minorPriceData = nav.Select(_minorPriceXPath);
+            XPathNodeIterator bookFormatData = nav.Select(_bookFormatXPath);
+            XPathNodeIterator stockStatusData = nav.Select(_stockStatusXPath);
+            XPathNavigator? pageCheck = nav.SelectSingleNode(_pageCheckXPath);
+            LOGGER.Debug("{} | {} | {} | {} | {}", titleData.Count, priceData.Count, minorPriceData.Count, bookFormatData.Count, stockStatusData.Count);
+
+            while (titleData.MoveNext())
+            {
+                priceData.MoveNext();
+                minorPriceData.MoveNext();
+                bookFormatData.MoveNext();
+                stockStatusData.MoveNext();
+
+                string? bookFormat = bookFormatData.Current?.Value;
+                string? titleVal = titleData.Current?.Value;
+                string? priceDataVal = priceData.Current?.Value;
+                string? stockStatusDataVal = stockStatusData.Current?.Value;
+                string? minorPriceDataVal = minorPriceData.Current?.Value;
+                if (titleVal is null || bookFormat is null || priceDataVal is null || stockStatusDataVal is null || minorPriceDataVal is null)
                 {
-                    string bookFormat = bookFormatData[x].InnerText;
-                    string entryTitle = WebUtility.HtmlDecode(titleData[x].GetDirectInnerText());
-                    LOGGER.Debug("(-1) {} | {} | {}", entryTitle, bookFormat, minorPriceData[x].InnerText);
+                    LOGGER.Debug("Some input value is null for {Title} Skipping", titleVal);
+                    continue;
+                }
 
-                    if (
-                        InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
-                        && (!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck)
-                        && (
-                                (
-                                bookType == BookType.Manga
-                                && (
-                                        !entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
-                                        && (bookFormat.Equals("Manga") || bookFormat.Equals("Graphic Novel"))
-                                        && !(
-                                            InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony", "Berserker")
-                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear")
-                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto", "Itachi", "Family Day", "Naruto: Shikamaru's Story", "Naruto: Kakashi's Story")
-                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "fullmetal alchemist", entryTitle, "Under The Faraway Sky")
-                                            || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "attack on titan", entryTitle, "FLY")
-                                        )
+                string entryTitle = WebUtility.HtmlDecode(titleVal);
+                // LOGGER.Debug("(-1) {} | {} | {}", entryTitle, bookFormat, minorPriceData.Current?.Value);
+
+                if (
+                    InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
+                    && (!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck)
+                    && (
+                            (
+                            bookType == BookType.Manga
+                            && (
+                                    !entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
+                                    && (bookFormat.Equals("Manga") || bookFormat.Equals("Graphic Novel"))
+                                    && !(
+                                        InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony", "Berserker", "Operation")
+                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear")
+                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto", "Itachi", "Family Day", "Naruto: Shikamaru's Story", "Naruto: Kakashi's Story")
+                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "fullmetal alchemist", entryTitle, "Under The Faraway Sky")
+                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "attack on titan", entryTitle, "FLY")
                                     )
                                 )
-                                || bookType == BookType.LightNovel
                             )
-                        && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "overlord", entryTitle, "Unimplemented")
+                            || bookType == BookType.LightNovel
                         )
+                    && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "overlord", entryTitle, "Unimplemented")
+                    )
+                {
+                    bool descIsValid = true;
+                    if (bookType == BookType.Manga && (entryTitle.Contains("Hardcover") || !entryTitle.ContainsAny(["Vol", "Box Set", "Comic"])))
                     {
-                        bool descIsValid = true;
-                        if (bookType == BookType.Manga && (entryTitle.Contains("Hardcover") || !entryTitle.ContainsAny(["Vol", "Box Set", "Comic"])))
+                        string? urlPath = doc.DocumentNode.SelectSingleNode($"(//a[@class='block one-whole clearfix dfbx dfbx--fdc link-banner link--black'])[{titleData.CurrentPosition}]")?.GetAttributeValue("href", string.Empty);
+                        if (string.IsNullOrWhiteSpace(urlPath))
                         {
-                            HtmlNodeCollection descData = (await html.LoadFromWebAsync($"https://forbiddenplanet.com{doc.DocumentNode.SelectSingleNode($"(//a[@class='block one-whole clearfix dfbx dfbx--fdc link-banner link--black'])[{x + 1}]").GetAttributeValue("href", string.Empty)}")).DocumentNode.SelectNodes("//div[@id='product-description']/p");
-                            StringBuilder desc = new();
-                            foreach (HtmlNode node in descData) { desc.AppendLine(node.InnerText); }
-                            LOGGER.Debug("Checking Desc {} => {}", entryTitle, desc.ToString());
-                            descIsValid = !desc.ToString().ContainsAny(DescRemovalStrings);
+                            LOGGER.Debug("Unable to retrieve url path for entry desc at pos {Pos}", titleData.CurrentPosition);
+                            continue;
                         }
 
-                        if (descIsValid)
-                        {
-                            string finalTitle = CleanAndParseTitle(bookTitle, entryTitle, bookType);
-                            LOGGER.Debug("Final Title = {}", finalTitle);
-                            data.Add(
-                                new EntryModel(
-                                    finalTitle,
-                                    $"{priceData[x].GetDirectInnerText()}{minorPriceData[x].InnerText}",
-                                    stockStatusData[x].InnerText switch
-                                    {
-                                        "Pre-Order" => StockStatus.PO,
-                                        "Currently Unavailable" => StockStatus.OOS,
-                                        _ => StockStatus.IS
-                                    },
-                                    TITLE
-                                )
-                            );
-                        }
-                        else
-                        {
-                            LOGGER.Info("Removed (2) {}", entryTitle);
-                        }
+                        HtmlNodeCollection descData = (await html.LoadFromWebAsync($"https://forbiddenplanet.com{urlPath}")).DocumentNode.SelectNodes("//div[@id='product-description']/p");
+
+                        StringBuilder desc = new();
+                        foreach (HtmlNode node in descData) { desc.AppendLine(node.InnerText); }
+                        LOGGER.Debug("Checking Desc {} => {}", entryTitle, desc.ToString());
+                        descIsValid = !desc.ToString().ContainsAny(DescRemovalStrings);
+                    }
+
+                    if (descIsValid)
+                    {
+                        string finalTitle = CleanAndParseTitle(bookTitle, entryTitle, bookType);
+                        LOGGER.Debug("Final Title = {}", finalTitle);
+                        data.Add(
+                            new EntryModel(
+                                finalTitle,
+                                $"{priceDataVal}{minorPriceDataVal}",
+                                stockStatusDataVal switch
+                                {
+                                    "Pre-Order" => StockStatus.PO,
+                                    "Currently Unavailable" => StockStatus.OOS,
+                                    _ => StockStatus.IS
+                                },
+                                TITLE
+                            )
+                        );
                     }
                     else
                     {
-                        LOGGER.Info("Removed (1) {}", entryTitle);
+                        LOGGER.Info("Removed (2) {}", entryTitle);
                     }
-                }
-
-                if (pageCheck != null)
-                {
-                    // driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("(//a[@class='product-list__pagination__next'])[1]"))));
-                    // driver.Navigate().GoToUrl($"https://forbiddenplanet.com{wait.Until(driver => driver.FindElement(By.XPath("(//a[@class='product-list__pagination__next'])[1]"))).GetDomAttribute("href")}");
-                    // LOGGER.Info("Next Page => {}", driver.Url);
-                    // wait.Until(driver => driver.FindElement(By.CssSelector("div[class='full']")));
-                }
-                else if (!isSecondCategory)
-                {
-                    isSecondCategory = true;
-                    LOGGER.Info("Checking Comics & Graphic Novel Cateogry");
-                    url = GenerateWebsiteUrl(bookType, bookTitle, isSecondCategory);
-                    links.Add(url);
-
-                    // driver.Navigate().GoToUrl(url);
-                    // LOGGER.Info("Next Page (2nd Category) => {}", driver.Url);
-                    // wait.Until(driver => driver.FindElement(By.CssSelector("div[class='full']")));
                 }
                 else
                 {
-                    break;
+                    LOGGER.Info("Removed (1) {}", entryTitle);
                 }
             }
 
+            if (!isSecondCategory)
+            {
+                isSecondCategory = true;
+                LOGGER.Info("Checking Comics & Graphic Novel Cateogry");
+                url = GenerateWebsiteUrl(bookType, bookTitle, isSecondCategory);
+                links.Add(url);
+
+                await page!.GotoAsync(url, new PageGotoOptions
+                {
+                    WaitUntil = WaitUntilState.DOMContentLoaded
+                });
+                await LoadAllEntries(page);
+                goto Restart;
+            }
+
             data.TrimExcess();
-            links.TrimExcess();
             data.Sort(EntryModel.VolumeSort);
             data.RemoveDuplicates(LOGGER);
             InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);

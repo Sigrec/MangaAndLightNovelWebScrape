@@ -3,7 +3,7 @@ using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Services;
 
-public static class PlaywrightFactory
+internal static class PlaywrightFactory
 {
     private static readonly string[] CHROMIUM_ARGS_PLAYWRIGHT =
     [
@@ -197,5 +197,80 @@ public static class PlaywrightFactory
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
             "Mozilla Firefox", "firefox.exe");
         return path;
+    }
+
+    /// <summary>
+    /// After clicking a “Load all” button (or similar), scrolls the page to the bottom in steps
+    /// and waits until lazy-loaded content stops changing. Designed to make headless scraping
+    /// reliably load all items before calling <see cref="IPage.ContentAsync"/>.
+    /// </summary>
+    /// <param name="page">The Playwright <see cref="IPage"/> to operate on.</param>
+    /// <param name="watchSelector">
+    /// A selector that appears once per loaded item (e.g., a product title link). The method
+    /// polls this selector’s element count to detect when no more items are being appended.
+    /// </param>
+    /// <param name="maxScrolls">Upper bound on scroll iterations to avoid infinite loops.</param>
+    /// <param name="stabilityMs">
+    /// Duration, in milliseconds, that the watched element count must remain unchanged
+    /// (with no document height growth) before the page is considered settled.
+    /// </param>
+    /// <param name="stepPx">Vertical scroll step, in pixels, per iteration.</param>
+    /// <remarks>
+    /// For each scroll step, the method waits for <see cref="LoadState.NetworkIdle"/> and a short delay,
+    /// then checks both document height and the watched element count. Completion occurs when the height
+    /// stops increasing and the count is stable for <paramref name="stabilityMs"/>. Finally, it jumps to
+    /// the absolute bottom to trigger any last viewport-dependent loaders.
+    /// </remarks>
+    public static async Task ScrollToBottomUntilStableAsync(
+        this IPage page,
+        string watchSelector,
+        int maxScrolls = 50,
+        int stabilityMs = 800,
+        int stepPx = 1200)
+    {
+        // measure document height (body vs documentElement)
+        async Task<int> getHeight() =>
+            await page.EvaluateAsync<int>(
+                "() => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)");
+
+        // scroll by a chunk
+        async Task scrollBy(int dy) =>
+            await page.EvaluateAsync("dy => window.scrollBy(0, dy)", dy);
+
+        int lastHeight = await getHeight();
+        int stableFor = 0;
+        int previousCount = -1;
+        const int pollMs = 150;
+
+        for (int i = 0; i < maxScrolls; i++)
+        {
+            // step down
+            await scrollBy(stepPx);
+            await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+            await Task.Delay(150);
+
+            int newHeight = await getHeight();
+
+            // watch a selector's count to ensure lazy content finished appending
+            int count = await page.Locator(watchSelector).CountAsync();
+            if (count != previousCount)
+            {
+                previousCount = count;
+                stableFor = 0;                 // reset stability timer on change
+            }
+            else
+            {
+                stableFor += pollMs;
+            }
+
+            // if page stopped growing AND item count stayed stable long enough, we're done
+            if (newHeight <= lastHeight && stableFor >= stabilityMs)
+                break;
+
+            lastHeight = newHeight;
+        }
+
+        // final jump to absolute bottom
+        await page.EvaluateAsync("() => window.scrollTo(0, document.body.scrollHeight)");
     }
 }

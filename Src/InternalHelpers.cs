@@ -24,7 +24,7 @@ internal static partial class InternalHelpers
 
     internal static bool NeedPlaywright(HashSet<Website> siteList)
     {
-        return siteList.ContainsAny([ Website.KinokuniyaUSA, Website.BooksAMillion, Website.AmazonUSA, Website.MerryManga, Website.ForbiddenPlanet, Website.MangaMate, Website.MangaMart, Website.Waterstones, Website.AmazonJapan, Website.TravellingMan ]);
+        return siteList.ContainsAny([Website.KinokuniyaUSA, Website.BooksAMillion, Website.AmazonUSA, Website.MerryManga, Website.ForbiddenPlanet, Website.MangaMate, Website.MangaMart, Website.Waterstones, Website.AmazonJapan]);
     }
 
     /// <summary>
@@ -71,7 +71,7 @@ internal static partial class InternalHelpers
 
         return false;
     }
-    
+
     /// <summary>
     /// Schedules scraping tasks for each <paramref name="site"/> in <paramref name="sites"/>,
     /// adding them to <paramref name="webTasks"/>. A fresh scraper instance is created per task,
@@ -121,17 +121,28 @@ internal static partial class InternalHelpers
     {
         return site switch
         {
-            Website.Crunchyroll => new Crunchyroll(),
-            Website.RobertsAnimeCornerStore => new RobertsAnimeCornerStore(),
-            Website.InStockTrades => new InStockTrades(),
-            Website.MangaMart => new MangaMart(),
+            // America
             Website.AmazonUSA => new AmazonUSA(),
             Website.BooksAMillion => new BooksAMillion(),
-            Website.ForbiddenPlanet => new ForbiddenPlanet(),
-            Website.Indigo => new Indigo(),
+            Website.Crunchyroll => new Crunchyroll(),
+            Website.InStockTrades => new InStockTrades(),
             Website.KinokuniyaUSA => new KinokuniyaUSA(),
-            Website.MangaMate => new MangaMate(),
+            Website.MangaMart => new MangaMart(),
             Website.MerryManga => new MerryManga(),
+            Website.RobertsAnimeCornerStore => new RobertsAnimeCornerStore(),
+
+            // Britain
+            Website.ForbiddenPlanet => new ForbiddenPlanet(),
+            Website.TravellingMan => new TravellingMan(),
+            Website.Waterstones => new Waterstones(),
+
+            // Canada
+            Website.Indigo => new Indigo(),
+
+            // Australia
+            Website.MangaMate => new MangaMate(),
+
+            // Multi
             Website.SciFier => new SciFier(),
             _ => throw new ArgumentOutOfRangeException(nameof(site), site, "No scraper registered for this site")
         };
@@ -237,7 +248,7 @@ internal static partial class InternalHelpers
         return RemoveNonWordsRegex().Replace(curTitle, string.Empty).StartsWith(RemoveNonWordsRegex().Replace(bookTitle, string.Empty), StringComparison.OrdinalIgnoreCase);
     }
 
-    internal static void ReplaceMultipleTextInEntryTitle (ref StringBuilder curTitle, string bookTitle, IEnumerable<string> containsText, string replaceText)
+    internal static void ReplaceMultipleTextInEntryTitle(ref StringBuilder curTitle, string bookTitle, IEnumerable<string> containsText, string replaceText)
     {
         foreach (string text in containsText)
         {
@@ -249,7 +260,7 @@ internal static partial class InternalHelpers
         }
     }
 
-    internal static void ReplaceTextInEntryTitle (ref StringBuilder curTitle, string bookTitle, string containsText, string replaceText)
+    internal static void ReplaceTextInEntryTitle(ref StringBuilder curTitle, string bookTitle, string containsText, string replaceText)
     {
         if (!bookTitle.Contains(containsText, StringComparison.OrdinalIgnoreCase))
         {
@@ -257,7 +268,7 @@ internal static partial class InternalHelpers
         }
     }
 
-    internal static void ReplaceTextInEntryTitle (ref StringBuilder curTitle, string bookTitle, char containsText, char replaceText)
+    internal static void ReplaceTextInEntryTitle(ref StringBuilder curTitle, string bookTitle, char containsText, char replaceText)
     {
         if (!bookTitle.Contains(containsText))
         {
@@ -321,7 +332,7 @@ internal static partial class InternalHelpers
 
         foreach (var text in removeText)
         {
-            if (curTitle.Contains(text, StringComparison.OrdinalIgnoreCase)) 
+            if (curTitle.Contains(text, StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
@@ -416,23 +427,21 @@ internal static partial class InternalHelpers
             // Clean up website string once before using it for file path.
             string filePath = $@"Data\{website.Replace(" ", string.Empty)}Data.txt";
 
-            using (StreamWriter outputFile = new(filePath))
+            using StreamWriter outputFile = new(filePath);
+            if (dataList.Any())
             {
-                if (dataList.Count() > 0)
+                // If we have data, write it to both the logger and the output file.
+                foreach (EntryModel data in dataList)
                 {
-                    // If we have data, write it to both the logger and the output file.
-                    foreach (EntryModel data in dataList)
-                    {
-                        LOGGER.Info(data);  // Log the data entry
-                        outputFile.WriteLine(data);  // Write to the file
-                    }
+                    LOGGER.Info(data);  // Log the data entry
+                    outputFile.WriteLine(data);  // Write to the file
                 }
-                else
-                {
-                    string message = $"{bookTitle} ({bookType}) Does Not Exist @ {website}";
-                    LOGGER.Error(message);  // Log the error message
-                    outputFile.WriteLine(message);  // Write the error to the file
-                }
+            }
+            else
+            {
+                string message = $"{bookTitle} ({bookType}) Does Not Exist @ {website}";
+                LOGGER.Error(message);  // Log the error message
+                outputFile.WriteLine(message);  // Write the error to the file
             }
         }
     }
@@ -485,5 +494,82 @@ internal static partial class InternalHelpers
     internal static string ApplyCoupon(decimal initialPrice, decimal couponAmount)
     {
         return decimal.Subtract(initialPrice, couponAmount).ToString("0.00");
+    }
+    
+    /// <summary>
+    ///  The Damerau–Levenshtein distance between two words is the minimum number of operations (consisting of insertions, deletions or substitutions of a single character, or transposition of two adjacent characters) required to change one word into the other (http://blog.softwx.net/2015/01/optimizing-damerau-levenshtein_15.html)
+    /// </summary>
+    /// <returns>The distance, >= 0 representing the number of edits required to transform one string to the other, or -1 if the distance is greater than the specified maxDistance.</returns>
+    internal static int Similar(string s, string t, int maxDistance)
+    {
+        if (string.IsNullOrWhiteSpace(s))
+        {
+            return string.IsNullOrEmpty(t) || t.Length <= maxDistance ? t.Length : -1;
+        }
+
+        if (string.IsNullOrWhiteSpace(t))
+        {
+            return s.Length <= maxDistance ? s.Length : -1;
+        }
+
+        ReadOnlySpan<char> sSpan = s;
+        ReadOnlySpan<char> tSpan = t;
+
+        // Always operate on the shorter string
+        if (sSpan.Length > tSpan.Length)
+        {
+            ReadOnlySpan<char> tmp = sSpan;
+            sSpan = tSpan;
+            tSpan = tmp;
+        }
+
+        int sLen = sSpan.Length;
+        int tLen = tSpan.Length;
+
+        if (tLen - sLen > maxDistance)
+        {
+            return -1;
+        }
+
+        Span<int> previousRow = stackalloc int[tLen + 1];
+        Span<int> currentRow = stackalloc int[tLen + 1];
+
+        for (int j = 0; j <= tLen; j++)
+        {
+            previousRow[j] = j;
+        }
+
+        for (int i = 1; i <= sLen; i++)
+        {
+            currentRow[0] = i;
+            int bestThisRow = currentRow[0];
+
+            char sChar = char.ToLowerInvariant(sSpan[i - 1]);
+            for (int j = 1; j <= tLen; j++)
+            {
+                char tChar = char.ToLowerInvariant(tSpan[j - 1]);
+
+                int cost = sChar == tChar ? 0 : 1;
+                int insert = currentRow[j - 1] + 1;
+                int delete = previousRow[j] + 1;
+                int replace = previousRow[j - 1] + cost;
+
+                currentRow[j] = Math.Min(Math.Min(insert, delete), replace);
+
+                bestThisRow = Math.Min(bestThisRow, currentRow[j]);
+            }
+
+            if (bestThisRow > maxDistance)
+            {
+                return -1;
+            }
+
+            Span<int> temp = previousRow;
+            previousRow = currentRow;
+            currentRow = temp;
+        }
+
+        int result = previousRow[tLen];
+        return result <= maxDistance ? result : -1;
     }
 }

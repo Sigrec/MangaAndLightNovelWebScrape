@@ -1,12 +1,17 @@
 # [MangaAndLightNovelWebScrape](https://www.nuget.org/packages/MangaAndLightNovelWebScrape/5.0.0#readme-body-tab)
+
 ### *(Manga & Light Novel Web Scrape Framework for .NET) - [ChangeLog](https://github.com/Sigrec/MangaAndLightNovelWebScrape/blob/master/ChangeLog.txt)*
+
 .NET Library that scrapes various websites based on a region for manga or light novel data for a specifc user inputted series. Then it compares the various prices for each available entry across the websites chosen and outputs a list of the entries available and the website and price for the cheapest entry.
 ***
+
 ### *Website Completion List*
+
 If you want a website or region to be added fill out a [issue request](https://github.com/Sigrec/MangaAndLightNovelWebScrape/issues/new/choose).
 
-##### America
-```
+#### America
+
+```txt
 ✅ AmazonUSA
 ❌ Barnes & Noble (No longer supported due to robots.txt change) 
 ✅ Books-A-Million
@@ -18,15 +23,18 @@ If you want a website or region to be added fill out a [issue request](https://g
 ✅ RobertsAnimeCornerStore
 ✅ SciFier
 ```
-##### Australia
-```
+
+#### Australia
+
+```txt
 ⌛ AmazonAU (Not Started)
 ✅ MangaMate
 ✅ SciFier
 ```
 
-##### Britain
-```
+#### Britain
+
+```txt
 ⌛ AmazonUK (Not Started)
 ✅ ForbiddenPlanet
 ✅ SciFier
@@ -35,27 +43,31 @@ If you want a website or region to be added fill out a [issue request](https://g
 ✅ Waterstones
 ```
 
-##### Canada
-```
+#### Canada
+
+```txt
 ⌛ AmazonCanada (Not Started)
 ❌ Indigo (Not Working)
 ✅ SciFier
 ```
 
-##### Europe
-```
+#### Europe
+
+```txt
 ✅ SciFier
 ```
 
-##### Japan
-```
+#### Japan
+
+```txt
 ⌛ AmazonJP (Not Started)
 ⌛ CDJapan (Paused)
 ```
- 
+
 ***
 
 ### Demo
+
 ```cs
 // Create the MasterScrape object it defaults to America Region, Chrome Browser, 
 // & all memberships are default false (it is better to set them), 
@@ -97,6 +109,7 @@ MasterScrape Scrape = new MasterScrape(
 ```
 
 #### Initializating Scrape
+
 ```cs
 // Initialize the Scrape using enums
 await scrape.InitializeScrapeAsync(
@@ -115,6 +128,7 @@ await scrape.InitializeScrapeAsync(
 ```
 
 #### Getting Results
+
 ```cs
 // Get Final data Results
 List<EntryModel> resultData = scrape.GetResults();

@@ -1,49 +1,46 @@
+using System.Collections.Frozen;
 using System.Threading;
+using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
-public partial class TravellingMan
+internal sealed partial class TravellingMan : IWebsite
 {
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
-    private List<string> TravellingManLinks = [];
-    private List<EntryModel> TravellingManData = [];
-    public const string WEBSITE_TITLE = "TravellingMan";
-    public const string WEBSITE_URL = "https://travellingman.com";
+
+    /// <inheritdoc />
+    public const string TITLE = "TravellingMan";
+    /// <inheritdoc />
+    public const string BASE_URL = "https://travellingman.com";
+    /// <inheritdoc />
     public const Region REGION = Region.Britain;
+
     private static readonly List<string> DescRemovalStrings = ["novel", "figure", "sculpture", "collection of", "figurine", "statue", "miniature", "Figuarts"];
-    private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//li[@class='list-view-item']/div/div/div[2]/div/span");
-    private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//li[@class='list-view-item']/div/div/div[3]/dl/div[2]/dd[2]/span[1]");
-    private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//ul[@class='list--inline pagination']/li[3]/a");
+
+    private static readonly XPathExpression _titleXPath = XPathExpression.Compile("//li[@class='list-view-item']/div/div/div[2]/div/span");
+    private static readonly XPathExpression _priceXPath = XPathExpression.Compile("//li[@class='list-view-item']/div/div/div[3]/dl/div[2]/dd[2]/span[1]");
+    private static readonly XPathExpression _pageCheckXPath = XPathExpression.Compile("//ul[@class='list--inline pagination']/li[3]/a");
+
     [GeneratedRegex(@"Volume|Vol\.", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
     [GeneratedRegex(@",| The Manga| Manga|\(.*?\)", RegexOptions.IgnoreCase)] private static partial Regex CleanAndParseTitleRegex();
     [GeneratedRegex(@"(?:3-in-1|2-in-1)", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
     [GeneratedRegex(@"(?<=Box Set \d{1,3})[^\d{1,3}.]+.*|(?:Box Set) Vol")] private static partial Regex BoxSetRegex();
 
-    internal void ClearData()
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
     {
-        TravellingManLinks.Clear();
-        TravellingManData.Clear();
-    }
-
-    internal async Task CreateTravellingManTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> MasterDataList)
-    {
-        await Task.Run(() =>
+        return Task.Run(async () =>
         {
-            MasterDataList.Add(GetTravellingManData(bookTitle, bookType));
+            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, null);
+            masterDataList.Add(Data);
+            masterLinkList.TryAdd(Website.SciFier, Links[0]);
         });
     }
 
-    internal string GetUrl()
-    {
-        return TravellingManLinks.Count != 0 ? TravellingManLinks[0] : $"{WEBSITE_TITLE} Has no Link";
-    }
-
-    private string GenerateWebsiteUrl(string bookTitle, BookType bookType, int curPage)
+    private static string GenerateWebsiteUrl(string bookTitle, BookType bookType, int curPage)
     {
         // https://travellingman.com/search?page=2&q=naruto+manga
-        string url = $"{WEBSITE_URL}/search?page={curPage}&q={bookTitle.Replace(" ", "+")}{(bookType == BookType.Manga ? "+manga" : "+novel")}";
+        string url = $"{BASE_URL}/search?page={curPage}&q={bookTitle.Replace(" ", "+")}{(bookType == BookType.Manga ? "+manga" : "+novel")}";
         LOGGER.Info("Url {} => {}", curPage, url);
-        TravellingManLinks.Add(url);
         return url;
     }
 
@@ -111,8 +108,11 @@ public partial class TravellingMan
     }
 
     // TODO - Page source issue when a series has multiple pages, unsure why
-    private List<EntryModel> GetTravellingManData(string bookTitle, BookType bookType)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
     {
+        List<EntryModel> data = [];
+        List<string> links = [];
+
         try
         {
             HtmlWeb web = new()
@@ -126,7 +126,7 @@ public partial class TravellingMan
 
             int nextPage = 1;
             bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
-            for(int x = 0; x < DescRemovalStrings.Count; x++)
+            for (int x = 0; x < DescRemovalStrings.Count; x++)
             {
                 if (bookTitle.Contains(DescRemovalStrings[x])) DescRemovalStrings.RemoveAt(x);
             }
@@ -136,12 +136,15 @@ public partial class TravellingMan
             while (true)
             {
                 // Initialize the html doc for crawling
-                doc = web.Load(GenerateWebsiteUrl(bookTitle, bookType, nextPage));
+                string url = GenerateWebsiteUrl(bookTitle, bookType, nextPage);
+                links.Add(url);
+                
+                doc = await web.LoadFromWebAsync(url);
 
                 // Get the page data from the HTML doc
-                HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
-                HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
-                HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
+                HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(_titleXPath);
+                HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(_priceXPath);
+                HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(_pageCheckXPath);
                 if (priceData == null) { goto Stop; }
 
                 for (int x = 0; x < priceData.Count; x++)
@@ -154,7 +157,7 @@ public partial class TravellingMan
                         && (
                             (bookType == BookType.Manga
                             && (
-                                !entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) || 
+                                !entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) ||
                                 bookTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
                                 || (
                                         InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
@@ -164,16 +167,16 @@ public partial class TravellingMan
                             )
                             ||
                             bookType == BookType.LightNovel &&
-                            !entryTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase) || 
+                            !entryTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase) ||
                             bookTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase)
                             )
                         && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "overlord", entryTitle, "Unimplemented")
-                        )        
+                        )
                     {
                         bool descIsValid = true;
                         if (!entryTitle.ContainsAny(["Volume", "Vol.", "Box Set", "Comic"]))
                         {
-                            HtmlNodeCollection descData = web.Load($"{WEBSITE_URL}{doc.DocumentNode.SelectSingleNode($"(//li[@class='list-view-item']/div/a)[{x + 1}]").GetAttributeValue("href", string.Empty)}").DocumentNode.SelectNodes("//div[@class='product-single__description rte'] | //div[@class='product-single__description rte']//p");
+                            HtmlNodeCollection descData = web.Load($"{BASE_URL}{doc.DocumentNode.SelectSingleNode($"(//li[@class='list-view-item']/div/a)[{x + 1}]").GetAttributeValue("href", string.Empty)}").DocumentNode.SelectNodes("//div[@class='product-single__description rte'] | //div[@class='product-single__description rte']//p");
                             StringBuilder desc = new();
                             foreach (HtmlNode node in descData) { desc.AppendLine(node.InnerText); }
                             // LOGGER.Debug("Checking Desc {} => {}", entryTitle, desc.ToString());
@@ -182,13 +185,13 @@ public partial class TravellingMan
 
                         if (descIsValid)
                         {
-                            TravellingManData.Add(
+                            data.Add(
                                 new EntryModel
                                 (
                                     CleanAndParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType),
                                     priceData[x].InnerText.Trim(),
                                     StockStatus.IS,
-                                    WEBSITE_TITLE
+                                    TITLE
                                 )
                             );
                         }
@@ -197,7 +200,7 @@ public partial class TravellingMan
                     else { LOGGER.Info("Removed (1) {}", entryTitle); }
                 }
 
-                Stop:
+            Stop:
                 if (priceData != null && priceData.Count == titleData.Count && pageCheck != null)
                 {
                     nextPage++;
@@ -207,17 +210,16 @@ public partial class TravellingMan
                     break;
                 }
             }
+
+            data.Sort(EntryModel.VolumeSort);
+            data.RemoveDuplicates(LOGGER);
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
         }
         catch (Exception ex)
         {
-            LOGGER.Error("{} ({}) Error @ {} \n{}", bookTitle, bookType, WEBSITE_TITLE, ex);
+            LOGGER.Error("{} ({}) Error @ {} \n{}", bookTitle, bookType, TITLE, ex);
         }
-        finally
-        {
-            TravellingManData.Sort(EntryModel.VolumeSort);
-            TravellingManData.RemoveDuplicates(LOGGER);
-            InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, TravellingManData, LOGGER);
-        }
-        return TravellingManData;
+
+        return (data, links);
     }
 }

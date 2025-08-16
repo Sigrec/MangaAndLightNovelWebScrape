@@ -61,7 +61,12 @@ public class ForbiddenPlanetTests
     public void RegionValidation_Test()
     {
         Assert.That(
-            !MangaAndLightNovelWebScrape.Websites.ForbiddenPlanet.REGION.HasFlag(Region.America) && !MangaAndLightNovelWebScrape.Websites.ForbiddenPlanet.REGION.HasFlag(Region.Australia) && MangaAndLightNovelWebScrape.Websites.ForbiddenPlanet.REGION.HasFlag(Region.Britain) && !MangaAndLightNovelWebScrape.Websites.ForbiddenPlanet.REGION.HasFlag(Region.Canada) && !MangaAndLightNovelWebScrape.Websites.ForbiddenPlanet.REGION.HasFlag(Region.Europe) && !MangaAndLightNovelWebScrape.Websites.ForbiddenPlanet.REGION.HasFlag(Region.Japan)
+            !MangaAndLightNovelWebScrape.Websites.ForbiddenPlanet.REGION.HasFlag(Region.America) &&
+            !MangaAndLightNovelWebScrape.Websites.ForbiddenPlanet.REGION.HasFlag(Region.Australia) &&
+            MangaAndLightNovelWebScrape.Websites.ForbiddenPlanet.REGION.HasFlag(Region.Britain) &&
+            !MangaAndLightNovelWebScrape.Websites.ForbiddenPlanet.REGION.HasFlag(Region.Canada) &&
+            !MangaAndLightNovelWebScrape.Websites.ForbiddenPlanet.REGION.HasFlag(Region.Europe) &&
+            !MangaAndLightNovelWebScrape.Websites.ForbiddenPlanet.REGION.HasFlag(Region.Japan)
         );
     }
 }

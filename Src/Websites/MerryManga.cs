@@ -232,7 +232,6 @@ internal sealed partial class MerryManga : IWebsite
                 WaitUntil = WaitUntilState.DOMContentLoaded
             });
             await page.WaitForSelectorAsync("div.container.main-content");
-            // wait.Until(driver => driver.FindElement(By.CssSelector("div[class='container main-content']")));
 
             HtmlDocument doc = HtmlFactory.CreateDocument();
             doc.LoadHtml(await page.ContentAsync());

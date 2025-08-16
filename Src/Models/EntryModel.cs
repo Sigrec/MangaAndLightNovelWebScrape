@@ -87,83 +87,6 @@ namespace MangaAndLightNovelWebScrape
             return -1;
         }
 
-        /// <summary>
-        ///  The Damerau–Levenshtein distance between two words is the minimum number of operations (consisting of insertions, deletions or substitutions of a single character, or transposition of two adjacent characters) required to change one word into the other (http://blog.softwx.net/2015/01/optimizing-damerau-levenshtein_15.html)
-        /// </summary>
-        /// <returns>The distance, >= 0 representing the number of edits required to transform one string to the other, or -1 if the distance is greater than the specified maxDistance.</returns>
-        public static int Similar(string s, string t, int maxDistance)
-        {
-            if (string.IsNullOrWhiteSpace(s))
-            {
-                return string.IsNullOrEmpty(t) || t.Length <= maxDistance ? t.Length : -1;
-            }
-
-            if (string.IsNullOrWhiteSpace(t))
-            {
-                return s.Length <= maxDistance ? s.Length : -1;
-            }
-
-            ReadOnlySpan<char> sSpan = s;
-            ReadOnlySpan<char> tSpan = t;
-
-            // Always operate on the shorter string
-            if (sSpan.Length > tSpan.Length)
-            {
-                ReadOnlySpan<char> tmp = sSpan;
-                sSpan = tSpan;
-                tSpan = tmp;
-            }
-
-            int sLen = sSpan.Length;
-            int tLen = tSpan.Length;
-
-            if (tLen - sLen > maxDistance)
-            {
-                return -1;
-            }
-
-            Span<int> previousRow = stackalloc int[tLen + 1];
-            Span<int> currentRow = stackalloc int[tLen + 1];
-
-            for (int j = 0; j <= tLen; j++)
-            {
-                previousRow[j] = j;
-            }
-
-            for (int i = 1; i <= sLen; i++)
-            {
-                currentRow[0] = i;
-                int bestThisRow = currentRow[0];
-
-                char sChar = char.ToLowerInvariant(sSpan[i - 1]);
-                for (int j = 1; j <= tLen; j++)
-                {
-                    char tChar = char.ToLowerInvariant(tSpan[j - 1]);
-
-                    int cost = sChar == tChar ? 0 : 1;
-                    int insert = currentRow[j - 1] + 1;
-                    int delete = previousRow[j] + 1;
-                    int replace = previousRow[j - 1] + cost;
-
-                    currentRow[j] = Math.Min(Math.Min(insert, delete), replace);
-
-                    bestThisRow = Math.Min(bestThisRow, currentRow[j]);
-                }
-
-                if (bestThisRow > maxDistance)
-                {
-                    return -1;
-                }
-
-                Span<int> temp = previousRow;
-                previousRow = currentRow;
-                currentRow = temp;
-            }
-
-            int result = previousRow[tLen];
-            return result <= maxDistance ? result : -1;
-        }
-
         public override bool Equals(object? obj)
         {
             // only true if the boxed obj is an EntryModel
@@ -231,7 +154,7 @@ namespace MangaAndLightNovelWebScrape
                 if (val1 != -1 && val2 != -1)
                 {
                     bool namesMatch = string.Equals(entry1Name, entry2Name, StringComparison.OrdinalIgnoreCase);
-                    if (namesMatch || (EntryModel.Similar(entry1Name, entry2Name, Math.Min(entry1Name.Length, entry2Name.Length) / 6) != -1))
+                    if (namesMatch || (InternalHelpers.Similar(entry1Name, entry2Name, Math.Min(entry1Name.Length, entry2Name.Length) / 6) != -1))
                     {
                         return val1.CompareTo(val2); // Simplified comparison of val1 and val2
                     }

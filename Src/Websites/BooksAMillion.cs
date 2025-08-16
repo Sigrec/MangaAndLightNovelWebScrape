@@ -46,7 +46,7 @@ internal sealed partial class BooksAMillion : IWebsite
     {
         return Task.Run(async () =>
         {
-            IPage page = await PlaywrightFactory.GetPageAsync(browser!);
+            IPage page = await PlaywrightFactory.GetPageAsync(browser!, true);
             (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page, memberships.IsBooksAMillionMember);
             masterDataList.Add(Data);
             masterLinkList.TryAdd(Website.BooksAMillion, Links[0]);
@@ -219,8 +219,8 @@ internal sealed partial class BooksAMillion : IWebsite
         try
         {
             HtmlDocument doc = HtmlFactory.CreateDocument();
-
             HtmlDocument descDoc = HtmlFactory.CreateDocument();
+            XPathNavigator nav = doc.DocumentNode.CreateNavigator();
 
             bool boxSetCheck = false, boxsetValidation = false;
             bool bookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
@@ -228,52 +228,69 @@ internal sealed partial class BooksAMillion : IWebsite
             string curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, pageNum);
             LOGGER.Info($"Initial Url {curUrl}");
             links.Add(curUrl);
-            // driver!.Navigate().GoToUrl(curUrl);
+            await page!.GotoAsync(curUrl, new PageGotoOptions
+            {
+                WaitUntil = WaitUntilState.DOMContentLoaded
+            });
 
-            // // Check for promotion popup and clear them if it exist
-            // if (driver.FindElements(By.ClassName("ltkpopup-container")).Count != 0)
-            // {
-            //     driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.ClassName("ltkpopup-close"))));
-            // }
+            // Check for promotion popup and clear them if it exist
+            IReadOnlyList<IElementHandle> popupContainer = await page.QuerySelectorAllAsync(".ltkpopup-container");
+            if (popupContainer.Count > 0)
+            {
+                await page.ClickAsync(".ltkpopup-close");
+            }
 
             while (true)
             {
-                // wait.Until(e => e.FindElement(By.ClassName("search-item-title")));
+                await page.WaitForSelectorAsync(".search-item-title");
 
                 // // Initialize the html doc for crawling
-                // doc.LoadHtml(driver.PageSource);
+                doc.LoadHtml(await page.ContentAsync());
 
                 // Get the page data from the HTML doc
-                HtmlNodeCollection? titleData = doc.DocumentNode.SelectNodes(_titleXPath);
-                HtmlNodeCollection? bookQuality = doc.DocumentNode.SelectNodes(_bookQualityXPath);
-                HtmlNodeCollection? priceData = doc.DocumentNode.SelectNodes(_pricexPath);
-                HtmlNodeCollection? stockStatusData = doc.DocumentNode.SelectNodes(_stockStatusXPath);
-                HtmlNode? pageCheck = doc.DocumentNode.SelectSingleNode(_pageCheckXPath);
+                XPathNodeIterator titleData = nav.Select(_titleXPath);
+                XPathNodeIterator bookQuality = nav.Select(_bookQualityXPath);
+                XPathNodeIterator priceData = nav.Select(_pricexPath);
+                XPathNodeIterator stockStatusData = nav.Select(_stockStatusXPath);
+                XPathNavigator? pageCheck = nav.SelectSingleNode(_pageCheckXPath);
 
-                // LOGGER.Debug("{} | {} | {} | {} | {}", titleData?.Count, bookQuality?.Count, priceData?.Count, stockStatusData?.Count, pageCheck is null);
-
-                if (titleData is null || bookQuality is null || priceData is null || stockStatusData is null)
+                if (titleData.Count == 0 || bookQuality.Count == 0 || priceData.Count == 0 || stockStatusData.Count == 0)
                 {
                     LOGGER.Info("One of the helm node collections returned no data");
                     break;
                 }
 
-                for (int x = 0; x < titleData!.Count; x++)
+                while (titleData.MoveNext())
                 {
-                    string? entryTitle = WebUtility.HtmlDecode(titleData[x]?.InnerText?.Trim());
-                    if (entryTitle is null)
+                    bookQuality.MoveNext();
+                    priceData.MoveNext();
+                    stockStatusData.MoveNext();
+
+                    XPathNavigator? curTitleVal = titleData.Current;
+                    if (curTitleVal is null)
                     {
-                        LOGGER.Debug("Entry Title = {} is null", entryTitle);
+                        LOGGER.Debug("Entry Title = {} is null", curTitleVal);
                         continue;
                     }
-                    
-                    if (!boxsetValidation && entryTitle.Contains(bookTitle, StringComparison.OrdinalIgnoreCase) && entryTitle.ContainsAny(_boxSetIncludeVals) && (bookType == BookType.Manga || (bookType == BookType.LightNovel && !entryTitle.ContainsAny(["Manga", "Volumes", "Vol"]) && !MangaRemovalRegex().IsMatch(entryTitle))))
+                    string? entryTitle = WebUtility.HtmlDecode(curTitleVal.Value.Trim());
+
+                    if (!boxsetValidation &&
+                        entryTitle.Contains(bookTitle, StringComparison.OrdinalIgnoreCase) &&
+                        entryTitle.ContainsAny(_boxSetIncludeVals) &&
+                        (bookType == BookType.Manga ||
+                            (
+                                bookType == BookType.LightNovel &&
+                                !entryTitle.ContainsAny(["Manga", "Volumes", "Vol"]) &&
+                                !MangaRemovalRegex().IsMatch(entryTitle)
+                            )
+                        )
+                    )
                     {
                         boxsetValidation = true;
                         continue;
                     }
 
-                    LOGGER.Debug("{} | {} | {} | {} | {}", entryTitle, InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle), bookType == BookType.LightNovel && entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase), !bookQuality[x].InnerText.Contains("Library Binding"), (
+                    LOGGER.Debug("{} | {} | {} | {} | {}", entryTitle, InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle), bookType == BookType.LightNovel && entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase), bookQuality.Current is null || !bookQuality.Current!.Value.Contains("Library Binding"), (
                                 bookType == BookType.LightNovel &&
                                 (entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) ||
                                 !entryTitle.ContainsAny(_novelExcludeVals) &&
@@ -288,7 +305,7 @@ internal sealed partial class BooksAMillion : IWebsite
 
                     if (
                         InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle) &&
-                        !bookQuality[x].InnerText.Contains("Library Binding") &&
+                        (bookQuality.Current is null || !bookQuality.Current!.Value.Contains("Library Binding")) &&
                         (
                             titleData.Count == 1 && !boxSetCheck ||
                             (
@@ -329,27 +346,37 @@ internal sealed partial class BooksAMillion : IWebsite
                         }
 
                         entryTitle = CleanAndParseTitle(
-                            FixVolumeRegex().Replace(entryTitle.Replace("&amp;", "&"), "Vol "),
+                            FixVolumeRegex().Replace(WebUtility.HtmlDecode(entryTitle), "Vol "),
                             bookType,
                             bookTitle
                         );
 
-                        string price = priceData[x].InnerText.Trim();
-                        if (!string.IsNullOrWhiteSpace(price) && decimal.TryParse(price[1..], out decimal priceVal))
+                        string? price = priceData.Current?.Value.Trim();
+                        if (price is not null && !string.IsNullOrWhiteSpace(price) && decimal.TryParse(price[1..], out decimal priceVal))
                         {
-                            ReadOnlySpan<char> stockText = stockStatusData[x].InnerText.AsSpan();
+                            ReadOnlySpan<char> stockText = stockStatusData.Current is not null ? stockStatusData.Current!.Value.AsSpan() : string.Empty;
+                            
                             StockStatus stockStatus = stockText.Contains("In Stock", StringComparison.OrdinalIgnoreCase) ? StockStatus.IS :
-                            stockText.Contains("Preorder", StringComparison.OrdinalIgnoreCase) ? StockStatus.PO :
-                            stockText.Contains("On Order", StringComparison.OrdinalIgnoreCase) ? StockStatus.BO :
-                            StockStatus.OOS;
+                                stockText.Contains("Preorder", StringComparison.OrdinalIgnoreCase) ? StockStatus.PO :
+                                    stockText.Contains("On Order", StringComparison.OrdinalIgnoreCase) ? StockStatus.BO :
+                                        StockStatus.OOS;
 
+                            // Check desc to see if a series is a novel when looking for manga titles
                             if (bookType == BookType.Manga && !entryTitle.ContainsAny(_mangaIncludeVals))
                             {
-                                string link = titleData[x].GetAttributeValue("href", "ERROR");
-                                LOGGER.Debug("Desc link = {}", link);
-                                // driver.Navigate().GoToUrl($@"{link}");
-                                // wait.Until(driver => driver.FindElement(By.Id("pdpOverview")));
-                                // descDoc.LoadHtml(driver.PageSource);
+                                string descLink = curTitleVal.GetAttribute("href", string.Empty);
+                                LOGGER.Debug("Desc link = {}", descLink);
+                                await page!.GotoAsync(descLink, new PageGotoOptions
+                                {
+                                    WaitUntil = WaitUntilState.DOMContentLoaded
+                                });
+                                await page.WaitForSelectorAsync("#pdpOverview");
+                                
+                                descDoc.LoadHtml(await page.ContentAsync());
+                                await page!.GotoAsync(curUrl, new PageGotoOptions
+                                {
+                                    WaitUntil = WaitUntilState.DOMContentLoaded
+                                });
                                 HtmlNode? desc = descDoc.DocumentNode.SelectSingleNode(_descXPath);
                                 if (desc is null || desc.InnerText.ContainsAny(_mangaDescExcludeVals))
                                 {
@@ -381,12 +408,11 @@ internal sealed partial class BooksAMillion : IWebsite
 
                 if (pageCheck != null)
                 {
-                    // driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath($"//ul[@class='search-page-list']//a[@title='Next']"))));
-                    // wait.Until(e => e.FindElement(By.Id("content")));
+                    await page.ClickAsync("//a[@title='Next']");
+                    await page.WaitForSelectorAsync("#content");
                     curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, ++pageNum);
                     links.Add(curUrl);
-                    // driver.Navigate().GoToUrl(curUrl);
-                    // LOGGER.Info($"Next Page {driver.Url}");
+                    LOGGER.Info($"Next Page: {curUrl}");
                 }
                 else
                 {
@@ -397,7 +423,10 @@ internal sealed partial class BooksAMillion : IWebsite
                         curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, pageNum);
                         links.Add(curUrl);
                         LOGGER.Info("Box Set Url: {}", curUrl);
-                        // driver.Navigate().GoToUrl(curUrl);
+                        await page!.GotoAsync(curUrl, new PageGotoOptions
+                        {
+                            WaitUntil = WaitUntilState.DOMContentLoaded
+                        });
                     }
                     else
                     {

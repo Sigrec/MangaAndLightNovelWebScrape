@@ -18,5 +18,6 @@
 [Classroom of the Elite Year 2 Vol 6, $13.20, BO, MangaMart]
 [Classroom of the Elite Year 2 Vol 7, $13.20, BO, MangaMart]
 [Classroom of the Elite Year 2 Vol 9, $12.79, BO, MangaMart]
+[Classroom of the Elite Year 2 Vol 10, $12.79, BO, MangaMart]
 [Classroom of the Elite Year 2 Vol 11, $12.79, BO, MangaMart]
-[Classroom of the Elite Year 2 Vol 12, $11.24, PO, MangaMart]
+[Classroom of the Elite Year 2 Vol 12, $11.24, IS, MangaMart]

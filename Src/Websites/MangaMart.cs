@@ -1,5 +1,4 @@
 using System.Net;
-using System.Threading;
 using MangaAndLightNovelWebScrape.Services;
 using Microsoft.Playwright;
 
@@ -9,10 +8,10 @@ internal sealed partial class MangaMart : IWebsite
 {
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
 
-    private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[contains(concat(' ', normalize-space(@class), ' '), ' product-item ')]" +
-        "//a[contains(concat(' ', normalize-space(@class), ' '), ' product-item__title ')]");
+    private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//a[@class='product-item__title text--strong link']");
     private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='price' or @class='price price--highlight']/text()[2]");
-    private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='bss_pl_img ']//span[@class='bss_pl_text_hover_text bss_pl_text_hover_link_disable']/div/strong");
+    private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[contains(@class, 'product-item product-item--vertical')]");
+    private static readonly XPathExpression DeepStockStatusXPath = XPathExpression.Compile(".//span[@class='bss_pl_text_hover_text bss_pl_text_hover_link_disable']/div/strong");
     private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("(//a[@class='pagination__nav-item link'])[last()]");
     private static readonly XPathExpression EntryTitleDesc = XPathExpression.Compile("//div[@class='rte text--pull']");
 
@@ -87,18 +86,18 @@ internal sealed partial class MangaMart : IWebsite
 
     private static async Task WaitForStableLastItemAsync(
         IPage page,
-        string selector = "a.product-item__title.text--strong.link",
+        string selector = "price.price--highlight",
         int timeoutMs = 30000,
         int pollMs = 250)
     {
         ILocator items = page.Locator(selector);
 
-        Int32 previousCount = -1;
+        int previousCount = -1;
         DateTime deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
 
         while (DateTime.UtcNow < deadline)
         {
-            Int32 count = await items.CountAsync();
+            int count = await items.CountAsync();
 
             // no items yet → keep waiting
             if (count == 0)
@@ -128,6 +127,42 @@ internal sealed partial class MangaMart : IWebsite
         throw new TimeoutException($"WaitForStableLastItemAsync timed out after {timeoutMs} ms for selector: {selector}");
     }
 
+    private static async Task WaitForStablePageLoadAsync(IPage page)
+    {
+        try
+        {
+            await page.WaitForSelectorAsync(
+                "span.bss_pl_text_hover_text div strong",
+                new PageWaitForSelectorOptions
+                {
+                    State = WaitForSelectorState.Attached,
+                    Timeout = 5_000
+                }
+            );
+
+            await page.WaitForSelectorAsync(
+                "span.price.price--highlight",
+                new PageWaitForSelectorOptions
+                {
+                    State = WaitForSelectorState.Attached,
+                    Timeout = 5_000
+                }
+            );
+        }
+        catch (TimeoutException) { }
+        finally
+        {
+            await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+
+            await page.ScrollToBottomUntilStableAsync(
+                "span.price.price--highlight",
+                maxScrolls: 60,
+                stabilityMs: 900,
+                stepPx: 1400
+            );
+        }
+    }
+
     public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
     {
         List<EntryModel> data = [];
@@ -149,16 +184,7 @@ internal sealed partial class MangaMart : IWebsite
             {
                 WaitUntil = WaitUntilState.DOMContentLoaded
             });
-            await WaitForStableLastItemAsync(page);
-            // await page.WaitForSelectorAsync("a.product-item__title.text--strong.link");
-            await page.WaitForSelectorAsync(
-                "span.bss_pl_text_hover_text div strong",
-                new PageWaitForSelectorOptions
-                {
-                    State = WaitForSelectorState.Attached,
-                    Timeout = 5_000
-                }
-            );
+            await WaitForStablePageLoadAsync(page);
 
             doc.LoadHtml(await page.ContentAsync());
 
@@ -217,14 +243,14 @@ internal sealed partial class MangaMart : IWebsite
 
                     if (!shouldRemoveEntry)
                     {
-                        string stockStatusNode = stockStatusData.Current?.Value.Trim() ?? string.Empty;
+                        string stockStatusNode = stockStatusData.Current?.SelectSingleNode(DeepStockStatusXPath)?.Value.Trim() ?? string.Empty;
                         StockStatus stockStatus = stockStatusNode switch
                         {
                             "PRE-ORDER" => StockStatus.PO,
                             "BACK-ORDER" => StockStatus.BO,
                             _ => StockStatus.IS,
                         };
-                        // LOGGER.Debug("{} | {} | {}", entryTitle, string.IsNullOrWhiteSpace(stockStatusNode), stockStatusNode);
+                        LOGGER.Debug("{} | {} | {}", entryTitle, string.IsNullOrWhiteSpace(stockStatusNode), stockStatusNode);
 
                         data.Add(
                             new EntryModel
@@ -252,14 +278,12 @@ internal sealed partial class MangaMart : IWebsite
                     {
                         WaitUntil = WaitUntilState.DOMContentLoaded
                     });
-                    // WaitForStableLastItem(wait);
-                    await page.WaitForSelectorAsync("a.product-item__title.text--strong.link");
+                    await WaitForStablePageLoadAsync(page);
                     doc.LoadHtml(await page.ContentAsync());
                 }
             }
 
             data.TrimExcess();
-            links.TrimExcess();
             data.Sort(EntryModel.VolumeSort);
             data.RemoveDuplicates(LOGGER);
             InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);

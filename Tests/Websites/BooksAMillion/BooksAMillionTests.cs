@@ -57,10 +57,16 @@ public class BooksAMillionTests
     }
     
     [Test]
+    
     public void RegionValidation_Test()
     {
         Assert.That(
-            MangaAndLightNovelWebScrape.Websites.BooksAMillion.REGION.HasFlag(Region.America) && !MangaAndLightNovelWebScrape.Websites.BooksAMillion.REGION.HasFlag(Region.Australia) && !MangaAndLightNovelWebScrape.Websites.BooksAMillion.REGION.HasFlag(Region.Britain) && !MangaAndLightNovelWebScrape.Websites.BooksAMillion.REGION.HasFlag(Region.Canada) && !MangaAndLightNovelWebScrape.Websites.BooksAMillion.REGION.HasFlag(Region.Europe) && !MangaAndLightNovelWebScrape.Websites.BooksAMillion.REGION.HasFlag(Region.Japan)
+            MangaAndLightNovelWebScrape.Websites.BooksAMillion.REGION.HasFlag(Region.America) &&
+            !MangaAndLightNovelWebScrape.Websites.BooksAMillion.REGION.HasFlag(Region.Australia) &&
+            !MangaAndLightNovelWebScrape.Websites.BooksAMillion.REGION.HasFlag(Region.Britain) &&
+            !MangaAndLightNovelWebScrape.Websites.BooksAMillion.REGION.HasFlag(Region.Canada) &&
+            !MangaAndLightNovelWebScrape.Websites.BooksAMillion.REGION.HasFlag(Region.Europe) &&
+            !MangaAndLightNovelWebScrape.Websites.BooksAMillion.REGION.HasFlag(Region.Japan)
         );
     }
 }

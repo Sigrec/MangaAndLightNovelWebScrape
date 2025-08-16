@@ -223,13 +223,10 @@ public sealed partial class MasterScrape
             throw new ArgumentException("Title can't be empty.", nameof(bookTitle));
         }
 
-        // 1) Cache results and URLs
         List<EntryModel> results = GetResults();
-
-        // 2) Compute column widths
-        int longestTitle   = "Title".Length;
-        int longestPrice   = "Price".Length;
-        int longestStatus  = "Status".Length;
+        int longestTitle = "Title".Length;
+        int longestPrice = "Price".Length;
+        int longestStatus = "Status".Length;
         int longestWebsite = "Website".Length;
 
         foreach (EntryModel entry in results)
@@ -241,23 +238,19 @@ public sealed partial class MasterScrape
             if (entry.Website.Length > longestWebsite) longestWebsite = entry.Website.Length;
         }
 
-        // 3) Build padding strings
-        string titlePad   = "━".PadRight(longestTitle   + 2, '━');
-        string pricePad   = "━".PadRight(longestPrice   + 2, '━');
-        string statusPad  = "━".PadRight(longestStatus  + 2, '━');
+        string titlePad = "━".PadRight(longestTitle   + 2, '━');
+        string pricePad = "━".PadRight(longestPrice   + 2, '━');
+        string statusPad = "━".PadRight(longestStatus  + 2, '━');
         string websitePad = "━".PadRight(longestWebsite + 2, '━');
 
-        // 4) Build borders and header row
-        string topBorder    = $"┏{titlePad}┳{pricePad}┳{statusPad}┳{websitePad}┓";
-        string headerRow    = $"┃ {"Title".PadRight(longestTitle)} ┃ {"Price".PadRight(longestPrice)} ┃ {"Status".PadRight(longestStatus)} ┃ {"Website".PadRight(longestWebsite)} ┃";
-        string midBorder    = $"┣{titlePad}╋{pricePad}╋{statusPad}╋{websitePad}┫";
+        string topBorder = $"┏{titlePad}┳{pricePad}┳{statusPad}┳{websitePad}┓";
+        string headerRow = $"┃ {"Title".PadRight(longestTitle)} ┃ {"Price".PadRight(longestPrice)} ┃ {"Status".PadRight(longestStatus)} ┃ {"Website".PadRight(longestWebsite)} ┃";
+        string midBorder = $"┣{titlePad}╋{pricePad}╋{statusPad}╋{websitePad}┫";
         string bottomBorder = $"┗{titlePad}┻{pricePad}┻{statusPad}┻{websitePad}┛";
 
-        // 5) Pre-size StringBuilder
         int estimatedRowLen = titlePad.Length + pricePad.Length + statusPad.Length + websitePad.Length + 10;
         StringBuilder sb = new StringBuilder(results.Count * estimatedRowLen + 200);
 
-        // 6) Header info
         sb.AppendLine()
         .Append("Title: \"")
         .Append(bookTitle)
@@ -277,7 +270,6 @@ public sealed partial class MasterScrape
             .AppendLine();
         }
 
-        // 7) Table
         sb.AppendLine(topBorder)
         .AppendLine(headerRow)
         .AppendLine(midBorder);
@@ -297,7 +289,6 @@ public sealed partial class MasterScrape
 
         sb.Append(bottomBorder);
 
-        // 8) Optional links
         if (includeLinks && !_masterLinkDict.IsEmpty)
         {
             sb.AppendLine()
@@ -507,9 +498,9 @@ public sealed partial class MasterScrape
                 for (int y = nextVolPos; y < smallerList.Count; y++) // Check every volume in the smaller list, skipping over volumes that have already been checked
                 {
                     // Check to see if the titles are not the same and they are not similar enough, or it is not new then go to the next volume
-                    if (smallerList[y].Entry.Contains("Imperfect") || (!smallerList[y].Entry.Equals(biggerListData.Entry, StringComparison.OrdinalIgnoreCase) && EntryModel.Similar(smallerList[y].Entry, biggerListData.Entry, smallerList[y].Entry.Length > biggerListData.Entry.Length ? biggerListData.Entry.Length / 6 : smallerList[y].Entry.Length / 6) == -1))
+                    if (smallerList[y].Entry.Contains("Imperfect") || (!smallerList[y].Entry.Equals(biggerListData.Entry, StringComparison.OrdinalIgnoreCase) && InternalHelpers.Similar(smallerList[y].Entry, biggerListData.Entry, smallerList[y].Entry.Length > biggerListData.Entry.Length ? biggerListData.Entry.Length / 6 : smallerList[y].Entry.Length / 6) == -1))
                     {
-                        // LOGGER.Debug($"Not The Same ({smallerList[y].Entry} | {biggerListData.Entry} | {!smallerList[y].Entry.Equals(biggerListData.Entry)} | {(EntryModel.Similar(smallerList[y].Entry, biggerListData.Entry, smallerList[y].Entry.Length > biggerListData.Entry.Length ? biggerListData.Entry.Length / 6 : smallerList[y].Entry.Length / 6) == -1)} | {smallerList[y].Entry.Contains("Imperfect")})");
+                        // LOGGER.Debug($"Not The Same ({smallerList[y].Entry} | {biggerListData.Entry} | {!smallerList[y].Entry.Equals(biggerListData.Entry)} | {(InternalHelpers.Similar(smallerList[y].Entry, biggerListData.Entry, smallerList[y].Entry.Length > biggerListData.Entry.Length ? biggerListData.Entry.Length / 6 : smallerList[y].Entry.Length / 6) == -1)} | {smallerList[y].Entry.Contains("Imperfect")})");
                         continue;
                     }
 
@@ -694,7 +685,7 @@ public sealed partial class MasterScrape
             // 6) Price comparisons
             if (currentLists.Count > 1) // While there is still 2 or more lists of data to compare prices continue
             {
-                LOGGER.Debug("Starting price comparisons");
+                LOGGER.Info("Starting price comparisons");
                 int initialMasterDataListCount;
                 List<Task<List<EntryModel>>> comparisonTasks = new(currentLists.Count / 2 + currentLists.Count);
                 while (currentLists.Count > 1)
@@ -742,7 +733,6 @@ public sealed partial class MasterScrape
         }
     }
 
-    // Command to end all firefox.exe process -> taskkill /F /IM firefox.exe /T ; taskkill /F /IM firefoxdriver.exe /T
     public static async Task Main()
     {
         Stopwatch stopwatch = Stopwatch.StartNew();
@@ -756,13 +746,13 @@ public sealed partial class MasterScrape
             IsIndigoMember: false)
         .EnableDebugMode();
 
-        string title = "Toilet-bound Hanako-kun";
+        string title = "Akane-Banashi";
         BookType bookType = BookType.Manga;
 
         await scrape.InitializeScrapeAsync(
             title: title,
             bookType: bookType,
-            siteList: [Website.MangaMart]);
+            siteList: [Website.KinokuniyaUSA]);
 
         stopwatch.Stop();
 

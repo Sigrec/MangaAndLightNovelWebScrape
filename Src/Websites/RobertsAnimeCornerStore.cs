@@ -260,7 +260,7 @@ internal sealed partial class RobertsAnimeCornerStore : IWebsite
                     .Trim();
 
                 if ((seriesText.Contains(bookTitle, StringComparison.OrdinalIgnoreCase) ||
-                        EntryModel.Similar(bookTitle, seriesText,
+                        InternalHelpers.Similar(bookTitle, seriesText,
                             ((string.IsNullOrWhiteSpace(seriesText) || bookTitle.Length > seriesText.Length)
                                 ? bookTitle.Length / 6
                                 : seriesText.Length / 6) + bookTitleSpaceCount) != -1) &&

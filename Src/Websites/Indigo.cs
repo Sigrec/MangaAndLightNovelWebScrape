@@ -8,11 +8,11 @@ internal sealed partial class Indigo : IWebsite
 {
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
 
-    private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//a[@class='link secondary']");
-    private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='price-wrapper']/span/span");
-    private static readonly XPathExpression EntryLinkXPath = XPathExpression.Compile("//a[@class='link secondary']");
-    private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//p[@class='delivery-option-details mouse']/span[2]");
-    private static readonly XPathExpression FormatXPath = XPathExpression.Compile("//span[@class='tile-text-light mouse variant-format-label']");
+    private static readonly XPathExpression _titleXPath = XPathExpression.Compile("//div[@class='row product-grid mt-4 search-analytics']//a[@class='link secondary']");
+    private static readonly XPathExpression _priceXPath = XPathExpression.Compile("//div[@class='row product-grid mt-4 search-analytics']//span[@class='price-wrapper']/span/span");
+    private static readonly XPathExpression _entryLinkXPath = XPathExpression.Compile("//div[@class='row product-grid mt-4 search-analytics']//a[@class='link secondary']");
+    private static readonly XPathExpression _stockStatusXPath = XPathExpression.Compile("//p[@class='delivery-option-details mouse']/span[2]");
+    private static readonly XPathExpression _formatXPath = XPathExpression.Compile("//div[@class='row product-grid mt-4 search-analytics']//span[@class='tile-text-light mouse variant-format-label']");
 
     [GeneratedRegex(@",| \(manga\)|(?<=\d{1,3}): .*| Manga|\s+\(.*?\)| The Manga|", RegexOptions.IgnoreCase)] private static partial Regex TitleRegex();
     [GeneratedRegex(@"(?<=Box Set \d{1}).*|\s+Complete", RegexOptions.IgnoreCase)] private static partial Regex BoxSetTitleRegex();
@@ -119,16 +119,22 @@ internal sealed partial class Indigo : IWebsite
             links.Add(url);
 
             //doc = web.Load(url);
-            // driver!.Navigate().GoToUrl(url);
-            // Thread.Sleep(10000);
+            await page!.GotoAsync(url, new PageGotoOptions
+            {
+                WaitUntil = WaitUntilState.DOMContentLoaded
+            });
             // wait.Until(driver => driver.FindElement(By.CssSelector("div[class='row product-grid mt-4 search-analytics']")));
-            // doc.LoadHtml(driver.PageSource);
+            await page.WaitForSelectorAsync(
+                "div.row.product-grid.mt-4.search-analytics",
+                new PageWaitForSelectorOptions { State = WaitForSelectorState.Attached }
+            );
+            doc.LoadHtml(await page.ContentAsync());
 
             HtmlDocument innerDoc = new();
-            HtmlNodeCollection entryLinkData = doc.DocumentNode.SelectNodes(EntryLinkXPath);
-            HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
-            HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
-            HtmlNodeCollection formatData = doc.DocumentNode.SelectNodes(FormatXPath);
+            HtmlNodeCollection entryLinkData = doc.DocumentNode.SelectNodes(_entryLinkXPath);
+            HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(_titleXPath);
+            HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(_priceXPath);
+            HtmlNodeCollection formatData = doc.DocumentNode.SelectNodes(_formatXPath);
             LOGGER.Debug("{} | {} | {}", titleData.Count, priceData.Count, formatData.Count);
 
             string price = string.Empty;
@@ -171,8 +177,16 @@ internal sealed partial class Indigo : IWebsite
                     )
                 {
                     // driver.Navigate().GoToUrl($"https://www.indigo.ca{entryLinkData[x].GetAttributeValue("href", "error")}");
+                    await page!.GotoAsync($"https://www.indigo.ca{entryLinkData[x].GetAttributeValue("href", "error")}", new PageGotoOptions
+                    {
+                        WaitUntil = WaitUntilState.DOMContentLoaded
+                    });
                     // wait.Until(driver => driver.FindElements(By.CssSelector("p[class='delivery-option-details mouse']")));
-                    // innerDoc.LoadHtml(driver.PageSource);
+                    await page.WaitForSelectorAsync(
+                        "p.delivery-option-details.mouse",
+                        new PageWaitForSelectorOptions { State = WaitForSelectorState.Attached }
+                    );
+                    innerDoc.LoadHtml(await page.ContentAsync());
                     // LOGGER.Debug(innerDoc.Text);
 
                     price = priceData[x].InnerText.Trim();
@@ -181,7 +195,7 @@ internal sealed partial class Indigo : IWebsite
                         new EntryModel(
                             ParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType),
                             isMember ? $"${EntryModel.ApplyDiscount(Convert.ToDecimal(price[1..]), PLUM_DISCOUNT)}" : price,
-                            innerDoc.DocumentNode.SelectSingleNode(StockStatusXPath).InnerText switch
+                            innerDoc.DocumentNode.SelectSingleNode(_stockStatusXPath).InnerText switch
                             {
                                 string status when status.Contains("In stock", StringComparison.OrdinalIgnoreCase) => StockStatus.IS,
                                 string status when status.Contains("Pre-order", StringComparison.OrdinalIgnoreCase) => StockStatus.PO,

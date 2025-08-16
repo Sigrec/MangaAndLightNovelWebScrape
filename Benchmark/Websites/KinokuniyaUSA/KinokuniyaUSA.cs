@@ -2,7 +2,6 @@ using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Diagnosers;
 using MangaAndLightNovelWebScrape;
 using MangaAndLightNovelWebScrape.Enums;
-using OpenQA.Selenium;
 
 namespace Benchmark.Websites.KinokuniyaUSA;
 

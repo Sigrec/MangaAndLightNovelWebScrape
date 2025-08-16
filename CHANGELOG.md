@@ -10,7 +10,7 @@ Planned
 ❌See if Indigo can be fixed or not
 ❌Add some more sites
 
-v4.1.0 - 
+v5.0.0 - 
 ✅Improved comments for public facing members
 ✅Added `MangaMart` to scrape for `America` region
 ✅Added urls to all objects as a const string
@@ -33,14 +33,18 @@ v4.1.0 -
 -🔥Fixed issue where the price would not get parsed correctly causing no items to be returned
 -🔥Fixed issue where some series would have leading text after the volume number
 -🔥Fixed issues with some box set parsing
-❌MangaMate
+📜MangaMate
 -🔥Fixed issue with page loading preventing the scrape from working due to series that don't have multiple pages
-❌Forbidden Planet
+-🔥Fixed issue where wrong stock status would be applied for some OOS entries
+📜Forbidden Planet
 -🔥Fixed issue where some web encoded characters would not get parsed causing no data to be returned
 -🔥Fixed issue where it would not parse titles correctly that had text after `:`
 -🔥Fixed issue where light novel parsing would not work correctly
-❌Books-A-Million
+📜Books-A-Million
 -🔥Fixed issue where series with http codes like ampersand would not get scraped
+📜SciFier
+-🔥Fixed issue where novel entries would not append "Novel" at the end for differentiation from manga entries
+-🔥Fixed issue where sometimes author text would not be removed properly
 
 v4.0.2 - Jan 20th, 2025
 🔥Remove Playwright package
