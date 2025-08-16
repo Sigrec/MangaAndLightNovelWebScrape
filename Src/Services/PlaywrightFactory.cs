@@ -273,4 +273,32 @@ internal static class PlaywrightFactory
         // final jump to absolute bottom
         await page.EvaluateAsync("() => window.scrollTo(0, document.body.scrollHeight)");
     }
+
+    /// <summary>
+    /// Attempts to click the target element, waiting until it is visible within the given timeout.
+    /// Falls back to executing a raw JavaScript click if the normal Playwright click fails
+    /// (for example, due to overlays or intercepted clicks).
+    /// </summary>
+    /// <param name="locator">The Playwright <see cref="ILocator"/> to click.</param>
+    /// <param name="timeout">
+    /// The maximum time to wait (in milliseconds) for the element to become visible before attempting the click. 
+    /// Defaults to 5000ms.
+    /// </param>
+    /// <returns>A task representing the asynchronous click operation.</returns>
+    public static async Task ForceClickAsync(this ILocator locator, int timeout = 5_000)
+    {
+        try
+        {
+            await locator.WaitForAsync(new LocatorWaitForOptions
+            {
+                State = WaitForSelectorState.Visible,
+                Timeout = timeout
+            });
+            await locator.ClickAsync();
+        }
+        catch
+        {
+            await locator.ClickAsync(new LocatorClickOptions { Force = true });
+        }
+    }
 }

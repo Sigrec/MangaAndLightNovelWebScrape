@@ -26,6 +26,7 @@
 [Berserk Vol 12, $14.99, IS, Kinokuniya USA]
 [Berserk Vol 13, $14.99, IS, Kinokuniya USA]
 [Berserk Vol 14, $14.99, IS, Kinokuniya USA]
+[Berserk Vol 15, $14.99, IS, Kinokuniya USA]
 [Berserk Vol 16, $14.99, IS, Kinokuniya USA]
 [Berserk Vol 17, $14.99, IS, Kinokuniya USA]
 [Berserk Vol 18, $14.99, IS, Kinokuniya USA]
@@ -52,3 +53,4 @@
 [Berserk Vol 39, $14.99, IS, Kinokuniya USA]
 [Berserk Vol 40, $14.99, IS, Kinokuniya USA]
 [Berserk Vol 41, $14.99, IS, Kinokuniya USA]
+[Berserk Vol 42, $14.99, IS, Kinokuniya USA]

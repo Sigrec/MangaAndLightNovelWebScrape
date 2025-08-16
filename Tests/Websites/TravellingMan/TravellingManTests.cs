@@ -24,22 +24,23 @@ public class TravellingManTests
     [
         new object[] { "Akane-Banashi", BookType.Manga, "AkaneBanashiMangaData", false },
         new object[] { "Jujutsu Kaisen", BookType.Manga, "JujutsuKaisenMangaData", false },
-        new object[] { "Dragon Quest: The Adventure of Dai", BookType.Manga, "AdventuresOfDaiMangaData", true },
+        new object[] { "Dragon Quest: The Adventure of Dai", BookType.Manga, "AdventuresOfDaiMangaData", false },
         new object[] { "One Piece", BookType.Manga, "OnePieceMangaData", false },
         new object[] { "Naruto", BookType.Manga, "NarutoMangaData", false },
         new object[] { "Naruto", BookType.LightNovel, "NarutoNovelData", false },
         new object[] { "Bleach", BookType.Manga, "BleachMangaData", false },
         new object[] { "Attack on Titan", BookType.Manga, "AttackOnTitanMangaData", false },
         new object[] { "Goodbye, Eri", BookType.Manga, "GoodbyeEriMangaData", false },
-        new object[] { "2.5 Dimensional Seduction", BookType.Manga, "DimensionalSeductionMangaData", true },
+        new object[] { "2.5 Dimensional Seduction", BookType.Manga, "DimensionalSeductionMangaData", false },
         new object[] { "Overlord", BookType.LightNovel, "OverlordNovelData", false },
         new object[] { "overlord", BookType.Manga, "OverlordMangaData", false },
-        new object[] { "07-ghost", BookType.Manga, "07GhostMangaData", true },
+        new object[] { "07-ghost", BookType.Manga, "07GhostMangaData", false },
         new object[] { "Fullmetal Alchemist", BookType.Manga, "FMABMangaData", false },
         new object[] { "Berserk", BookType.Manga, "BerserkMangaData", false },
         new object[] { "Toilet-bound Hanako-kun", BookType.Manga, "ToiletMangaData", false },
         new object[] { "classroom of the elite", BookType.LightNovel, "COTENovelData", false },
-        new object[] { "classroom of the elite", BookType.Manga, "COTENovelData", false },
+        new object[] { "Blade & Bastard", BookType.LightNovel, "Blade&BastardData", false },
+        new object[] { "classroom of the elite", BookType.Manga, "COTEMangaData", false },
         new object[] { "Boruto", BookType.Manga, "BorutoMangaData", false }
     ];
 

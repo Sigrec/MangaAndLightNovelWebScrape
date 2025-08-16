@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Collections.Frozen;
 using Microsoft.Playwright;
 
@@ -9,6 +10,8 @@ internal static partial class InternalHelpers
     [GeneratedRegex(@"[^\w+]")] internal static partial Regex RemoveNonWordsRegex();
     [GeneratedRegex(@"Vol\s\d{1,3}", RegexOptions.IgnoreCase)] private static partial Regex VolRegex();
 
+    private const int StackallocThreshold = 512;
+
     private static readonly FrozenSet<string> _entryRemovalTerms = new[]
     {
         "Bluray", "Blu-ray", "Choose Path", "Encyclopedia", "Anthology", "Official", "Character", "Guide",
@@ -18,7 +21,7 @@ internal static partial class InternalHelpers
         "Poster", "Statue", "IMPORT", "Trace", "Bookmarks", "Music Book",
         "Retrospective", "Notebook", "Journal", "Art of", "the Anime",
         "Calendar", "Adventure Book", "Coloring Book", "Sketchbook", "PLUSH",
-        "Pirate Recipes", "Exclusive", "Hobby", "Model Kit", "Funko POP", "Creator of the", "the Movie"
+        "Pirate Recipes", "Exclusive", "Hobby", "Model Kit", "Funko POP", "Creator of the", "the Movie", "UniVersus"
     }
     .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
@@ -322,8 +325,8 @@ internal static partial class InternalHelpers
     /// <returns>True if the curTitle should be removed</returns>
     internal static bool RemoveUnintendedVolumes(string bookTitle, string searchTitle, string curTitle, string removeText)
     {
-        return bookTitle.IndexOf(searchTitle, StringComparison.OrdinalIgnoreCase) >= 0 &&
-            curTitle.IndexOf(removeText, StringComparison.OrdinalIgnoreCase) >= 0;
+        return bookTitle.Contains(searchTitle, StringComparison.OrdinalIgnoreCase) &&
+            curTitle.Contains(removeText, StringComparison.OrdinalIgnoreCase);
     }
 
     internal static bool RemoveUnintendedVolumes(string bookTitle, string searchTitle, string curTitle, params string[] removeText)
@@ -350,7 +353,7 @@ internal static partial class InternalHelpers
     /// <returns>
     /// The percent-encoded title, suitable for use in a URL path or query.
     /// </returns>
-    public static string FilterBookTitle(string bookTitle)
+    internal static string FilterBookTitle(string bookTitle)
     {
         if (string.IsNullOrEmpty(bookTitle))
         {
@@ -358,7 +361,7 @@ internal static partial class InternalHelpers
         }
 
         // Estimate: most characters stay 1→1, escaped ones become 3 chars ("%HH")
-        StringBuilder sb = new StringBuilder(bookTitle.Length * 2);
+        StringBuilder sb = new(bookTitle.Length * 2);
 
         foreach (char c in bookTitle)
         {
@@ -420,6 +423,58 @@ internal static partial class InternalHelpers
         return pStringBuilder;
     }
 
+    internal static int IndexOfOrdinal(this StringBuilder sb, ReadOnlySpan<char> value)
+    {
+        int len = sb.Length;
+        if (len == 0) return -1;
+
+        char[]? rented = null;
+        Span<char> buf = len <= StackallocThreshold
+            ? stackalloc char[len]
+            : (rented = ArrayPool<char>.Shared.Rent(len)).AsSpan(0, len);
+
+        try
+        {
+            sb.CopyTo(0, buf, len);
+            return buf.IndexOf(value, StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (rented is not null) ArrayPool<char>.Shared.Return(rented);
+        }
+    }
+
+    internal static int IndexOfOrdinal(this StringBuilder sb, string value)
+        => sb.IndexOfOrdinal(value.AsSpan());
+
+    internal static bool ContainsOrdinal(this StringBuilder sb, ReadOnlySpan<char> value)
+        => sb.IndexOfOrdinal(value) >= 0;
+
+    // Ignore-case variants if you need them:
+    internal static int IndexOfIgnoreCase(this StringBuilder sb, ReadOnlySpan<char> value)
+    {
+        int len = sb.Length;
+        if (len == 0) return -1;
+
+        char[]? rented = null;
+        Span<char> buf = len <= StackallocThreshold
+            ? stackalloc char[len]
+            : (rented = ArrayPool<char>.Shared.Rent(len)).AsSpan(0, len);
+
+        try
+        {
+            sb.CopyTo(0, buf, len);
+            return buf.IndexOf(value, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            if (rented is not null) ArrayPool<char>.Shared.Return(rented);
+        }
+    }
+
+    internal static bool ContainsIgnoreCase(this StringBuilder sb, ReadOnlySpan<char> value)
+        => sb.IndexOfIgnoreCase(value) >= 0;
+
     internal static void PrintWebsiteData(string website, string bookTitle, BookType bookType, IEnumerable<EntryModel> dataList, Logger LOGGER)
     {
         if (MasterScrape.IsDebugEnabled)
@@ -433,7 +488,7 @@ internal static partial class InternalHelpers
                 // If we have data, write it to both the logger and the output file.
                 foreach (EntryModel data in dataList)
                 {
-                    LOGGER.Info(data);  // Log the data entry
+                    LOGGER.Debug(data);  // Log the data entry
                     outputFile.WriteLine(data);  // Write to the file
                 }
             }

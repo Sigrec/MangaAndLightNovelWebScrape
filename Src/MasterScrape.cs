@@ -43,7 +43,7 @@ public sealed partial class MasterScrape
     [GeneratedRegex(@"\d{1,3}(?:\.\d{1})?$")] internal static partial Regex FindVolNumRegex();
     [GeneratedRegex(@"Vol \d{1,3}(?:\.\d{1})?$")] internal static partial Regex FindVolWithNumRegex();
     [GeneratedRegex(@"\s{2,}|(?:--|\u2014)\s*| - ")] internal static partial Regex MultipleWhiteSpaceRegex();
-    [GeneratedRegex(@"(?:Encyclopedia|Anthology|Official|Character|Guide|Illustration|Anime Profiles|Choose Your Path|Compendium|Art(?:book| Book)|Error|Advertising|\(Osi\)|Ani-manga|Anime|Bilingual|Game Book|Theatrical|Figure|SEGA|Poster|Statue|IMPORT|Trace|Bookmarks|Music Book|Retrospective|Notebook(?: Journal|)|[^\w]Art of |the Anime|Calendar|Adventure (?:Book)|Coloring Book|Sketchbook|Notebook|PLUSH|Pirate Recipes|Exclusive|Hobby|Model\s+Kit)", RegexOptions.IgnoreCase)] internal static partial Regex EntryRemovalRegex();
+    [GeneratedRegex(@"(?<=\b(?:Vol|Novel)\.?\s+(?:\d{1,3}|\d{1,3}\.\d{1}))[^\d.].*")] internal static partial Regex FinalCleanRegex();
 
     public MasterScrape(StockStatus[] Filter, Region Region = Region.America, Browser Browser = Browser.Edge, bool IsBooksAMillionMember = false, bool IsKinokuniyaUSAMember = false, bool IsIndigoMember = false)
     {
@@ -739,20 +739,20 @@ public sealed partial class MasterScrape
 
         MasterScrape scrape = new MasterScrape(
             Filter: StockStatusFilter.EXCLUDE_NONE_FILTER,
-            Region: Region.America,
+            Region: Region.Britain,
             Browser: Browser.Edge,
             IsBooksAMillionMember: false,
-            IsKinokuniyaUSAMember: true,
+            IsKinokuniyaUSAMember: false,
             IsIndigoMember: false)
         .EnableDebugMode();
 
-        string title = "Akane-Banashi";
+        string title = "jujutsu kaisen";
         BookType bookType = BookType.Manga;
 
         await scrape.InitializeScrapeAsync(
             title: title,
             bookType: bookType,
-            siteList: [Website.KinokuniyaUSA]);
+            siteList: [Website.Waterstones]);
 
         stopwatch.Stop();
 

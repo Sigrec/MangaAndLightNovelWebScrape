@@ -16,14 +16,14 @@ public partial class Waterstones : IWebsite
     /// <inheritdoc />
     public const Region REGION = Region.Britain;
 
-    private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//a[contains(@class, 'title link-invert')]");
-    private static readonly XPathExpression OneShotTitleXPath = XPathExpression.Compile("//span[@id='scope_book_title']");
-    private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='price']");
-    private static readonly XPathExpression OneShotPriceXPath = XPathExpression.Compile("//b[@itemprop='price']");
-    private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='book-price']/span[1]");
-    private static readonly XPathExpression OneShotStockStatusXPath = XPathExpression.Compile("//span[@id='scope_offer_availability']");
-    private static readonly XPathExpression PageCheckXPath = XPathExpression.Compile("//div[@class='pager']/span[2]");
-    private static readonly XPathExpression OneShotCheckXPath = XPathExpression.Compile("//div[@class='span12']/h2");
+    private static readonly XPathExpression _titleXPath = XPathExpression.Compile("//a[contains(@class, 'title link-invert')]");
+    private static readonly XPathExpression _oneShotTitleXPath = XPathExpression.Compile("//span[@id='scope_book_title']");
+    private static readonly XPathExpression _priceXPath = XPathExpression.Compile("//span[@class='price']");
+    private static readonly XPathExpression _oneShotPriceXPath = XPathExpression.Compile("//b[@itemprop='price']");
+    private static readonly XPathExpression _stockStatusXPath = XPathExpression.Compile("//div[@class='book-price']/span[1]");
+    private static readonly XPathExpression _oneShotStockStatusXPath = XPathExpression.Compile("//span[@id='scope_offer_availability']");
+    private static readonly XPathExpression _pageCheckXPath = XPathExpression.Compile("//div[@class='pager']/span[2]");
+    private static readonly XPathExpression _oneShotCheckXPath = XPathExpression.Compile("//div[@class='span12']/h2");
 
     [GeneratedRegex(@",|The Manga|(?<=Vol \d{1,3})[^\d{1,3}.].*|(?<=Vol \d{1,3}.\d{1})[^\d{1,3}.]+.*|(?<=Special Edition).*|(?<=Omnibus \d{1,3})[^\d{1,3}].*| \(Paperback\)| - .*", RegexOptions.IgnoreCase)] private static partial Regex FixTitleRegex();
     [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)", RegexOptions.IgnoreCase)] private static partial Regex FixOmnibusRegex();
@@ -36,7 +36,7 @@ public partial class Waterstones : IWebsite
     {
         return Task.Run(async () =>
         {
-            IPage page = await PlaywrightFactory.GetPageAsync(browser!);
+            IPage page = await PlaywrightFactory.GetPageAsync(browser!, true);
             (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page);
             masterDataList.Add(Data);
             masterLinkList.TryAdd(Website.MerryManga, Links[0]);
@@ -131,24 +131,33 @@ public partial class Waterstones : IWebsite
             ushort pageNum = 1, maxPageNum = 1;
             bool isOneShot = false;
 
-            // driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle.Replace(",", string.Empty).Replace(" " , "+"), bookType, pageNum, isOneShot));
-            HtmlDocument doc = new()
+            string url = GenerateWebsiteUrl(bookTitle.Replace(",", string.Empty).Replace(" ", "+"), bookType, pageNum, isOneShot);
+            links.Add(url);
+            await page!.GotoAsync(url, new PageGotoOptions
             {
-                OptionCheckSyntax = false
-            };
-            // doc.LoadHtml(driver.PageSource);
+                WaitUntil = WaitUntilState.DOMContentLoaded
+            });
+            HtmlDocument doc = HtmlFactory.CreateDocument();
+            doc.LoadHtml(await page.ContentAsync());
 
-            HtmlNode oneShotCheckNode = doc.DocumentNode.SelectSingleNode(OneShotCheckXPath);
+            HtmlNode oneShotCheckNode = doc.DocumentNode.SelectSingleNode(_oneShotCheckXPath);
             if (oneShotCheckNode != null && oneShotCheckNode.InnerText.Contains("No results"))
             {
                 isOneShot = true;
-                // driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle.Replace(",", string.Empty).Replace(" " , "+"), bookType, pageNum, isOneShot));
-                // doc.LoadHtml(driver.PageSource);
+                links.Clear();
+
+                url = GenerateWebsiteUrl(bookTitle.Replace(",", string.Empty).Replace(" " , "+"), bookType, pageNum, isOneShot);
+                links.Add(url);
+                await page!.GotoAsync(url, new PageGotoOptions
+                {
+                    WaitUntil = WaitUntilState.DOMContentLoaded
+                });
+                doc.LoadHtml(await page.ContentAsync());
             }
             else
             {
                 // Get the total number of pages
-                HtmlNode pageCheckNode = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
+                HtmlNode pageCheckNode = doc.DocumentNode.SelectSingleNode(_pageCheckXPath);
                 maxPageNum = pageCheckNode != null ? (ushort)char.GetNumericValue(pageCheckNode.InnerText.TrimEnd()[^1]) : (ushort)1;
                 LOGGER.Debug("Entry has {} Page(s)", maxPageNum);
             }
@@ -157,9 +166,10 @@ public partial class Waterstones : IWebsite
             while (true)
             {
                 // Get page data
-                HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(!isOneShot ? TitleXPath : OneShotTitleXPath);
-                HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(!isOneShot ? PriceXPath : OneShotPriceXPath);
-                HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(!isOneShot ? StockStatusXPath : OneShotStockStatusXPath);
+                HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(!isOneShot ? _titleXPath : _oneShotTitleXPath);
+                HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(!isOneShot ? _priceXPath : _oneShotPriceXPath);
+                HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(!isOneShot ? _stockStatusXPath : _oneShotStockStatusXPath);
+                LOGGER.Debug("{} | {} | {}", titleData?.Count, priceData?.Count, stockStatusData?.Count);
 
                 for (int x = 0; x < titleData.Count; x++)
                 {
@@ -167,8 +177,25 @@ public partial class Waterstones : IWebsite
                     if (!isOneShot && ((entryTitle.EndsWith('…') && !FullTitleCheckRegex().IsMatch(entryTitle[..entryTitle.IndexOf('…')])) || !entryTitle.Contains("Vol"))) // Check to see if title is cutoff
                     {
                         string oldTitle = entryTitle;
-                        // driver.Navigate().GoToUrl($"{BASE_URL}/{titleData[x].GetAttributeValue("href", "Error")}");
+                        url = $"{BASE_URL}/{titleData[x].GetAttributeValue("href", "Error")}";
+                        LOGGER.Debug("Checking cutoff series {Url}", url);
+                        await page.Locator($"a[href='{titleData[x].GetAttributeValue("href", "Error")}']").First.ForceClickAsync();
                         // entryTitle = FixVolumeRegex().Replace(wait.Until(driver => driver.FindElement(By.Id("scope_book_title"))).Text, " Vol");
+                        // await page.WaitForSelectorAsync("#scope_book_title", new PageWaitForSelectorOptions
+                        // {
+                        //     State = WaitForSelectorState.Attached
+                        // });
+                        IElementHandle? el = await page.QuerySelectorAsync("#scope_book_title"); // immediate snapshot, no wait
+                        if (el != null)
+                        {
+                            string text = (await el.InnerTextAsync()).Trim();
+                            entryTitle = FixVolumeRegex().Replace(text, " Vol");
+                        }
+                        else
+                        {
+                            LOGGER.Debug("Removed (0) {Title}", entryTitle);
+                            continue;
+                        }
                     }
 
                     if (
@@ -188,8 +215,7 @@ public partial class Waterstones : IWebsite
                                     )
                                     || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Bleachers")
                                     || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "attack on titan", entryTitle, "Kuklo Unbound")
-                                    || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony")
-                                    || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "Flame Dragon Knight")
+                                    || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, ["of Gluttony", "Flame Dragon Knight"])
                                     || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
                                 )
                             )
@@ -220,8 +246,15 @@ public partial class Waterstones : IWebsite
                 if (!isOneShot && pageNum < maxPageNum)
                 {
                     pageNum++;
+                    // url = GenerateWebsiteUrl(bookTitle.Replace(",", string.Empty).Replace(" ", "+"), bookType, pageNum, isOneShot);
+                    // await page!.GotoAsync(url, new PageGotoOptions
+                    // {
+                    //     WaitUntil = WaitUntilState.DOMContentLoaded
+                    // });
                     // driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle.Replace(",", string.Empty).Replace(" ", "+"), bookType, pageNum, isOneShot));
-                    // doc.LoadHtml(driver.PageSource);
+                    await page.Locator("a[title='Go to next page']").ForceClickAsync();
+                    links.Add(page.Url);
+                    doc.LoadHtml(await page.ContentAsync());
                 }
                 else
                 {

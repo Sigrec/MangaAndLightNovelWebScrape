@@ -45,6 +45,14 @@ v5.0.0 -
 📜SciFier
 -🔥Fixed issue where novel entries would not append "Novel" at the end for differentiation from manga entries
 -🔥Fixed issue where sometimes author text would not be removed properly
+📜Kinokuniya USA
+-🔥Fixed issue where scrape would hang forever for some series
+📜TravellingMan
+-🔥Fixed issue where series would sometimes have entries that are not matched to their book type
+-🔥Fixed issue where entries with ascii characters would not parse correctly
+-🔥Fixed issue where entries with text after the vol number or novel would not be removed
+❌Waterstones
+-🔥Fixed issue where series data would not paginate properly and return all data
 
 v4.0.2 - Jan 20th, 2025
 🔥Remove Playwright package
