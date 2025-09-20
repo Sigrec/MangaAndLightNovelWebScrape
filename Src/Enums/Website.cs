@@ -27,10 +27,6 @@ namespace MangaAndLightNovelWebScrape.Enums
         /// </summary>
         ForbiddenPlanet,
         /// <summary>
-        /// Canada
-        /// </summary>
-        Indigo,
-        /// <summary>
         /// America
         /// </summary>
         InStockTrades,
@@ -61,10 +57,6 @@ namespace MangaAndLightNovelWebScrape.Enums
         /// <summary>
         /// Britain
         /// </summary>
-        TravellingMan,
-        /// <summary>
-        /// Britain
-        /// </summary>
-        Waterstones
+        TravellingMan
     }
 }

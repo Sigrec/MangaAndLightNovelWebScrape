@@ -1,5 +1,3 @@
-global using OpenQA.Selenium;
-global using OpenQA.Selenium.Support.UI;
 global using HtmlAgilityPack;
 global using System.Collections.Generic;
 global using System.IO;

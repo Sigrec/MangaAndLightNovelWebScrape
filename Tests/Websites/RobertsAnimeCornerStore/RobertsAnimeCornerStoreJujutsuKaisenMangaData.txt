@@ -23,4 +23,6 @@
 [Jujutsu Kaisen Vol 22, $10.98, IS, RobertsAnimeCornerStore]
 [Jujutsu Kaisen Vol 23, $10.98, IS, RobertsAnimeCornerStore]
 [Jujutsu Kaisen Vol 24, $10.98, IS, RobertsAnimeCornerStore]
-[Jujutsu Kaisen Vol 25, $10.98, PO, RobertsAnimeCornerStore]
+[Jujutsu Kaisen Vol 25, $10.98, IS, RobertsAnimeCornerStore]
+[Jujutsu Kaisen Vol 26, $10.98, IS, RobertsAnimeCornerStore]
+[Jujutsu Kaisen Vol 27, $10.98, PO, RobertsAnimeCornerStore]

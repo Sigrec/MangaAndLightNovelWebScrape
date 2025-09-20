@@ -1,0 +1,138 @@
+name: Release
+
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: ⚙️ Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: 🔄 Restore
+        run: dotnet restore
+
+      - name: 📝 Read version from csproj
+        id: get_version
+        shell: pwsh
+        run: |
+          $csprojPath = "Src/MangaAndLightNovelWebScrape.csproj"
+          if (!(Test-Path $csprojPath)) { throw "CSProj not found at $csprojPath" }
+          [xml]$xml = Get-Content $csprojPath
+          $ver = $xml.Project.PropertyGroup.Version
+          if ([string]::IsNullOrWhiteSpace($ver)) { $ver = $xml.Project.PropertyGroup.PackageVersion }
+          if ([string]::IsNullOrWhiteSpace($ver)) { throw "Version not found in <$csprojPath>. Set <Version> or <PackageVersion>." }
+          "version=$ver" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "Version: $ver"
+
+      - name: 📂 Move README into Src (for packing)
+        shell: pwsh
+        run: |
+          if (Test-Path "README.md") {
+            Move-Item -Path "README.md" -Destination "Src" -Force
+          }
+
+      - name: 📦 Build & Pack
+        run: dotnet pack "Src/MangaAndLightNovelWebScrape.csproj" -c Release --nologo
+
+      - name: 📂 Move README back
+        if: always()
+        shell: pwsh
+        run: |
+          if (Test-Path "Src/README.md") {
+            Move-Item -Path "Src/README.md" -Destination "." -Force
+          }
+
+      - name: 🔍 Locate nupkg
+        id: pkg
+        shell: pwsh
+        run: |
+          $ver = '${{ steps.get_version.outputs.version }}'
+          $pattern = "Src\bin\Release\MangaAndLightNovelWebScrape.$ver.nupkg"
+          if (!(Test-Path $pattern)) {
+            $found = Get-ChildItem -Recurse -Filter "MangaAndLightNovelWebScrape.$ver.nupkg" | Select-Object -First 1
+            if ($null -eq $found) { throw "NuGet package not found for version $ver" }
+            $pattern = $found.FullName
+          }
+          "path=$pattern" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          Write-Host "nupkg: $pattern"
+
+      - name: 🚀 Push to NuGet
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: dotnet nuget push "${{ steps.pkg.outputs.path }}" --api-key "$env:NUGET_API_KEY" --source "https://api.nuget.org/v3/index.json" --skip-duplicate
+
+      - name: 🔖 Create/Push tag v{version}
+        shell: pwsh
+        run: |
+          $ver = '${{ steps.get_version.outputs.version }}'
+          $tag = "v$ver"
+          $exists = git tag --list $tag
+          if (-not $exists) {
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag -a $tag -m $tag
+            git push origin $tag
+          } else {
+            Write-Host "Tag $tag already exists. Skipping."
+          }
+
+      - name: 📰 Extract release notes from CHANGELOG.md
+        id: notes
+        shell: pwsh
+        run: |
+          $ver = '${{ steps.get_version.outputs.version }}'
+          $changelog = "CHANGELOG.md"
+          $bodyPath = "$env:RUNNER_TEMP\release-notes.md"
+
+          if (!(Test-Path $changelog)) {
+            Write-Host "CHANGELOG.md not found; will fall back to auto-generated notes."
+            "found=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            exit 0
+          }
+
+          $content = Get-Content $changelog -Raw
+          $pattern = "(?ms)^\s*##\s*v?$([regex]::Escape($ver))\b.*?(?=^\s*##\s*v?\d+\.\d+\.\d+\b|\Z)"
+          $m = [regex]::Match($content, $pattern)
+          if ($m.Success) {
+            $m.Value | Out-File -FilePath $bodyPath -Encoding utf8
+            "found=true" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            "path=$bodyPath" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+            Write-Host "Extracted notes for $ver"
+          } else {
+            Write-Host "No section for $ver found in CHANGELOG.md; will fall back to auto-generated notes."
+            "found=false" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          }
+
+      - name: 📢 Create GitHub Release (from CHANGELOG if available)
+        if: steps.notes.outputs.found == 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: v${{ steps.get_version.outputs.version }}
+          body_path: ${{ steps.notes.outputs.path }}
+          files: |
+            ${{ steps.pkg.outputs.path }}
+
+      - name: 📢 Create GitHub Release (auto-generated notes fallback)
+        if: steps.notes.outputs.found != 'true'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.get_version.outputs.version }}
+          name: v${{ steps.get_version.outputs.version }}
+          generate_release_notes: true
+          files: |
+            ${{ steps.pkg.outputs.path }}

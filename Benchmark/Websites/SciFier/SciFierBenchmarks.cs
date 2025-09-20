@@ -1,40 +1,30 @@
+using System.Threading.Tasks;
 using BenchmarkDotNet.Attributes;
 using MangaAndLightNovelWebScrape.Enums;
-using MangaAndLightNovelWebScrape.Websites;
 
-namespace Benchmark.Websites
+namespace Benchmark.Websites.SciFier;
+
+[MemoryDiagnoser]
+public class SciFierBenchmarks
 {
-    [MemoryDiagnoser]
-    public class SciFierBenchmarks
+    private MangaAndLightNovelWebScrape.Websites.SciFier? _instance;
+
+    [GlobalSetup]
+    public void Setup()
     {
-        private SciFier? _instance;
+        _instance = new MangaAndLightNovelWebScrape.Websites.SciFier();
+    }
 
-        [GlobalSetup]
-        public void Setup()
-        {
-            _instance = new SciFier(); // Initialize your instance here
-        }
+    [GlobalCleanup]
+    public void Cleanup()
+    {
+        _instance = null;
+    }
 
-        // Global cleanup to run once after all benchmarks
-        [GlobalCleanup]
-        public void Cleanup()
-        {
-            _instance = null; // Cleanup if necessary
-        }
-
-        [Benchmark]
-        [WarmupCount(10)]
-        public void GetMangaBenchmark()
-        {
-            // Call the method you want to benchmark
-            _instance?.GetSciFierData("one piece", BookType.Manga, Region.America);
-        }
-
-        // [Benchmark]
-        // public void GetLightNovelBenchmark()
-        // {
-        //     // Call the method you want to benchmark
-        //     _instance.GetSciFierData("one piece", BookType.LightNovel);
-        // }
+    [Benchmark]
+    [WarmupCount(10)]
+    public async Task GetMangaBenchmark()
+    {
+        await _instance!.GetData("one piece", BookType.Manga, curRegion: Region.America);
     }
 }

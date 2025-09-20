@@ -1,201 +1,264 @@
-using System.Threading;
+using MangaAndLightNovelWebScrape.Services;
+using Microsoft.Playwright;
 
-namespace MangaAndLightNovelWebScrape.Websites
+namespace MangaAndLightNovelWebScrape.Websites;
+
+internal sealed partial class MangaMate : IWebsite
 {
-    public partial class MangaMate
+    private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+
+    private static readonly XPathExpression _titleXPath = XPathExpression.Compile("//div[@class='grid-product__title grid-product__title--body']");
+    private static readonly XPathExpression _priceXPath = XPathExpression.Compile("//div[@class='grid-product__price']/text()[3]");
+    private static readonly XPathExpression _stockStatusXPath = XPathExpression.Compile("//div[@class='grid-product__content']/div[1]");
+    private static readonly XPathExpression _stockStatusXPath2 = XPathExpression.Compile("//div[@class='grid-product__image-mask']/div[1]");
+    private static readonly XPathExpression _entryLinkXPath = XPathExpression.Compile("//div[@class='grid__item-image-wrapper']/a");
+    private static readonly XPathExpression _entryTypeXPath = XPathExpression.Compile("//div[@class='product-block'][4]/div/span/table//tr[4]/td[2]");
+
+    [GeneratedRegex(@"The Manga|\(.*\)|Manga", RegexOptions.IgnoreCase)] private static partial Regex TitleParseRegex();
+    [GeneratedRegex(@"Vol\.", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
+    [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
+
+    /// <inheritdoc />
+    public const string TITLE = "MangaMate";
+
+    /// <inheritdoc />
+    public const string BASE_URL = "https://mangamate.shop";
+
+    /// <inheritdoc />
+    public const Region REGION = Region.Australia;
+
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships = default)
     {
-        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
-        private List<string> MangaMateLinks = [];
-        private List<EntryModel> MangaMateData = [];
-        public const string WEBSITE_TITLE = "MangaMate";
-        public const Region REGION = Region.Australia;
-        private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[@class='grid-product__title grid-product__title--body']");
-        private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//div[@class='grid-product__price']/text()[3]");
-        private static readonly XPathExpression StockStatusXPath = XPathExpression.Compile("//div[@class='grid-product__content']/div[1]");
-        private static readonly XPathExpression StockStatusXPath2 = XPathExpression.Compile("//div[@class='grid-product__image-mask']/div[1]");
-        private static readonly XPathExpression EntryLinkXPath = XPathExpression.Compile("//div[@class='grid__item-image-wrapper']/a");
-        private static readonly XPathExpression EntryTypeXPath = XPathExpression.Compile("//div[@class='product-block'][4]/div/span/table//tr[4]/td[2]");
-
-        [GeneratedRegex(@"The Manga|\(.*\)|Manga", RegexOptions.IgnoreCase)] private static partial Regex TitleParseRegex();
-        [GeneratedRegex(@"Vol\.", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
-        [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
-
-        internal async Task CreateMangaMateTask(string bookTitle, BookType bookType, List<List<EntryModel>> MasterDataList, WebDriver driver)
+        return Task.Run(async () =>
         {
-            await Task.Run(() => 
-            {
-                MasterDataList.Add(GetMangaMateData(bookTitle, bookType, driver));
-            });
+            IPage page = await PlaywrightFactory.GetPageAsync(browser!);
+            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page);
+            masterDataList.Add(Data);
+            masterLinkList.TryAdd(Website.MangaMate, Links[0]);
+        });
+    }
+
+    private string GenerateWebsiteUrl(string bookTitle, BookType bookType, ushort pageNum)
+    {
+        // https://mangamate.shop/search?q=akane%20banashi&options%5Bprefix%5D=last
+        string url = $"{BASE_URL}/search?options%5Bprefix%5D=last&page={pageNum}&q={InternalHelpers.FilterBookTitle(bookTitle.Replace(" ", "+"))}+{(bookType == BookType.Manga ? "manga" : "novel")}";
+        LOGGER.Info("Page {} => {}", pageNum, url);
+        return url;
+    }
+
+    private static string ParseTitle(string entryTitle, string bookTitle, BookType bookType)
+    {
+        if (OmnibusRegex().IsMatch(entryTitle))
+        {
+            entryTitle = OmnibusRegex().Replace(entryTitle, "Omnibus");
         }
-    
-        internal void ClearData()
+        else
         {
-            MangaMateLinks.Clear();
-            MangaMateData.Clear();
+            entryTitle = TitleParseRegex().Replace(entryTitle, string.Empty);
         }
+        StringBuilder curTitle = new StringBuilder(entryTitle).Replace(",", " ");
+        InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "-", " ");
+        InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, ":", " ");
+        InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Color Edition", "In Color");
+        if (bookTitle.Equals("boruto", StringComparison.OrdinalIgnoreCase)) { curTitle.Replace(" Naruto Next Generations", string.Empty); }
 
-        internal string GetUrl()
+        Match findVolNumMatch = MasterScrape.FindVolNumRegex().Match(curTitle.ToString().Trim());
+        if (bookType == BookType.Manga && !entryTitle.Contains("Box Set") && !entryTitle.Contains("Vol") && !string.IsNullOrWhiteSpace(findVolNumMatch.Groups[0].Value))
         {
-            return MangaMateLinks.Count != 0 ? MangaMateLinks[0] : $"{WEBSITE_TITLE} Has no Link";
+            curTitle.Insert(findVolNumMatch.Index, "Vol ").TrimEnd();
         }
-
-        private string GenerateWebsiteUrl(string bookTitle, BookType bookType, ushort pageNum)
+        else if (bookTitle.Contains("Noragami", StringComparison.OrdinalIgnoreCase) && entryTitle.Contains("Stray Stories") && string.IsNullOrWhiteSpace(findVolNumMatch.Groups[0].Value))
         {
-            // https://mangamate.shop/search?q=akane%20banashi&options%5Bprefix%5D=last
-            string url = $"https://mangamate.shop/search?options%5Bprefix%5D=last&page={pageNum}&q={InternalHelpers.FilterBookTitle(bookTitle.Replace(" ", "+"))}+{(bookType == BookType.Manga ? "manga" : "novel")}";
-            LOGGER.Info("Page {} => {}", pageNum, url);
-            MangaMateLinks.Add(url);
-            return url;
-        }
-
-        private static string ParseTitle(string entryTitle, string bookTitle, BookType bookType)
-        {
-            if (OmnibusRegex().IsMatch(entryTitle))
-            {
-                entryTitle = OmnibusRegex().Replace(entryTitle, "Omnibus");
-            }
-            else
-            {
-                entryTitle = TitleParseRegex().Replace(entryTitle, string.Empty);
-            }
-            StringBuilder curTitle = new StringBuilder(entryTitle).Replace(",", " ");
-            InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "-", " ");
-            InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, ":", " ");
-            InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "Color Edition", "In Color");
-            if (bookTitle.Equals("boruto", StringComparison.OrdinalIgnoreCase)) { curTitle.Replace(" Naruto Next Generations", string.Empty); }
-
-            Match findVolNumMatch = MasterScrape.FindVolNumRegex().Match(curTitle.ToString().Trim());
-            if (bookType == BookType.Manga && !entryTitle.Contains("Box Set") && !entryTitle.Contains("Vol") && !string.IsNullOrWhiteSpace(findVolNumMatch.Groups[0].Value))
-            {
-                curTitle.Insert(findVolNumMatch.Index, "Vol ").TrimEnd();
-            }
-            else if (bookTitle.Contains("Noragami", StringComparison.OrdinalIgnoreCase) && entryTitle.Contains("Stray Stories") && string.IsNullOrWhiteSpace(findVolNumMatch.Groups[0].Value))
-            {
-                curTitle.Insert(curTitle.Length, " Vol 1");
-            }
-
-            string volNum = findVolNumMatch.Groups[0].Value;
-            if (volNum.Length > 1 && volNum.StartsWith('0'))
-            {
-                curTitle.Replace(volNum, volNum.TrimStart('0'));
-            }
-            return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
+            curTitle.Insert(curTitle.Length, " Vol 1");
         }
 
-        private List<EntryModel> GetMangaMateData(string bookTitle, BookType bookType, WebDriver driver)
+        string volNum = findVolNumMatch.Groups[0].Value;
+        if (volNum.Length > 1 && volNum.StartsWith('0'))
         {
-            try
+            curTitle.Replace(volNum, volNum.TrimStart('0'));
+        }
+        return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
+    }
+
+    private static async Task WaitForProductPageLoad(IPage page)
+    {
+        // Wait for the product grid you were waiting on in Selenium
+        ILocator grid = page.Locator("(//div[@class='grid grid--uniform'])[2]");
+        await grid.WaitForAsync();
+        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        await page.ScrollToBottomUntilStableAsync(
+                "//li[@class='support-links product-list__list__separator owl-off bg-white phl phr pht pb brdr--top brdr--top--thin brdr--top--dotted']", // <- something that appears for each item
+                maxScrolls: 60,
+                stabilityMs: 900,
+                stepPx: 1400
+            );
+    }
+
+    private static async Task<(string Html, uint MaxPageNum)> GetInitialData(IPage page, string url)
+    {
+        await page.GotoAsync(url, new PageGotoOptions
+        {
+            WaitUntil = WaitUntilState.DOMContentLoaded
+        });
+
+        await WaitForProductPageLoad(page);
+
+        // Get the max page number (//span[@class='page'][last()])
+        uint maxPageNum = 1;
+        ILocator pages = page.Locator("//span[@class='page']").Last;
+        int count = await pages.CountAsync();
+        if (count > 0)
+        {
+            string? lastText = await pages.Nth(count - 1).TextContentAsync();
+            if (!string.IsNullOrWhiteSpace(lastText) && uint.TryParse(lastText.Trim(), out uint parsed))
             {
-                HtmlWeb web = new() { UsingCacheIfExists = true, UseCookies = false };
-                HtmlDocument doc = new() { OptionCheckSyntax = false };
-                WebDriverWait wait = new(driver, TimeSpan.FromSeconds(30));
+                maxPageNum = parsed;
+            }
+        }
+        LOGGER.Info("Max Page Num = {Num}", maxPageNum);
 
-                ushort curPageNum = 1;
-                bool BookTitleRemovalCheck = MasterScrape.EntryRemovalRegex().IsMatch(bookTitle);
-                driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle, bookType, curPageNum));
-                wait.Until(driver => driver.FindElement(By.XPath("(//div[@class='grid grid--uniform'])[2]")));
+        // Open currency dropdown: //button[@aria-controls='CurrencyList-toolbar']
+        ILocator currencyBtn = page.Locator("//button[@aria-controls='CurrencyList-toolbar']");
+        await currencyBtn.ClickAsync();
 
-                ushort maxPageNum = 1;
-                try { maxPageNum = ushort.Parse(driver.FindElement(By.XPath("//span[@class='page'][last()]")).Text.Trim()); }
-                catch (NoSuchElementException) {}
+        // Ensure it's open (aria-expanded == "true")
+        await page
+            .Locator("button[aria-controls='CurrencyList-toolbar'][aria-expanded='true']")
+            .WaitForAsync();
 
-                // Click AUD currency
-                driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("//button[@aria-controls='CurrencyList-toolbar']"))));
-                wait.Until(driver => driver.FindElement(By.XPath("//button[@aria-controls='CurrencyList-toolbar']")).GetDomAttribute("aria-expanded").Equals("true"));
-                driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("//a[@data-value='AU'][1]"))));
-                wait.Until(driver => driver.FindElement(By.XPath("(//div[@class='grid grid--uniform'])[2]")));
-                driver.ExecuteScript("arguments[0].click();", wait.Until(driver => driver.FindElement(By.XPath("//button[@class='recommendation-modal__close-button']"))));
-                LOGGER.Info("Clicked AUD Currency");
+        await page.Locator("button[aria-controls='CurrencyList-toolbar'][aria-expanded='true']").WaitForAsync();
 
-                doc.LoadHtml(driver.PageSource);
-                while (true)
+        // Find the controlled menu *by id* from aria-controls, then click AUD inside it
+        string? menuId = await currencyBtn.GetAttributeAsync("aria-controls");   // e.g., "CurrencyList-toolbar"
+        ILocator menu = page.Locator($"#{menuId}");
+        await menu.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Visible });
+
+        // Now select the AUD option *within that menu only*
+        await menu.Locator("a.disclosure-list__option[data-value='AU']").First.ClickAsync();
+
+
+        // Wait for the page to settle and grid to be present again
+        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+        // await WaitForProductPageLoad(page);
+
+        LOGGER.Info("Clicked AUD Currency");
+        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        return (await page.ContentAsync(), maxPageNum);
+    }
+
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
+    {
+        List<EntryModel> data = [];
+        List<string> links = [];
+
+        try
+        {
+            HtmlWeb html = HtmlFactory.CreateWeb();
+            HtmlDocument doc = HtmlFactory.CreateDocument();
+            XPathNavigator nav = doc.DocumentNode.CreateNavigator();
+
+            ushort curPageNum = 1;
+            bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+            string url = GenerateWebsiteUrl(bookTitle, bookType, curPageNum);
+            links.Add(url);
+
+            (string Html, uint MaxPageNum) = await GetInitialData(page!, url);
+            doc.LoadHtml(Html);
+
+            while (true)
+            {
+                XPathNodeIterator titleData = nav.Select(_titleXPath);
+                XPathNodeIterator priceData = nav.Select(_priceXPath);
+                XPathNodeIterator stockstatusData = nav.Select(_stockStatusXPath);
+                XPathNodeIterator stockstatusData2 = nav.Select(_stockStatusXPath2);
+                XPathNodeIterator entryLinkData = nav.Select(_entryLinkXPath);
+
+                while (titleData.MoveNext())
                 {
-                    HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(TitleXPath);
-                    HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(PriceXPath);
-                    HtmlNodeCollection stockstatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
-                    HtmlNodeCollection stockstatusData2 = doc.DocumentNode.SelectNodes(StockStatusXPath2);
-                    HtmlNodeCollection entryLinkData = doc.DocumentNode.SelectNodes(EntryLinkXPath);
+                    priceData.MoveNext();
+                    stockstatusData.MoveNext();
+                    stockstatusData2.MoveNext();
+                    entryLinkData.MoveNext();
 
-                    for (int x = 0; x < titleData.Count; x++)
-                    {
-                        string entryTitle = titleData[x].InnerText.Trim();
-                        if (InternalHelpers.BookTitleContainsEntryTitle(bookTitle, entryTitle)
-                            && (!MasterScrape.EntryRemovalRegex().IsMatch(entryTitle) || BookTitleRemovalCheck)
-                            && !(
-                                bookType == BookType.Manga
-                                && (
-                                    entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
-                                    || (
-                                        InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
-                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Story")
-                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear")
-                                    )
+                    string entryTitle = titleData.Current!.Value.Trim();
+                    if (InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
+                        && (!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck)
+                        && !(
+                            bookType == BookType.Manga
+                            && (
+                                entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
+                                || (
+                                    InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
+                                    || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Story")
+                                    || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear")
                                 )
                             )
                         )
+                    )
+                    {
+                        string? type = (await html.LoadFromWebAsync($"https://mangamate.shop{entryLinkData.Current!.GetAttribute("href", string.Empty)}")).DocumentNode.CreateNavigator().SelectSingleNode(_entryTypeXPath)?.Value;
+                        if (type is null)
                         {
-                            string type = web.Load($"https://mangamate.shop{entryLinkData[x].GetAttributeValue("href", "error")}").DocumentNode.SelectSingleNode(EntryTypeXPath).InnerText.Trim();
-                            // LOGGER.Debug("{} | {}", entryTitle, type);
+                            continue;
+                        }
+                        type = type.Trim();
+                        // LOGGER.Debug("{} | {}", entryTitle, type);
 
-                            if ((bookType == BookType.Manga && (type.Equals("Manga") || type.Equals("Box Set"))) || (bookType == BookType.LightNovel && (type.Equals("Novel") || type.Equals("Box Set"))))
-                            {
-                                MangaMateData.Add(
-                                    new EntryModel
-                                    (
-                                        ParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType),
-                                        priceData[x].InnerText.Trim(),
-                                        stockstatusData2[x].GetAttributeValue("class", "error").Contains("preorder") ? StockStatus.PO : stockstatusData[x].InnerText.Trim() switch
-                                        {
-                                            "Sold Out" => StockStatus.OOS,
-                                            _ => StockStatus.IS
-                                        },
-                                        WEBSITE_TITLE
-                                    )
-                                );
-                            }
-                            else
-                            {
-                                LOGGER.Info("Removed {}", entryTitle);
-                            }
+                        if ((bookType == BookType.Manga && (type.Equals("Manga", StringComparison.OrdinalIgnoreCase) || type.Equals("Box Set", StringComparison.OrdinalIgnoreCase))) || (bookType == BookType.LightNovel && (type.Equals("Novel", StringComparison.OrdinalIgnoreCase) || type.Equals("Box Set", StringComparison.OrdinalIgnoreCase))))
+                        {
+                            data.Add(
+                                new EntryModel
+                                (
+                                    ParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType),
+                                    priceData.Current!.Value.Trim(),
+                                    stockstatusData2.Current!.GetAttribute("class", "error").Contains("preorder") ? StockStatus.PO : stockstatusData.Current!.Value.Trim() switch
+                                    {
+                                        "Sold Out" => StockStatus.OOS,
+                                        _ => StockStatus.IS
+                                    },
+                                    TITLE
+                                )
+                            );
                         }
                         else
                         {
-                            LOGGER.Info("Removed (1) {}", entryTitle);
-                        }    
-                    }
-
-                    if (curPageNum < maxPageNum)
-                    {
-                        driver.Navigate().GoToUrl(GenerateWebsiteUrl(bookTitle, bookType, ++curPageNum));
-                        wait.Until(driver => driver.FindElement(By.XPath("(//div[@class='grid grid--uniform'])[2]")));
-                        doc.LoadHtml(driver.PageSource);
+                            LOGGER.Info("Removed {}", entryTitle);
+                        }
                     }
                     else
                     {
-                        break;
+                        LOGGER.Info("Removed (1) {}", entryTitle);
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                LOGGER.Error(ex, "{} ({}) Error @ {}", bookTitle, bookType, WEBSITE_TITLE);
-            }
-            finally
-            {
-                if (!MasterScrape.IsWebDriverPersistent)
-                {
-                    driver?.Quit();
-                }
-                else 
-                { 
-                    driver?.Close(); 
-                }
 
-                MangaMateData = InternalHelpers.RemoveDuplicateEntries(MangaMateData);
-                MangaMateData.Sort(EntryModel.VolumeSort);
-                InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, MangaMateData, LOGGER);
+                if (curPageNum < MaxPageNum)
+                {
+                    url = GenerateWebsiteUrl(bookTitle, bookType, ++curPageNum);
+                    links.Add(url);
+                    await page!.GotoAsync(url, new PageGotoOptions
+                    {
+                        WaitUntil = WaitUntilState.DOMContentLoaded
+                    });
+                    await WaitForProductPageLoad(page);
+                    doc.LoadHtml(await page.ContentAsync());
+                }
+                else
+                {
+                    break;
+                }
             }
-            return MangaMateData;
+
+            data.TrimExcess();
+            links.TrimExcess();
+            data = InternalHelpers.RemoveDuplicateEntries(data);
+            data.Sort(EntryModel.VolumeSort);
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
         }
+        catch (Exception ex)
+        {
+            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
+        }
+
+        return (data, links);
     }
 }

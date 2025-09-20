@@ -1,310 +1,629 @@
-using System.Diagnostics;
+using System.Buffers;
+using System.Collections.Frozen;
+using Microsoft.Playwright;
 
-namespace MangaAndLightNovelWebScrape
+namespace MangaAndLightNovelWebScrape;
+
+internal static partial class InternalHelpers
 {
-    internal static partial class InternalHelpers
+    private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrape");
+    [GeneratedRegex(@"[^\w+]")] internal static partial Regex RemoveNonWordsRegex();
+    [GeneratedRegex(@"Vol\s\d{1,3}", RegexOptions.IgnoreCase)] private static partial Regex VolRegex();
+
+    private const int StackallocThreshold = 512;
+
+    private static readonly FrozenSet<string> _entryRemovalTerms = new[]
     {
-        internal static char[] trimedChars = [' ', '\'', '!', '-', ',', ':'];
-        private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrape");
-        [GeneratedRegex(@"[^\w+]")] internal static partial Regex RemoveNonWordsRegex();
-        [GeneratedRegex(@"Vol\s\d{1,3}", RegexOptions.IgnoreCase)] private static partial Regex VolRegex();
+        "Bluray", "Blu-ray", "Choose Path", "Encyclopedia", "Anthology", "Official", "Character", "Guide",
+        "Illustration", "Anime Profiles", "Choose Your Path", "Compendium",
+        "Artbook", "Art Book", "Error", "Advertising", "(Osi)", "Ani-manga",
+        "Anime", "Bilingual", "Game Book", "Theatrical", "Figure", "SEGA",
+        "Poster", "Statue", "IMPORT", "Trace", "Bookmarks", "Music Book",
+        "Retrospective", "Notebook", "Journal", "Art of", "the Anime",
+        "Calendar", "Adventure Book", "Coloring Book", "Sketchbook", "PLUSH",
+        "Pirate Recipes", "Exclusive", "Hobby", "Model Kit", "Funko POP", "Creator of the", "the Movie", "UniVersus"
+    }
+    .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
 
-        internal static List<EntryModel> RemoveDuplicateEntries(List<EntryModel> entries)
+    internal static bool NeedPlaywright(HashSet<Website> siteList)
+    {
+        return siteList.ContainsAny([ Website.KinokuniyaUSA, Website.BooksAMillion, Website.AmazonUSA, Website.MerryManga, Website.ForbiddenPlanet, Website.MangaMate, Website.MangaMart, Website.AmazonJapan ]);
+    }
+
+    /// <summary>
+    /// Determines whether the given <paramref name="title"/> contains any of the
+    /// predefined removal terms or any user‑supplied additional terms.
+    /// </summary>
+    /// <param name="title">
+    ///   The string to inspect. If null, empty, or whitespace, returns <c>false</c>.
+    /// </param>
+    /// <param name="additionalTerms">
+    ///   Optional extra substrings that, if found in <paramref name="title"/>, also trigger removal.
+    /// </param>
+    /// <returns>
+    ///   <c>true</c> if any term (built‑in or additional) is found; otherwise <c>false</c>.
+    /// </returns>
+    internal static bool ShouldRemoveEntry(
+        string title,
+        IEnumerable<string>? additionalTerms = null)
+    {
+        if (string.IsNullOrWhiteSpace(title))
         {
-            List<EntryModel> output = new List<EntryModel>();
-            foreach (EntryModel entry in entries)
-            {
-                if (!output.Contains(entry))
-                {
-                    output.Add(entry);
-                }
-            }
-            return output;
-        }
-
-        internal static void AddVolToString(this StringBuilder title)
-        {
-            string titleString = title.ToString();
-
-            if (titleString.Contains("Vol", StringComparison.Ordinal) ||
-                titleString.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
-            {
-                return;
-            }
-
-            Match volNumMatch = MasterScrape.FindVolNumRegex().Match(titleString);
-            if (volNumMatch.Success)
-            {
-                title.Insert(volNumMatch.Index, "Vol ");
-            }
-        }
-
-        internal static void RemoveAfterLastIfMultiple(ref StringBuilder input, char delimiter)
-        {
-            // Quick exit if delimiter not found
-            int count = 0;
-            for (int i = 0; i < input.Length; i++)
-            {
-                if (input[i] == delimiter)
-                {
-                    count++;
-                }
-            }
-
-            if (count <= 1)
-            {
-                return; // Do nothing if there's 1 or fewer occurrences of the delimiter
-            }
-
-            // Find the last occurrence of the delimiter
-            int lastIndex = -1;
-            for (int i = input.Length - 1; i >= 0; i--)
-            {
-                if (input[i] == delimiter)
-                {
-                    lastIndex = i;
-                    break;
-                }
-            }
-
-            // Convert to string once for regex to extract the volume info
-            string inputStr = input.ToString();
-
-            // Look for "Vol ###" after the last delimiter
-            Match match = VolRegex().Match(inputStr, lastIndex + 1);
-            bool volAfterDelimiter = match.Success && match.Index > lastIndex;
-
-            input.Length = lastIndex; // Trim everything after the last delimiter
-
-            if (volAfterDelimiter)
-            {
-                input.Append(' ').Append(match.Value);
-            }
-        }
-
-        /// <summary>
-        /// Determines if the book title inputted by the user is contained within the current title scraped from the website
-        /// </summary>
-        /// <param name="bookTitle">The title inputed by the user to initialize the scrape</param>
-        /// <param name="curTitle">The current title scraped from the website</param>
-        internal static bool BookTitleContainsEntryTitle(string bookTitle, string curTitle)
-        {
-            return RemoveNonWordsRegex().Replace(curTitle, string.Empty).Contains(RemoveNonWordsRegex().Replace(bookTitle, string.Empty), StringComparison.OrdinalIgnoreCase);
-        }
-
-        /// <summary>
-        /// Determines whether this entry should be removed if it contains a certain text that is also not contained in the book title
-        /// </summary>
-        /// <param name="bookTitle"></param>
-        /// <param name="entryTitle"></param>
-        /// <param name="textToCheck"></param>
-        /// <returns></returns>
-        internal static bool RemoveEntryTitleCheck(string bookTitle, string entryTitle, string textToCheck)
-        {
-            return !entryTitle.Contains(textToCheck, StringComparison.OrdinalIgnoreCase) && !bookTitle.Contains(textToCheck, StringComparison.OrdinalIgnoreCase);
-        }
-
-        internal static bool TitleStartsWithCheck(string bookTitle, string curTitle)
-        {
-            return RemoveNonWordsRegex().Replace(curTitle, string.Empty).StartsWith(RemoveNonWordsRegex().Replace(bookTitle, string.Empty), StringComparison.OrdinalIgnoreCase);
-        }
-
-        internal static void ReplaceMultipleTextInEntryTitle (ref StringBuilder curTitle, string bookTitle, string[] containsText, string replaceText)
-        {
-            foreach (string text in containsText)
-            {
-                if (!bookTitle.Contains(text, StringComparison.OrdinalIgnoreCase) && curTitle.ToString().Contains(text, StringComparison.OrdinalIgnoreCase))
-                {
-                    curTitle.Replace(text, replaceText);
-                    break;
-                }
-            }
-        }
-
-        internal static void ReplaceTextInEntryTitle (ref StringBuilder curTitle, string bookTitle, string containsText, string replaceText)
-        {
-            if (!bookTitle.Contains(containsText, StringComparison.OrdinalIgnoreCase))
-            {
-                curTitle.Replace(containsText, replaceText);
-            }
-        }
-
-        internal static void ReplaceTextInEntryTitle (ref StringBuilder curTitle, string bookTitle, char containsText, char replaceText)
-        {
-            if (!bookTitle.Contains(containsText))
-            {
-                curTitle.Replace(containsText, replaceText);
-            }
-        }
-
-        internal static void RemoveCharacterFromTitle(ref StringBuilder curTitle, string bookTitle, char charToRemove)
-        {
-            // Check if charToRemove exists in bookTitle
-            if (!bookTitle.Contains(charToRemove) && curTitle.ToString().Contains(charToRemove))
-            {
-                for (int i = 0; i < curTitle.Length; i++)
-                {
-                    if (curTitle[i] == charToRemove)
-                    {
-                        curTitle.Remove(i, 1);
-                        i--; // Adjust the index to re-check the current position after removal
-                    }
-                }
-            }
-        }
-
-        internal static void RemoveCharacterFromTitle(ref StringBuilder curTitle, string bookTitle, char charToRemove, string textToCheck)
-        {
-            string title = curTitle.ToString();
-            if (!bookTitle.Contains(charToRemove) && !title.Contains(textToCheck))
-            {
-                int index = 0;
-                while (index < curTitle.Length)
-                {
-                    if (curTitle[index] == charToRemove)
-                    {
-                        curTitle.Remove(index, 1); // Remove character at index
-                    }
-                    else
-                    {
-                        index++; // Only increment if no removal occurred
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="bookTitle"></param>
-        /// <param name="searchTitle"></param>
-        /// <param name="curTitle"></param>
-        /// <param name="removeText"></param>
-        /// <returns>True if the curTitle should be removed</returns>
-        internal static bool RemoveUnintendedVolumes(string bookTitle, string searchTitle, string curTitle, string removeText)
-        {
-            return bookTitle.IndexOf(searchTitle, StringComparison.OrdinalIgnoreCase) >= 0 &&
-                curTitle.IndexOf(removeText, StringComparison.OrdinalIgnoreCase) >= 0;
-        }
-
-        internal static bool RemoveUnintendedVolumes(string bookTitle, string searchTitle, string curTitle, params string[] removeText)
-        {
-            if (!bookTitle.Contains(searchTitle, StringComparison.OrdinalIgnoreCase)) return false;
-
-            foreach (var text in removeText)
-            {
-                if (curTitle.Contains(text, StringComparison.OrdinalIgnoreCase)) 
-                {
-                    return true;
-                }
-            }
-
             return false;
         }
 
-        internal static string FilterBookTitle(string bookTitle)
+        // Combine built‑in and additional terms
+        IEnumerable<string> combinedTerms;
+        if (additionalTerms != null)
         {
-            foreach (char var in trimedChars){
-                bookTitle = bookTitle.Replace(var.ToString(), $"%{Convert.ToByte(var):x2}");
+            combinedTerms = _entryRemovalTerms.Concat(additionalTerms);
+        }
+        else
+        {
+            combinedTerms = _entryRemovalTerms;
+        }
+
+        // Full substring scan (case‐insensitive)
+        foreach (string term in combinedTerms)
+        {
+            if (title.Contains(term, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
             }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Schedules scraping tasks for each <paramref name="site"/> in <paramref name="sites"/>,
+    /// adding them to <paramref name="webTasks"/>. A fresh scraper instance is created per task,
+    /// using the optional <paramref name="browser"/>. Scrape results are stored in <paramref name="masterBag"/>
+    /// and <paramref name="masterDict"/>.
+    /// </summary>
+    /// <param name="webTasks">The list to which each scrape <see cref="Task"/> is added.</param>
+    /// <param name="sites">The websites to scrape.</param>
+    /// <param name="bookTitle">The series title to search for.</param>
+    /// <param name="bookType">The book type (Manga or Light Novel).</param>
+    /// <param name="masterBag">Thread-safe bag to collect each site's results.</param>
+    /// <param name="masterDict">Thread-safe dictionary mapping each site to its scraped data.</param>
+    /// <param name="memberships">
+    ///   Tuple of membership flags for Books-A-Million & Kinokuniya USA; affects site-specific logic.
+    /// </param>
+    /// <param name="browser">Optional <see cref="Browser"/> instance to use for scraping, or null for default.</param>
+    internal static void ScheduleScrapes(
+        this List<Task> webTasks,
+        IEnumerable<Website> sites,
+        string bookTitle,
+        BookType bookType,
+        ConcurrentBag<List<EntryModel>> masterBag,
+        ConcurrentDictionary<Website, string> masterDict,
+        IBrowser? browser,
+        Region curRegion,
+        (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships)
+    {
+        foreach (Website site in sites)
+        {
+            IWebsite scraper = CreateScraper(site);
+
+            Task task = scraper.CreateTask(
+                bookTitle,
+                bookType,
+                masterBag,
+                masterDict,
+                browser,
+                curRegion,
+                memberships
+            );
+
+            webTasks.Add(task);
+        }
+    }
+
+    internal static IWebsite CreateScraper(Website site)
+    {
+        return site switch
+        {
+            // America
+            Website.AmazonUSA => new AmazonUSA(),
+            Website.BooksAMillion => new BooksAMillion(),
+            Website.Crunchyroll => new Crunchyroll(),
+            Website.InStockTrades => new InStockTrades(),
+            Website.KinokuniyaUSA => new KinokuniyaUSA(),
+            Website.MangaMart => new MangaMart(),
+            Website.MerryManga => new MerryManga(),
+            Website.RobertsAnimeCornerStore => new RobertsAnimeCornerStore(),
+
+            // Britain
+            Website.ForbiddenPlanet => new ForbiddenPlanet(),
+            Website.TravellingMan => new TravellingMan(),
+
+            // Canada
+            
+
+            // Australia
+            Website.MangaMate => new MangaMate(),
+
+            // Multi
+            Website.SciFier => new SciFier(),
+            _ => throw new ArgumentOutOfRangeException(nameof(site), site, "No scraper registered for this site")
+        };
+    }
+
+    internal static List<EntryModel> RemoveDuplicateEntries(List<EntryModel> entries)
+    {
+        List<EntryModel> output = [];
+        foreach (EntryModel entry in entries)
+        {
+            if (!output.Contains(entry))
+            {
+                output.Add(entry);
+            }
+        }
+        return output;
+    }
+
+    internal static void AddVolToString(this StringBuilder title)
+    {
+        string titleString = title.ToString();
+
+        if (titleString.Contains("Vol", StringComparison.Ordinal) ||
+            titleString.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        Match volNumMatch = MasterScrape.FindVolNumRegex().Match(titleString);
+        if (volNumMatch.Success)
+        {
+            title.Insert(volNumMatch.Index, "Vol ");
+        }
+    }
+
+    internal static void RemoveAfterLastIfMultiple(ref StringBuilder input, char delimiter)
+    {
+        // Quick exit if delimiter not found
+        int count = 0;
+        for (int i = 0; i < input.Length; i++)
+        {
+            if (input[i] == delimiter)
+            {
+                count++;
+            }
+        }
+
+        if (count <= 1)
+        {
+            return; // Do nothing if there's 1 or fewer occurrences of the delimiter
+        }
+
+        // Find the last occurrence of the delimiter
+        int lastIndex = -1;
+        for (int i = input.Length - 1; i >= 0; i--)
+        {
+            if (input[i] == delimiter)
+            {
+                lastIndex = i;
+                break;
+            }
+        }
+
+        // Convert to string once for regex to extract the volume info
+        string inputStr = input.ToString();
+
+        // Look for "Vol ###" after the last delimiter
+        Match match = VolRegex().Match(inputStr, lastIndex + 1);
+        bool volAfterDelimiter = match.Success && match.Index > lastIndex;
+
+        input.Length = lastIndex; // Trim everything after the last delimiter
+
+        if (volAfterDelimiter)
+        {
+            input.Append(' ').Append(match.Value);
+        }
+    }
+
+    /// <summary>
+    /// Determines if the book title inputted by the user is contained within the current title scraped from the website
+    /// </summary>
+    /// <param name="bookTitle">The title inputed by the user to initialize the scrape</param>
+    /// <param name="curTitle">The current title scraped from the website</param>
+    internal static bool EntryTitleContainsBookTitle(string bookTitle, string curTitle)
+    {
+        return RemoveNonWordsRegex().Replace(curTitle, string.Empty).Contains(RemoveNonWordsRegex().Replace(bookTitle, string.Empty), StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Determines whether this entry should be removed if it contains a certain text that is also not contained in the book title
+    /// </summary>
+    /// <param name="bookTitle"></param>
+    /// <param name="entryTitle"></param>
+    /// <param name="textToCheck"></param>
+    /// <returns></returns>
+    internal static bool RemoveEntryTitleCheck(string bookTitle, string entryTitle, string textToCheck)
+    {
+        return !entryTitle.Contains(textToCheck, StringComparison.OrdinalIgnoreCase) && !bookTitle.Contains(textToCheck, StringComparison.OrdinalIgnoreCase);
+    }
+
+    internal static bool TitleStartsWithCheck(string bookTitle, string curTitle)
+    {
+        return RemoveNonWordsRegex().Replace(curTitle, string.Empty).StartsWith(RemoveNonWordsRegex().Replace(bookTitle, string.Empty), StringComparison.OrdinalIgnoreCase);
+    }
+
+    internal static void ReplaceMultipleTextInEntryTitle(ref StringBuilder curTitle, string bookTitle, IEnumerable<string> containsText, string replaceText)
+    {
+        foreach (string text in containsText)
+        {
+            if (!bookTitle.Contains(text, StringComparison.OrdinalIgnoreCase) && curTitle.ToString().Contains(text, StringComparison.OrdinalIgnoreCase))
+            {
+                curTitle.Replace(text, replaceText);
+                break;
+            }
+        }
+    }
+
+    internal static void ReplaceTextInEntryTitle(ref StringBuilder curTitle, string bookTitle, string containsText, string replaceText)
+    {
+        if (!bookTitle.Contains(containsText, StringComparison.OrdinalIgnoreCase))
+        {
+            curTitle.Replace(containsText, replaceText);
+        }
+    }
+
+    internal static void ReplaceTextInEntryTitle(ref StringBuilder curTitle, string bookTitle, char containsText, char replaceText)
+    {
+        if (!bookTitle.Contains(containsText))
+        {
+            curTitle.Replace(containsText, replaceText);
+        }
+    }
+
+    internal static void RemoveCharacterFromTitle(ref StringBuilder curTitle, string bookTitle, char charToRemove)
+    {
+        // Check if charToRemove exists in bookTitle
+        if (!bookTitle.Contains(charToRemove) && curTitle.ToString().Contains(charToRemove))
+        {
+            for (int i = 0; i < curTitle.Length; i++)
+            {
+                if (curTitle[i] == charToRemove)
+                {
+                    curTitle.Remove(i, 1);
+                    i--; // Adjust the index to re-check the current position after removal
+                }
+            }
+        }
+    }
+
+    internal static void RemoveCharacterFromTitle(ref StringBuilder curTitle, string bookTitle, char charToRemove, string textToCheck)
+    {
+        string title = curTitle.ToString();
+        if (!bookTitle.Contains(charToRemove) && !title.Contains(textToCheck))
+        {
+            int index = 0;
+            while (index < curTitle.Length)
+            {
+                if (curTitle[index] == charToRemove)
+                {
+                    curTitle.Remove(index, 1); // Remove character at index
+                }
+                else
+                {
+                    index++; // Only increment if no removal occurred
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// 
+    /// </summary>
+    /// <param name="bookTitle"></param>
+    /// <param name="searchTitle"></param>
+    /// <param name="curTitle"></param>
+    /// <param name="removeText"></param>
+    /// <returns>True if the curTitle should be removed</returns>
+    internal static bool RemoveUnintendedVolumes(string bookTitle, string searchTitle, string curTitle, string removeText)
+    {
+        return bookTitle.Contains(searchTitle, StringComparison.OrdinalIgnoreCase) &&
+            curTitle.Contains(removeText, StringComparison.OrdinalIgnoreCase);
+    }
+
+    internal static bool RemoveUnintendedVolumes(string bookTitle, string searchTitle, string curTitle, params string[] removeText)
+    {
+        if (!bookTitle.Contains(searchTitle, StringComparison.OrdinalIgnoreCase)) return false;
+
+        foreach (var text in removeText)
+        {
+            if (curTitle.Contains(text, StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Percent-encodes any character in <paramref name="bookTitle"/> that is not an “unreserved” URI character:
+    /// letters (A–Z, a–z), digits (0–9), hyphen (<c>-</c>), period (<c>.</c>), underscore (<c>_</c>), or tilde (<c>~</c>).
+    /// Each disallowed character is replaced with its “%HH” two-digit uppercase hex code.
+    /// </summary>
+    /// <param name="bookTitle">The raw book title to filter/encode.</param>
+    /// <returns>
+    /// The percent-encoded title, suitable for use in a URL path or query.
+    /// </returns>
+    internal static string FilterBookTitle(string bookTitle)
+    {
+        if (string.IsNullOrEmpty(bookTitle))
+        {
             return bookTitle;
         }
 
-        /// <summary>
-        /// Trims the end of the StingBuilder Content. On Default only the white space char is truncated.
-        /// </summary>
-        /// <param name="pTrimChars">Array of additional chars to be truncated. A little bit more efficient than using char[]</param>
-        /// <returns></returns>
-        internal static StringBuilder TrimEnd(this StringBuilder pStringBuilder, HashSet<char> pTrimChars = null)
+        // Estimate: most characters stay 1→1, escaped ones become 3 chars ("%HH")
+        StringBuilder sb = new(bookTitle.Length * 2);
+
+        foreach (char c in bookTitle)
         {
-            if (pStringBuilder == null || pStringBuilder.Length == 0)
-                return pStringBuilder;
-
-            int i = pStringBuilder.Length - 1;
-
-            for (; i >= 0; i--)
+            // Unreserved per RFC3986: A–Z a–z 0–9 - . _ ~
+            if ((c >= 'A' && c <= 'Z') ||
+                (c >= 'a' && c <= 'z') ||
+                (c >= '0' && c <= '9') ||
+                c == '-' ||
+                c == '.' ||
+                c == '_' ||
+                c == '~')
             {
-                var lChar = pStringBuilder[i];
+                sb.Append(c);
+            }
+            else
+            {
+                sb.Append('%');
+                sb.Append(((int)c).ToString("X2"));
+            }
+        }
 
-                if (pTrimChars == null)
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Trims the end of the StingBuilder Content. On Default only the white space char is truncated.
+    /// </summary>
+    /// <param name="pTrimChars">Array of additional chars to be truncated. A little bit more efficient than using char[]</param>
+    /// <returns></returns>
+    internal static StringBuilder TrimEnd(this StringBuilder pStringBuilder, HashSet<char>? pTrimChars = null)
+    {
+        if (pStringBuilder == null || pStringBuilder.Length == 0)
+        {
+            return pStringBuilder!;
+        }
+
+        int i = pStringBuilder.Length - 1;
+
+        for (; i >= 0; i--)
+        {
+            var lChar = pStringBuilder[i];
+
+            if (pTrimChars == null)
+            {
+                if (char.IsWhiteSpace(lChar) == false)
                 {
-                    if (char.IsWhiteSpace(lChar) == false)
-                        break;
-                }
-                else if ((char.IsWhiteSpace(lChar) == false) && (pTrimChars.Contains(lChar) == false))
                     break;
+                }
             }
-
-            if (i < pStringBuilder.Length - 1)
-                pStringBuilder.Length = i + 1;
-
-            return pStringBuilder;
+            else if ((char.IsWhiteSpace(lChar) == false) && (pTrimChars.Contains(lChar) == false))
+            {
+                break;
+            }
         }
 
-        internal static void PrintWebsiteData(string website, string bookTitle, BookType bookType, IEnumerable<EntryModel> dataList, Logger LOGGER)
-        {
-            if (MasterScrape.IsDebugEnabled)
-            {
-                // Clean up website string once before using it for file path.
-                string filePath = $@"Data\{website.Replace(" ", string.Empty)}Data.txt";
+        if (i < pStringBuilder.Length - 1)
+            pStringBuilder.Length = i + 1;
 
-                using (StreamWriter outputFile = new(filePath))
+        return pStringBuilder;
+    }
+
+    internal static int IndexOfOrdinal(this StringBuilder sb, ReadOnlySpan<char> value)
+    {
+        int len = sb.Length;
+        if (len == 0) return -1;
+
+        char[]? rented = null;
+        Span<char> buf = len <= StackallocThreshold
+            ? stackalloc char[len]
+            : (rented = ArrayPool<char>.Shared.Rent(len)).AsSpan(0, len);
+
+        try
+        {
+            sb.CopyTo(0, buf, len);
+            return buf.IndexOf(value, StringComparison.Ordinal);
+        }
+        finally
+        {
+            if (rented is not null) ArrayPool<char>.Shared.Return(rented);
+        }
+    }
+
+    internal static int IndexOfOrdinal(this StringBuilder sb, string value)
+        => sb.IndexOfOrdinal(value.AsSpan());
+
+    internal static bool ContainsOrdinal(this StringBuilder sb, ReadOnlySpan<char> value)
+        => sb.IndexOfOrdinal(value) >= 0;
+
+    // Ignore-case variants if you need them:
+    internal static int IndexOfIgnoreCase(this StringBuilder sb, ReadOnlySpan<char> value)
+    {
+        int len = sb.Length;
+        if (len == 0) return -1;
+
+        char[]? rented = null;
+        Span<char> buf = len <= StackallocThreshold
+            ? stackalloc char[len]
+            : (rented = ArrayPool<char>.Shared.Rent(len)).AsSpan(0, len);
+
+        try
+        {
+            sb.CopyTo(0, buf, len);
+            return buf.IndexOf(value, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            if (rented is not null) ArrayPool<char>.Shared.Return(rented);
+        }
+    }
+
+    internal static bool ContainsIgnoreCase(this StringBuilder sb, ReadOnlySpan<char> value)
+        => sb.IndexOfIgnoreCase(value) >= 0;
+
+    internal static void PrintWebsiteData(string website, string bookTitle, BookType bookType, IEnumerable<EntryModel> dataList, Logger LOGGER)
+    {
+        if (MasterScrape.IsDebugEnabled)
+        {
+            // Clean up website string once before using it for file path.
+            string filePath = $@"Data\{website.Replace(" ", string.Empty)}Data.txt";
+
+            using StreamWriter outputFile = new(filePath);
+            if (dataList.Any())
+            {
+                // If we have data, write it to both the logger and the output file.
+                foreach (EntryModel data in dataList)
                 {
-                    if (dataList.Count() > 0)
-                    {
-                        // If we have data, write it to both the logger and the output file.
-                        foreach (EntryModel data in dataList)
-                        {
-                            LOGGER.Info(data);  // Log the data entry
-                            outputFile.WriteLine(data);  // Write to the file
-                        }
-                    }
-                    else
-                    {
-                        string message = $"{bookTitle} ({bookType}) Does Not Exist @ {website}";
-                        LOGGER.Error(message);  // Log the error message
-                        outputFile.WriteLine(message);  // Write the error to the file
-                    }
+                    LOGGER.Debug(data);  // Log the data entry
+                    outputFile.WriteLine(data);  // Write to the file
+                }
+            }
+            else
+            {
+                string message = $"{bookTitle} ({bookType}) Does Not Exist @ {website}";
+                LOGGER.Error(message);  // Log the error message
+                outputFile.WriteLine(message);  // Write the error to the file
+            }
+        }
+    }
+
+    internal static bool ContainsAny(this string input, IEnumerable<string> values)
+    {
+        return values.AsValueEnumerable().Any(val => input.Contains(val, StringComparison.OrdinalIgnoreCase));
+    }
+
+    internal static bool ContainsAny<T>(this HashSet<T> values, IEnumerable<T> input)
+    {
+        foreach (T element in input)
+        {
+            if (values.Contains(element))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    internal static void RemoveDuplicates(this List<EntryModel> input, Logger LOGGER)
+    {
+        for (int x = input.Count - 1; x > 0; x--)
+        {
+            if (input[x].Entry.Equals(input[x - 1].Entry, StringComparison.OrdinalIgnoreCase))
+            {
+                LOGGER.Debug("INPUT 1 {}", input[x]);
+                LOGGER.Debug("INPUT 2 {}", input[x - 1]);
+                if (input[x].ParsePrice() >= input[x - 1].ParsePrice())
+                {
+                    LOGGER.Info($"Removed Duplicate {input[x]}");
+                    input.RemoveAt(x);  // Remove the current entry
+                }
+                else
+                {
+                    LOGGER.Info($"Removed Duplicate {input[x - 1]}");
+                    input.RemoveAt(x - 1);  // Remove the previous entry
                 }
             }
         }
+    }
 
-        internal static bool ContainsAny(this string input, List<string> values)
+    /// <summary>
+    /// Applies a coupon to the price by substracting the coupon amount
+    /// </summary>
+    /// <param name="initialPrice"></param>
+    /// <param name="couponAmount"></param>
+    /// <returns></returns>
+    internal static string ApplyCoupon(decimal initialPrice, decimal couponAmount)
+    {
+        return decimal.Subtract(initialPrice, couponAmount).ToString("0.00");
+    }
+    
+    /// <summary>
+    ///  The Damerau–Levenshtein distance between two words is the minimum number of operations (consisting of insertions, deletions or substitutions of a single character, or transposition of two adjacent characters) required to change one word into the other (http://blog.softwx.net/2015/01/optimizing-damerau-levenshtein_15.html)
+    /// </summary>
+    /// <returns>The distance, >= 0 representing the number of edits required to transform one string to the other, or -1 if the distance is greater than the specified maxDistance.</returns>
+    internal static int Similar(string s, string t, int maxDistance)
+    {
+        if (string.IsNullOrWhiteSpace(s))
         {
-            return values.Any(val => input.Contains(val, StringComparison.OrdinalIgnoreCase));
+            return string.IsNullOrEmpty(t) || t.Length <= maxDistance ? t.Length : -1;
         }
 
-        internal static void RemoveDuplicates(this List<EntryModel> input, Logger LOGGER)
+        if (string.IsNullOrWhiteSpace(t))
         {
-            for (int x = input.Count - 1; x > 0; x--)
+            return s.Length <= maxDistance ? s.Length : -1;
+        }
+
+        ReadOnlySpan<char> sSpan = s;
+        ReadOnlySpan<char> tSpan = t;
+
+        // Always operate on the shorter string
+        if (sSpan.Length > tSpan.Length)
+        {
+            ReadOnlySpan<char> tmp = sSpan;
+            sSpan = tSpan;
+            tSpan = tmp;
+        }
+
+        int sLen = sSpan.Length;
+        int tLen = tSpan.Length;
+
+        if (tLen - sLen > maxDistance)
+        {
+            return -1;
+        }
+
+        Span<int> previousRow = stackalloc int[tLen + 1];
+        Span<int> currentRow = stackalloc int[tLen + 1];
+
+        for (int j = 0; j <= tLen; j++)
+        {
+            previousRow[j] = j;
+        }
+
+        for (int i = 1; i <= sLen; i++)
+        {
+            currentRow[0] = i;
+            int bestThisRow = currentRow[0];
+
+            char sChar = char.ToLowerInvariant(sSpan[i - 1]);
+            for (int j = 1; j <= tLen; j++)
             {
-                if (input[x].Entry.Equals(input[x - 1].Entry, StringComparison.OrdinalIgnoreCase))
-                {
-                    LOGGER.Debug("INPUT 1 {}", input[x]);
-                    LOGGER.Debug("INPUT 2 {}", input[x - 1]);
-                    if (input[x].ParsePrice() >= input[x - 1].ParsePrice())
-                    {
-                        LOGGER.Info($"Removed Duplicate {input[x]}");
-                        input.RemoveAt(x);  // Remove the current entry
-                    }
-                    else
-                    {
-                        LOGGER.Info($"Removed Duplicate {input[x - 1]}");
-                        input.RemoveAt(x - 1);  // Remove the previous entry
-                    }
-                }
+                char tChar = char.ToLowerInvariant(tSpan[j - 1]);
+
+                int cost = sChar == tChar ? 0 : 1;
+                int insert = currentRow[j - 1] + 1;
+                int delete = previousRow[j] + 1;
+                int replace = previousRow[j - 1] + cost;
+
+                currentRow[j] = Math.Min(Math.Min(insert, delete), replace);
+
+                bestThisRow = Math.Min(bestThisRow, currentRow[j]);
             }
+
+            if (bestThisRow > maxDistance)
+            {
+                return -1;
+            }
+
+            Span<int> temp = previousRow;
+            previousRow = currentRow;
+            currentRow = temp;
         }
 
-        /// <summary>
-        /// Applies a coupon to the price by substracting the coupon amount
-        /// </summary>
-        /// <param name="initialPrice"></param>
-        /// <param name="couponAmount"></param>
-        /// <returns></returns>
-        internal static string ApplyCoupon(decimal initialPrice, decimal couponAmount)
-        {
-            return decimal.Subtract(initialPrice, couponAmount).ToString("0.00");
-        }
+        int result = previousRow[tLen];
+        return result <= maxDistance ? result : -1;
     }
 }

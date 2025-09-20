@@ -1,60 +1,73 @@
-# [MangaAndLightNovelWebScrape](https://www.nuget.org/packages/MangaAndLightNovelWebScrape/4.0.2#readme-body-tab)
+# [MangaAndLightNovelWebScrape](https://www.nuget.org/packages/MangaAndLightNovelWebScrape/5.0.0#readme-body-tab)
+
 ### *(Manga & Light Novel Web Scrape Framework for .NET) - [ChangeLog](https://github.com/Sigrec/MangaAndLightNovelWebScrape/blob/master/ChangeLog.txt)*
+
 .NET Library that scrapes various websites based on a region for manga or light novel data for a specifc user inputted series. Then it compares the various prices for each available entry across the websites chosen and outputs a list of the entries available and the website and price for the cheapest entry.
 ***
+
 ### *Website Completion List*
+
 If you want a website or region to be added fill out a [issue request](https://github.com/Sigrec/MangaAndLightNovelWebScrape/issues/new/choose).
 
-##### America
-```
+#### America
+
+```txt
 ✅ AmazonUSA
 ❌ Barnes & Noble (No longer supported due to robots.txt change) 
 ✅ Books-A-Million
 ✅ Crunchyroll
 ✅ InStockTrades
 ✅ Kinokuniya USA (Sometimes Manga entries will be left out because when going to the manga tab it leaves some out)
-⌛ MangaMart
+✅ MangaMart
 ✅ MerryManga
 ✅ RobertsAnimeCornerStore
 ✅ SciFier
 ```
-##### Australia
-```
+
+#### Australia
+
+```txt
 ⌛ AmazonAU (Not Started)
 ✅ MangaMate
 ✅ SciFier
 ```
 
-##### Britain
-```
+#### Britain
+
+```txt
 ⌛ AmazonUK (Not Started)
 ✅ ForbiddenPlanet
 ✅ SciFier
 ❌ SpeedyHen (No longer supported due to Cloudflare Captcha) 
 ✅ TravellingMan
-✅ Waterstones
+❌ Waterstones  (No longer supported due to Cloudflare Captcha) 
 ```
 
-##### Canada
-```
+#### Canada
+
+```txt
 ⌛ AmazonCanada (Not Started)
 ❌ Indigo (Not Working)
 ✅ SciFier
 ```
 
-##### Europe
-```
+#### Europe
+
+```txt
 ✅ SciFier
 ```
 
-##### Japan
-```
+#### Japan
+
+```txt
 ⌛ AmazonJP (Not Started)
 ⌛ CDJapan (Paused)
 ```
- 
+
 ***
-#### Demo
+
+### Creating Master Scrape
+
 ```cs
 // Create the MasterScrape object it defaults to America Region, Chrome Browser, 
 // & all memberships are default false (it is better to set them), 
@@ -66,7 +79,6 @@ scrape.Browser = Browser.FireFox;
 scrape.Filter = StockstatusFilter.EXCLUDE_OOS_AND_PO_FILTER;
 scrape.IsBooksAMillionMember = false;
 scrape.IsKinokuniyaUSAMember = true;
-scrape.IsIndigoMember = false;
 
 // Alternativly you can do everything in the constructor 
 // Chaining Regions like so "Region.America | Region.Britain" 
@@ -76,8 +88,7 @@ MasterScrape Scrape = new MasterScrape(
     Region: Region.Britain, 
     Browser: Browser.Edge, 
     IsBooksAMillionMemnber: false, 
-    IsKinokuniyaUSAMember: false, 
-    IsIndigoMember: true
+    IsKinokuniyaUSAMember: false
 );
 
 // You can enable debug mode which will log to files if you have the NLog file
@@ -89,29 +100,22 @@ MasterScrape Scrape = new MasterScrape(
     Region: Region.Britain, 
     Browser: Browser.Edge, 
     IsBooksAMillionMemnber: false, 
-    IsKinokuniyaUSAMember: false, 
-    IsIndigoMember: true
+    IsKinokuniyaUSAMember: false
 )
 .EnableDebugMode()
-.EnablePersistentWebDriver();
 ```
-##### Initializating Scrape
-```cs
-// Initialize the Scrape using strings
-await scrape.InitializeScrapeAsync(
-    title: "one piece",
-    bookType: BookType.Manga,
-    scrape.GenerateWebsiteList([ RobertsAnimeCornerStore.WEBSITE_TITLE, Crunchyroll.WEBSITE_TITLE ]),
-);
 
-// Initialize the Scrape using enums
+#### Initializating Scrape
+
+```cs
+// Initialize the Scrape using list of enums
 await scrape.InitializeScrapeAsync(
     title: "one piece",
     bookType: BookType.Manga,
     [ Website.RobertsAnimeCornerStore, Website.Crunchyroll ],
 );
 
-// Initialize the Scrape using params
+// Initialize the Scrape using enum params list
 await scrape.InitializeScrapeAsync(
     title: "one piece",
     bookType: BookType.Manga,
@@ -119,10 +123,12 @@ await scrape.InitializeScrapeAsync(
     Website.Crunchyroll,
 );
 ```
-##### Getting Results
+
+#### Getting Results
+
 ```cs
 // Get Final data Results
-List<EntryModel> resultData = scrape.GetResults();
+IEnumerable<EntryModel> resultData = scrape.GetResults(); // GetResults return IEnumerable to let caller decide collection type
 Dictionary<string, string> resultUrls = scrape.GetResultsUrls();
 
 // Print final result data either to console, logger, or file (can be printed in a ascii table format)

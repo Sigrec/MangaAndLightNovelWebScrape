@@ -1,59 +1,64 @@
-namespace Tests.Websites
+namespace Tests.Websites.Crunchyroll;
+
+[TestFixture, Description("Validations for Crunchyroll")]
+[Author("Sean (Alias -> Prem or Sigrec)")]
+[SetUICulture("en")]
+public class CrunchyrollTests
 {
-    [TestFixture, Description("Validations for Crunchyroll")]
-    [Author("Sean (Alias -> Prem or Sigrec)")]
-    [SetUICulture("en")]
-    public class CrunchyrollTests
+    private MasterScrape Scrape;
+    private readonly HashSet<Website> WebsiteList = [Website.Crunchyroll];
+
+    [OneTimeSetUp]
+    public void OneTimeSetUp()
     {
-        private MasterScrape Scrape;
-        private readonly HashSet<Website> WebsiteList = [ Website.Crunchyroll ];
+        Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER);
+    }
 
-        [OneTimeSetUp]
-        public void OneTimeSetUp()
+    [OneTimeTearDown]
+    public void TearDown()
+    {
+        Scrape = null;
+    }
+
+    private static readonly object[] ScrapeTestCases =
+    [
+        new object[] { "Akane-Banashi", BookType.Manga, "AkaneBanashiMangaData", false },
+        new object[] { "jujutsu kaisen", BookType.Manga, "JujutsuKaisenMangaData", false },
+        new object[] { "One Piece", BookType.Manga, "OnePieceMangaData", false },
+        new object[] { "Naruto", BookType.Manga, "NarutoMangaData", false },
+        new object[] { "Naruto", BookType.LightNovel, "NarutoNovelData", false },
+        new object[] { "Bleach", BookType.Manga, "BleachMangaData", false },
+        new object[] { "attack on titan", BookType.Manga, "AttackOnTitanMangaData", false },
+        new object[] { "Goodbye, Eri", BookType.Manga, "GoodbyeEriMangaData", false },
+        new object[] { "2.5 Dimensional Seduction", BookType.Manga, "DimensionalSeductionMangaData", false},
+        new object[] { "overlord", BookType.Manga, "OverlordMangaData", false },
+        new object[] { "Overlord", BookType.LightNovel, "OverlordNovelData", false },
+        new object[] { "fullmetal alchemist", BookType.Manga, "FMABMangaData", false },
+        new object[] { "Berserk", BookType.Manga, "BerserkMangaData", false },
+        new object[] { "Toilet-bound Hanako-kun", BookType.Manga, "ToiletMangaData", false },
+        new object[] { "classroom of the elite", BookType.LightNovel, "COTENovelData", false },
+        new object[] { "Boruto", BookType.Manga, "BorutoMangaData", false },
+        new object[] { "Blade & Bastard", BookType.LightNovel, "Blade&BastardNovelData", false },
+    ];
+
+    [TestCaseSource(nameof(ScrapeTestCases))]
+    public async Task Crunchyroll_Scrape_Test(string title, BookType bookType, string fileName, bool skip)
+    {
+        if (skip)
         {
-            Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER);
+            Assert.Ignore($"Test skipped: {title}");
+            return;
         }
 
-        [OneTimeTearDown]
-        public void TearDown()
-        {
-            Scrape = null;
-        }
-
-        private static readonly object[] ScrapeTestCases =
-        [
-            new object[] { "Akane-Banashi", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollAkaneBanashiMangaData.txt", false },
-            new object[] { "jujutsu kaisen", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollJujutsuKaisenMangaData.txt", false },
-            new object[] { "Dragon Quest: The Adventure of Dai", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollAdventuresOfDaiMangaData.txt", true },  // Skip this test
-            new object[] { "Dragon Quest Monsters+", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollDragonQuestMonster+MangaData.txt", false },
-            new object[] { "One Piece", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollOnePieceMangaData.txt", false },
-            new object[] { "Naruto", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollNarutoMangaData.txt", false },
-            new object[] { "Naruto", BookType.LightNovel, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollNarutoNovelData.txt", false },
-            new object[] { "Bleach", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollBleachMangaData.txt", false },
-            new object[] { "attack on titan", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollAttackOnTitanMangaData.txt", false },
-            new object[] { "Goodbye, Eri", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollGoodbyeEriMangaData.txt", false },
-            new object[] { "2.5 Dimensional Seduction", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollDimensionalSeductionMangaData.txt", false },
-            new object[] { "Overlord", BookType.LightNovel, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollOverlordNovelData.txt", false },
-            new object[] { "overlord", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollOverlordMangaData.txt", false },
-            new object[] { "07-ghost", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\Crunchyroll07GhostMangaData.txt", true },
-            new object[] { "fullmetal alchemist", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollFMABMangaData.txt", false },
-            new object[] { "Berserk", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollBerserkMangaData.txt", false },
-            new object[] { "Toilet-bound Hanako-kun", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollToiletMangaData.txt", false },
-            new object[] { "classroom of the elite", BookType.LightNovel, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollCOTENovelData.txt", false },
-            new object[] { "Boruto", BookType.Manga, @"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\CrunchyrollBorutoMangaData.txt", false },
-        ];
-
-        [TestCaseSource(nameof(ScrapeTestCases))]
-        public async Task Crunchyroll_Scrape_Test(string title, BookType bookType, string expectedFilePath, bool skip)
-        {
-            if (skip)
-            {
-                Assert.Ignore($"Test skipped: {title}");
-                return;
-            }
-
-            await Scrape.InitializeScrapeAsync(title, bookType, WebsiteList);
-            Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList(expectedFilePath)));
-        }
+        await Scrape.InitializeScrapeAsync(title, bookType, WebsiteList);
+        Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList($@"C:\MangaAndLightNovelWebScrape\Tests\Websites\Crunchyroll\Crunchyroll{fileName}.txt")));
+    }
+    
+    [Test]
+    public void RegionValidation_Test()
+    {
+        Assert.That(
+            MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.America) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Australia) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Britain) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Canada) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Europe) && !MangaAndLightNovelWebScrape.Websites.Crunchyroll.REGION.HasFlag(Region.Japan)
+        );
     }
 }
