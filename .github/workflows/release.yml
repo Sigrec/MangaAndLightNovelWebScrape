@@ -48,7 +48,7 @@ jobs:
       - name: 📦 Build & Pack
         run: dotnet pack "Src/MangaAndLightNovelWebScrape.csproj" -c Release --nologo
 
-      - name: 📂 Move README back
+      - name: 📂 Move README Back
         if: always()
         shell: pwsh
         run: |
@@ -75,7 +75,7 @@ jobs:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: dotnet nuget push "${{ steps.pkg.outputs.path }}" --api-key "$env:NUGET_API_KEY" --source "https://api.nuget.org/v3/index.json" --skip-duplicate
 
-      - name: 🔖 Create/Push tag v{version}
+      - name: 🔖 Create/Push Tag Version
         shell: pwsh
         run: |
           $ver = '${{ steps.get_version.outputs.version }}'
