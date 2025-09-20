@@ -625,7 +625,7 @@ public sealed partial class MasterScrape
         IBrowser? browser = null;
         if (InternalHelpers.NeedPlaywright(siteList))
         {
-            browser = await PlaywrightFactory.SetupPlaywrightBrowserAsync(this.Browser, false);
+            browser = await PlaywrightFactory.SetupPlaywrightBrowserAsync(this.Browser);
         }
 
         try
