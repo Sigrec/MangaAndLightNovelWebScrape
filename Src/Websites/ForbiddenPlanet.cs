@@ -5,7 +5,7 @@ using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
-internal sealed partial class ForbiddenPlanet : IWebsite
+public sealed partial class ForbiddenPlanet : IWebsite
 {
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
     

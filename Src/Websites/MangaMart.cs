@@ -4,7 +4,7 @@ using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
-internal sealed partial class MangaMart : IWebsite
+public sealed partial class MangaMart : IWebsite
 {
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
 

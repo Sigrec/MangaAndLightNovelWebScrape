@@ -1,10 +1,9 @@
-using System.Collections.Frozen;
 using MangaAndLightNovelWebScrape.Services;
 using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
-internal sealed partial class TravellingMan : IWebsite
+public sealed partial class TravellingMan : IWebsite
 {
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
 

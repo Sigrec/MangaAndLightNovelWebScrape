@@ -1,12 +1,11 @@
 
 using System.Collections.Frozen;
-using System.Threading;
 using MangaAndLightNovelWebScrape.Services;
 using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
-internal sealed partial class MerryManga : IWebsite
+public sealed partial class MerryManga : IWebsite
 {
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
 

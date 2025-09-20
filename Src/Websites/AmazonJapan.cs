@@ -1,6 +1,6 @@
 namespace MangaAndLightNovelWebScrape.Websites;
 
-public partial class AmazonJapan
+public sealed partial class AmazonJapan
 {
     private readonly List<string> AmazonJapanLinks = [];
     private readonly List<EntryModel> AmazonJapanData = [];

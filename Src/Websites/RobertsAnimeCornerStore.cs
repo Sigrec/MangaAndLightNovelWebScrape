@@ -1,11 +1,10 @@
 using System.Globalization;
-using System.Net;
 using MangaAndLightNovelWebScrape.Services;
 using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
-internal sealed partial class RobertsAnimeCornerStore : IWebsite
+public sealed partial class RobertsAnimeCornerStore : IWebsite
 {
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
 

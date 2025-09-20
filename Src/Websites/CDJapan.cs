@@ -1,6 +1,6 @@
 namespace MangaAndLightNovelWebScrape.Websites;
 
-internal sealed partial class CDJapan
+public sealed partial class CDJapan
 {
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
     public const Region REGION = Region.Japan;

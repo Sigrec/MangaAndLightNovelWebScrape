@@ -4,7 +4,7 @@ using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Websites;
 
-internal sealed partial class AmazonUSA : IWebsite
+public sealed partial class AmazonUSA : IWebsite
 {
     private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
     public const string WEBSITE_LINK = "https://www.amazon.com/Manga-Comics-Graphic-Novels-Books/b?ie=UTF8&node=4367";
