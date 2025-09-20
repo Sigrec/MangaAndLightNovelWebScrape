@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net9.0</TargetFramework>
@@ -47,9 +47,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="HtmlAgilityPack" Version="1.12.2" />
-    <PackageReference Include="Microsoft.Playwright" Version="1.54.0" />
-    <PackageReference Include="NLog" Version="6.0.2" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.12.3" />
+    <PackageReference Include="Microsoft.Playwright" Version="1.55.0" />
+    <PackageReference Include="NLog" Version="6.0.4" />
     <PackageReference Include="GraphQL.Client" Version="6.1.0" />
     <PackageReference Include="GraphQL.Client.Serializer.SystemTextJson" Version="6.1.0" />
     <PackageReference Include="ZLinq" Version="1.5.2" />

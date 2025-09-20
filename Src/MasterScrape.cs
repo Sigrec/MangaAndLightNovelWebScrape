@@ -31,7 +31,6 @@ public sealed partial class MasterScrape
     public StockStatus[] Filter { get; set; } = StockStatusFilter.EXCLUDE_NONE_FILTER;
     public bool IsBooksAMillionMember { get; set; }
     public bool IsKinokuniyaUSAMember { get; set; }
-    public bool IsIndigoMember { get; set; }
     internal static bool IsWebDriverPersistent { get; set; } = false;
     /// <summary>
     /// Determines whether debug mode is enabled (Disabled by default)
@@ -45,7 +44,7 @@ public sealed partial class MasterScrape
     [GeneratedRegex(@"\s{2,}|(?:--|\u2014)\s*| - ")] internal static partial Regex MultipleWhiteSpaceRegex();
     [GeneratedRegex(@"(?<=\b(?:Vol|Novel)\.?\s+(?:\d{1,3}|\d{1,3}\.\d{1}))[^\d.].*")] internal static partial Regex FinalCleanRegex();
 
-    public MasterScrape(StockStatus[] Filter, Region Region = Region.America, Browser Browser = Browser.Edge, bool IsBooksAMillionMember = false, bool IsKinokuniyaUSAMember = false, bool IsIndigoMember = false)
+    public MasterScrape(StockStatus[] Filter, Region Region = Region.America, Browser Browser = Browser.Edge, bool IsBooksAMillionMember = false, bool IsKinokuniyaUSAMember = false)
     {
         this.Filter = Filter;
         this.Region = Region;
@@ -57,7 +56,6 @@ public sealed partial class MasterScrape
         this.Browser = Browser;
         this.IsBooksAMillionMember = IsBooksAMillionMember;
         this.IsKinokuniyaUSAMember = IsKinokuniyaUSAMember;
-        this.IsIndigoMember = IsIndigoMember;
     }
 
     // /// <summary>
@@ -126,16 +124,17 @@ public sealed partial class MasterScrape
     }
 
     /// <summary>
-    /// Returns the first set of scraped entries, or an empty list if no data exists.
+    /// Returns the first set of scraped entries, or an empty sequence if no data exists.
     /// </summary>
-    /// <returns>A <see cref="List{EntryModel}"/> of results.</returns>
-    public List<EntryModel> GetResults()
+    /// <returns>An <see cref="IEnumerable{EntryModel}"/> of results.</returns>
+    public IEnumerable<EntryModel> GetResults()
     {
         if (!_masterDataList.IsEmpty)
         {
             return _masterDataList.ElementAt(0);
         }
-        return [];
+
+        return Enumerable.Empty<EntryModel>();
     }
 
     /// <summary>
@@ -144,9 +143,9 @@ public sealed partial class MasterScrape
     /// <returns>
     /// A <see cref="Dictionary{Website,String}"/> mapping website names to their URLs.
     /// </returns>
-    public ReadOnlyDictionary<Website, string> GetResultUrls()
+    public Dictionary<Website, string> GetResultUrls()
     {
-        return new ReadOnlyDictionary<Website, string>(new Dictionary<Website, string>(_masterLinkDict));
+        return new Dictionary<Website, string>(_masterLinkDict);
     }
 
     /// <summary>
@@ -154,7 +153,7 @@ public sealed partial class MasterScrape
     /// </summary>
     /// <returns>
     /// A <see cref="ReadOnlyCollection{T}"/> of <see cref="string"/> containing the title of each active membership site
-    /// (e.g. <c>Books-A-Million</c>, <c>Kinokuniya USA</c>, <c>Indigo</c>).
+    /// (e.g. <c>Books-A-Million</c>, <c>Kinokuniya USA</c>).
     /// </returns>
     public ReadOnlyCollection<string> GetMembershipsAsString()
     {
@@ -170,11 +169,6 @@ public sealed partial class MasterScrape
             memberships.Add(KinokuniyaUSA.TITLE);
         }
 
-        if (IsIndigoMember)
-        {
-            memberships.Add(Indigo.TITLE);
-        }
-
         return memberships.AsReadOnly();
     }
 
@@ -183,7 +177,7 @@ public sealed partial class MasterScrape
     /// </summary>
     /// <returns>
     /// A <see cref="ReadOnlyCollection{Website}"/> containing each active membership enum
-    /// (Website.BooksAMillion, Website.KinokuniyaUSA, Website.Indigo).
+    /// (Website.BooksAMillion, Website.KinokuniyaUSA).
     /// </returns>
     public ReadOnlyCollection<Website> GetMembershipsAsEnum()
     {
@@ -197,11 +191,6 @@ public sealed partial class MasterScrape
         if (IsKinokuniyaUSAMember)
         {
             memberships.Add(Website.KinokuniyaUSA);
-        }
-
-        if (IsIndigoMember)
-        {
-            memberships.Add(Website.Indigo);
         }
 
         return memberships.AsReadOnly();
@@ -223,7 +212,7 @@ public sealed partial class MasterScrape
             throw new ArgumentException("Title can't be empty.", nameof(bookTitle));
         }
 
-        List<EntryModel> results = GetResults();
+        EntryModel[] results = GetResults().AsValueEnumerable().ToArray();
         int longestTitle = "Title".Length;
         int longestPrice = "Price".Length;
         int longestStatus = "Status".Length;
@@ -249,7 +238,7 @@ public sealed partial class MasterScrape
         string bottomBorder = $"┗{titlePad}┻{pricePad}┻{statusPad}┻{websitePad}┛";
 
         int estimatedRowLen = titlePad.Length + pricePad.Length + statusPad.Length + websitePad.Length + 10;
-        StringBuilder sb = new StringBuilder(results.Count * estimatedRowLen + 200);
+        StringBuilder sb = new StringBuilder(results.Length * estimatedRowLen + 200);
 
         sb.AppendLine()
         .Append("Title: \"")
@@ -324,9 +313,9 @@ public sealed partial class MasterScrape
         BookType bookType = BookType.Manga,
         bool includeLinks = true)
     {
-        List<EntryModel> results = GetResults();
+        EntryModel[] results = GetResults().AsValueEnumerable().ToArray();
 
-        if (results.Count == 0)
+        if (results.Length == 0)
         {
             Console.WriteLine("No MasterData Available");
             return;
@@ -376,7 +365,7 @@ public sealed partial class MasterScrape
         BookType bookType = BookType.Manga,
         bool includeLinks = true)
     {
-        List<EntryModel> results = GetResults();
+        EntryModel[] results = GetResults().AsValueEnumerable().ToArray();
 
         if (isAsciiTable)
         {
@@ -386,7 +375,7 @@ public sealed partial class MasterScrape
         }
 
         using StreamWriter writer = new(file);
-        if (results.Count == 0)
+        if (results.Length == 0)
         {
             writer.WriteLine("No MasterData Available");
             return;
@@ -426,13 +415,13 @@ public sealed partial class MasterScrape
     /// </param>
     public void PrintResultsToLogger(
         Logger UserLogger,
-        NLog.LogLevel logLevel,
+        LogLevel logLevel,
         bool isAsciiTable = false,
         string title = "",
         BookType bookType = BookType.Manga,
         bool includeLinks = true)
     {
-        List<EntryModel> results = GetResults();
+        EntryModel[] results = GetResults().AsValueEnumerable().ToArray();
 
         Action<string> logAction = logLevel.Ordinal switch
         {
@@ -445,7 +434,7 @@ public sealed partial class MasterScrape
             _ => UserLogger.Info
         };
 
-        if (results.Count == 0)
+        if (results.Length == 0)
         {
             logAction("No MasterData Available");
             return;
@@ -636,7 +625,7 @@ public sealed partial class MasterScrape
         IBrowser? browser = null;
         if (InternalHelpers.NeedPlaywright(siteList))
         {
-            browser = await PlaywrightFactory.SetupPlaywrightBrowserAsync(this.Browser);
+            browser = await PlaywrightFactory.SetupPlaywrightBrowserAsync(this.Browser, false);
         }
 
         try
@@ -658,7 +647,7 @@ public sealed partial class MasterScrape
                 _masterLinkDict,
                 browser,
                 this.Region,
-                (this.IsBooksAMillionMember, this.IsKinokuniyaUSAMember, this.IsIndigoMember)
+                (this.IsBooksAMillionMember, this.IsKinokuniyaUSAMember)
             );
             await Task.WhenAll(_webTasks);
             _webTasks.Clear();
@@ -733,17 +722,16 @@ public sealed partial class MasterScrape
         }
     }
 
-    public static async Task Main()
+    internal static async Task Main()
     {
         Stopwatch stopwatch = Stopwatch.StartNew();
 
         MasterScrape scrape = new MasterScrape(
             Filter: StockStatusFilter.EXCLUDE_NONE_FILTER,
-            Region: Region.Britain,
+            Region: Region.Canada,
             Browser: Browser.Edge,
             IsBooksAMillionMember: false,
-            IsKinokuniyaUSAMember: false,
-            IsIndigoMember: false)
+            IsKinokuniyaUSAMember: false)
         .EnableDebugMode();
 
         string title = "jujutsu kaisen";
@@ -752,7 +740,7 @@ public sealed partial class MasterScrape
         await scrape.InitializeScrapeAsync(
             title: title,
             bookType: bookType,
-            siteList: [Website.Waterstones]);
+            siteList: [Website.SciFier]);
 
         stopwatch.Stop();
 

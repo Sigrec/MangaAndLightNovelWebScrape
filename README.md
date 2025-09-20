@@ -40,7 +40,7 @@ If you want a website or region to be added fill out a [issue request](https://g
 ✅ SciFier
 ❌ SpeedyHen (No longer supported due to Cloudflare Captcha) 
 ✅ TravellingMan
-✅ Waterstones
+❌ Waterstones  (No longer supported due to Cloudflare Captcha) 
 ```
 
 #### Canada
@@ -66,7 +66,7 @@ If you want a website or region to be added fill out a [issue request](https://g
 
 ***
 
-### Demo
+### Creating Master Scrape
 
 ```cs
 // Create the MasterScrape object it defaults to America Region, Chrome Browser, 
@@ -79,7 +79,6 @@ scrape.Browser = Browser.FireFox;
 scrape.Filter = StockstatusFilter.EXCLUDE_OOS_AND_PO_FILTER;
 scrape.IsBooksAMillionMember = false;
 scrape.IsKinokuniyaUSAMember = true;
-scrape.IsIndigoMember = false;
 
 // Alternativly you can do everything in the constructor 
 // Chaining Regions like so "Region.America | Region.Britain" 
@@ -89,8 +88,7 @@ MasterScrape Scrape = new MasterScrape(
     Region: Region.Britain, 
     Browser: Browser.Edge, 
     IsBooksAMillionMemnber: false, 
-    IsKinokuniyaUSAMember: false, 
-    IsIndigoMember: true
+    IsKinokuniyaUSAMember: false
 );
 
 // You can enable debug mode which will log to files if you have the NLog file
@@ -102,8 +100,7 @@ MasterScrape Scrape = new MasterScrape(
     Region: Region.Britain, 
     Browser: Browser.Edge, 
     IsBooksAMillionMemnber: false, 
-    IsKinokuniyaUSAMember: false, 
-    IsIndigoMember: true
+    IsKinokuniyaUSAMember: false
 )
 .EnableDebugMode()
 ```
@@ -111,14 +108,14 @@ MasterScrape Scrape = new MasterScrape(
 #### Initializating Scrape
 
 ```cs
-// Initialize the Scrape using enums
+// Initialize the Scrape using list of enums
 await scrape.InitializeScrapeAsync(
     title: "one piece",
     bookType: BookType.Manga,
     [ Website.RobertsAnimeCornerStore, Website.Crunchyroll ],
 );
 
-// Initialize the Scrape using enum params
+// Initialize the Scrape using enum params list
 await scrape.InitializeScrapeAsync(
     title: "one piece",
     bookType: BookType.Manga,
@@ -131,7 +128,7 @@ await scrape.InitializeScrapeAsync(
 
 ```cs
 // Get Final data Results
-List<EntryModel> resultData = scrape.GetResults();
+IEnumerable<EntryModel> resultData = scrape.GetResults(); // GetResults return IEnumerable to let caller decide collection type
 Dictionary<string, string> resultUrls = scrape.GetResultsUrls();
 
 // Print final result data either to console, logger, or file (can be printed in a ascii table format)

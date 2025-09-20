@@ -42,7 +42,7 @@ internal sealed partial class BooksAMillion : IWebsite
     private static readonly FrozenSet<string> _novelIncludeVals = [ "Light Novel", "Novel", ];
     private static readonly FrozenSet<string> _novelExcludeVals = [ "Manga", "Volumes", "Vol" ];
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships)
     {
         return Task.Run(async () =>
         {
@@ -228,6 +228,7 @@ internal sealed partial class BooksAMillion : IWebsite
             string curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, pageNum);
             LOGGER.Info($"Initial Url {curUrl}");
             links.Add(curUrl);
+            
             await page!.GotoAsync(curUrl, new PageGotoOptions
             {
                 WaitUntil = WaitUntilState.DOMContentLoaded

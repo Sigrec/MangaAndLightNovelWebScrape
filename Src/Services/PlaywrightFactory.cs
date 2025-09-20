@@ -13,7 +13,9 @@ internal static class PlaywrightFactory
         "--disable-gpu",
         "--disable-software-rasterizer",
         "--no-sandbox",
-        "--incognito"
+        "--incognito",
+        "--disable-quic",
+        "--disable-http2",
     ];
 
     public static async Task<IBrowser>
@@ -59,7 +61,6 @@ internal static class PlaywrightFactory
                 throw new ArgumentOutOfRangeException(nameof(target), $"Unsupported browser: {target}");
         }
 
-        // Launch=
         if (isChromium)
         {
             BrowserTypeLaunchOptions launch = new()
@@ -115,34 +116,43 @@ internal static class PlaywrightFactory
     {
         // Context (only set UA if asked; otherwise preserve user’s locale/region)
         IBrowserContext context;
+        BrowserNewContextOptions opts = new()
+        {
+            ServiceWorkers = ServiceWorkerPolicy.Block,
+            JavaScriptEnabled = true,
+            IgnoreHTTPSErrors = true,
+        };
+
         if (needsUserAgent || !string.IsNullOrWhiteSpace(userAgentOverride))
         {
-            string ua = ResolveUserAgent(needsUserAgent, userAgentOverride);
-            BrowserNewContextOptions opts = new() { UserAgent = ua };
+            opts.UserAgent = ResolveUserAgent(needsUserAgent, userAgentOverride);
             context = await browser.NewContextAsync(opts);
         }
         else
         {
-            context = await browser.NewContextAsync();
+            context = await browser.NewContextAsync(opts);
         }
 
         if (blockImages)
         {
             await context.RouteAsync("**/*", async route =>
             {
-                string u = route.Request.Url;
-                if (u.EndsWith(".png", StringComparison.OrdinalIgnoreCase) ||
-                    u.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) ||
-                    u.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) ||
-                    u.EndsWith(".webp", StringComparison.OrdinalIgnoreCase) ||
-                    u.EndsWith(".gif", StringComparison.OrdinalIgnoreCase))
+                IRequest req = route.Request;
+                string type = req.ResourceType;
+                if (type is "document")
+                {
+                    await route.ContinueAsync(); // never abort the HTML
+                    return;
+                }
+
+                // block only heavy assets
+                if (type is "image")
                 {
                     await route.AbortAsync();
+                    return;
                 }
-                else
-                {
-                    await route.ContinueAsync();
-                }
+
+                await route.ContinueAsync();
             });
         }
 
@@ -246,8 +256,8 @@ internal static class PlaywrightFactory
         {
             // step down
             await scrollBy(stepPx);
-            await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
-            await Task.Delay(150);
+            // await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+            await Task.Delay(250);
 
             int newHeight = await getHeight();
 

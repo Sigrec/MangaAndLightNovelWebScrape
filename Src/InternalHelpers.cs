@@ -27,7 +27,7 @@ internal static partial class InternalHelpers
 
     internal static bool NeedPlaywright(HashSet<Website> siteList)
     {
-        return siteList.ContainsAny([Website.KinokuniyaUSA, Website.BooksAMillion, Website.AmazonUSA, Website.MerryManga, Website.ForbiddenPlanet, Website.MangaMate, Website.MangaMart, Website.Waterstones, Website.AmazonJapan]);
+        return siteList.ContainsAny([ Website.KinokuniyaUSA, Website.BooksAMillion, Website.AmazonUSA, Website.MerryManga, Website.ForbiddenPlanet, Website.MangaMate, Website.MangaMart, Website.AmazonJapan ]);
     }
 
     /// <summary>
@@ -88,7 +88,7 @@ internal static partial class InternalHelpers
     /// <param name="masterBag">Thread-safe bag to collect each site's results.</param>
     /// <param name="masterDict">Thread-safe dictionary mapping each site to its scraped data.</param>
     /// <param name="memberships">
-    ///   Tuple of membership flags for Books-A-Million, Kinokuniya USA, and Indigo; affects site-specific logic.
+    ///   Tuple of membership flags for Books-A-Million & Kinokuniya USA; affects site-specific logic.
     /// </param>
     /// <param name="browser">Optional <see cref="Browser"/> instance to use for scraping, or null for default.</param>
     internal static void ScheduleScrapes(
@@ -100,7 +100,7 @@ internal static partial class InternalHelpers
         ConcurrentDictionary<Website, string> masterDict,
         IBrowser? browser,
         Region curRegion,
-        (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships)
+        (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships)
     {
         foreach (Website site in sites)
         {
@@ -137,10 +137,9 @@ internal static partial class InternalHelpers
             // Britain
             Website.ForbiddenPlanet => new ForbiddenPlanet(),
             Website.TravellingMan => new TravellingMan(),
-            Website.Waterstones => new Waterstones(),
 
             // Canada
-            Website.Indigo => new Indigo(),
+            
 
             // Australia
             Website.MangaMate => new MangaMate(),

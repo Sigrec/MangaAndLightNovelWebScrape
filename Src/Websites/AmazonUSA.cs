@@ -54,7 +54,7 @@ internal sealed partial class AmazonUSA : IWebsite
     [GeneratedRegex(@"\((.*)\)|:(.*)", RegexOptions.IgnoreCase)] private static partial Regex ExtractTextRegex();
     [GeneratedRegex(@"(\d{1,3}) Special Edition.*", RegexOptions.IgnoreCase)] private static partial Regex SpecialEditionRegex();
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships = default)
     {
         return Task.Run(async () =>
         {

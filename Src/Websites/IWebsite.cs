@@ -37,7 +37,7 @@ public interface IWebsite
         ConcurrentDictionary<Website, string> masterLinkList,
         IBrowser? browser,
         Region curRegion,
-        (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember, bool IsIndigoMember) memberships = default);
+        (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships = default);
 
     /// <summary>
     /// Performs a synchronous scrape and returns the scraped entries.

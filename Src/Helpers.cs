@@ -81,11 +81,11 @@ public static class Helpers
             [Region.Britain] =
             [
                 Website.ForbiddenPlanet, Website.SciFier,
-                Website.TravellingMan, Website.Waterstones
+                Website.TravellingMan, 
             ],
             [Region.Canada] =
             [
-                Website.Indigo, Website.SciFier
+                Website.SciFier
             ],
             [Region.Europe] =
             [
@@ -97,8 +97,7 @@ public static class Helpers
     internal static readonly FrozenDictionary<Region, Website[]> MembershipSitesByRegion
         = new Dictionary<Region, Website[]>
         {
-            [Region.America] = [Website.BooksAMillion, Website.KinokuniyaUSA],
-            [Region.Canada] = [Website.Indigo]
+            [Region.America] = [Website.BooksAMillion, Website.KinokuniyaUSA]
         }.ToFrozenDictionary();
 
     internal static readonly FrozenDictionary<string, Website> WebsiteTitleMap
@@ -116,8 +115,6 @@ public static class Helpers
             [SciFier.TITLE] = Website.SciFier,
             [ForbiddenPlanet.TITLE] = Website.ForbiddenPlanet,
             [TravellingMan.TITLE] = Website.TravellingMan,
-            [Waterstones.TITLE] = Website.Waterstones,
-            [Indigo.TITLE] = Website.Indigo,
         }.ToFrozenDictionary();
 
     public static Website GetWebsiteFromString(string title)
@@ -166,7 +163,6 @@ public static class Helpers
             Website.CDJapan => CDJapan.WEBSITE_URL,
             Website.Crunchyroll => Crunchyroll.BASE_URL,
             Website.ForbiddenPlanet => ForbiddenPlanet.BASE_URL,
-            Website.Indigo => Indigo.BASE_URL,
             Website.InStockTrades => InStockTrades.BASE_URL,
             Website.KinokuniyaUSA => KinokuniyaUSA.BASE_URL,
             Website.MangaMart => MangaMart.BASE_URL,
@@ -174,7 +170,6 @@ public static class Helpers
             Website.MerryManga => MerryManga.BASE_URL,
             Website.RobertsAnimeCornerStore => RobertsAnimeCornerStore.BASE_URL,
             Website.TravellingMan => TravellingMan.BASE_URL,
-            Website.Waterstones => Waterstones.BASE_URL,
             _ => throw new NotImplementedException($"No URL for {site}")
         };
     }
