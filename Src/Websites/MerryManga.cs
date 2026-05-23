@@ -1,4 +1,3 @@
-
 using System.Collections.Frozen;
 using MangaAndLightNovelWebScrape.Services;
 using Microsoft.Playwright;
@@ -78,7 +77,7 @@ public sealed partial class MerryManga : IWebsite
 
         s = FixTitleRegex().Replace(s, string.Empty);
 
-        var sb = new StringBuilder(s);
+        StringBuilder sb = new(s);
 
         if (bookType == BookType.LightNovel && !s.Contains("Novel", StringComparison.Ordinal))
         {
@@ -133,60 +132,67 @@ public sealed partial class MerryManga : IWebsite
             // or b) <span class="price"> → <span class="woocommerce-Price-amount amount"> → <bdi>
             if (nodeName == "bdi")
             {
-            HtmlNode parentNode = node.ParentNode;
-            if (parentNode is not null
-                && parentNode.Name == "span"
-                && parentNode.GetAttributeValue("class", string.Empty)
-                            .Contains("woocommerce-Price-amount amount", StringComparison.OrdinalIgnoreCase))
+                HtmlNode parentNode = node.ParentNode;
+                if (parentNode is not null
+                    && parentNode.Name == "span"
+                    && parentNode.GetAttributeValue("class", string.Empty)
+                        .Contains("woocommerce-Price-amount amount", StringComparison.OrdinalIgnoreCase))
+                {
+                    HtmlNode grandParent = parentNode.ParentNode;
+                    if (grandParent is not null)
                     {
-                        HtmlNode grandParent = parentNode.ParentNode;
-                        if (grandParent is not null)
+                        // case (a): under <ins>
+                        if (grandParent.Name == "ins")
                         {
-                            // case (a): under <ins>
-                            if (grandParent.Name == "ins")
+                            HtmlNode greatGrand = grandParent.ParentNode;
+                            if (greatGrand is not null
+                                && greatGrand.Name == "span"
+                                && greatGrand.GetAttributeValue("class", string.Empty)
+                                    .Equals("price", StringComparison.OrdinalIgnoreCase))
                             {
-                                HtmlNode greatGrand = grandParent.ParentNode;
-                                if (greatGrand is not null
-                                    && greatGrand.Name == "span"
-                                    && greatGrand.GetAttributeValue("class", string.Empty)
-                                                .Equals("price", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    string text = node.InnerText.Trim();
-                                    prices.Add(text);
-                                }
-                            }
-                            // case (b): directly under <span class="price">
-                            else if (grandParent.Name == "span"
-                                    && grandParent.GetAttributeValue("class", string.Empty)
-                                                    .Equals("price", StringComparison.OrdinalIgnoreCase))
-                            {
-                                string text = node.InnerText.Trim();
-                                prices.Add(text);
+                                prices.Add(node.InnerText.Trim());
                             }
                         }
+                        // case (b): directly under <span class="price">
+                        else if (grandParent.Name == "span"
+                            && grandParent.GetAttributeValue("class", string.Empty)
+                                .Equals("price", StringComparison.OrdinalIgnoreCase))
+                        {
+                            prices.Add(node.InnerText.Trim());
+                        }
                     }
-                    continue;
+                }
+                continue;
             }
 
-            // 3) STOCK: //li[contains(@class, 'instock')] | //li[contains(@class, 'outofstock')] | //li[contains(@class, 'onbackorder')] | //li[contains(@class, 'preorder')] | //li[contains(@class, 'available_at_warehouse')]
+            // 3) STOCK: //li[contains(@class, 'instock')] | //li[contains(@class, 'outofstock')] | ...
             if (nodeName == "li")
             {
                 string classAttr = node.GetAttributeValue("class", string.Empty);
-                string[] parts = classAttr.Split(' ');
-                foreach (string part in parts)
+                // Span-based split: no string[] allocation per node. For pages with hundreds of
+                // <li> elements this is the difference between hundreds of short-lived heap
+                // arrays per scrape and zero.
+                foreach (Range partRange in classAttr.AsSpan().Split(' '))
                 {
-                    if (_stockClasses.Contains(part))
+                    ReadOnlySpan<char> part = classAttr.AsSpan(partRange);
+                    if (part.IsEmpty) continue;
+
+                    // _stockClasses lookup needs a string key today. The Length-prefilter below
+                    // short-circuits the lookup for the vast majority of class tokens (which are
+                    // arbitrary lengths like "product_cat-manga").
+                    if (part.Length < 6 || part.Length > 23) continue;
+
+                    string partStr = part.ToString();
+                    if (_stockClasses.Contains(partStr))
                     {
-                        StockStatus stockStatus = part switch
+                        statuses.Add(partStr switch
                         {
                             "instock" or "available_at_warehouse" => StockStatus.IS,
                             "outofstock" => StockStatus.OOS,
                             "preorder" => StockStatus.PO,
                             "onbackorder" => StockStatus.BO,
-                            _ or "Unknown" => StockStatus.NA,
-                        };
-
-                        statuses.Add(stockStatus);
+                            _ => StockStatus.NA,
+                        });
                         break;
                     }
                 }
@@ -211,7 +217,6 @@ public sealed partial class MerryManga : IWebsite
         }
     }
 
-    // TODO: Needs perf improvments
     public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
     {
         List<EntryModel> data = [];
@@ -219,9 +224,12 @@ public sealed partial class MerryManga : IWebsite
 
         try
         {
+            // The site's URL query expects lowercase. Compute once instead of allocating a
+            // fresh string each time we (re-)build the URL.
+            string bookTitleLower = bookTitle.ToLower();
             bool hasBoxSet = true;
         Restart:
-            string url = GenerateWebsiteUrl(bookTitle.ToLower(), bookType, hasBoxSet);
+            string url = GenerateWebsiteUrl(bookTitleLower, bookType, hasBoxSet);
             links.Add(url);
 
             await page!.GotoAsync(url, new PageGotoOptions
@@ -237,7 +245,7 @@ public sealed partial class MerryManga : IWebsite
             {
                 _logger.NoBoxSetEntries();
                 hasBoxSet = false;
-                url = GenerateWebsiteUrl(bookTitle.ToLower(), bookType, hasBoxSet);
+                url = GenerateWebsiteUrl(bookTitleLower, bookType, hasBoxSet);
                 links.Clear();
                 links.Add(url);
 
@@ -251,9 +259,11 @@ public sealed partial class MerryManga : IWebsite
             await CheckAndProceedIfRated18Async(page);
 
             // Load all data
-            if (await page.Locator("button.facetwp-load-more:not(.facetwp-hidden)").CountAsync() > 0)
+            // Locators are immutable; build once and reuse — the old code constructed
+            // `page.Locator(...)` twice with the same selector just to read CountAsync.
+            ILocator visibleBtn = page.Locator("button.facetwp-load-more:not(.facetwp-hidden)");
+            if (await visibleBtn.CountAsync() > 0)
             {
-                ILocator visibleBtn = page.Locator("button.facetwp-load-more:not(.facetwp-hidden)");
                 ILocator hiddenBtn = page.Locator("button.facetwp-load-more.facetwp-hidden");
                 ILocator pager = page.Locator("div.facetwp-facet.facetwp-facet-load_more.facetwp-type-pager");
                 ILocator noProducts = page.Locator("div.woocommerce-info"); // <-- "No products were found..." banner
@@ -346,7 +356,6 @@ public sealed partial class MerryManga : IWebsite
                 {
                     _logger.EntryRemovedSimpleDebug(entryTitle);
                 }
-                _logger.Check1();
             }
 
             if (hasBoxSet)

@@ -66,11 +66,7 @@ public sealed partial class RobertsAnimeCornerStore : IWebsite
         return url;
     }
 
-    // TODO - Need to add special edition check (AoT)
-    public static string CleanAndParseTitle(
-            string   entryTitle,
-            string   bookTitle,
-            BookType bookType)
+    internal static string CleanAndParseTitle(string entryTitle, string bookTitle, BookType bookType)
     {
         // Spans for zero-alloc checks
         ReadOnlySpan<char> titleSpan = entryTitle.AsSpan();
@@ -90,62 +86,39 @@ public sealed partial class RobertsAnimeCornerStore : IWebsite
             Match omnibusMatch = OmnibusVolNumberRegex().Match(entryTitle);
             if (omnibusMatch.Success)
             {
-                // compute the omnibus volume
-                int parsedVol = int.Parse(
-                    omnibusMatch.Groups[1].Value,
-                    CultureInfo.InvariantCulture);
+                int parsedVol = int.Parse(omnibusMatch.Groups[1].Value, CultureInfo.InvariantCulture);
                 int newVol = (int)Math.Ceiling(parsedVol / 3m);
 
-                // strip the omnibus edition text
-                string filtered = OmnibusTitleFilterRegex()
-                    .Replace(entryTitle, string.Empty)
-                    .Trim();
+                string filtered = OmnibusTitleFilterRegex().Replace(entryTitle, string.Empty).Trim();
                 curTitle.Append(filtered.AsSpan());
 
-                // normalize edition text
-                curTitle.Replace(
-                    "Colossal Omnibus Edition",
-                    "Colossal Edition");
-                curTitle.Replace(
-                    "Omnibus Edition",
-                    "Omnibus");
+                curTitle.Replace("Colossal Omnibus Edition", "Colossal Edition");
+                curTitle.Replace("Omnibus Edition", "Omnibus");
 
-                // ensure “ Vol”
-                if (curTitle.ToString()
-                            .IndexOf(" Vol", StringComparison.Ordinal) < 0)
+                // ensure " Vol" suffix — use the SB extension to avoid materializing curTitle.
+                if (curTitle.IndexOfOrdinal(" Vol") < 0)
                 {
                     curTitle.Append(" Vol");
                 }
 
-                // append new vol number
-                curTitle.Append(' ');
-                curTitle.Append(
-                    newVol.ToString(CultureInfo.InvariantCulture));
+                curTitle.Append(' ').Append(newVol.ToString(CultureInfo.InvariantCulture));
             }
-            else
-            {
-                // no match → empty
-                curTitle.Append(string.Empty);
-            }
+            // No match → curTitle stays empty. (Old code did Append(string.Empty), a no-op.)
         }
         else
         {
             // ——— 2) Default title filtering ———
-            string filtered = TitleFilterRegex()
-                .Replace(entryTitle, string.Empty)
-                .Trim();
+            string filtered = TitleFilterRegex().Replace(entryTitle, string.Empty).Trim();
             curTitle.Append(filtered.AsSpan());
 
-            // “Deluxe Edition” → “Deluxe Vol”
-            if (curTitle.ToString()
-                        .IndexOf(deluxeEdLit, StringComparison.Ordinal) >= 0)
+            // "Deluxe Edition" → "Deluxe Vol" — check against `filtered` directly (it's the
+            // current SB content verbatim, no need to materialize curTitle.ToString() again).
+            if (filtered.AsSpan().IndexOf(deluxeEdLit, StringComparison.Ordinal) >= 0)
             {
-                curTitle.Replace(
-                    "Deluxe Edition",
-                    "Deluxe Vol");
+                curTitle.Replace("Deluxe Edition", "Deluxe Vol");
             }
 
-            // Box Set fallback: no digits & no “Collection”
+            // Box Set fallback: no digits & no "Collection"
             ReadOnlySpan<char> appended = filtered.AsSpan();
             if (appended.IndexOf(boxSetLit, StringComparison.OrdinalIgnoreCase) >= 0
                 && appended.IndexOf(collectionLit, StringComparison.OrdinalIgnoreCase) < 0
@@ -156,27 +129,16 @@ public sealed partial class RobertsAnimeCornerStore : IWebsite
         }
 
         // ——— 3) Shared cleanups ———
-        InternalHelpers.RemoveCharacterFromTitle(
-            ref curTitle,
-            bookTitle,
-            ':');
-        InternalHelpers.ReplaceTextInEntryTitle(
-            ref curTitle,
-            bookTitle,
-            "-",
-            " ");
+        InternalHelpers.RemoveCharacterFromTitle(ref curTitle, bookTitle, ':');
+        InternalHelpers.ReplaceTextInEntryTitle(ref curTitle, bookTitle, "-", " ");
 
         // ——— 4) Special Edition injection ———
-        if (titleSpan.IndexOf(
-                specialEdLit,
-                StringComparison.OrdinalIgnoreCase) >= 0)
+        if (titleSpan.IndexOf(specialEdLit, StringComparison.OrdinalIgnoreCase) >= 0)
         {
-            curTitle.Replace(
-                " Special Edition",
-                string.Empty);
+            curTitle.Replace(" Special Edition", string.Empty);
 
-            int volIdx = curTitle.ToString()
-                                .IndexOf("Vol", StringComparison.Ordinal);
+            // SB-native IndexOf avoids a ToString() snapshot just to scan for "Vol".
+            int volIdx = curTitle.IndexOfOrdinal("Vol");
             if (volIdx >= 0)
             {
                 curTitle.Insert(volIdx, "Special Edition ");
@@ -248,24 +210,38 @@ public sealed partial class RobertsAnimeCornerStore : IWebsite
             HtmlDocument doc = await html.LoadFromWebAsync(GenerateWebsiteUrl(bookTitle));
             doc.ConfigurePerf();
 
-            int bookTitleSpaceCount = bookTitle.AsSpan().Count(" ");
+            int bookTitleSpaceCount = bookTitle.AsSpan().Count(' ');
             HtmlNodeCollection? seriesData = doc.DocumentNode.SelectNodes(SeriesTitleXPath);
-
-            foreach (HtmlNode series in seriesData!)
+            if (seriesData is null)
             {
+                return (data, links);
+            }
+
+            foreach (HtmlNode series in seriesData)
+            {
+                // Cache InnerText — the property builds a fresh string from all descendants.
+                // Old code called it twice per iteration.
                 string innerSeriesText = series.InnerText;
+
+                // Cheap pre-filter for Manga searches: this landing page mixes manga ("Graphic
+                // Novels") and light novels in one list. Skip the expensive regex/Similar walk
+                // on entries that can't possibly match the requested book type.
+                if (bookType == BookType.Manga && !innerSeriesText.Contains("Graphic Novels"))
+                {
+                    continue;
+                }
+
                 string seriesText = MasterScrape.MultipleWhiteSpaceRegex()
-                    .Replace(series.InnerText.Replace("Graphic Novels", string.Empty).Replace("Novels", string.Empty), " ")
+                    .Replace(innerSeriesText.Replace("Graphic Novels", string.Empty).Replace("Novels", string.Empty), " ")
                     .Trim();
 
-                if ((seriesText.Contains(bookTitle, StringComparison.OrdinalIgnoreCase) ||
-                        InternalHelpers.Similar(bookTitle, seriesText,
-                            ((string.IsNullOrWhiteSpace(seriesText) || bookTitle.Length > seriesText.Length)
-                                ? bookTitle.Length / 6
-                                : seriesText.Length / 6) + bookTitleSpaceCount) != -1) &&
-                        ((bookType == BookType.Manga && innerSeriesText.Contains("Graphic Novels")) ||
-                        bookType == BookType.LightNovel)
-                    )
+                bool matchesByName = seriesText.Contains(bookTitle, StringComparison.OrdinalIgnoreCase)
+                    || InternalHelpers.Similar(bookTitle, seriesText,
+                        ((string.IsNullOrWhiteSpace(seriesText) || bookTitle.Length > seriesText.Length)
+                            ? bookTitle.Length / 6
+                            : seriesText.Length / 6) + bookTitleSpaceCount) != -1;
+
+                if (matchesByName)
                 {
                     links.Add($"https://www.animecornerstore.com/{series.GetAttributeValue("href", "Url Error")}");
                 }
@@ -277,53 +253,51 @@ public sealed partial class RobertsAnimeCornerStore : IWebsite
                 foreach (string link in links)
                 {
                     _logger.UrlGenerated(link);
-                    doc = html.Load(link);
+                    // Async fetch — was synchronous html.Load(link), which blocked the thread.
+                    doc = await html.LoadFromWebAsync(link);
 
                     List<HtmlNode> titleData = doc.DocumentNode
                         .SelectNodes(TitleXPath)?
                         .AsValueEnumerable()
                         .Where(title => !string.IsNullOrWhiteSpace(title.InnerText))
                         .ToList() ?? [];
-                    HtmlNodeCollection? priceData = doc!.DocumentNode.SelectNodes(PriceXPath);
-
-                    for (int x = 0; x < titleData.Count; x++)
+                    HtmlNodeCollection? priceData = doc.DocumentNode.SelectNodes(PriceXPath);
+                    if (priceData is null || titleData.Count == 0)
                     {
-                        string entryTitle = titleData[x].InnerText.Trim();
+                        continue;
+                    }
 
-                        bool isMangaWithGraphicNovel = bookType == BookType.Manga && entryTitle.Contains("Graphic Novel")
+                    int pairCount = Math.Min(titleData.Count, priceData.Count);
+                    for (int x = 0; x < pairCount; x++)
+                    {
+                        // titleData was built from already-trimmed InnerText below; no need to
+                        // Trim again per iteration.
+                        string entryTitle = titleData[x].InnerText.Trim();
+                        bool containsGraphicNovel = entryTitle.Contains("Graphic Novel");
+
+                        bool isMangaWithGraphicNovel = bookType == BookType.Manga && containsGraphicNovel
                             && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "berserk", entryTitle, "Berserk With Darkness Ink");
 
-                        bool isLightNovel = bookType == BookType.LightNovel && !entryTitle.Contains("Graphic Novel");
+                        bool isLightNovel = bookType == BookType.LightNovel && !containsGraphicNovel;
 
                         // Combine the conditions for title and book type checks
                         bool isValidTitle =
-                            // Book title matches entry title or passes the volume check for specific manga titles
                             (InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle) ||
-                            (isMangaWithGraphicNovel && InternalHelpers.RemoveUnintendedVolumes(bookTitle, "attack on titan", entryTitle, "Spoof"))) &&
+                            (isMangaWithGraphicNovel && InternalHelpers.RemoveUnintendedVolumes(bookTitle, "attack on titan", entryTitle, "Spoof")))
+                            && (!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck)
+                            && (isMangaWithGraphicNovel || isLightNovel);
 
-                            // Ensure entry is not to be removed (via regex or removal flag)
-                            (!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck) &&
-
-                            // Check if it's a valid manga or light novel title
-                            (isMangaWithGraphicNovel || isLightNovel);
-
-                        // If the user is looking for manga and the page returned a novel data set and vice versa skip that data set
                         if (isValidTitle)
                         {
-                            string trimmedEntryTitle = entryTitle.Trim();  // Avoid calling Trim multiple times
-
-                            StockStatus status = trimmedEntryTitle.Contains("Pre Order") ? StockStatus.PO :
-                                trimmedEntryTitle.Contains("Backorder") ? StockStatus.BO :
+                            StockStatus status = entryTitle.Contains("Pre Order") ? StockStatus.PO :
+                                entryTitle.Contains("Backorder") ? StockStatus.BO :
                                 StockStatus.IS;
 
-                            data.Add(
-                                new EntryModel(
-                                    CleanAndParseTitle(trimmedEntryTitle, bookTitle, bookType),
-                                    priceData![x].InnerText.Trim(),
-                                    status,
-                                    TITLE
-                                )
-                            );
+                            data.Add(new EntryModel(
+                                CleanAndParseTitle(entryTitle, bookTitle, bookType),
+                                priceData[x].InnerText.Trim(),
+                                status,
+                                TITLE));
                         }
                         else
                         {

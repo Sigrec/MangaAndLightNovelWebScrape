@@ -11,4 +11,9 @@ internal static partial class CrunchyrollLogging
         Level = LogLevel.Information,
         Message = "Trying Second Link")]
     public static partial void TryingSecondLink(this ILogger logger);
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "No results returned for {BookTitle} ({BookType}) after retry — both /search and /collections paths returned empty")]
+    public static partial void NoResultsAfterRetry(this ILogger logger, string bookTitle, BookType bookType);
 }

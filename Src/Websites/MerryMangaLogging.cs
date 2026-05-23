@@ -27,8 +27,4 @@ internal static partial class MerryMangaLogging
         Message = "Finished loading more entries")]
     public static partial void FinishedLoadingMoreEntries(this ILogger logger);
 
-    [LoggerMessage(
-        Level = LogLevel.Debug,
-        Message = "CHECK 1")]
-    public static partial void Check1(this ILogger logger);
 }

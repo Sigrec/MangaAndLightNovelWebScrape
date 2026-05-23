@@ -95,23 +95,31 @@ public sealed partial class Crunchyroll : IWebsite
 
             if (!entryTitle.Contains("Vol") && !entryTitle.Contains("Box Set"))
             {
-                var volMatch = MasterScrape.FindVolNumRegex().Match(entryTitle);
+                Match volMatch = MasterScrape.FindVolNumRegex().Match(entryTitle);
                 if (volMatch.Success)
                 {
                     curTitle.Insert(volMatch.Index, "Vol ");
                 }
             }
 
-            if (bookTitle.Equals("attack on titan", StringComparison.OrdinalIgnoreCase) && baseTitleText.Contains("(Hardcover)") && !curTitle.ToString().Contains("In Color")&& !curTitle.ToString().Contains("Color Edition"))
+            // Single snapshot read, two Contains checks — old code materialized curTitle twice.
+            if (bookTitle.Equals("attack on titan", StringComparison.OrdinalIgnoreCase)
+                && baseTitleText.Contains("(Hardcover)"))
             {
-                curTitle.Append(" In Color");
+                string snapshot = curTitle.ToString();
+                if (!snapshot.Contains("In Color") && !snapshot.Contains("Color Edition"))
+                {
+                    curTitle.Append(" In Color");
+                }
             }
         }
         else if (bookType == BookType.LightNovel && !entryTitle.Contains("Novel"))
         {
-            if (entryTitle.Contains("Vol"))
+            // One IndexOf instead of Contains + IndexOf — same scan, sentinel value for the
+            // "not found" branch.
+            int volIndex = entryTitle.IndexOf("Vol");
+            if (volIndex >= 0)
             {
-                int volIndex = entryTitle.IndexOf("Vol");
                 curTitle.Insert(volIndex, "Novel ");
             }
             else
@@ -135,39 +143,55 @@ public sealed partial class Crunchyroll : IWebsite
 
         try
         {
-            // Initialize once and reuse if necessary.
             HtmlWeb html = HtmlFactory.CreateWeb();
 
             bool bookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
             _logger.BookTitleRemovalCheck(bookTitleRemovalCheck);
 
-            // Load the document once after preparation.
             string url = GenerateWebsiteUrl(bookType, bookTitle);
             links.Add(url);
 
             HtmlDocument doc = await html.LoadFromWebAsync(url);
             doc.ConfigurePerf();
 
-            // Get the page data from the HTML doc
             HtmlNodeCollection? titleData = doc.DocumentNode.SelectNodes(TitleXPath);
             HtmlNodeCollection? priceData = doc.DocumentNode.SelectNodes(PriceXPath);
             HtmlNodeCollection? stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
 
+            // The /search?q= URL sometimes returns no results for a series that DOES have its
+            // own /collections/ landing page (slug-based). Crunchyroll signals "no results" by
+            // returning null for ALL three XPaths. A partial null is normal — e.g. the
+            // product-sashes badge XPath only matches items with a sale/OOS sash, so a
+            // listing where every product is plain in-stock has null stockStatusData. AND
+            // here (not OR) so we only retry when there's genuinely nothing.
             if (titleData == null && priceData == null && stockStatusData == null)
             {
                 _logger.TryingSecondLink();
-                data.Clear();
                 links.Clear();
 
                 url = GenerateWebsiteUrl(bookType, bookTitle, true);
                 links.Add(url);
-                doc = html.Load(url);
+                doc = await html.LoadFromWebAsync(url);
+                doc.ConfigurePerf();
                 titleData = doc.DocumentNode.SelectNodes(TitleXPath);
                 priceData = doc.DocumentNode.SelectNodes(PriceXPath);
                 stockStatusData = doc.DocumentNode.SelectNodes(StockStatusXPath);
             }
 
-            for (int x = 0; x < titleData!.Count; x++)
+            // titleData is the canonical "has products?" signal — every product carries a title.
+            // priceData and stockStatusData can be partially null (or fully null in the case of
+            // an in-stock listing where no item has a sale badge). Guard accesses against those
+            // below rather than bailing here.
+            if (titleData is null)
+            {
+                _logger.NoResultsAfterRetry(bookTitle, bookType);
+                return (data, links);
+            }
+
+            // priceData and stockStatusData may be shorter than titleData (or null). The loop
+            // bounds against titleData and guards the others per-entry.
+            int entryCount = titleData.Count;
+            for (int x = 0; x < entryCount; x++)
             {
                 string entryTitle = WebUtility.HtmlDecode(titleData[x].InnerText.Trim());
                 // First check: does the book title contain the entry title?
@@ -202,15 +226,20 @@ public sealed partial class Crunchyroll : IWebsite
                 {
                     entryTitle = FixVolumeRegex().Replace(entryTitle, "Vol");
 
-                    // Apply different parsing logic based on whether it's a bundle
-                    entryTitle = !entryTitle.Contains("Bundle")
-                        ? ParseAndCleanTitleRegex().Replace(entryTitle, string.Empty)
-                        : BundleParseRegex().Replace(entryTitle, string.Empty);
+                    // Cache the Bundle check — used to pick the parsing regex AND to decide
+                    // post-processing inside ParseAndCleanTitle.
+                    bool isBundle = entryTitle.Contains("Bundle");
+                    entryTitle = isBundle
+                        ? BundleParseRegex().Replace(entryTitle, string.Empty)
+                        : ParseAndCleanTitleRegex().Replace(entryTitle, string.Empty);
 
                     string cleanedTitle = ParseAndCleanTitle(entryTitle, titleData[x].InnerText, bookTitle, bookType);
 
-                    // Retrieve stock status in a more efficient manner
-                    string stockStatusText = stockStatusData![x].SelectSingleNode("./div/span")?.InnerText.Trim() ?? string.Empty;
+                    // stockStatusData is null when no item on the page has a sale/OOS sash —
+                    // i.e. everything is plain in-stock. Treat missing sash as in-stock.
+                    string stockStatusText = stockStatusData is not null && x < stockStatusData.Count
+                        ? stockStatusData[x].SelectSingleNode("./div/span")?.InnerText.Trim() ?? string.Empty
+                        : string.Empty;
                     StockStatus stockStatus = stockStatusText switch
                     {
                         "SOLD-OUT" => StockStatus.OOS,
@@ -220,8 +249,14 @@ public sealed partial class Crunchyroll : IWebsite
                         _ => StockStatus.IS,
                     };
 
-                    // Create the EntryModel and add it to Data
-                    data.Add(new EntryModel(cleanedTitle, $"${priceData![x].GetAttributeValue("content", "ERROR")}", stockStatus, TITLE));
+                    // priceData *should* align 1:1 with titleData. Guard against partial
+                    // misalignment rather than crash; missing-price entries get $ERROR which
+                    // the dedup/sort downstream will surface clearly.
+                    string priceContent = priceData is not null && x < priceData.Count
+                        ? priceData[x].GetAttributeValue("content", "ERROR")
+                        : "ERROR";
+
+                    data.Add(new EntryModel(cleanedTitle, $"${priceContent}", stockStatus, TITLE));
                 }
                 else
                 {

@@ -13,6 +13,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- LoggerFactory.Create lives in the concrete Microsoft.Extensions.Logging package,
+         and AddSimpleConsole is in the .Console package. Src ships only the Abstractions,
+         so the consumer (this scratch app) picks its own provider. -->
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Src\MangaAndLightNovelWebScrape.csproj" />
   </ItemGroup>
 </Project>

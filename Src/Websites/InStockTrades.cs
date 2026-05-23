@@ -26,6 +26,9 @@ public sealed partial class InStockTrades : IWebsite
     private static readonly FrozenSet<string> _oneShotCheckFilter = [ "Vol", "Box Set", "Manga" ];
     private static readonly FrozenSet<string> _novelMultiples = ["Light Novel", "Novel Sc", "L Novel"];
     private static readonly FrozenSet<string> _edVolMultiples = ["Ed Vol", "Ed HC Vol"];
+    // Hoisted from a per-call array literal in ParseAndCleanTitle — was allocating fresh
+    // `string[]` for every entry processed.
+    private static readonly FrozenSet<string> _anniversaryMultiples = [" Annv Book", " Ann"];
 
     [GeneratedRegex(@" GN| TP| HC| Manga|(?<=Vol).*|(?<=Box Set).*|\(.*\)", RegexOptions.IgnoreCase)]  private static partial Regex TitleRegex();
     [GeneratedRegex(@" HC| TP|\(.*\)|(?<=Vol (?:\d{1,3}|\d{1,3}.\d{1,3}) ).*|(?<=Box Set (?:\d{1,3}|\d{1,3}.\d{1,3}) ).*", RegexOptions.IgnoreCase)]  private static partial Regex CleanTitleRegex();
@@ -155,7 +158,7 @@ public sealed partial class InStockTrades : IWebsite
         InternalHelpers.ReplaceTextInEntryTitle(
             ref curTitle, bookTitle, "Colossal Ed", "Colossal Edition");
         InternalHelpers.ReplaceMultipleTextInEntryTitle(
-            ref curTitle, bookTitle, new[] { " Annv Book", " Ann" }, " Anniversary Edition");
+            ref curTitle, bookTitle, _anniversaryMultiples, " Anniversary Edition");
         InternalHelpers.ReplaceTextInEntryTitle(
             ref curTitle, bookTitle, "Deluxe Edition", "Deluxe");
         InternalHelpers.ReplaceTextInEntryTitle(
@@ -213,58 +216,75 @@ public sealed partial class InStockTrades : IWebsite
             bookTitle = bookTitle.Replace("&", "and");
         }
 
-        uint maxPages = 0;
-        uint curPageNum = 1;
         List<EntryModel> data = [];
         List<string> links = [];
 
         try
         {
-            // First page: build URL, load, and get maxPages
+            // Fetch page 1 first — we don't know maxPages until we parse it.
             HtmlWeb html = HtmlFactory.CreateWeb();
 
-            string url = GenerateWebsiteUrl(curPageNum, bookTitle);
+            string url = GenerateWebsiteUrl(1, bookTitle);
             links.Add(url);
 
-            HtmlDocument doc = await html.LoadFromWebAsync(url);
-            doc.ConfigurePerf();
+            HtmlDocument firstPage = await html.LoadFromWebAsync(url);
+            firstPage.ConfigurePerf();
 
-            HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
-            if (pageCheck != null &&
-                uint.TryParse(pageCheck.GetAttributeValue("data-max", "0"), out uint parsed))
+            uint maxPages = 1;
+            HtmlNode pageCheck = firstPage.DocumentNode.SelectSingleNode(PageCheckXPath);
+            if (pageCheck != null
+                && uint.TryParse(pageCheck.GetAttributeValue("data-max", "0"), out uint parsed)
+                && parsed > 0)
             {
                 maxPages = parsed;
                 links.Capacity = (int)maxPages;
                 data.EnsureCapacity((int)maxPages * 10);
             }
-            
+
+            // Fan-out the remaining pages in parallel. The old code awaited each next-page fetch
+            // inside the processing loop, so an N-page scrape paid N serial network round-trips
+            // (plus a sync html.Load that blocked the thread). With maxPages already known,
+            // pages 2..N are independent — batch them.
+            HtmlDocument[] pages;
+            if (maxPages > 1)
+            {
+                Task<HtmlDocument>[] fetches = new Task<HtmlDocument>[maxPages - 1];
+                for (uint p = 2; p <= maxPages; p++)
+                {
+                    string pageUrl = GenerateWebsiteUrl(p, bookTitle);
+                    links.Add(pageUrl);
+                    fetches[p - 2] = html.LoadFromWebAsync(pageUrl);
+                }
+                HtmlDocument[] otherPages = await Task.WhenAll(fetches);
+                pages = new HtmlDocument[maxPages];
+                pages[0] = firstPage;
+                Array.Copy(otherPages, 0, pages, 1, otherPages.Length);
+            }
+            else
+            {
+                pages = [firstPage];
+            }
+
             bool replaceAdv = !bookTitle.Contains("Adv", StringComparison.Ordinal);
             bool isMangaType = bookType == BookType.Manga;
             bool isNovelType = bookType == BookType.LightNovel;
             bool titleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
 
-            // Loop through pages
-            do
+            // Process each page sequentially — CPU-bound work, single-threaded is fine.
+            foreach (HtmlDocument doc in pages)
             {
+                if (doc != firstPage) doc.ConfigurePerf();
+
                 HtmlNodeCollection details = doc.DocumentNode.SelectNodes(_detailsXPath);
                 HtmlNodeCollection prices = doc.DocumentNode.SelectNodes(_priceXPath);
-
-                if (details == null || prices == null)
-                {
-                    break;
-                }
+                if (details == null || prices == null) continue;
 
                 int count = details.Count;
-                data.EnsureCapacity(data.Count + count);
 
-                // Process each entry without LINQ allocations
                 for (int i = 0; i < count; i++)
                 {
                     HtmlNode titleNode = details[i].SelectSingleNode(_titleXPath);
-                    if (titleNode == null)
-                    {
-                        continue;
-                    }
+                    if (titleNode == null) continue;
 
                     string entryTitle = titleNode.InnerText;
                     if (replaceAdv)
@@ -273,63 +293,40 @@ public sealed partial class InStockTrades : IWebsite
                     }
                     _logger.EntrySeen(entryTitle);
 
-                    // Precompute flags once
                     bool isOneShot = count == 1 && !entryTitle.ContainsAny(_oneShotCheckFilter);
 
-                    // Book‐title validity
-                    bool validBook = (titleRemovalCheck ||
-                        InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle))
+                    bool validBook = (titleRemovalCheck
+                            || InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle))
                         && !details[i].InnerText.Contains("Damaged")
                         && !InternalHelpers.ShouldRemoveEntry(entryTitle);
 
-                    // Manga‐specific validity
                     bool validManga = isMangaType
                         && !entryTitle.ContainsAny(_excludeMangaFilters)
-                        && (isOneShot ||
-                            entryTitle.ContainsAny(_mangaFilters))
-                        && !InternalHelpers.RemoveUnintendedVolumes(
-                                bookTitle, "Berserk", entryTitle, "of Gluttony")
-                        && !InternalHelpers.RemoveUnintendedVolumes(
-                                bookTitle, "Naruto", entryTitle, "Boruto");
+                        && (isOneShot || entryTitle.ContainsAny(_mangaFilters))
+                        && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony")
+                        && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto");
 
-                    // Novel‐specific validity
                     bool validNovel = isNovelType
                         && entryTitle.ContainsAny(_novelFilters)
                         && !entryTitle.ContainsAny(_excludeNovelFilters)
-                        && !InternalHelpers.RemoveUnintendedVolumes(
-                                bookTitle, "overlord", entryTitle, "Joined Party");
+                        && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "overlord", entryTitle, "Joined Party");
 
                     if (validBook && (validManga || validNovel))
                     {
-                        string cleanedTitle = ParseAndCleanTitle(bookTitle, entryTitle, bookType);
-                        string trimmedPrice = prices[i].InnerText.Trim();
                         data.Add(new EntryModel(
-                            cleanedTitle,
-                            trimmedPrice,
+                            ParseAndCleanTitle(bookTitle, entryTitle, bookType),
+                            prices[i].InnerText.Trim(),
                             StockStatus.IS,
-                            TITLE)
-                        );
+                            TITLE));
                     }
-                    else if (_logger.IsEnabled(LogLevel.Debug))
+                    else
                     {
+                        // [LoggerMessage] source-gen already short-circuits when Debug is filtered —
+                        // no need to wrap in an extra _logger.IsEnabled(...) guard.
                         _logger.EntryRemovedSimpleDebug(entryTitle);
                     }
                 }
-
-                // Next page?
-                if (curPageNum < maxPages)
-                {
-                    curPageNum++;
-                    url = GenerateWebsiteUrl(curPageNum, bookTitle);
-                    links.Add(url);
-                    doc = html.Load(url);
-                }
-                else
-                {
-                    break;
-                }
             }
-            while (true);
         }
         catch (Exception ex)
         {
