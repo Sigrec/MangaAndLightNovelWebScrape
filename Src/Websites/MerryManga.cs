@@ -7,7 +7,12 @@ namespace MangaAndLightNovelWebScrape.Websites;
 
 public sealed partial class MerryManga : IWebsite
 {
-    private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+    private readonly ILogger _logger;
+
+    public MerryManga(ILogger<MerryManga>? logger = null)
+    {
+        _logger = logger ?? NullLogger<MerryManga>.Instance;
+    }
 
     [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)|Omnibus( \d{1,2})(?:, |\s{1})Vol \d{1,3}-\d{1,3}", RegexOptions.IgnoreCase)] private static partial Regex FixOmnibusRegex();
     [GeneratedRegex(@"(?<=Box Set \d{1}).*", RegexOptions.IgnoreCase)] private static partial Regex FixBoxSetRegex();
@@ -32,20 +37,13 @@ public sealed partial class MerryManga : IWebsite
         "available_at_warehouse"
     );
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships = default)
-    {
-        return Task.Run(async () =>
-        {
-            IPage page = await PlaywrightFactory.GetPageAsync(browser!);
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page);
-            masterDataList.Add(Data);
-            masterLinkList.TryAdd(Website.MerryManga, Links[0]);
-        });
-    }
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+        => InternalHelpers.RunPlaywrightScrapeAsync(
+            this, Website.MerryManga, bookTitle, bookType, masterDataList, masterLinkList, browser!, curRegion);
 
     // https://www.merrymanga.com/?s=Naruto&post_type=product&_categories=box-sets
     // https://www.merrymanga.com/?s=jujutsu+kaisen&post_type=product&orderby=release_date&_categories=manga
-    private static string GenerateWebsiteUrl(string bookTitle, BookType bookType, bool hasBoxSet)
+    private string GenerateWebsiteUrl(string bookTitle, BookType bookType, bool hasBoxSet)
     {
         string url;
         if (hasBoxSet && bookType != BookType.LightNovel)
@@ -56,7 +54,7 @@ public sealed partial class MerryManga : IWebsite
         {
             url = $"{BASE_URL}/?s={bookTitle.Replace(" ", "+")}&post_type=product&orderby=release_date&_categories={(bookType == BookType.Manga ? "manga" : "light-novels")}";
         }
-        LOGGER.Info(url);
+        _logger.UrlGenerated(url);
         return url;
     }
 
@@ -103,7 +101,7 @@ public sealed partial class MerryManga : IWebsite
         return collapsed;
     }
 
-    private static void ExtractProductData(
+    private void ExtractProductData(
         HtmlDocument doc,
         out List<string> titles,
         out List<string> prices,
@@ -126,7 +124,7 @@ public sealed partial class MerryManga : IWebsite
                 {
                     string text = node.InnerText.Trim();
                     titles.Add(text);
-                    LOGGER.Debug(text);
+                    _logger.ProductTitleSeen(text);
                 }
             }
 
@@ -196,7 +194,7 @@ public sealed partial class MerryManga : IWebsite
         }
     }
 
-    private static async Task CheckAndProceedIfRated18Async(IPage page)
+    private async Task CheckAndProceedIfRated18Async(IPage page)
     {
         ILocator heading = page.Locator("h2.popup_heading");
 
@@ -208,7 +206,7 @@ public sealed partial class MerryManga : IWebsite
             if (text.Equals("This product is rated 18+", StringComparison.OrdinalIgnoreCase))
             {
                 await page.Locator("button.btn_submit#submit").ClickAsync();
-                LOGGER.Info("Proceeded from 18+ popup");
+                _logger.ProceededFromAgePopup();
             }
         }
     }
@@ -237,7 +235,7 @@ public sealed partial class MerryManga : IWebsite
 
             if (hasBoxSet && doc.Text.Contains("No products were found matching your selection."))
             {
-                LOGGER.Info("No box set entries found, Checking Manga Only Link");
+                _logger.NoBoxSetEntries();
                 hasBoxSet = false;
                 url = GenerateWebsiteUrl(bookTitle.ToLower(), bookType, hasBoxSet);
                 links.Clear();
@@ -272,7 +270,7 @@ public sealed partial class MerryManga : IWebsite
                         }
                     }
 
-                    LOGGER.Info("Loading more entries...");
+                    _logger.MerryMangaLoadingMoreEntries();
                     // no visible button -> done
                     if (await visibleBtn.CountAsync() == 0) break;
 
@@ -301,7 +299,7 @@ public sealed partial class MerryManga : IWebsite
                     }
                 }
 
-                LOGGER.Info("Finished loading more entries");
+                _logger.FinishedLoadingMoreEntries();
                 string html = await page.ContentAsync();
                 doc.LoadHtml(html);
             }
@@ -346,9 +344,9 @@ public sealed partial class MerryManga : IWebsite
                 }
                 else
                 {
-                    LOGGER.Debug("Removed {}", entryTitle);
+                    _logger.EntryRemovedSimpleDebug(entryTitle);
                 }
-                LOGGER.Debug("CHECK 1");
+                _logger.Check1();
             }
 
             if (hasBoxSet)
@@ -359,13 +357,13 @@ public sealed partial class MerryManga : IWebsite
 
             data.TrimExcess();
             links.TrimExcess();
-            data.Sort(EntryModel.VolumeSort);
-            data.RemoveDuplicates(LOGGER);
-            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
+            data.SortByVolume();
+            data.RemoveDuplicates(_logger);
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         }
         catch (Exception ex)
         {
-            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
+            _logger.ScrapeError(ex, bookTitle, bookType, TITLE);
         }
 
         return (data, links);

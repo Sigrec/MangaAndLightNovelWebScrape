@@ -77,30 +77,27 @@ MasterScrape Scrape = new MasterScrape(StockStatusFilter.EXCLUDE_NONE_FILTER);
 scrape.Region = Region.Canada;
 scrape.Browser = Browser.FireFox;
 scrape.Filter = StockstatusFilter.EXCLUDE_OOS_AND_PO_FILTER;
-scrape.IsBooksAMillionMember = false;
-scrape.IsKinokuniyaUSAMember = true;
+// Memberships is a [Flags] enum — combine sites with `|`.
+scrape.Memberships = Membership.KinokuniyaUSA;
 
 // Alternativly you can do everything in the constructor 
 // Chaining Regions like so "Region.America | Region.Britain" 
 //will not work you can only scrape against one region at a time
 MasterScrape Scrape = new MasterScrape(
-    Filter: StockStatusFilter.EXCLUDE_NONE_FILTER, 
-    Region: Region.Britain, 
-    Browser: Browser.Edge, 
-    IsBooksAMillionMemnber: false, 
-    IsKinokuniyaUSAMember: false
+    Filter: StockStatusFilter.EXCLUDE_NONE_FILTER,
+    Region: Region.Britain,
+    Browser: Browser.Edge,
+    Memberships: Membership.BooksAMillion | Membership.KinokuniyaUSA
 );
 
-// You can enable debug mode which will log to files if you have the NLog file
-// You can enable persistent webdriver, which will prevent a webdriver from being created and disposed 
-// for every website where a WebDriver is needed. This could possibley lead to memory issues 
-// it might be a good idea to perform some cleanup for browser executables in the end
+// You can enable debug mode which will dump results to the `Data/` directory.
+// To capture log output, pass an ILoggerFactory (e.g. backed by Serilog, NLog, or
+// the built-in console provider) to the MasterScrape constructor.
 MasterScrape Scrape = new MasterScrape(
-    Filter: StockStatusFilter.EXCLUDE_NONE_FILTER, 
-    Region: Region.Britain, 
-    Browser: Browser.Edge, 
-    IsBooksAMillionMemnber: false, 
-    IsKinokuniyaUSAMember: false
+    Filter: StockStatusFilter.EXCLUDE_NONE_FILTER,
+    Region: Region.Britain,
+    Browser: Browser.Edge,
+    Memberships: Membership.None
 )
 .EnableDebugMode()
 ```
@@ -133,7 +130,7 @@ Dictionary<string, string> resultUrls = scrape.GetResultsUrls();
 
 // Print final result data either to console, logger, or file (can be printed in a ascii table format)
 scrape.PrintResultsToConsole(true, "world trigger", BookType.Manga);
-scrape.PrintResultToLogger(LOGGER, NLog.LogLevel.Info);
+logger.PrintResults(scrape, Microsoft.Extensions.Logging.LogLevel.Information);
 scrape.PrintResultsToFile("FinalData.txt");
 
 // Example AsciiTable Format Output

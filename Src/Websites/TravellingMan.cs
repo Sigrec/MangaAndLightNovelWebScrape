@@ -5,7 +5,12 @@ namespace MangaAndLightNovelWebScrape.Websites;
 
 public sealed partial class TravellingMan : IWebsite
 {
-    private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+    private readonly ILogger _logger;
+
+    public TravellingMan(ILogger<TravellingMan>? logger = null)
+    {
+        _logger = logger ?? NullLogger<TravellingMan>.Instance;
+    }
 
     /// <inheritdoc />
     public const string TITLE = "TravellingMan";
@@ -25,21 +30,15 @@ public sealed partial class TravellingMan : IWebsite
     [GeneratedRegex(@"\d{1,3}-in-\d{1,3}", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
     [GeneratedRegex(@"(?<=Box Set \d{1,3})[^\d{1,3}.]+.*|(?:Box Set) Vol")] private static partial Regex BoxSetRegex();
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships = default)
-    {
-        return Task.Run(async () =>
-        {
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, null);
-            masterDataList.Add(Data);
-            masterLinkList.TryAdd(Website.SciFier, Links[0]);
-        });
-    }
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+        => InternalHelpers.RunHtmlScrapeAsync(
+            this, Website.TravellingMan, bookTitle, bookType, masterDataList, masterLinkList, curRegion);
 
-    private static string GenerateWebsiteUrl(string bookTitle, BookType bookType, int curPage)
+    private string GenerateWebsiteUrl(string bookTitle, BookType bookType, int curPage)
     {
         // https://travellingman.com/search?page=2&q=naruto+manga
         string url = $"{BASE_URL}/search?page={curPage}&q={InternalHelpers.FilterBookTitle(bookTitle.Replace(" ", "+"))}{(bookType == BookType.Manga ? "+manga" : "+novel")}";
-        LOGGER.Info("Url {} => {}", curPage, url);
+        _logger.PageUrlGenerated(curPage, url);
         return url;
     }
 
@@ -212,9 +211,9 @@ public sealed partial class TravellingMan : IWebsite
                                     )
                                 );
                             }
-                            else { LOGGER.Info("Removed (2) {}", entryTitle); }
+                            else { _logger.EntryRemoved(2, entryTitle); }
                     }
-                    else { LOGGER.Info("Removed (1) {}", entryTitle); }
+                    else { _logger.EntryRemoved(1, entryTitle); }
                 }
 
             Stop:
@@ -228,13 +227,13 @@ public sealed partial class TravellingMan : IWebsite
                 }
             }
 
-            data.Sort(EntryModel.VolumeSort);
-            data.RemoveDuplicates(LOGGER);
-            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
+            data.SortByVolume();
+            data.RemoveDuplicates(_logger);
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         }
         catch (Exception ex)
         {
-            LOGGER.Error("{} ({}) Error @ {} \n{}", bookTitle, bookType, TITLE, ex);
+            _logger.ScrapeError(ex, bookTitle, bookType, TITLE);
         }
 
         return (data, links);

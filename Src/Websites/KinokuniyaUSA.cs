@@ -7,7 +7,12 @@ namespace MangaAndLightNovelWebScrape.Websites;
 
 public sealed partial class KinokuniyaUSA : IWebsite
 {
-    private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+    private readonly ILogger _logger;
+
+    public KinokuniyaUSA(ILogger<KinokuniyaUSA>? logger = null)
+    {
+        _logger = logger ?? NullLogger<KinokuniyaUSA>.Instance;
+    }
     
     private static readonly XPathExpression _titleXPath = XPathExpression.Compile("//span[@class='underline']");
     private static readonly XPathExpression _memberPriceXPath = XPathExpression.Compile("//li[@class='price'][2]/span");
@@ -47,21 +52,16 @@ public sealed partial class KinokuniyaUSA : IWebsite
     //https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=overlord+novel&taxon=&x=33&y=8&per_page=100&form_taxon=109
     //https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=classroom+of+the+elite&taxon=&x=33&y=8&per_page=100&form_taxon=109
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships)
-    {
-        return Task.Run(async () =>
-        {
-            IPage page = await PlaywrightFactory.GetPageAsync(browser!, true);
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page, memberships.IsKinokuniyaUSAMember);
-            masterDataList.Add(Data);
-            masterLinkList.TryAdd(Website.KinokuniyaUSA, Links[0]);
-        });
-    }
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+        => InternalHelpers.RunPlaywrightScrapeAsync(
+            this, Website.KinokuniyaUSA, bookTitle, bookType, masterDataList, masterLinkList, browser!, curRegion,
+            isMember: memberships.HasFlag(Membership.KinokuniyaUSA),
+            needsUserAgent: true);
 
-    private static string GenerateWebsiteUrl(string bookTitle, BookType bookType)
+    private string GenerateWebsiteUrl(string bookTitle, BookType bookType)
     {
         string url = $"{BASE_URL}/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords={bookTitle.Replace(" ", "+")}{(bookType == BookType.LightNovel ? "+novel" : string.Empty)}&taxon=2&x=39&y=11&page=1&per_page=100";
-        LOGGER.Info($"Url = {url}");
+        _logger.UrlGenerated(url);
         return url;
     }
 
@@ -329,14 +329,14 @@ public sealed partial class KinokuniyaUSA : IWebsite
             // Click the list display mode so it shows stock status data with entry
             await page.Locator("li#detail-button a:has-text(\"List\")").ForceClickAsync();
             await WaitForPageLoad(page);
-            LOGGER.Info("Clicked List Mode");
+            _logger.ClickedListMode();
 
             if (bookType == BookType.Manga)
             {
                 // Click the Manga
                 await page.GetByText("Manga", new PageGetByTextOptions { Exact = true }).ForceClickAsync();
                 await WaitForPageLoad(page);
-                LOGGER.Info("Clicked Manga");
+                _logger.ClickedManga();
             }
 
             while (true)
@@ -349,7 +349,7 @@ public sealed partial class KinokuniyaUSA : IWebsite
                 XPathNodeIterator descData = nav.Select(_descXPath);
                 XPathNodeIterator stockStatusData = nav.Select(_stockStatusXPath);
                 if (maxPageCount == -1) { maxPageCount = Convert.ToInt32(doc.DocumentNode.SelectSingleNode(_pageCheckXPath).InnerText); }
-                LOGGER.Info("Max Page Count = {Count}", maxPageCount);
+                _logger.MaxPageCount(maxPageCount);
 
                 // Determine if the series is a one shot or not
                 oneShotCheck = maxPageCount == 1 && titleData.Count == 1 && !titleData.Cast<XPathNavigator>().AsValueEnumerable().Any(title => title.Value.Contains("Vol", StringComparison.OrdinalIgnoreCase));
@@ -400,9 +400,9 @@ public sealed partial class KinokuniyaUSA : IWebsite
                             )
                         )
                     {
-                        LOGGER.Debug("BEFORE = {Title}", entryTitle);
+                        _logger.TitleBefore(entryTitle);
                         entryTitle = ParseAndCleanTitle(entryTitle, bookType, bookTitle, entryDesc, oneShotCheck);
-                        LOGGER.Debug("AFTER = {Title}", entryTitle);
+                        _logger.TitleAfter(entryTitle);
 
                         if (!data.AsValueEnumerable().Any(entry => entry.Entry.Equals(entryTitle, StringComparison.OrdinalIgnoreCase)))
                         {
@@ -424,12 +424,12 @@ public sealed partial class KinokuniyaUSA : IWebsite
                         }
                         else
                         {
-                            LOGGER.Info("Removed (2) {}", entryTitle);
+                            _logger.EntryRemoved(2, entryTitle);
                         }
                     }
                     else
                     {
-                        LOGGER.Info("Removed (1) {}", entryTitle);
+                        _logger.EntryRemoved(1, entryTitle);
                     }
                 }
 
@@ -438,7 +438,7 @@ public sealed partial class KinokuniyaUSA : IWebsite
                     curPageNum++;
                     await page.Locator("p.pagerArrowR").ForceClickAsync();
                     await WaitForPageLoad(page);
-                    LOGGER.Info("Page {} = {}", curPageNum, page.Url);
+                    _logger.PageVisited(curPageNum, page.Url);
                 }
                 else
                 {
@@ -447,12 +447,12 @@ public sealed partial class KinokuniyaUSA : IWebsite
             }
 
             data.TrimExcess();
-            data.Sort(EntryModel.VolumeSort);
-            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
+            data.SortByVolume();
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         }
         catch (Exception ex)
         {
-            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
+            _logger.ScrapeError(ex, bookTitle, bookType, TITLE);
         }
 
         return (data, links);

@@ -51,7 +51,7 @@ public class KinokuniyaUSATests
             return;
         }
 
-        Scrape.IsKinokuniyaUSAMember = isMember;
+        Scrape.Memberships = isMember ? Membership.KinokuniyaUSA : Membership.None;
         await Scrape.InitializeScrapeAsync(title, bookType, WebsiteList);
         Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList($@"C:\MangaAndLightNovelWebScrape\Tests\Websites\KinokuniyaUSA\KinokuniyaUSA{expectedFilePath}.txt")));
     }

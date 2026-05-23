@@ -2,7 +2,13 @@ namespace MangaAndLightNovelWebScrape.Websites;
 
 public sealed partial class CDJapan
 {
-    private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+    private readonly ILogger _logger;
+
+    public CDJapan(ILogger<CDJapan>? logger = null)
+    {
+        _logger = logger ?? NullLogger<CDJapan>.Instance;
+    }
+
     public const Region REGION = Region.Japan;
     public const string WEBSITE_TITLE = "CDJapan";
     public const string WEBSITE_URL = "https://www.cdjapan.co.jp";
@@ -19,8 +25,8 @@ public sealed partial class CDJapan
 
     internal async Task CreateCDJapanTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> MasterDataList)
     {
-        string altTitle = await TranslateAPI.ToEnglish(bookTitle, bookType == BookType.Manga ? "MANGA" : "NOVEL") ?? await TranslateAPI.ToRomaji(bookTitle, bookType == BookType.Manga ? "MANGA" : "NOVEL");
-        LOGGER.Info("Alt Title = {}", altTitle);
+        string? altTitle = await TranslateAPI.ToEnglish(bookTitle, bookType == BookType.Manga ? "MANGA" : "NOVEL") ?? await TranslateAPI.ToRomaji(bookTitle, bookType == BookType.Manga ? "MANGA" : "NOVEL");
+        _logger.AltTitle(altTitle);
 
         await Task.Run(() => 
         {
@@ -43,11 +49,11 @@ public sealed partial class CDJapan
     {
         string url = $"{WEBSITE_URL}/searchuni?page={pageNum}&fq.category={(bookType == BookType.Manga ? "UD%3A14" : "UD%3A11")}&q={bookTitle.Replace(" ", "%20")}&order=relasc&opt.exclude_eoa=on&opt.exclude_prx=on";
         CDJapanLinks.Add(url);
-        LOGGER.Info("Url = {}", url);
+        _logger.UrlGenerated(url);
         return url;
     }
 
-    private static string TitleParse(string bookTitle, string entryTitle, string altTitle, BookType bookType)
+    private static string TitleParse(string bookTitle, string entryTitle, BookType bookType)
     {
         entryTitle = TitleRemovalRegex().Replace(TitleParseVolRegex().Replace(entryTitle, $"{(bookType == BookType.LightNovel ? "Novel " : string.Empty)}Vol $1"), string.Empty);
 
@@ -67,7 +73,7 @@ public sealed partial class CDJapan
         return curTitle.ToString().Trim();
     }
 
-    internal List<EntryModel> GetCDJapanData(string bookTitle, string altTitle, BookType bookType)
+    internal List<EntryModel> GetCDJapanData(string bookTitle, string? altTitle, BookType bookType)
     {
         try
         {
@@ -89,7 +95,9 @@ public sealed partial class CDJapan
                 // Backorder:Usually ships in 1-3 weeks
                 for (int x = 0; x < titleData.Count; x++)
                 {
-                    string titleText = titleData[x].InnerText.Replace(altTitle, bookTitle, StringComparison.OrdinalIgnoreCase);
+                    string titleText = altTitle is null
+                        ? titleData[x].InnerText
+                        : titleData[x].InnerText.Replace(altTitle, bookTitle, StringComparison.OrdinalIgnoreCase);
                     if (InternalHelpers.EntryTitleContainsBookTitle(bookTitle, titleText) 
                     && (!InternalHelpers.ShouldRemoveEntry(titleText) || BookTitleRemovalCheck) 
                     && !titleText.Contains("Manga Set"))
@@ -97,7 +105,7 @@ public sealed partial class CDJapan
                         CDJapanData.Add(
                             new EntryModel
                             (
-                                TitleParse(bookTitle, titleText, altTitle, bookType),
+                                TitleParse(bookTitle, titleText, bookType),
                                 priceData[x].InnerText.Replace("yen", "¥").Trim(),
                                 stockStatusData[x].InnerText.Trim() switch
                                 {
@@ -111,9 +119,9 @@ public sealed partial class CDJapan
                             )
                         );
                     }
-                    else    
+                    else
                     {
-                        LOGGER.Debug("Removed {}", titleText);
+                        _logger.EntryRemovedSimpleDebug(titleText);
                     }
                 }
 
@@ -127,14 +135,14 @@ public sealed partial class CDJapan
                 }
             }
 
-            CDJapanData.Sort(EntryModel.VolumeSort);
+            CDJapanData.SortByVolume();
         }
         catch (Exception e)
         {
-            LOGGER.Error($"{bookTitle} | {bookType} Does Not Exist @ {WEBSITE_TITLE} \n{e}");
+            _logger.SeriesNotFound(e, bookTitle, bookType, WEBSITE_TITLE);
         }
-        
-        InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, CDJapanData, LOGGER);
+
+        InternalHelpers.PrintWebsiteData(WEBSITE_TITLE, bookTitle, bookType, CDJapanData, _logger);
         return CDJapanData;
     }
 }

@@ -3,32 +3,20 @@ using Microsoft.Playwright;
 namespace MangaAndLightNovelWebScrape.Websites;
 
 /// <summary>
-/// Contract for a website scraper implementation, providing both static compile-time
-/// metadata and instance methods for scraping operations.
+/// Contract for a per-site scraper. Implementations are constructed once via
+/// <c>InternalHelpers.CreateScraper</c> and dispatched in parallel from <c>ScheduleScrapes</c>.
 /// </summary>
+/// <remarks>
+/// Each implementation also exposes <c>public const string TITLE</c>, <c>BASE_URL</c>, and
+/// <c>public const Region REGION</c>. These aren't part of the interface — call sites that
+/// need them reference the concrete type directly (e.g. <c>AmazonUSA.TITLE</c>) or look them
+/// up via <see cref="Helpers.WebsiteTitleMap"/> / <see cref="Helpers.WebsitesByRegion"/>.
+/// </remarks>
 public interface IWebsite
 {
     /// <summary>
-    /// The display title of the website.
-    /// Implementations should typically return a compile‑time const string.
-    /// </summary>
-    static string TITLE { get; }
-
-    /// <summary>
-    /// The base URL of the website.
-    /// Implementations should typically return a compile‑time const string.
-    /// </summary>
-    static string BASE_URL { get; }
-
-    /// <summary>
-    /// The region this website serves.
-    /// Implementations should typically return a compile‑time const Region.
-    /// </summary>
-    static Region REGION { get; }
-
-    /// <summary>
-    /// Asynchronously creates or enqueues a scraping task for the given title and book type.
-    /// Must add data to the master data and link collections in this method
+    /// Builds and runs a scrape for the given title/book-type, appending results to the master
+    /// collections. Should be invoked through <c>Task.WhenAll</c> alongside other sites.
     /// </summary>
     Task CreateTask(
         string bookTitle,
@@ -37,10 +25,10 @@ public interface IWebsite
         ConcurrentDictionary<Website, string> masterLinkList,
         IBrowser? browser,
         Region curRegion,
-        (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships = default);
+        Membership memberships = Membership.None);
 
     /// <summary>
-    /// Performs a synchronous scrape and returns the scraped entries.
+    /// Performs the actual scrape work and returns the parsed entries plus the page URLs visited.
     /// </summary>
     Task<(List<EntryModel> Data, List<string> Links)> GetData(
         string bookTitle,

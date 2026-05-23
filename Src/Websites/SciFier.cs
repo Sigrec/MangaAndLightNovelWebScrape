@@ -7,7 +7,12 @@ namespace MangaAndLightNovelWebScrape.Websites;
 
 public sealed partial class SciFier : IWebsite
 {
-    private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+    private readonly ILogger _logger;
+
+    public SciFier(ILogger<SciFier>? logger = null)
+    {
+        _logger = logger ?? NullLogger<SciFier>.Instance;
+    }
 
     private static readonly XPathExpression _titleXPath = XPathExpression.Compile("//ul[@class='productGrid']//h3[@class='card-title']/a");
     private static readonly XPathExpression _priceXPath = XPathExpression.Compile("//div[@class='card-body']//span[contains(@class, 'price price--withTax price--main')]");
@@ -47,18 +52,12 @@ public sealed partial class SciFier : IWebsite
 
     private static readonly FrozenSet<string> _checkDescStrings = ["Vol", "Box Set"];
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships = default)
-    {
-        return Task.Run(async () =>
-        {
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, null, curRegion: curRegion);
-            masterDataList.Add(Data);
-            masterLinkList.TryAdd(Website.SciFier, Links[0]);
-        });
-    }
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+        => InternalHelpers.RunHtmlScrapeAsync(
+            this, Website.SciFier, bookTitle, bookType, masterDataList, masterLinkList, curRegion);
 
     // Has issues where the search is not very strict unforunate
-    private static string GenerateWebsiteUrl(string bookTitle, BookType bookType, Region curRegion, bool letterIsFrontHalf)
+    private string GenerateWebsiteUrl(string bookTitle, BookType bookType, Region curRegion, bool letterIsFrontHalf)
     {
         // https://scifier.com/search.php?setCurrencyId=4&section=product&search_query_adv=jujutsu+kaisen&searchsubs=ON&brand=&price_from=&price_to=&featured=&category%5B%5D=2060&section=product
 
@@ -76,7 +75,7 @@ public sealed partial class SciFier : IWebsite
             url = $"{BASE_URL}/search.php?setCurrencyId={CURRENCY_DICTIONARY[curRegion]}&search_query_adv={bookTitle.Replace(' ', '+')}+light+novels&searchsubs=ON&brand=&price_from=&price_to=&section=product";
         }
 
-        LOGGER.Info($"Url = {url}");
+        _logger.UrlGenerated(url);
         return url;
     }
 
@@ -188,13 +187,14 @@ public sealed partial class SciFier : IWebsite
 
                 if ((letterIsFrontHalf && (firstEntryFirstChar > bookTitleFirstChar)) || (!letterIsFrontHalf && (firstEntryFirstChar < bookTitleFirstChar)))
                 {
-                    LOGGER.Info($"Ending Scrape Early -> '{lastEntryFirstChar}' {(letterIsFrontHalf ? '>' : '<')} '{firstEntryFirstChar}'");
+                    _logger.EndingScrapeEarly(lastEntryFirstChar, letterIsFrontHalf ? '>' : '<', firstEntryFirstChar);
                     ShouldEndEarly = true;
                     goto EndEarly;
                 }
                 else if ((letterIsFrontHalf && firstEntryFirstChar < bookTitleFirstChar && lastEntryFirstChar < bookTitleFirstChar) || (!letterIsFrontHalf && firstEntryFirstChar > bookTitleFirstChar && lastEntryFirstChar > bookTitleFirstChar))
                 {
-                    LOGGER.Debug($"Skipping Page -> '{firstEntryFirstChar}' {(letterIsFrontHalf ? '<' : '>')} '{bookTitleFirstChar}' && '{lastEntryFirstChar}' {(letterIsFrontHalf ? '<' : '>')} '{bookTitleFirstChar}'");
+                    char cmp = letterIsFrontHalf ? '<' : '>';
+                    _logger.SkippingPage(firstEntryFirstChar, cmp, bookTitleFirstChar, lastEntryFirstChar, cmp, bookTitleFirstChar);
                     goto EndEarly;
                 }
 
@@ -239,7 +239,7 @@ public sealed partial class SciFier : IWebsite
                         {
                             if (!(await html.LoadFromWebAsync(titleData[x].GetAttributeValue("href", "ERROR"))).DocumentNode.SelectSingleNode(_entryDescXPath).InnerText.ContainsAny(["novel series", "series of prose novels"]))
                             {
-                                LOGGER.Info("Removed (3) {}", entryTitle);
+                                _logger.EntryRemoved(3, entryTitle);
                                 continue;
                             }
                         }
@@ -275,7 +275,7 @@ public sealed partial class SciFier : IWebsite
                             // If it doesn't contain a valid type identifier check its desc for it
                             if (!entryTitle.ContainsAny(_checkDescStrings))
                             {
-                                LOGGER.Info("Checking desc for {Title}", entryTitle);
+                                _logger.CheckingDescription(entryTitle);
                                 HtmlNode descNode = (await html.LoadFromWebAsync(titleData[x].GetAttributeValue<string>("href", "ERROR"))).DocumentNode.SelectSingleNode(_entryDescXPath);
                                 if (descNode is not null)
                                 {
@@ -307,12 +307,12 @@ public sealed partial class SciFier : IWebsite
                         }
                         else
                         {
-                            LOGGER.Debug("Removed (2) {}", entryTitle);
+                            _logger.EntryRemovedDebug(2, entryTitle);
                         }
                     }
                     else
                     {
-                        LOGGER.Debug("Removed (1) {}", entryTitle);
+                        _logger.EntryRemovedDebug(1, entryTitle);
                     }
                 }
 
@@ -321,7 +321,7 @@ public sealed partial class SciFier : IWebsite
                 {
                     url = $"https://scifier.com{WebUtility.HtmlDecode(pageCheck.GetAttributeValue("href", "Url Error"))}";
                     doc = await html.LoadFromWebAsync(url);
-                    LOGGER.Info($"Next Page => {url}");
+                    _logger.NextPageUrl(url);
                 }
                 else
                 {
@@ -331,18 +331,18 @@ public sealed partial class SciFier : IWebsite
         }
         catch (Exception ex)
         {
-            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
+            _logger.ScrapeError(ex, bookTitle, bookType, TITLE);
         }
         finally
         {
             data.TrimExcess();
             links.TrimExcess();
-            data.Sort(EntryModel.VolumeSort);
+            data.SortByVolume();
             if (bookType == BookType.Manga && data.Any(entry => entry.Entry.Contains("Vol")))
             {
                 data.RemoveAll(entry => !entry.Entry.ContainsAny(["Vol", "Box Set", "Color", "Comic", "Anniversary"]) && !(entry.ParsePrice() > 50));
             }
-            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         }
 
         return (data, links);

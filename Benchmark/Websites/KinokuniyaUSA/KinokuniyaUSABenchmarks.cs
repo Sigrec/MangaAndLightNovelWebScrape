@@ -3,18 +3,18 @@ using MangaAndLightNovelWebScrape.Enums;
 using MangaAndLightNovelWebScrape.Services;
 using Microsoft.Playwright;
 
-namespace Benchmark.Websites.MerryManga;
+namespace Benchmark.Websites.KinokuniyaUSA;
 
 [MemoryDiagnoser]
-public class MerryMangaBenchmarks
+public class KinokuniyaUSABenchmarks
 {
-    private MangaAndLightNovelWebScrape.Websites.MerryManga _site = null!;
+    private MangaAndLightNovelWebScrape.Websites.KinokuniyaUSA _site = null!;
     private readonly PlaywrightFixture _fixture = new();
 
     [GlobalSetup]
     public async Task Setup()
     {
-        _site = new MangaAndLightNovelWebScrape.Websites.MerryManga();
+        _site = new MangaAndLightNovelWebScrape.Websites.KinokuniyaUSA();
         await _fixture.InitializeAsync();
     }
 
@@ -25,10 +25,10 @@ public class MerryMangaBenchmarks
     [WarmupCount(5)]
     public async Task GetMangaBenchmark()
     {
-        IPage page = await PlaywrightFactory.GetPageAsync(_fixture.Browser);
+        IPage page = await PlaywrightFactory.GetPageAsync(_fixture.Browser, needsUserAgent: true);
         try
         {
-            await _site.GetData("one piece", BookType.Manga, page);
+            await _site.GetData("one piece", BookType.Manga, page, isMember: true);
         }
         finally
         {

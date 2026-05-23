@@ -1,6 +1,6 @@
 using MangaAndLightNovelWebScrape.Models;
-using System.Diagnostics;
 using System.Collections.ObjectModel;
+using System.Runtime.InteropServices;
 using MangaAndLightNovelWebScrape.Services;
 using Microsoft.Playwright;
 
@@ -13,9 +13,13 @@ public sealed partial class MasterScrape
 { 
     private readonly ConcurrentBag<List<EntryModel>> _masterDataList = [];
     private readonly ConcurrentDictionary<Website, string> _masterLinkDict = [];
-    private readonly List<Task> _webTasks = new(15);
+    private readonly List<Task> _webTasks = [with(15)];
+    private readonly ILoggerFactory _loggerFactory;
+    private readonly ILogger _logger;
+    private List<EntryModel>? _finalResults;
 
-    // private WebDriver? PersistentWebDriver = null;
+    // Static delegate avoids the per-Sort allocation of a fresh Comparison<T> in the merge loop.
+    private static readonly Comparison<List<EntryModel>> ByCount = static (a, b) => a.Count.CompareTo(b.Count);
 
     /// <summary>
     /// The current region of the Scrape
@@ -29,63 +33,41 @@ public sealed partial class MasterScrape
     /// The current stock filter of the scrape
     /// </summary>
     public StockStatus[] Filter { get; set; } = StockStatusFilter.EXCLUDE_NONE_FILTER;
-    public bool IsBooksAMillionMember { get; set; }
-    public bool IsKinokuniyaUSAMember { get; set; }
-    internal static bool IsWebDriverPersistent { get; set; } = false;
+    /// <summary>
+    /// Which member-only price columns the scraper should prefer when reading prices.
+    /// Combine flags: <c>Membership.BooksAMillion | Membership.KinokuniyaUSA</c>.
+    /// </summary>
+    public Membership Memberships { get; set; }
     /// <summary>
     /// Determines whether debug mode is enabled (Disabled by default)
     /// </summary>
     internal static bool IsDebugEnabled { get; set; } = false;
 
-    private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
-    
     [GeneratedRegex(@"\d{1,3}(?:\.\d{1})?$")] internal static partial Regex FindVolNumRegex();
     [GeneratedRegex(@"Vol \d{1,3}(?:\.\d{1})?$")] internal static partial Regex FindVolWithNumRegex();
     [GeneratedRegex(@"\s{2,}|(?:--|\u2014)\s*| - ")] internal static partial Regex MultipleWhiteSpaceRegex();
     [GeneratedRegex(@"(?<=\b(?:Vol|Novel)\.?\s+(?:\d{1,3}|\d{1,3}\.\d{1}))[^\d.].*")] internal static partial Regex FinalCleanRegex();
 
-    public MasterScrape(StockStatus[] Filter, Region Region = Region.America, Browser Browser = Browser.Edge, bool IsBooksAMillionMember = false, bool IsKinokuniyaUSAMember = false)
+    public MasterScrape(
+        StockStatus[] Filter,
+        Region Region = Region.America,
+        Browser Browser = Browser.Edge,
+        Membership Memberships = Membership.None,
+        ILoggerFactory? loggerFactory = null)
     {
+        _loggerFactory = loggerFactory ?? NullLoggerFactory.Instance;
+        _logger = _loggerFactory.CreateLogger<MasterScrape>();
+
         this.Filter = Filter;
         this.Region = Region;
         if (this.Region.IsMultiRegion())
         {
-            LOGGER.Fatal("User inputted a multi region instead of a singular region");
+            _logger.MultiRegionRejected();
             throw new NotSupportedException("Multi Region Scrape is not Supported");
         }
         this.Browser = Browser;
-        this.IsBooksAMillionMember = IsBooksAMillionMember;
-        this.IsKinokuniyaUSAMember = IsKinokuniyaUSAMember;
+        this.Memberships = Memberships;
     }
-
-    // /// <summary>
-    // /// Enables a persistent WebDriver instance for subsequent scrapes.
-    // /// If no driver exists, initializes one.
-    // /// </summary>
-    // /// <returns>The current <see cref="MasterScrape"/> instance.</returns>
-    // public MasterScrape EnablePersistentWebDriver()
-    // {
-    //     LOGGER.Info("Enabling persistent WebDriver");
-    //     IsWebDriverPersistent = true;
-
-    //     PersistentWebDriver ??= SetupBrowserDriver(this.Browser, true);
-
-    //     return this;
-    // }
-
-    // /// <summary>
-    // /// Disables the persistent WebDriver so the driver will dispose/quit after every run.
-    // /// </summary>
-    // /// <returns>The current <see cref="MasterScrape"/> instance.</returns>
-    // public MasterScrape DisablePersistentWebDriver()
-    // {
-    //     LOGGER.Info("Disabling persistent WebDriver");
-    //     IsWebDriverPersistent = false;
-    //     PersistentWebDriver?.Quit();
-    //     PersistentWebDriver = null;
-
-    //     return this;
-    // }
 
     /// <summary>
     /// Disables debug mode, preventing debug outputs to files.
@@ -124,29 +106,23 @@ public sealed partial class MasterScrape
     }
 
     /// <summary>
-    /// Returns the first set of scraped entries, or an empty sequence if no data exists.
+    /// Returns the final merged results from the most recent scrape, or an empty list if no
+    /// scrape has completed. The returned reference is read-only and supports indexed access
+    /// (<c>results.Count</c>, <c>results[i]</c>) without a forced enumeration.
     /// </summary>
-    /// <returns>An <see cref="IEnumerable{EntryModel}"/> of results.</returns>
-    public IEnumerable<EntryModel> GetResults()
-    {
-        if (!_masterDataList.IsEmpty)
-        {
-            return _masterDataList.ElementAt(0);
-        }
-
-        return Enumerable.Empty<EntryModel>();
-    }
+    public IReadOnlyList<EntryModel> GetResults() =>
+        _finalResults is { } results ? results : Array.Empty<EntryModel>();
 
     /// <summary>
-    /// Gets the dictionary of final result URLs by site.
+    /// Returns the per-site URLs the most recent scrape visited.
     /// </summary>
-    /// <returns>
-    /// A <see cref="Dictionary{Website,String}"/> mapping website names to their URLs.
-    /// </returns>
-    public Dictionary<Website, string> GetResultUrls()
-    {
-        return new Dictionary<Website, string>(_masterLinkDict);
-    }
+    /// <remarks>
+    /// The returned reference is live — subsequent <see cref="InitializeScrapeAsync"/> calls
+    /// clear and repopulate it. Copy via
+    /// <c>new Dictionary&lt;Website, string&gt;(scrape.GetResultUrls())</c> if you need a stable
+    /// snapshot across scrapes.
+    /// </remarks>
+    public IReadOnlyDictionary<Website, string> GetResultUrls() => _masterLinkDict;
 
     /// <summary>
     /// Gets the titles of the currently selected membership sites as a read-only list.
@@ -157,14 +133,14 @@ public sealed partial class MasterScrape
     /// </returns>
     public ReadOnlyCollection<string> GetMembershipsAsString()
     {
-        List<string> memberships = new(3);
+        List<string> memberships = new(2);
 
-        if (IsBooksAMillionMember)
+        if (Memberships.HasFlag(Membership.BooksAMillion))
         {
             memberships.Add(BooksAMillion.TITLE);
         }
 
-        if (IsKinokuniyaUSAMember)
+        if (Memberships.HasFlag(Membership.KinokuniyaUSA))
         {
             memberships.Add(KinokuniyaUSA.TITLE);
         }
@@ -181,14 +157,14 @@ public sealed partial class MasterScrape
     /// </returns>
     public ReadOnlyCollection<Website> GetMembershipsAsEnum()
     {
-        List<Website> memberships = new(3);
+        List<Website> memberships = new(2);
 
-        if (IsBooksAMillionMember)
+        if (Memberships.HasFlag(Membership.BooksAMillion))
         {
             memberships.Add(Website.BooksAMillion);
         }
 
-        if (IsKinokuniyaUSAMember)
+        if (Memberships.HasFlag(Membership.KinokuniyaUSA))
         {
             memberships.Add(Website.KinokuniyaUSA);
         }
@@ -213,250 +189,94 @@ public sealed partial class MasterScrape
         }
 
         EntryModel[] results = GetResults().AsValueEnumerable().ToArray();
+
+        // Single pass: measure widths AND cache StockStatus name strings. The enum-name
+        // lookup allocates a string per call, so without caching we'd do it 2x per entry
+        // (once for width, once for render). Cache once, use twice.
         int longestTitle = "Title".Length;
         int longestPrice = "Price".Length;
         int longestStatus = "Status".Length;
         int longestWebsite = "Website".Length;
+        string[] statusNames = new string[results.Length];
 
-        foreach (EntryModel entry in results)
+        for (int i = 0; i < results.Length; i++)
         {
+            EntryModel entry = results[i];
+            string statusName = entry.StockStatus.ToString();
+            statusNames[i] = statusName;
             if (entry.Entry.Length > longestTitle) longestTitle = entry.Entry.Length;
             if (entry.Price.Length > longestPrice) longestPrice = entry.Price.Length;
-            int statusLen = entry.StockStatus.ToString().Length;
-            if (statusLen > longestStatus) longestStatus = statusLen;
+            if (statusName.Length > longestStatus) longestStatus = statusName.Length;
             if (entry.Website.Length > longestWebsite) longestWebsite = entry.Website.Length;
         }
 
-        string titlePad = "━".PadRight(longestTitle   + 2, '━');
-        string pricePad = "━".PadRight(longestPrice   + 2, '━');
-        string statusPad = "━".PadRight(longestStatus  + 2, '━');
-        string websitePad = "━".PadRight(longestWebsite + 2, '━');
+        // Borders are one-shot — plain string ops are fine here.
+        string titlePad = new('━', longestTitle + 2);
+        string pricePad = new('━', longestPrice + 2);
+        string statusPad = new('━', longestStatus + 2);
+        string websitePad = new('━', longestWebsite + 2);
 
         string topBorder = $"┏{titlePad}┳{pricePad}┳{statusPad}┳{websitePad}┓";
-        string headerRow = $"┃ {"Title".PadRight(longestTitle)} ┃ {"Price".PadRight(longestPrice)} ┃ {"Status".PadRight(longestStatus)} ┃ {"Website".PadRight(longestWebsite)} ┃";
         string midBorder = $"┣{titlePad}╋{pricePad}╋{statusPad}╋{websitePad}┫";
         string bottomBorder = $"┗{titlePad}┻{pricePad}┻{statusPad}┻{websitePad}┛";
 
         int estimatedRowLen = titlePad.Length + pricePad.Length + statusPad.Length + websitePad.Length + 10;
-        StringBuilder sb = new StringBuilder(results.Length * estimatedRowLen + 200);
+        StringBuilder sb = new(results.Length * estimatedRowLen + 200);
 
         sb.AppendLine()
-        .Append("Title: \"")
-        .Append(bookTitle)
-        .AppendLine("\"")
-        .Append("BookType: ")
-        .Append(bookType.ToString())
-        .AppendLine()
-        .Append("Region: ")
-        .Append(Region.ToString())
-        .AppendLine();
+            .Append("Title: \"").Append(bookTitle).AppendLine("\"")
+            .Append("BookType: ").Append(bookType.ToString()).AppendLine()
+            .Append("Region: ").Append(Region.ToString()).AppendLine();
 
         ReadOnlyCollection<string> membershipList = GetMembershipsAsString();
         if (membershipList.Count > 0)
         {
             sb.Append("Memberships: ")
-            .Append(string.Join(", ", membershipList))
-            .AppendLine();
+                .Append(string.Join(", ", membershipList))
+                .AppendLine();
         }
 
-        sb.AppendLine(topBorder)
-        .AppendLine(headerRow)
-        .AppendLine(midBorder);
+        sb.AppendLine(topBorder);
 
-        foreach (EntryModel entry in results)
+        // Header row — build with Append + fill rather than PadRight (no extra alloc per cell).
+        AppendCell(sb, "Title", longestTitle);
+        AppendCell(sb, "Price", longestPrice);
+        AppendCell(sb, "Status", longestStatus);
+        AppendCell(sb, "Website", longestWebsite, last: true);
+
+        sb.AppendLine(midBorder);
+
+        for (int i = 0; i < results.Length; i++)
         {
-            sb.Append("┃ ")
-            .Append(entry.Entry.PadRight(longestTitle))
-            .Append(" ┃ ")
-            .Append(entry.Price.PadRight(longestPrice))
-            .Append(" ┃ ")
-            .Append(entry.StockStatus.ToString().PadRight(longestStatus))
-            .Append(" ┃ ")
-            .Append(entry.Website.PadRight(longestWebsite))
-            .AppendLine(" ┃");
+            EntryModel entry = results[i];
+            AppendCell(sb, entry.Entry, longestTitle);
+            AppendCell(sb, entry.Price, longestPrice);
+            AppendCell(sb, statusNames[i], longestStatus);
+            AppendCell(sb, entry.Website, longestWebsite, last: true);
         }
 
         sb.Append(bottomBorder);
 
         if (includeLinks && !_masterLinkDict.IsEmpty)
         {
-            sb.AppendLine()
-            .AppendLine("Links:");
+            sb.AppendLine().AppendLine("Links:");
             foreach (KeyValuePair<Website, string> url in _masterLinkDict)
             {
-                sb.Append(url.Key)
-                .Append(" => ")
-                .AppendLine(url.Value);
+                sb.Append(url.Key.ToString())
+                    .Append(" => ")
+                    .AppendLine(url.Value);
             }
         }
 
         return sb.ToString();
-    }
 
-    /// <summary>
-    /// Writes scrape results to the console, either as plain lines or as a compact ASCII table.
-    /// </summary>
-    /// <param name="isAsciiTable">
-    ///   If <c>true</c>, prints results in ASCII‑table format; otherwise, prints each entry on its own line.
-    /// </param>
-    /// <param name="title">The title of the series used for the ASCII‑table header.</param>
-    /// <param name="bookType">The book format used for the ASCII‑table header.</param>
-    /// <param name="includeLinks">
-    ///   Whether to include website links after the results. Defaults to <c>true</c>.
-    /// </param>
-    /// <exception cref="ArgumentException">
-    ///   Thrown if <paramref name="title"/> is null, empty, or whitespace when <paramref name="isAsciiTable"/> is <c>true</c>.
-    /// </exception>
-    public void PrintResultsToConsole(
-        bool isAsciiTable = false,
-        string title = "",
-        BookType bookType = BookType.Manga,
-        bool includeLinks = true)
-    {
-        EntryModel[] results = GetResults().AsValueEnumerable().ToArray();
-
-        if (results.Length == 0)
+        // PadRight allocates a fresh padded string per call (~4 per row × N rows). This local
+        // appends the value then pads with raw spaces straight into the SB instead.
+        static void AppendCell(StringBuilder sb, string value, int width, bool last = false)
         {
-            Console.WriteLine("No MasterData Available");
-            return;
-        }
-
-        if (isAsciiTable)
-        {
-            Console.WriteLine(GetResultsAsAsciiTable(title, bookType, includeLinks));
-            return;
-        }
-
-        // Plain output
-        foreach (EntryModel entry in results)
-        {
-            Console.WriteLine(entry.ToString());
-        }
-
-        if (includeLinks)
-        {
-            foreach (KeyValuePair<Website, string> url in GetResultUrls())
-            {
-                // compact "[key,value]" format
-                Console.WriteLine("[" + url.Key + "," + url.Value + "]");
-            }
-        }
-    }
-
-    /// <summary>
-    /// Writes scrape results to a file, either as plain lines or as a compact ASCII table.
-    /// </summary>
-    /// <param name="file">Path to the output file.</param>
-    /// <param name="isAsciiTable">
-    ///   If <c>true</c>, writes results in ASCII‑table format; otherwise, writes each entry on its own line.
-    /// </param>
-    /// <param name="title">The title of the series used for the ASCII‑table header.</param>
-    /// <param name="bookType">The book format used for the ASCII‑table header.</param>
-    /// <param name="includeLinks">
-    ///   Whether to include website links after the results. Defaults to <c>true</c>.
-    /// </param>
-    /// <exception cref="ArgumentException">
-    ///   Thrown if <paramref name="title"/> is null, empty, or whitespace when <paramref name="isAsciiTable"/> is <c>true</c>.
-    /// </exception>
-    public void PrintResultsToFile(
-        string file,
-        bool isAsciiTable = false,
-        string title = "",
-        BookType bookType = BookType.Manga,
-        bool includeLinks = true)
-    {
-        EntryModel[] results = GetResults().AsValueEnumerable().ToArray();
-
-        if (isAsciiTable)
-        {
-            // Entire table at once
-            File.WriteAllText(file, GetResultsAsAsciiTable(title, bookType, includeLinks));
-            return;
-        }
-
-        using StreamWriter writer = new(file);
-        if (results.Length == 0)
-        {
-            writer.WriteLine("No MasterData Available");
-            return;
-        }
-
-        // Plain output
-        foreach (EntryModel entry in results)
-        {
-            writer.WriteLine(entry.ToString());
-        }
-
-        if (includeLinks)
-        {
-            foreach (KeyValuePair<Website, string> website in _masterLinkDict)
-            {
-                if (!string.IsNullOrWhiteSpace(website.Value))
-                {
-                    writer.WriteLine("[" + website.Key + "," + website.Value + "]");
-                }
-            }
-        }
-    }
-
-    /// <summary>
-    /// Writes scrape results to the provided logger at the specified log level,
-    /// either as plain entries or as a compact ASCII table.
-    /// </summary>
-    /// <param name="UserLogger">The logger to which to write the results.</param>
-    /// <param name="logLevel">The log level at which to log the results.</param>
-    /// <param name="isAsciiTable">
-    ///   If <c>true</c>, logs results in ASCII‑table format; otherwise, logs each entry as a separate log call.
-    /// </param>
-    /// <param name="title">The title of the series for the ASCII‑table header.</param>
-    /// <param name="bookType">The book format for the ASCII‑table header.</param>
-    /// <param name="includeLinks">
-    ///   Whether to include website links after the results. Defaults to <c>true</c>.
-    /// </param>
-    public void PrintResultsToLogger(
-        Logger UserLogger,
-        LogLevel logLevel,
-        bool isAsciiTable = false,
-        string title = "",
-        BookType bookType = BookType.Manga,
-        bool includeLinks = true)
-    {
-        EntryModel[] results = GetResults().AsValueEnumerable().ToArray();
-
-        Action<string> logAction = logLevel.Ordinal switch
-        {
-            0 => UserLogger.Trace,
-            1 => UserLogger.Debug,
-            2 => UserLogger.Info,
-            3 => UserLogger.Warn,
-            4 => UserLogger.Error,
-            5 => UserLogger.Fatal,
-            _ => UserLogger.Info
-        };
-
-        if (results.Length == 0)
-        {
-            logAction("No MasterData Available");
-            return;
-        }
-
-        if (isAsciiTable)
-        {
-            logAction(GetResultsAsAsciiTable(title, bookType, includeLinks));
-            return;
-        }
-
-        foreach (EntryModel entry in results)
-        {
-            logAction(entry.ToString());
-        }
-
-        if (includeLinks)
-        {
-            foreach (KeyValuePair<Website,string> url in _masterLinkDict)
-            {
-                logAction("[" + url.Key + "," + url.Value + "]");
-            }
+            sb.Append("┃ ").Append(value).Append(' ', width - value.Length);
+            if (last) sb.AppendLine(" ┃");
+            else sb.Append(' ');
         }
     }
 
@@ -469,73 +289,115 @@ public sealed partial class MasterScrape
     /// <param name="biggerList">The bigger list of data sets between the two websites</param>
     /// <param name="bookTitle">The initial title inputted by the user used to determine if the titles in the lists "match"</param>
     /// <returns>The final list of data containing all available lowest price volumes between the two websites</returns>
-    private static List<EntryModel> PriceComparison(List<EntryModel> smallerList, List<EntryModel> biggerList)
+    /// <summary>
+    /// Merges two per-site result lists by volume number, keeping the cheaper price when both
+    /// sites carry the same volume. Volumes only one side carries are passed through.
+    /// </summary>
+    /// <param name="sortResult">
+    /// When <c>true</c> (default), the returned list is sorted by <see cref="EntryModel.VolumeSort"/>.
+    /// Internal callers chaining multiple merge rounds pass <c>false</c> to skip the intermediate
+    /// sort — the final caller does one sort at the end instead of O(log N) sorts of growing lists.
+    /// </param>
+    /// <remarks>
+    /// The merge itself is order-independent — keyed by parsed volume number via a dictionary
+    /// — so a tweak to the sort doesn't silently change the merge outcome.
+    ///
+    /// Complexity: <c>O(N + M)</c> average over the smaller-list build and the bigger-list scan.
+    /// Worst case <c>O(N · M)</c> only when the volume key is unparseable (returns -1) or is a
+    /// Box Set (also -1) for every entry — that bucket degenerates to a linear scan.
+    /// </remarks>
+    internal static List<EntryModel> PriceComparison(List<EntryModel> smallerList, List<EntryModel> biggerList, bool sortResult = true)
     {
-        List<EntryModel> finalData = []; // The final list of data containing all available volumes for the series from the website with the lowest price
-        bool sameVolumeCheck; // Determines whether a match has been found where the 2 volumes are the same to compare prices for
-        int nextVolPos = 0; // The position of the next volume and then proceeding volumes to check if there is a volume to compare
-        double biggerListCurrentVolNum; // The current vol number from the website with the bigger list of volumes that is being checked
-        // LOGGER.Debug($"Smaller -> {smallerList[0].Website} | Bigger -> {biggerList[0].Website}");
+        int smallerCount = smallerList.Count;
+        int biggerCount = biggerList.Count;
+        List<EntryModel> finalData = new(biggerCount + smallerCount);
 
-        foreach (EntryModel biggerListData in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(biggerList))
+        // Fast-path: nothing to compare against — just emit biggerList as-is.
+        if (smallerCount == 0)
         {
-            sameVolumeCheck = false; // Reset the check to determine if two volumes with the same number has been found to false
-            biggerListCurrentVolNum = EntryModel.GetCurrentVolumeNum(biggerListData.Entry);
-
-            if (nextVolPos != smallerList.Count) // Only need to check for a comparison if there are still volumes to compare in the "smallerList"
+            foreach (EntryModel entry in CollectionsMarshal.AsSpan(biggerList))
             {
-                for (int y = nextVolPos; y < smallerList.Count; y++) // Check every volume in the smaller list, skipping over volumes that have already been checked
+                finalData.Add(entry);
+            }
+            if (sortResult) finalData.SortByVolume();
+            return finalData;
+        }
+
+        Span<EntryModel> smallerSpan = CollectionsMarshal.AsSpan(smallerList);
+
+        // Cache regex/parse outputs for the smaller list once.
+        bool[] consumed = new bool[smallerCount];
+        decimal[] smallerPrices = new decimal[smallerCount];
+        bool[] smallerHasImperfect = new bool[smallerCount];
+
+        // Index from vol-number → smaller-list index of the *first* entry with that vol.
+        // For the rare case of multiple entries sharing a vol (Box Sets all hash to -1, and so
+        // do unparseable titles), `nextSameVol[i]` links to the next entry sharing the bucket
+        // (or -1 if none) — i.e. a flat-array chained hashmap instead of a Dictionary-of-List.
+        // The win: most volumes are unique, so we skip allocating a List<int> per bucket.
+        Dictionary<double, int> volHead = new(smallerCount);
+        int[] nextSameVol = new int[smallerCount];
+
+        // Walk in reverse so the chain ends up in ascending-index order — matches the old
+        // positional iteration semantics (first inserted wins when multiple match).
+        for (int i = smallerCount - 1; i >= 0; i--)
+        {
+            double vol = EntryModel.GetCurrentVolumeNum(smallerSpan[i].Entry);
+            smallerPrices[i] = smallerSpan[i].ParsePrice();
+            smallerHasImperfect[i] = smallerSpan[i].Entry.Contains("Imperfect");
+
+            nextSameVol[i] = volHead.TryGetValue(vol, out int currentHead) ? currentHead : -1;
+            volHead[vol] = i;
+        }
+
+        foreach (EntryModel biggerEntry in CollectionsMarshal.AsSpan(biggerList))
+        {
+            double biggerVol = EntryModel.GetCurrentVolumeNum(biggerEntry.Entry);
+            decimal biggerPrice = biggerEntry.ParsePrice();
+            bool matched = false;
+
+            if (volHead.TryGetValue(biggerVol, out int candidateIdx))
+            {
+                while (candidateIdx != -1)
                 {
-                    // Check to see if the titles are not the same and they are not similar enough, or it is not new then go to the next volume
-                    if (smallerList[y].Entry.Contains("Imperfect") || (!smallerList[y].Entry.Equals(biggerListData.Entry, StringComparison.OrdinalIgnoreCase) && InternalHelpers.Similar(smallerList[y].Entry, biggerListData.Entry, smallerList[y].Entry.Length > biggerListData.Entry.Length ? biggerListData.Entry.Length / 6 : smallerList[y].Entry.Length / 6) == -1))
+                    if (!consumed[candidateIdx] && !smallerHasImperfect[candidateIdx])
                     {
-                        // LOGGER.Debug($"Not The Same ({smallerList[y].Entry} | {biggerListData.Entry} | {!smallerList[y].Entry.Equals(biggerListData.Entry)} | {(InternalHelpers.Similar(smallerList[y].Entry, biggerListData.Entry, smallerList[y].Entry.Length > biggerListData.Entry.Length ? biggerListData.Entry.Length / 6 : smallerList[y].Entry.Length / 6) == -1)} | {smallerList[y].Entry.Contains("Imperfect")})");
-                        continue;
+                        EntryModel smaller = smallerSpan[candidateIdx];
+                        int similarityThreshold = smaller.Entry.Length > biggerEntry.Entry.Length
+                            ? biggerEntry.Entry.Length / 6
+                            : smaller.Entry.Length / 6;
+
+                        if (smaller.Entry.Equals(biggerEntry.Entry, StringComparison.OrdinalIgnoreCase) ||
+                            InternalHelpers.Similar(smaller.Entry, biggerEntry.Entry, similarityThreshold) != -1)
+                        {
+                            finalData.Add(biggerPrice > smallerPrices[candidateIdx] ? smaller : biggerEntry);
+                            consumed[candidateIdx] = true;
+                            matched = true;
+                            break;
+                        }
                     }
 
-                    // LOGGER.Debug($"MATCH? ({biggerListCurrentVolNum} = {(biggerListData.Entry.Contains("Box Set") ? EntryModel.GetCurrentVolumeNum(smallerList[y].Entry) : EntryModel.GetCurrentVolumeNum(smallerList[y].Entry))}) -> {biggerListCurrentVolNum == EntryModel.GetCurrentVolumeNum(smallerList[y].Entry)}");
-                    // If the vol numbers are the same and the titles are similar or the same from the if check above, add the lowest price volume to the list
-                    if (biggerListCurrentVolNum == EntryModel.GetCurrentVolumeNum(smallerList[y].Entry))
-                    {
-                        // LOGGER.Debug($"Found Match for {biggerListData} | {smallerList[y]}");
-                        // LOGGER.Debug($"PRICE COMPARISON ({biggerListData.ParsePrice()} > {smallerList[y].ParsePrice()}) -> {biggerListData.ParsePrice() > smallerList[y].ParsePrice()}");
-                        // Get the lowest price between the two then add the lowest dataset
-                        if (biggerListData.ParsePrice() > smallerList[y].ParsePrice())
-                        {
-                            // LOGGER.Debug($"Add Match SmallerList {smallerList[y]}");
-                            finalData.Add(smallerList[y]);
-                        }
-                        else
-                        {
-                            // LOGGER.Debug($"Add Match BiggerList {biggerListData}");
-                            finalData.Add(biggerListData);
-                        }
-                        smallerList.RemoveAt(y);
-
-                        nextVolPos = y; // Shift the position in which the next volumes to compare from the smaller list starts essentially "shrinking" the number of comparisons needed whenever a valid comparison is found by 1
-
-                        sameVolumeCheck = true;
-                        break;
-                    }
+                    candidateIdx = nextSameVol[candidateIdx];
                 }
             }
 
-            if (!sameVolumeCheck) // If the current volume number in the bigger list has no match in the smaller list (same volume number and name) then add it
+            if (!matched)
             {
-                // LOGGER.Debug($"Add No Match {biggerListData}");
-                finalData.Add(biggerListData);
+                finalData.Add(biggerEntry);
             }
         }
 
-        // LOGGER.Debug("SmallerList Size = " + smallerList.Count);
-        // Smaller list has volumes that are not present in the bigger list and are volumes that have a volume # greater than the greatest volume # in the bigger lis
-        for (int x = 0; x < smallerList.Count; x++)
+        // Append the smaller-list entries we never matched. These are volumes the bigger list
+        // doesn't carry (or were filtered by the "Imperfect" gate).
+        for (int x = 0; x < smallerCount; x++)
         {
-            // LOGGER.Debug($"Add SmallerList Leftovers {smallerList[x]}");
-            finalData.Add(smallerList[x]);
+            if (!consumed[x])
+            {
+                finalData.Add(smallerSpan[x]);
+            }
         }
-        // finalData.ForEach(data => LOGGER.Info($"Final -> {data}"));
-        finalData.Sort(EntryModel.VolumeSort);
+
+        if (sortResult) finalData.SortByVolume();
         return finalData;
     }
 
@@ -622,21 +484,22 @@ public sealed partial class MasterScrape
                 $"Website{plural} [{siteListString}] not supported in region \"{this.Region}\".");
         }
 
-        IBrowser? browser = null;
+        PlaywrightSession? session = null;
         if (InternalHelpers.NeedPlaywright(siteList))
         {
-            browser = await PlaywrightFactory.SetupPlaywrightBrowserAsync(this.Browser);
+            session = await PlaywrightFactory.SetupPlaywrightBrowserAsync(this.Browser);
         }
 
         try
         {
-            LOGGER.Info("Starting scrape for {Title} ({BookType}), against website(s) [{Websites}]", title, bookType, string.Join(',', siteList));
-            LOGGER.Info("Region set to {0}", this.Region);
-            LOGGER.Info("Running on {0} browser", this.Browser);
+            _logger.ScrapeStarting(title, bookType, string.Join(',', siteList));
+            _logger.RegionSet(this.Region);
+            _logger.BrowserSet(this.Browser);
 
-            // 1) Clear prior URLs
+            // 1) Clear prior URLs / cached results
             _masterLinkDict.Clear();
             _masterDataList.Clear();
+            _finalResults = null;
 
             // 2) Kick off the individual scraping tasks
             _webTasks.ScheduleScrapes(
@@ -645,9 +508,10 @@ public sealed partial class MasterScrape
                 bookType,
                 _masterDataList,
                 _masterLinkDict,
-                browser,
+                session?.Browser,
                 this.Region,
-                (this.IsBooksAMillionMember, this.IsKinokuniyaUSAMember)
+                _loggerFactory,
+                this.Memberships
             );
             await Task.WhenAll(_webTasks);
             _webTasks.Clear();
@@ -662,30 +526,39 @@ public sealed partial class MasterScrape
             if (this.Filter != StockStatusFilter.EXCLUDE_NONE_FILTER
                 && currentLists.Count > 0)
             {
-                LOGGER.Info("Applying stock filters");
+                _logger.ApplyingStockFilters();
+                // Pack the filter set + the always-excluded NA into a single uint bitmask.
+                // Per-entry check becomes one shift-and instead of a linear Array.IndexOf scan.
+                // (StockStatus has 6 values fitting in 0-5, well inside uint's 32 bits.)
+                uint filterMask = 1u << (int)StockStatus.NA;
+                foreach (StockStatus status in this.Filter)
+                {
+                    filterMask |= 1u << (int)status;
+                }
+
                 foreach (List<EntryModel> entryList in currentLists)
                 {
-                    entryList.RemoveAll(e =>
-                        this.Filter.Contains(e.StockStatus) ||
-                        e.StockStatus == StockStatus.NA);
+                    entryList.RemoveAll(e => (filterMask & (1u << (int)e.StockStatus)) != 0);
                 }
             }
 
             // 6) Price comparisons
             if (currentLists.Count > 1) // While there is still 2 or more lists of data to compare prices continue
             {
-                LOGGER.Info("Starting price comparisons");
+                _logger.StartingPriceComparisons();
                 int initialMasterDataListCount;
-                List<Task<List<EntryModel>>> comparisonTasks = new(currentLists.Count / 2 + currentLists.Count);
+                List<Task<List<EntryModel>>> comparisonTasks = new(currentLists.Count / 2);
                 while (currentLists.Count > 1)
                 {
-                    currentLists.Sort((a, b) => a.Count.CompareTo(b.Count));
+                    currentLists.Sort(ByCount);
                     initialMasterDataListCount = currentLists.Count;
                     for (int i = 0; i < currentLists.Count - 1; i += 2)
                     {
                         List<EntryModel> smaller = currentLists[i];
                         List<EntryModel> larger = currentLists[i + 1];
-                        comparisonTasks.Add(Task.Run(() => PriceComparison(smaller, larger)));
+                        // Intermediate merges skip their internal sort — the dict-based merge
+                        // doesn't need sorted inputs, and we sort the final result once below.
+                        comparisonTasks.Add(Task.Run(() => PriceComparison(smaller, larger, sortResult: false)));
                     }
 
                     currentLists.AddRange(await Task.WhenAll(comparisonTasks));
@@ -694,19 +567,18 @@ public sealed partial class MasterScrape
                 }
             }
 
+            // The per-site collectors are no longer needed — stash the merged result.
             _masterDataList.Clear();
-            if (currentLists.Count > 0)
-            {
-                _masterDataList.Add(currentLists[0]);
-            }
+            _finalResults = currentLists.Count > 0 ? currentLists[0] : null;
+            _finalResults?.SortByVolume();
             currentLists.Clear();
 
             // 7) Optional debug dump
             if (IsDebugEnabled)
             {
-                PrintResultsToLogger(
-                    LOGGER,
-                    LogLevel.Info,
+                _logger.PrintResults(
+                    this,
+                    LogLevel.Information,
                     true,
                     title,
                     bookType);
@@ -714,49 +586,12 @@ public sealed partial class MasterScrape
         }
         catch (Exception ex)
         {
-            LOGGER.Error(ex, "Unknown error thrown during scrape execution");
+            _logger.ScrapeExecutionFailed(ex);
         }
         finally
         {
-            if (browser is not null) await browser.CloseAsync();
+            if (session is not null) await session.DisposeAsync();
         }
     }
 
-    internal static async Task Main()
-    {
-        Stopwatch stopwatch = Stopwatch.StartNew();
-
-        MasterScrape scrape = new MasterScrape(
-            Filter: StockStatusFilter.EXCLUDE_NONE_FILTER,
-            Region: Region.Canada,
-            Browser: Browser.Edge,
-            IsBooksAMillionMember: false,
-            IsKinokuniyaUSAMember: false)
-        .EnableDebugMode();
-
-        string title = "jujutsu kaisen";
-        BookType bookType = BookType.Manga;
-
-        await scrape.InitializeScrapeAsync(
-            title: title,
-            bookType: bookType,
-            siteList: [Website.SciFier]);
-
-        stopwatch.Stop();
-
-        scrape.PrintResultsToConsole(
-            isAsciiTable: true,
-            title: title,
-            bookType: bookType);
-
-        LOGGER.Info(
-            $"Elapsed time: {stopwatch.Elapsed.TotalSeconds:F3} seconds");
-        Console.WriteLine(
-            $"Elapsed time: {stopwatch.Elapsed.TotalSeconds:F3} seconds");
-    }
-
-    // private static void Main()
-    // {
-        
-    // }
 }

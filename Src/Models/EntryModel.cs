@@ -1,5 +1,3 @@
-using NLog.Common;
-
 namespace MangaAndLightNovelWebScrape
 {
     public partial struct EntryModel : IEquatable<EntryModel>
@@ -8,7 +6,6 @@ namespace MangaAndLightNovelWebScrape
         public string Price { get; set; }
         public StockStatus StockStatus { get; set; }
         public string  Website { get; set; }
-        private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrape");
         internal static VolumeSort VolumeSort = new();
         // [GeneratedRegex(@"[Vol|Box Set].*?(\d+).*")]  private static partial Regex VolumeNumRegex();
         [GeneratedRegex(@"(?:.*(?<int> \d{1,3})|.*(?<double> \d{1,3}\.\d{1,3}))(?:\s+Novel$|$)|(?:.*(?<int> \d{1,3})-\d{1,3})")] private static partial Regex ExtractDoubleRegex();
@@ -45,45 +42,48 @@ namespace MangaAndLightNovelWebScrape
         }
 
         /// <summary>
-        /// Parses and returns the price as a decimal value
+        /// Parses and returns the price as a decimal value. Uses span-based parsing so no
+        /// intermediate substring is allocated — important because this is called per
+        /// dedup pair and per merge probe.
         /// </summary>
         public decimal ParsePrice()
         {
-            if (!char.IsDigit(this.Price[0])) // Currency places the symbol at the front like USD
-            {
-                return decimal.Parse(this.Price[1..]);
-            }
-            return decimal.Parse(this.Price[..^1]); // Currency places the symbol at the end like with Japanese Yen
+            // Currency at front (USD, GBP, etc.): "$10.99" → slice off symbol.
+            // Currency at end (JPY ¥, etc.): "1099¥" → slice off symbol.
+            ReadOnlySpan<char> span = char.IsDigit(this.Price[0])
+                ? this.Price.AsSpan(0, this.Price.Length - 1)
+                : this.Price.AsSpan(1);
+
+            return decimal.Parse(span, System.Globalization.CultureInfo.InvariantCulture);
         }
 
         /// <summary>
-        /// Gets the current volume num for a series unit entry givin its type (box set, omnibux, single, etc)
+        /// Gets the current volume num for a series unit entry given its type (box set, omnibus,
+        /// single, etc). Returns <c>-1</c> for Box Sets and unparseable titles.
         /// </summary>
-        /// <param name="title">The full title of the entry to get the volume number</param>
-        /// <returns></returns>
         internal static double GetCurrentVolumeNum(string title)
         {
-            // Early return if "Box Set" is found
             if (title.Contains("Box Set"))
             {
                 return -1;
             }
 
             Match match = ExtractDoubleRegex().Match(title);
-            // Check for integer match first
-            if (match.Groups["int"].Success)
+
+            // Group.ValueSpan + double.Parse(span) avoids materializing the captured substring
+            // and the boxing/conversion path through Convert.ToDouble(string).
+            Group intGroup = match.Groups["int"];
+            if (intGroup.Success)
             {
-                return Convert.ToDouble(match.Groups["int"].Value);
+                return double.Parse(intGroup.ValueSpan, System.Globalization.CultureInfo.InvariantCulture);
             }
 
-            // Check for double match
-            if (match.Groups["double"].Success)
+            Group doubleGroup = match.Groups["double"];
+            if (doubleGroup.Success)
             {
-                return Convert.ToDouble(match.Groups["double"].Value);
+                return double.Parse(doubleGroup.ValueSpan, System.Globalization.CultureInfo.InvariantCulture);
             }
 
-            // Log failure if no match found
-            LOGGER.Error($"Failed to Extract Entry # from \"{title}\"");
             return -1;
         }
 
@@ -126,9 +126,8 @@ namespace MangaAndLightNovelWebScrape
     /// </summary>
     public partial class VolumeSort : IComparer<EntryModel>
     {
-        [GeneratedRegex(@" (?:Vol|Box Set) \d{1,3}(?:\.\d{1,2})?$")] private static partial Regex ExtractNameRegex();
-        [GeneratedRegex(@"[^\p{L}\p{N}\s\.]")] private static partial Regex FilterNameRegex();
-        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+        [GeneratedRegex(@" (?:Vol|Box Set) \d{1,3}(?:\.\d{1,2})?$")] internal static partial Regex ExtractNameRegex();
+        [GeneratedRegex(@"[^\p{L}\p{N}\s\.]")] internal static partial Regex FilterNameRegex();
 
         /// <summary>
         /// Extracts the entry's volume number and checks to see if they are equal or similar enough

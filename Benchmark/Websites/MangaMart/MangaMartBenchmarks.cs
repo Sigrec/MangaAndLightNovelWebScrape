@@ -3,18 +3,18 @@ using MangaAndLightNovelWebScrape.Enums;
 using MangaAndLightNovelWebScrape.Services;
 using Microsoft.Playwright;
 
-namespace Benchmark.Websites.MerryManga;
+namespace Benchmark.Websites.MangaMart;
 
 [MemoryDiagnoser]
-public class MerryMangaBenchmarks
+public class MangaMartBenchmarks
 {
-    private MangaAndLightNovelWebScrape.Websites.MerryManga _site = null!;
+    private MangaAndLightNovelWebScrape.Websites.MangaMart _site = null!;
     private readonly PlaywrightFixture _fixture = new();
 
     [GlobalSetup]
     public async Task Setup()
     {
-        _site = new MangaAndLightNovelWebScrape.Websites.MerryManga();
+        _site = new MangaAndLightNovelWebScrape.Websites.MangaMart();
         await _fixture.InitializeAsync();
     }
 

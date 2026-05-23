@@ -1,121 +1,102 @@
-using System.Net;
+using System.Runtime.InteropServices;
 using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape.Services;
 
+/// <summary>
+/// Bundles an <see cref="IPlaywright"/> driver with the launched <see cref="IBrowser"/>.
+/// Disposing closes the browser then disposes the driver subprocess, so no resources leak
+/// between scrape runs.
+/// </summary>
+internal sealed class PlaywrightSession : IAsyncDisposable
+{
+    public IPlaywright Playwright { get; }
+    public IBrowser Browser { get; }
+
+    internal PlaywrightSession(IPlaywright playwright, IBrowser browser)
+    {
+        Playwright = playwright;
+        Browser = browser;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await Browser.CloseAsync();
+        Playwright.Dispose();
+    }
+}
+
 internal static class PlaywrightFactory
 {
+    // Trimmed Chromium args:
+    //   removed --incognito (NewContextAsync already isolates each context)
+    //   removed --disable-dev-shm-usage (Linux/Docker workaround, no-op on Windows)
+    //   removed --no-sandbox (Docker/Linux workaround; unsafe and unneeded on desktop)
+    //   removed --disable-quic / --disable-http2 (forced HTTP/1.1 hurts throughput)
     private static readonly string[] CHROMIUM_ARGS_PLAYWRIGHT =
     [
-        "--disable-dev-shm-usage",
         "--disable-extensions",
         "--disable-notifications",
         "--disable-gpu",
         "--disable-software-rasterizer",
-        "--no-sandbox",
-        "--incognito",
-        "--disable-quic",
-        "--disable-http2",
     ];
 
-    public static async Task<IBrowser>
+    public static async Task<PlaywrightSession>
         SetupPlaywrightBrowserAsync(
             Browser target = Browser.Edge,
             bool headless = true)
     {
         IPlaywright playwright = await Playwright.CreateAsync();
 
-        bool isChromium = target == Browser.Edge || target == Browser.Chrome;
-        string? channel = null;
-        string fireFoxExePath = string.Empty;
-        IBrowser browser;
-
-        // Validate requested browser exists (Windows-only)
-        switch (target)
+        try
         {
-            case Browser.Edge:
-                if (!IsEdgeInstalled())
-                {
-                    throw new InvalidOperationException("Microsoft Edge is not installed on this system.");
-                }
-                channel = "msedge";
-                break;
-
-            case Browser.Chrome:
-                if (!IsChromeInstalled())
-                {
-                    throw new InvalidOperationException("Google Chrome is not installed on this system.");
-                }
-                channel = "chrome";
-                break;
-
-            case Browser.FireFox:
-                fireFoxExePath = FirefoxInstallPath();
-                if (string.IsNullOrWhiteSpace(fireFoxExePath))
-                {
-                    throw new InvalidOperationException("Mozilla Firefox is not installed on this system.");
-                }
-                break;
-
-            default:
-                throw new ArgumentOutOfRangeException(nameof(target), $"Unsupported browser: {target}");
-        }
-
-        if (isChromium)
-        {
-            BrowserTypeLaunchOptions launch = new()
+            IBrowser browser = target switch
             {
-                Headless = headless,
-                Args = CHROMIUM_ARGS_PLAYWRIGHT,
-                Channel = channel
+                Browser.Edge => await playwright.Chromium.LaunchAsync(new()
+                {
+                    Headless = headless,
+                    Channel = "msedge",
+                    Args = CHROMIUM_ARGS_PLAYWRIGHT,
+                }),
+                Browser.Chrome => await playwright.Chromium.LaunchAsync(new()
+                {
+                    Headless = headless,
+                    Channel = "chrome",
+                    Args = CHROMIUM_ARGS_PLAYWRIGHT,
+                }),
+                Browser.FireFox => await playwright.Firefox.LaunchAsync(new()
+                {
+                    Headless = headless,
+                    ExecutablePath = ResolveFirefoxExecutablePath(),
+                }),
+                _ => throw new ArgumentOutOfRangeException(nameof(target), $"Unsupported browser: {target}"),
             };
-            browser = await playwright.Chromium.LaunchAsync(launch);
-        }
-        else
-        {
-            BrowserTypeLaunchOptions launch = new()
-            {
-                ExecutablePath = fireFoxExePath,
-                Headless = headless
-            };
-            browser = await playwright.Firefox.LaunchAsync(launch);
-        }
 
-        return browser;
+            return new PlaywrightSession(playwright, browser);
+        }
+        catch
+        {
+            playwright.Dispose();
+            throw;
+        }
     }
 
     /// <summary>
-    /// Creates and returns a new Playwright <see cref="IPage"/> instance with optional
-    /// User-Agent override, image request blocking, and custom default timeouts.
+    /// Creates a new Playwright <see cref="IPage"/> from <paramref name="browser"/>, in its own
+    /// fresh context (isolated cookies/storage).
     /// </summary>
-    /// <param name="browser">The Playwright <see cref="IBrowser"/> to create the page from.</param>
-    /// <param name="needsUserAgent">
-    /// If <c>true</c>, a default User-Agent string will be resolved and applied to the browser context.
-    /// </param>
-    /// <param name="defaultTimeout">
-    /// The default timeout in milliseconds to apply for all page operations and navigation.
-    /// </param>
-    /// <param name="userAgentOverride">
-    /// A specific User-Agent string to use instead of the default. Overrides <paramref name="needsUserAgent"/>.
-    /// </param>
-    /// <param name="blockImages">
-    /// If <c>true</c>, blocks requests for common image file types (.png, .jpg, .jpeg, .webp, .gif)
-    /// to reduce bandwidth and improve performance.
-    /// </param>
-    /// <returns>
-    /// A configured <see cref="IPage"/> instance ready for navigation and interaction.
-    /// </returns>
+    /// <remarks>
+    /// The page and its context are NOT auto-disposed. Call
+    /// <see cref="DisposeContextAsync(IPage)"/> in a finally block once the per-site scrape is done.
+    /// </remarks>
     public static async Task<IPage>
         GetPageAsync(
             IBrowser browser,
             bool needsUserAgent = false,
-            int defaultTimeout = 15000,
+            int defaultTimeout = 30_000,
             string? userAgentOverride = null,
-            bool blockImages = true
-        )
+            bool blockImages = true)
     {
-        // Context (only set UA if asked; otherwise preserve user’s locale/region)
-        IBrowserContext context;
         BrowserNewContextOptions opts = new()
         {
             ServiceWorkers = ServiceWorkerPolicy.Block,
@@ -126,27 +107,24 @@ internal static class PlaywrightFactory
         if (needsUserAgent || !string.IsNullOrWhiteSpace(userAgentOverride))
         {
             opts.UserAgent = ResolveUserAgent(needsUserAgent, userAgentOverride);
-            context = await browser.NewContextAsync(opts);
         }
-        else
-        {
-            context = await browser.NewContextAsync(opts);
-        }
+
+        IBrowserContext context = await browser.NewContextAsync(opts);
 
         if (blockImages)
         {
             await context.RouteAsync("**/*", async route =>
             {
-                IRequest req = route.Request;
-                string type = req.ResourceType;
+                string type = route.Request.ResourceType;
+                // Never abort the HTML itself
                 if (type is "document")
                 {
-                    await route.ContinueAsync(); // never abort the HTML
+                    await route.ContinueAsync();
                     return;
                 }
 
-                // block only heavy assets
-                if (type is "image")
+                // Block heavy/visual assets the scraper never reads
+                if (type is "image" or "font" or "media" or "stylesheet")
                 {
                     await route.AbortAsync();
                     return;
@@ -163,16 +141,37 @@ internal static class PlaywrightFactory
         return page;
     }
 
+    /// <summary>
+    /// Closes the page and its owning context. Safe to call in a finally block after a per-site
+    /// scrape — releases the context's storage, cookie jar, and route handler.
+    /// </summary>
+    public static async Task DisposeContextAsync(this IPage page)
+    {
+        IBrowserContext context = page.Context;
+        try
+        {
+            await page.CloseAsync();
+        }
+        finally
+        {
+            await context.CloseAsync();
+        }
+    }
+
     private static string ResolveUserAgent(bool needsUserAgent, string? userAgentOverride)
     {
         if (!string.IsNullOrWhiteSpace(userAgentOverride))
+        {
             return userAgentOverride;
+        }
 
         if (needsUserAgent)
         {
             HtmlWeb web = new();
             if (!string.IsNullOrWhiteSpace(web.UserAgent))
+            {
                 return web.UserAgent;
+            }
         }
 
         return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
@@ -180,44 +179,33 @@ internal static class PlaywrightFactory
                "Chrome/124.0.0.0 Safari/537.36";
     }
 
-    private static bool IsEdgeInstalled()
+    /// <summary>
+    /// Returns a system Firefox executable path on Windows; on other OSes returns null so
+    /// Playwright falls back to its bundled Firefox.
+    /// </summary>
+    private static string? ResolveFirefoxExecutablePath()
     {
-        string path = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
-            "Microsoft", "Edge", "Application", "msedge.exe");
-        return File.Exists(path);
-    }
+        if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            return null;
+        }
 
-    private static bool IsChromeInstalled()
-    {
-        string localPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "Google", "Chrome", "Application", "chrome.exe");
-
-        string programFilesPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
-            "Google", "Chrome", "Application", "chrome.exe");
-
-        return File.Exists(localPath) || File.Exists(programFilesPath);
-    }
-
-    private static string FirefoxInstallPath()
-    {
         string path = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
             "Mozilla Firefox", "firefox.exe");
-        return path;
+
+        return File.Exists(path) ? path : null;
     }
 
     /// <summary>
-    /// After clicking a “Load all” button (or similar), scrolls the page to the bottom in steps
+    /// After clicking a "Load all" button (or similar), scrolls the page to the bottom in steps
     /// and waits until lazy-loaded content stops changing. Designed to make headless scraping
     /// reliably load all items before calling <see cref="IPage.ContentAsync"/>.
     /// </summary>
     /// <param name="page">The Playwright <see cref="IPage"/> to operate on.</param>
     /// <param name="watchSelector">
     /// A selector that appears once per loaded item (e.g., a product title link). The method
-    /// polls this selector’s element count to detect when no more items are being appended.
+    /// polls this selector's element count to detect when no more items are being appended.
     /// </param>
     /// <param name="maxScrolls">Upper bound on scroll iterations to avoid infinite loops.</param>
     /// <param name="stabilityMs">
@@ -225,12 +213,6 @@ internal static class PlaywrightFactory
     /// (with no document height growth) before the page is considered settled.
     /// </param>
     /// <param name="stepPx">Vertical scroll step, in pixels, per iteration.</param>
-    /// <remarks>
-    /// For each scroll step, the method waits for <see cref="LoadState.NetworkIdle"/> and a short delay,
-    /// then checks both document height and the watched element count. Completion occurs when the height
-    /// stops increasing and the count is stable for <paramref name="stabilityMs"/>. Finally, it jumps to
-    /// the absolute bottom to trigger any last viewport-dependent loaders.
-    /// </remarks>
     public static async Task ScrollToBottomUntilStableAsync(
         this IPage page,
         string watchSelector,
@@ -238,12 +220,10 @@ internal static class PlaywrightFactory
         int stabilityMs = 800,
         int stepPx = 1200)
     {
-        // measure document height (body vs documentElement)
         async Task<int> getHeight() =>
             await page.EvaluateAsync<int>(
                 "() => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)");
 
-        // scroll by a chunk
         async Task scrollBy(int dy) =>
             await page.EvaluateAsync("dy => window.scrollBy(0, dy)", dy);
 
@@ -254,47 +234,35 @@ internal static class PlaywrightFactory
 
         for (int i = 0; i < maxScrolls; i++)
         {
-            // step down
             await scrollBy(stepPx);
-            // await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
             await Task.Delay(250);
 
             int newHeight = await getHeight();
 
-            // watch a selector's count to ensure lazy content finished appending
             int count = await page.Locator(watchSelector).CountAsync();
             if (count != previousCount)
             {
                 previousCount = count;
-                stableFor = 0;                 // reset stability timer on change
+                stableFor = 0;
             }
             else
             {
                 stableFor += pollMs;
             }
 
-            // if page stopped growing AND item count stayed stable long enough, we're done
             if (newHeight <= lastHeight && stableFor >= stabilityMs)
                 break;
 
             lastHeight = newHeight;
         }
 
-        // final jump to absolute bottom
         await page.EvaluateAsync("() => window.scrollTo(0, document.body.scrollHeight)");
     }
 
     /// <summary>
     /// Attempts to click the target element, waiting until it is visible within the given timeout.
-    /// Falls back to executing a raw JavaScript click if the normal Playwright click fails
-    /// (for example, due to overlays or intercepted clicks).
+    /// Falls back to a forced JavaScript click if the normal Playwright click fails (e.g. overlays).
     /// </summary>
-    /// <param name="locator">The Playwright <see cref="ILocator"/> to click.</param>
-    /// <param name="timeout">
-    /// The maximum time to wait (in milliseconds) for the element to become visible before attempting the click. 
-    /// Defaults to 5000ms.
-    /// </param>
-    /// <returns>A task representing the asynchronous click operation.</returns>
     public static async Task ForceClickAsync(this ILocator locator, int timeout = 5_000)
     {
         try

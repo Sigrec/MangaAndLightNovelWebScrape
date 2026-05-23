@@ -6,7 +6,12 @@ namespace MangaAndLightNovelWebScrape.Websites;
 
 public sealed partial class RobertsAnimeCornerStore : IWebsite
 {
-    private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+    private readonly ILogger _logger;
+
+    public RobertsAnimeCornerStore(ILogger<RobertsAnimeCornerStore>? logger = null)
+    {
+        _logger = logger ?? NullLogger<RobertsAnimeCornerStore>.Instance;
+    }
 
     private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//font[@face='dom bold, arial, helvetica']/b");
     private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//form[@method='POST'][contains(text()[2], '$')]//font[@color='#ffcc33'][2]");
@@ -26,17 +31,12 @@ public sealed partial class RobertsAnimeCornerStore : IWebsite
     /// <inheritdoc />
     public const Region REGION = Region.America;
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships = default)
-    {
-        return Task.Run(async () =>
-        {
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType);
-            masterDataList.Add(Data);
-            masterLinkList.TryAdd(Website.RobertsAnimeCornerStore, Links.Last());
-        });
-    }
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+        => InternalHelpers.RunHtmlScrapeAsync(
+            this, Website.RobertsAnimeCornerStore, bookTitle, bookType, masterDataList, masterLinkList, curRegion,
+            useLastLink: true);
     
-    private static string GenerateWebsiteUrl(string bookTitle)
+    private string GenerateWebsiteUrl(string bookTitle)
     {
         if (string.IsNullOrWhiteSpace(bookTitle))
         {
@@ -62,7 +62,7 @@ public sealed partial class RobertsAnimeCornerStore : IWebsite
         };
 
         string url = $"{BASE_URL}/{key}.html";
-        LOGGER.Info($"Url = {url}");
+        _logger.UrlGenerated(url);
         return url;
     }
 
@@ -276,7 +276,7 @@ public sealed partial class RobertsAnimeCornerStore : IWebsite
                 bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
                 foreach (string link in links)
                 {
-                    LOGGER.Info($"Url = {link}");
+                    _logger.UrlGenerated(link);
                     doc = html.Load(link);
 
                     List<HtmlNode> titleData = doc.DocumentNode
@@ -327,7 +327,7 @@ public sealed partial class RobertsAnimeCornerStore : IWebsite
                         }
                         else
                         {
-                            LOGGER.Info("Removed {}", entryTitle);
+                            _logger.EntryRemovedSimple(entryTitle);
                         }
                     }
                 }
@@ -335,14 +335,14 @@ public sealed partial class RobertsAnimeCornerStore : IWebsite
         }
         catch (Exception ex)
         {
-            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
+            _logger.ScrapeError(ex, bookTitle, bookType, TITLE);
         }
         finally
         {
             data.TrimExcess();
             links.TrimExcess();
-            data.Sort(EntryModel.VolumeSort);
-            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
+            data.SortByVolume();
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         }
         return (data, links);
     }

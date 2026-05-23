@@ -6,7 +6,12 @@ namespace MangaAndLightNovelWebScrape.Websites;
 
 public sealed partial class Crunchyroll : IWebsite
 {
-    private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+    private readonly ILogger _logger;
+
+    public Crunchyroll(ILogger<Crunchyroll>? logger = null)
+    {
+        _logger = logger ?? NullLogger<Crunchyroll>.Instance;
+    }
 
     private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//div[@class='tab-content']//div[@class='pdp-link']/a");
     private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//div[@class='tab-content']//span[@class='sales']/span");
@@ -27,17 +32,11 @@ public sealed partial class Crunchyroll : IWebsite
     [GeneratedRegex(@"(?:\d-in-\d|Omnibus) Edition", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
     [GeneratedRegex(@"\((\d{1,3}-\d{1,3})\) Bundle", RegexOptions.IgnoreCase)] private static partial Regex BundleVolRegex();
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships)
-    {
-        return Task.Run(async () =>
-        {
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType);
-            masterDataList.Add(Data);
-            masterLinkList.TryAdd(Website.Crunchyroll, Links[0]);
-        });
-    }
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+        => InternalHelpers.RunHtmlScrapeAsync(
+            this, Website.Crunchyroll, bookTitle, bookType, masterDataList, masterLinkList, curRegion);
 
-    private static string GenerateWebsiteUrl(BookType bookType, string bookTitle, bool retry = false)
+    private string GenerateWebsiteUrl(BookType bookType, string bookTitle, bool retry = false)
     {
         // https://store.crunchyroll.com/search?q=naruto&prefn1=subcategory&prefv1=Light%20Novels
         // https://store.crunchyroll.com/collections/jujutsu-kaisen/?prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Specialty%20Books%7CManga%7CBundles
@@ -54,7 +53,7 @@ public sealed partial class Crunchyroll : IWebsite
                 ? $"{BASE_URL}/collections/{bookTitle}/?prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Novels&sz={int.MaxValue}" :
                 $"{BASE_URL}/search?q={bookTitle}&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Novels&sz={int.MaxValue}");
 
-        LOGGER.Info(url);
+        _logger.UrlGenerated(url);
         return url;
     }
 
@@ -140,7 +139,7 @@ public sealed partial class Crunchyroll : IWebsite
             HtmlWeb html = HtmlFactory.CreateWeb();
 
             bool bookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
-            LOGGER.Debug(bookTitleRemovalCheck);
+            _logger.BookTitleRemovalCheck(bookTitleRemovalCheck);
 
             // Load the document once after preparation.
             string url = GenerateWebsiteUrl(bookType, bookTitle);
@@ -156,7 +155,7 @@ public sealed partial class Crunchyroll : IWebsite
 
             if (titleData == null && priceData == null && stockStatusData == null)
             {
-                LOGGER.Info("Trying Second Link");
+                _logger.TryingSecondLink();
                 data.Clear();
                 links.Clear();
 
@@ -174,14 +173,14 @@ public sealed partial class Crunchyroll : IWebsite
                 // First check: does the book title contain the entry title?
                 if (!InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle))
                 {
-                    LOGGER.Debug("Removed (1) {}", entryTitle);
+                    _logger.EntryRemovedDebug(1, entryTitle);
                     continue;
                 }
 
                 // Second check: Is the entry title removed based on the regex or the removal flag?
                 if (InternalHelpers.ShouldRemoveEntry(entryTitle) && !bookTitleRemovalCheck)
                 {
-                    LOGGER.Debug("Removed (2) {}", entryTitle);
+                    _logger.EntryRemovedDebug(2, entryTitle);
                     continue;
                 }
 
@@ -226,20 +225,20 @@ public sealed partial class Crunchyroll : IWebsite
                 }
                 else
                 {
-                    LOGGER.Debug("Removed (3) {}", entryTitle);
+                    _logger.EntryRemovedDebug(3, entryTitle);
                 }
             }
         }
         catch (Exception ex)
         {
-            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
+            _logger.ScrapeError(ex, bookTitle, bookType, TITLE);
         }
         finally
         {
             data.TrimExcess();
             links.TrimExcess();
-            data.Sort(EntryModel.VolumeSort);
-            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
+            data.SortByVolume();
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         }
         
         return (data, links);

@@ -5,7 +5,12 @@ namespace MangaAndLightNovelWebScrape.Websites;
 
 public sealed partial class MangaMate : IWebsite
 {
-    private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+    private readonly ILogger _logger;
+
+    public MangaMate(ILogger<MangaMate>? logger = null)
+    {
+        _logger = logger ?? NullLogger<MangaMate>.Instance;
+    }
 
     private static readonly XPathExpression _titleXPath = XPathExpression.Compile("//div[@class='grid-product__title grid-product__title--body']");
     private static readonly XPathExpression _priceXPath = XPathExpression.Compile("//div[@class='grid-product__price']/text()[3]");
@@ -27,22 +32,15 @@ public sealed partial class MangaMate : IWebsite
     /// <inheritdoc />
     public const Region REGION = Region.Australia;
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships = default)
-    {
-        return Task.Run(async () =>
-        {
-            IPage page = await PlaywrightFactory.GetPageAsync(browser!);
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page);
-            masterDataList.Add(Data);
-            masterLinkList.TryAdd(Website.MangaMate, Links[0]);
-        });
-    }
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+        => InternalHelpers.RunPlaywrightScrapeAsync(
+            this, Website.MangaMate, bookTitle, bookType, masterDataList, masterLinkList, browser!, curRegion);
 
     private string GenerateWebsiteUrl(string bookTitle, BookType bookType, ushort pageNum)
     {
         // https://mangamate.shop/search?q=akane%20banashi&options%5Bprefix%5D=last
         string url = $"{BASE_URL}/search?options%5Bprefix%5D=last&page={pageNum}&q={InternalHelpers.FilterBookTitle(bookTitle.Replace(" ", "+"))}+{(bookType == BookType.Manga ? "manga" : "novel")}";
-        LOGGER.Info("Page {} => {}", pageNum, url);
+        _logger.PageUrlGenerated(pageNum, url);
         return url;
     }
 
@@ -94,7 +92,7 @@ public sealed partial class MangaMate : IWebsite
             );
     }
 
-    private static async Task<(string Html, uint MaxPageNum)> GetInitialData(IPage page, string url)
+    private async Task<(string Html, uint MaxPageNum)> GetInitialData(IPage page, string url)
     {
         await page.GotoAsync(url, new PageGotoOptions
         {
@@ -115,7 +113,7 @@ public sealed partial class MangaMate : IWebsite
                 maxPageNum = parsed;
             }
         }
-        LOGGER.Info("Max Page Num = {Num}", maxPageNum);
+        _logger.MaxPageNum(maxPageNum);
 
         // Open currency dropdown: //button[@aria-controls='CurrencyList-toolbar']
         ILocator currencyBtn = page.Locator("//button[@aria-controls='CurrencyList-toolbar']");
@@ -141,7 +139,7 @@ public sealed partial class MangaMate : IWebsite
         await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
         // await WaitForProductPageLoad(page);
 
-        LOGGER.Info("Clicked AUD Currency");
+        _logger.ClickedAudCurrency();
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
         return (await page.ContentAsync(), maxPageNum);
     }
@@ -222,12 +220,12 @@ public sealed partial class MangaMate : IWebsite
                         }
                         else
                         {
-                            LOGGER.Info("Removed {}", entryTitle);
+                            _logger.EntryRemovedSimple(entryTitle);
                         }
                     }
                     else
                     {
-                        LOGGER.Info("Removed (1) {}", entryTitle);
+                        _logger.EntryRemoved(1, entryTitle);
                     }
                 }
 
@@ -250,13 +248,13 @@ public sealed partial class MangaMate : IWebsite
 
             data.TrimExcess();
             links.TrimExcess();
-            data = InternalHelpers.RemoveDuplicateEntries(data);
-            data.Sort(EntryModel.VolumeSort);
-            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
+            data.RemoveDuplicates(_logger);
+            data.SortByVolume();
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         }
         catch (Exception ex)
         {
-            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
+            _logger.ScrapeError(ex, bookTitle, bookType, TITLE);
         }
 
         return (data, links);

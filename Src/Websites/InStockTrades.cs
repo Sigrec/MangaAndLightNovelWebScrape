@@ -7,7 +7,12 @@ namespace MangaAndLightNovelWebScrape.Websites;
 
 public sealed partial class InStockTrades : IWebsite
 {
-    private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+    private readonly ILogger _logger;
+
+    public InStockTrades(ILogger<InStockTrades>? logger = null)
+    {
+        _logger = logger ?? NullLogger<InStockTrades>.Instance;
+    }
 
     private static readonly XPathExpression _titleXPath = XPathExpression.Compile(".//div[@class='title']/a/text()");
     private static readonly XPathExpression _detailsXPath = XPathExpression.Compile("//div[@class='detail clearfix']");
@@ -36,23 +41,17 @@ public sealed partial class InStockTrades : IWebsite
     /// <inheritdoc />
     public const Region REGION = Region.America;
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships)
-    {
-        return Task.Run(async () =>
-        {
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType);
-            masterDataList.Add(Data);
-            masterLinkList.TryAdd(Website.InStockTrades, Links[0]);
-        });
-    }
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+        => InternalHelpers.RunHtmlScrapeAsync(
+            this, Website.InStockTrades, bookTitle, bookType, masterDataList, masterLinkList, curRegion);
 
     // https://www.instocktrades.com/search?term=world+trigger
     // https://www.instocktrades.com/search?pg=1&title=World+Trigger&publisher=&writer=&artist=&cover=&ps=true
     // https://www.instocktrades.com/search?title=overlord+novel&publisher=&writer=&artist=&cover=&ps=true
-    private static string GenerateWebsiteUrl(uint currPageNum, string bookTitle)
+    private string GenerateWebsiteUrl(uint currPageNum, string bookTitle)
     {
         string url = $"{BASE_URL}/search?pg={currPageNum}&title={bookTitle.Replace(' ', '+')}&publisher=&writer=&artist=&cover=&ps=true";
-        LOGGER.Info(url);
+        _logger.UrlGenerated(url);
         return url;
     }
 
@@ -272,7 +271,7 @@ public sealed partial class InStockTrades : IWebsite
                     {
                         entryTitle = entryTitle.Replace(" Adv ", " Adventure ");
                     }
-                    LOGGER.Debug("{}", entryTitle);
+                    _logger.EntrySeen(entryTitle);
 
                     // Precompute flags once
                     bool isOneShot = count == 1 && !entryTitle.ContainsAny(_oneShotCheckFilter);
@@ -311,9 +310,9 @@ public sealed partial class InStockTrades : IWebsite
                             TITLE)
                         );
                     }
-                    else if (LOGGER.IsDebugEnabled)
+                    else if (_logger.IsEnabled(LogLevel.Debug))
                     {
-                        LOGGER.Debug("Removed {0}", entryTitle);
+                        _logger.EntryRemovedSimpleDebug(entryTitle);
                     }
                 }
 
@@ -334,14 +333,14 @@ public sealed partial class InStockTrades : IWebsite
         }
         catch (Exception ex)
         {
-            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
+            _logger.ScrapeError(ex, bookTitle, bookType, TITLE);
         }
         finally
         {
             data.TrimExcess();
             links.TrimExcess();
-            data.Sort(EntryModel.VolumeSort);
-            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
+            data.SortByVolume();
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         }
 
         return (data, links);

@@ -51,7 +51,7 @@ public class BooksAMillionTests
             return;
         }
 
-        Scrape.IsBooksAMillionMember = isMember;
+        Scrape.Memberships = isMember ? Membership.BooksAMillion : Membership.None;
         await Scrape.InitializeScrapeAsync(title, bookType, WebsiteList);
         Assert.That(Scrape.GetResults(), Is.EqualTo(ImportDataToList($@"C:\MangaAndLightNovelWebScrape\Tests\Websites\BooksAMillion\BooksAMillion{expectedFilePath}.txt")));
     }

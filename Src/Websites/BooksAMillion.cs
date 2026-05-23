@@ -7,7 +7,12 @@ namespace MangaAndLightNovelWebScrape.Websites;
 
 public sealed partial class BooksAMillion : IWebsite
 {
-    private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+    private readonly ILogger _logger;
+
+    public BooksAMillion(ILogger<BooksAMillion>? logger = null)
+    {
+        _logger = logger ?? NullLogger<BooksAMillion>.Instance;
+    }
 
     private static readonly XPathExpression _titleXPath = XPathExpression.Compile("//div[@class='search-item-title']/a");
     private static readonly XPathExpression _descXPath = XPathExpression.Compile("//div[@id='pdpOverview']/div/div");
@@ -42,16 +47,11 @@ public sealed partial class BooksAMillion : IWebsite
     private static readonly FrozenSet<string> _novelIncludeVals = [ "Light Novel", "Novel", ];
     private static readonly FrozenSet<string> _novelExcludeVals = [ "Manga", "Volumes", "Vol" ];
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships)
-    {
-        return Task.Run(async () =>
-        {
-            IPage page = await PlaywrightFactory.GetPageAsync(browser!, true);
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page, memberships.IsBooksAMillionMember);
-            masterDataList.Add(Data);
-            masterLinkList.TryAdd(Website.BooksAMillion, Links[0]);
-        });
-    }
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+        => InternalHelpers.RunPlaywrightScrapeAsync(
+            this, Website.BooksAMillion, bookTitle, bookType, masterDataList, masterLinkList, browser!, curRegion,
+            isMember: memberships.HasFlag(Membership.BooksAMillion),
+            needsUserAgent: true);
 
     private static string GenerateWebsiteUrl(string bookTitle, bool boxSetCheck, BookType bookType, int pageNum)
     {
@@ -80,7 +80,7 @@ public sealed partial class BooksAMillion : IWebsite
         return url;
     }
 
-    private static string CleanAndParseTitle(string entryTitle, BookType bookType, string bookTitle)
+    private string CleanAndParseTitle(string entryTitle, BookType bookType, string bookTitle)
     {
         StringBuilder curTitle;
 
@@ -153,7 +153,7 @@ public sealed partial class BooksAMillion : IWebsite
                 string secondOmniNum = groups[2].Value;
                 string thirdOmniNum = groups[3].Value;
 
-                LOGGER.Debug("{} | {} | {} | {}", entryTitleCleaned, firstOmniNum, secondOmniNum, thirdOmniNum);
+                _logger.OmnibusDebug(entryTitleCleaned, firstOmniNum, secondOmniNum, thirdOmniNum);
 
                 if (!cleanedSpan.Contains(" Omnibus", StringComparison.OrdinalIgnoreCase))
                 {
@@ -226,7 +226,7 @@ public sealed partial class BooksAMillion : IWebsite
             bool bookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
             int pageNum = 1;
             string curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, pageNum);
-            LOGGER.Info($"Initial Url {curUrl}");
+            _logger.InitialUrl(curUrl);
             links.Add(curUrl);
             
             await page!.GotoAsync(curUrl, new PageGotoOptions
@@ -257,7 +257,7 @@ public sealed partial class BooksAMillion : IWebsite
 
                 if (titleData.Count == 0 || bookQuality.Count == 0 || priceData.Count == 0 || stockStatusData.Count == 0)
                 {
-                    LOGGER.Info("One of the helm node collections returned no data");
+                    _logger.HelmCollectionEmpty();
                     break;
                 }
 
@@ -270,7 +270,7 @@ public sealed partial class BooksAMillion : IWebsite
                     XPathNavigator? curTitleVal = titleData.Current;
                     if (curTitleVal is null)
                     {
-                        LOGGER.Debug("Entry Title = {} is null", curTitleVal);
+                        _logger.EntryTitleNull();
                         continue;
                     }
                     string? entryTitle = WebUtility.HtmlDecode(curTitleVal.Value.Trim());
@@ -291,16 +291,19 @@ public sealed partial class BooksAMillion : IWebsite
                         continue;
                     }
 
-                    LOGGER.Debug("{} | {} | {} | {} | {}", entryTitle, InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle), bookType == BookType.LightNovel && entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase), bookQuality.Current is null || !bookQuality.Current!.Value.Contains("Library Binding"), (
-                                bookType == BookType.LightNovel &&
-                                (entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) ||
-                                !entryTitle.ContainsAny(_novelExcludeVals) &&
-                                !MangaRemovalRegex().IsMatch(entryTitle))
-                            ));
+                    _logger.EntryDebug(
+                        entryTitle,
+                        InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle),
+                        bookType == BookType.LightNovel && entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase),
+                        bookQuality.Current is null || !bookQuality.Current!.Value.Contains("Library Binding"),
+                        bookType == BookType.LightNovel &&
+                            (entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) ||
+                            !entryTitle.ContainsAny(_novelExcludeVals) &&
+                            !MangaRemovalRegex().IsMatch(entryTitle)));
 
                     if (InternalHelpers.ShouldRemoveEntry(entryTitle) && !bookTitleRemovalCheck)
                     {
-                        LOGGER.Debug("Removed {}", entryTitle);
+                        _logger.EntryRemovedSimpleDebug(entryTitle);
                         continue;
                     }
 
@@ -342,7 +345,7 @@ public sealed partial class BooksAMillion : IWebsite
                     {
                         if (!entryTitle.ContainsAny(_boxSetIncludeVals) && MangaRemovalRegex().IsMatch(entryTitle))
                         {
-                            LOGGER.Debug("Removed (2) {}", entryTitle);
+                            _logger.EntryRemovedDebug(2, entryTitle);
                             continue;
                         }
 
@@ -366,7 +369,7 @@ public sealed partial class BooksAMillion : IWebsite
                             if (bookType == BookType.Manga && !entryTitle.ContainsAny(_mangaIncludeVals))
                             {
                                 string descLink = curTitleVal.GetAttribute("href", string.Empty);
-                                LOGGER.Debug("Desc link = {}", descLink);
+                                _logger.DescLink(descLink);
                                 await page!.GotoAsync(descLink, new PageGotoOptions
                                 {
                                     WaitUntil = WaitUntilState.DOMContentLoaded
@@ -381,7 +384,7 @@ public sealed partial class BooksAMillion : IWebsite
                                 HtmlNode? desc = descDoc.DocumentNode.SelectSingleNode(_descXPath);
                                 if (desc is null || desc.InnerText.ContainsAny(_mangaDescExcludeVals))
                                 {
-                                    LOGGER.Debug("Removed (3) {}", entryTitle);
+                                    _logger.EntryRemovedDebug(3, entryTitle);
                                     continue;
                                 }
                             }
@@ -398,12 +401,12 @@ public sealed partial class BooksAMillion : IWebsite
                         }
                         else
                         {
-                            LOGGER.Debug("Removed (4) {}", entryTitle);
+                            _logger.EntryRemovedDebug(4, entryTitle);
                         }
                     }
                     else
                     {
-                        LOGGER.Debug("Removed (1) {}", entryTitle);
+                        _logger.EntryRemovedDebug(1, entryTitle);
                     }
                 }
 
@@ -413,7 +416,7 @@ public sealed partial class BooksAMillion : IWebsite
                     await page.WaitForSelectorAsync("#content");
                     curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, ++pageNum);
                     links.Add(curUrl);
-                    LOGGER.Info($"Next Page: {curUrl}");
+                    _logger.NextPage(curUrl);
                 }
                 else
                 {
@@ -423,7 +426,7 @@ public sealed partial class BooksAMillion : IWebsite
                         pageNum = 1;
                         curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, pageNum);
                         links.Add(curUrl);
-                        LOGGER.Info("Box Set Url: {}", curUrl);
+                        _logger.BoxSetUrl(curUrl);
                         await page!.GotoAsync(curUrl, new PageGotoOptions
                         {
                             WaitUntil = WaitUntilState.DOMContentLoaded
@@ -438,13 +441,13 @@ public sealed partial class BooksAMillion : IWebsite
 
             data.TrimExcess();
             links.TrimExcess();
-            data.Sort(EntryModel.VolumeSort);
-            data.RemoveDuplicates(LOGGER);
-            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
+            data.SortByVolume();
+            data.RemoveDuplicates(_logger);
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         }
         catch (Exception ex)
         {
-            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
+            _logger.ScrapeError(ex, bookTitle, bookType, TITLE);
             throw;
         }
 

@@ -6,7 +6,12 @@ namespace MangaAndLightNovelWebScrape.Websites;
 
 public sealed partial class MangaMart : IWebsite
 {
-    private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+    private readonly ILogger _logger;
+
+    public MangaMart(ILogger<MangaMart>? logger = null)
+    {
+        _logger = logger ?? NullLogger<MangaMart>.Instance;
+    }
 
     private static readonly XPathExpression TitleXPath = XPathExpression.Compile("//a[@class='product-item__title text--strong link']");
     private static readonly XPathExpression PriceXPath = XPathExpression.Compile("//span[@class='price' or @class='price price--highlight']/text()[2]");
@@ -29,23 +34,16 @@ public sealed partial class MangaMart : IWebsite
     /// <inheritdoc />
     public const Region REGION = Region.America;
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships = default)
-    {
-        return Task.Run(async () =>
-        {
-            IPage page = await PlaywrightFactory.GetPageAsync(browser!);
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page);
-            masterDataList.Add(Data);
-            masterLinkList.TryAdd(Website.MangaMart, Links[0]);
-        });
-    }
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+        => InternalHelpers.RunPlaywrightScrapeAsync(
+            this, Website.MangaMart, bookTitle, bookType, masterDataList, masterLinkList, browser!, curRegion);
 
-    private static string GenerateWebsiteUrl(BookType bookType, string bookTitle, uint curPageNum)
+    private string GenerateWebsiteUrl(BookType bookType, string bookTitle, uint curPageNum)
     {
         // https://mangamart.com/search?type=product&q=jujutsu+kaisen&page=2
         // https://mangamart.com/search?type=product&q=overlord+novel
         string url = $"{BASE_URL}/search?type=product&q={Uri.EscapeDataString(bookTitle)}{(bookType == BookType.Manga ? string.Empty : "+novel")}&page={curPageNum}";
-        LOGGER.Info("URL #{} -> {}", curPageNum, url);
+        _logger.PageUrl(curPageNum, url);
         return url;
     }
 
@@ -191,7 +189,7 @@ public sealed partial class MangaMart : IWebsite
             XPathNavigator nav = doc.DocumentNode.CreateNavigator();
             XPathNavigator? pageNode = nav.SelectSingleNode(PageCheckXPath);
             int maxPageNum = pageNode is not null ? pageNode.ValueAsInt : 1;
-            LOGGER.Debug("Max Pages = {}", maxPageNum);
+            _logger.MaxPages(maxPageNum);
 
             while (curPageNum <= maxPageNum)
             {
@@ -222,7 +220,7 @@ public sealed partial class MangaMart : IWebsite
 
                         if (!shouldRemoveEntry && !entryTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase))
                         {
-                            LOGGER.Debug("Checking {} for Novel", entryTitle);
+                            _logger.CheckingForNovel(entryTitle);
                             string urlPath = titleData.Current!.GetAttribute("href", string.Empty);
                             if (!string.IsNullOrWhiteSpace(urlPath))
                             {
@@ -230,7 +228,7 @@ public sealed partial class MangaMart : IWebsite
                                 string? innerText = descNode?.InnerText;
                                 if (descNode is not null && innerText is not null && (innerText.Contains("Light Novel", StringComparison.OrdinalIgnoreCase) || innerText.Contains("novels", StringComparison.OrdinalIgnoreCase)))
                                 {
-                                    LOGGER.Debug("Found Novel entry in Manga Scrape");
+                                    _logger.FoundNovelInMangaScrape();
                                     shouldRemoveEntry = true;
                                 }
                             }
@@ -250,7 +248,7 @@ public sealed partial class MangaMart : IWebsite
                             "BACK-ORDER" => StockStatus.BO,
                             _ => StockStatus.IS,
                         };
-                        LOGGER.Debug("{} | {} | {}", entryTitle, string.IsNullOrWhiteSpace(stockStatusNode), stockStatusNode);
+                        _logger.StockStatusDebug(entryTitle, string.IsNullOrWhiteSpace(stockStatusNode), stockStatusNode);
 
                         data.Add(
                             new EntryModel
@@ -264,8 +262,7 @@ public sealed partial class MangaMart : IWebsite
                     }
                     else
                     {
-
-                        LOGGER.Debug("Removed {}", entryTitle);
+                        _logger.EntryRemovedSimpleDebug(entryTitle);
                     }
                 }
 
@@ -284,13 +281,13 @@ public sealed partial class MangaMart : IWebsite
             }
 
             data.TrimExcess();
-            data.Sort(EntryModel.VolumeSort);
-            data.RemoveDuplicates(LOGGER);
-            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
+            data.SortByVolume();
+            data.RemoveDuplicates(_logger);
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         }
         catch (Exception ex)
         {
-            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
+            _logger.ScrapeError(ex, bookTitle, bookType, TITLE);
         }
 
         return (data, links);

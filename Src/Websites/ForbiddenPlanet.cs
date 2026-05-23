@@ -7,7 +7,12 @@ namespace MangaAndLightNovelWebScrape.Websites;
 
 public sealed partial class ForbiddenPlanet : IWebsite
 {
-    private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+    private readonly ILogger _logger;
+
+    public ForbiddenPlanet(ILogger<ForbiddenPlanet>? logger = null)
+    {
+        _logger = logger ?? NullLogger<ForbiddenPlanet>.Instance;
+    }
     
     private static readonly XPathExpression _titleXPath = XPathExpression.Compile("//div[@class='full']/ul/li/section/header/div[2]/h3/a/text()");
     private static readonly XPathExpression _priceXPath = XPathExpression.Compile("//span[@class='clr-price']/text()");
@@ -37,26 +42,20 @@ public sealed partial class ForbiddenPlanet : IWebsite
     
     private static readonly FrozenSet<string> DescRemovalStrings = ["novel", "original stories", "collecting issues"];
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships = default)
-    {
-        return Task.Run(async () =>
-        {            
-            IPage page = await PlaywrightFactory.GetPageAsync(browser!, true);
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page);
-            masterDataList.Add(Data);
-            masterLinkList.TryAdd(Website.ForbiddenPlanet, Links[0]);
-        });
-    }
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+        => InternalHelpers.RunPlaywrightScrapeAsync(
+            this, Website.ForbiddenPlanet, bookTitle, bookType, masterDataList, masterLinkList, browser!, curRegion,
+            needsUserAgent: true);
 
-    private static string GenerateWebsiteUrl(BookType bookType, string entryTitle, bool isSecondCategory)
+    private string GenerateWebsiteUrl(BookType bookType, string entryTitle, bool isSecondCategory)
     {
         // https://forbiddenplanet.com/catalog/?q=Naruto&show_out_of_stock=on&sort=release-date-asc&page=1
         string url = $"{BASE_URL}/catalog/{(!isSecondCategory ? "manga" : "comics-and-graphic-novels")}/?q={(bookType == BookType.Manga ? InternalHelpers.FilterBookTitle(entryTitle) : $"{InternalHelpers.FilterBookTitle(entryTitle)}%20light%20novel")}&show_out_of_stock=on&sort=release-date-asc&page=1";
-        LOGGER.Info($"Url = {url}");
+        _logger.UrlGenerated(url);
         return url;
     }
 
-    private static string CleanAndParseTitle(string bookTitle, string entryTitle, BookType bookType)
+    private string CleanAndParseTitle(string bookTitle, string entryTitle, BookType bookType)
     {
         entryTitle = FixVolumeRegex().Replace(entryTitle.Trim(), " Vol");
         StringBuilder curTitle;
@@ -74,7 +73,7 @@ public sealed partial class ForbiddenPlanet : IWebsite
 
             if (!entryTitle.Contains("Omnibus"))
             {
-                curTitle.Insert(curTitle.ToString().IndexOf("Vol"), "Omnibus ");
+                curTitle.Insert(curTitle.IndexOfOrdinal("Vol"), "Omnibus ");
             }
 
             if (!entryTitle.Contains("Vol"))
@@ -86,13 +85,12 @@ public sealed partial class ForbiddenPlanet : IWebsite
                 };
             }
             curTitle.TrimEnd();
-            // LOGGER.Debug("(1) {}", curTitle.ToString());
 
-            if (!char.IsDigit(curTitle.ToString()[^1]))
+            if (!char.IsDigit(curTitle[curTitle.Length - 1]))
             {
                 curTitle.Replace("Omnibus", string.Empty);
                 curTitle.TrimEnd();
-                curTitle.Insert(curTitle.ToString().IndexOf("Vol"), "Omnibus ");
+                curTitle.Insert(curTitle.IndexOfOrdinal("Vol"), "Omnibus ");
             }
             // LOGGER.Debug("(2) {}", curTitle.ToString());
         }
@@ -114,7 +112,7 @@ public sealed partial class ForbiddenPlanet : IWebsite
                 {
                     curTitle.Replace("Box Set", string.Empty);
                     curTitle.TrimEnd();
-                    if (!char.IsDigit(curTitle.ToString()[^1])) curTitle.Append(" 1");
+                    if (!char.IsDigit(curTitle[curTitle.Length - 1])) curTitle.Append(" 1");
                     
                     if (entryTitle.Contains("Part") && !bookTitle.Contains("Part"))
                     {
@@ -172,7 +170,7 @@ public sealed partial class ForbiddenPlanet : IWebsite
         {
             curTitle.Replace(" (Light Novel)", string.Empty).Replace(" (Light Novel Hardcover)", string.Empty);
             string snapshot = curTitle.ToString();
-            LOGGER.Debug("Snapshot = {}", snapshot);
+            _logger.Snapshot(snapshot);
             if (!snapshot.Contains("Novel"))
             {
                 int index = snapshot.AsSpan().IndexOf("Vol");
@@ -236,12 +234,12 @@ public sealed partial class ForbiddenPlanet : IWebsite
         catch (PlaywrightException) { }
     }
 
-    private static async Task LoadAllEntries(IPage page)
+    private async Task LoadAllEntries(IPage page)
     {
         ILocator? loadAllButton = page.Locator("button.load-all.button--brand.brad--sm");
         while (await loadAllButton.IsVisibleAsync() && await loadAllButton.IsEnabledAsync())
         {
-            LOGGER.Info("Loading all entries...");
+            _logger.LoadingAllEntries();
             await loadAllButton.ClickAsync();
             await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
             await page.ScrollToBottomUntilStableAsync(
@@ -257,7 +255,7 @@ public sealed partial class ForbiddenPlanet : IWebsite
         ILocator? separatorLiLocator = page.Locator("//li[@class='support-links product-list__list__separator owl-off bg-white phl phr pht pb brdr--top brdr--top--thin brdr--top--dotted']");
         while (await loadMoreButton.IsVisibleAsync() && await loadMoreButton.IsEnabledAsync())
         {
-            LOGGER.Info("Loading more entries...");
+            _logger.ForbiddenPlanetLoadingMoreEntries();
             await loadMoreButton.ClickAsync();
             await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
             clickCount++;
@@ -308,7 +306,7 @@ public sealed partial class ForbiddenPlanet : IWebsite
             XPathNodeIterator bookFormatData = nav.Select(_bookFormatXPath);
             XPathNodeIterator stockStatusData = nav.Select(_stockStatusXPath);
             XPathNavigator? pageCheck = nav.SelectSingleNode(_pageCheckXPath);
-            LOGGER.Debug("{} | {} | {} | {} | {}", titleData.Count, priceData.Count, minorPriceData.Count, bookFormatData.Count, stockStatusData.Count);
+            _logger.NodeCounts(titleData.Count, priceData.Count, minorPriceData.Count, bookFormatData.Count, stockStatusData.Count);
 
             while (titleData.MoveNext())
             {
@@ -324,7 +322,7 @@ public sealed partial class ForbiddenPlanet : IWebsite
                 string? minorPriceDataVal = minorPriceData.Current?.Value;
                 if (titleVal is null || bookFormat is null || priceDataVal is null || stockStatusDataVal is null || minorPriceDataVal is null)
                 {
-                    LOGGER.Debug("Some input value is null for {Title} Skipping", titleVal);
+                    _logger.NullInputValue(titleVal);
                     continue;
                 }
 
@@ -360,7 +358,7 @@ public sealed partial class ForbiddenPlanet : IWebsite
                         string? urlPath = doc.DocumentNode.SelectSingleNode($"(//a[@class='block one-whole clearfix dfbx dfbx--fdc link-banner link--black'])[{titleData.CurrentPosition}]")?.GetAttributeValue("href", string.Empty);
                         if (string.IsNullOrWhiteSpace(urlPath))
                         {
-                            LOGGER.Debug("Unable to retrieve url path for entry desc at pos {Pos}", titleData.CurrentPosition);
+                            _logger.UnableToRetrieveUrlPath(titleData.CurrentPosition);
                             continue;
                         }
 
@@ -368,14 +366,14 @@ public sealed partial class ForbiddenPlanet : IWebsite
 
                         StringBuilder desc = new();
                         foreach (HtmlNode node in descData) { desc.AppendLine(node.InnerText); }
-                        LOGGER.Debug("Checking Desc {} => {}", entryTitle, desc.ToString());
+                        _logger.CheckingDesc(entryTitle, desc.ToString());
                         descIsValid = !desc.ToString().ContainsAny(DescRemovalStrings);
                     }
 
                     if (descIsValid)
                     {
                         string finalTitle = CleanAndParseTitle(bookTitle, entryTitle, bookType);
-                        LOGGER.Debug("Final Title = {}", finalTitle);
+                        _logger.FinalTitle(finalTitle);
                         data.Add(
                             new EntryModel(
                                 finalTitle,
@@ -392,19 +390,19 @@ public sealed partial class ForbiddenPlanet : IWebsite
                     }
                     else
                     {
-                        LOGGER.Info("Removed (2) {}", entryTitle);
+                        _logger.EntryRemoved(2, entryTitle);
                     }
                 }
                 else
                 {
-                    LOGGER.Info("Removed (1) {}", entryTitle);
+                    _logger.EntryRemoved(1, entryTitle);
                 }
             }
 
             if (!isSecondCategory)
             {
                 isSecondCategory = true;
-                LOGGER.Info("Checking Comics & Graphic Novel Cateogry");
+                _logger.CheckingComicsCategory();
                 url = GenerateWebsiteUrl(bookType, bookTitle, isSecondCategory);
                 links.Add(url);
 
@@ -417,13 +415,13 @@ public sealed partial class ForbiddenPlanet : IWebsite
             }
 
             data.TrimExcess();
-            data.Sort(EntryModel.VolumeSort);
-            data.RemoveDuplicates(LOGGER);
-            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
+            data.SortByVolume();
+            data.RemoveDuplicates(_logger);
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         }
         catch (Exception ex)
         {
-            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
+            _logger.ScrapeError(ex, bookTitle, bookType, TITLE);
         }
 
         return (data, links);
