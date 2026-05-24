@@ -13,6 +13,7 @@ public sealed partial class MasterScrape
 { 
     private readonly ConcurrentBag<List<EntryModel>> _masterDataList = [];
     private readonly ConcurrentDictionary<Website, string> _masterLinkDict = [];
+    private readonly ConcurrentDictionary<Website, Exception> _errors = [];
     private readonly List<Task> _webTasks = [with(15)];
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger _logger;
@@ -112,6 +113,23 @@ public sealed partial class MasterScrape
     /// </summary>
     public IReadOnlyList<EntryModel> GetResults() =>
         _finalResults is { } results ? results : Array.Empty<EntryModel>();
+
+    /// <summary>
+    /// Per-site failures from the most recent <see cref="InitializeScrapeAsync"/> call. Empty if
+    /// every site completed successfully. A single site failure is recorded here as a
+    /// <see cref="SiteScrapeException"/> and does <em>not</em> abort the rest of the scrape;
+    /// catastrophic failures (browser launch, cancellation) propagate as thrown exceptions instead.
+    /// </summary>
+    /// <example>
+    /// <code>
+    /// await scrape.InitializeScrapeAsync(title, bookType, sites);
+    /// foreach ((Website site, Exception ex) in scrape.Errors)
+    /// {
+    ///     Console.WriteLine($"{site} failed: {ex.Message}");
+    /// }
+    /// </code>
+    /// </example>
+    public IReadOnlyDictionary<Website, Exception> Errors => _errors;
 
     /// <summary>
     /// Returns the per-site URLs the most recent scrape visited.
@@ -466,10 +484,35 @@ public sealed partial class MasterScrape
     ///   Thrown if any requested site does not support the current region,
     ///   or if <paramref name="title"/> is null/empty when used in ASCII output.
     /// </exception>
+    /// <summary>
+    /// Runs the scrape against the supplied sites and stores the results internally — read them
+    /// via <see cref="GetResults"/> and <see cref="GetResultUrls"/>, and inspect per-site failures
+    /// via <see cref="Errors"/>.
+    /// </summary>
+    /// <param name="title">Series title to search for. Must not be null/whitespace.</param>
+    /// <param name="bookType">Manga or LightNovel.</param>
+    /// <param name="cancellationToken">
+    /// Cancels the scrape between major checkpoints (site fan-out, merge rounds). Note: an
+    /// already-in-flight network call inside a site cannot be interrupted mid-request because
+    /// HtmlWeb / older Playwright .NET don't accept cancellation tokens for the underlying I/O.
+    /// </param>
+    /// <param name="siteList">Sites to scrape. All must be valid for the current Region.</param>
+    /// <exception cref="ArgumentException">
+    /// <paramref name="title"/> is empty/whitespace, or one or more sites are invalid for the
+    /// current <see cref="Region"/>.
+    /// </exception>
+    /// <exception cref="ScrapeBrowserLaunchException">
+    /// Thrown when any requested site needs Playwright and the browser fails to launch — the
+    /// underlying Playwright error is preserved as <c>InnerException</c>.
+    /// </exception>
+    /// <exception cref="OperationCanceledException">
+    /// Thrown when <paramref name="cancellationToken"/> is cancelled.
+    /// </exception>
     public async Task InitializeScrapeAsync(
         string title,
         BookType bookType,
-        params HashSet<Website> siteList)
+        HashSet<Website> siteList,
+        CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(title))
         {
@@ -484,10 +527,20 @@ public sealed partial class MasterScrape
                 $"Website{plural} [{siteListString}] not supported in region \"{this.Region}\".");
         }
 
+        cancellationToken.ThrowIfCancellationRequested();
+        _errors.Clear();
+
         PlaywrightSession? session = null;
         if (InternalHelpers.NeedPlaywright(siteList))
         {
-            session = await PlaywrightFactory.SetupPlaywrightBrowserAsync(this.Browser);
+            try
+            {
+                session = await PlaywrightFactory.SetupPlaywrightBrowserAsync(this.Browser);
+            }
+            catch (Exception ex) when (ex is not OperationCanceledException)
+            {
+                throw new ScrapeBrowserLaunchException(ex);
+            }
         }
 
         try
@@ -508,13 +561,19 @@ public sealed partial class MasterScrape
                 bookType,
                 _masterDataList,
                 _masterLinkDict,
+                _errors,
                 session?.Browser,
                 this.Region,
                 _loggerFactory,
-                this.Memberships
+                this.Memberships,
+                cancellationToken
             );
-            await Task.WhenAll(_webTasks);
+            // .WaitAsync forwards cancellation without leaving the underlying scrape tasks
+            // unobserved — they continue running but we stop waiting on them.
+            await Task.WhenAll(_webTasks).WaitAsync(cancellationToken);
             _webTasks.Clear();
+
+            cancellationToken.ThrowIfCancellationRequested();
 
             // 3) Snapshot concurrent bag into a List<T>
             List<List<EntryModel>> currentLists = [.. _masterDataList];
@@ -550,6 +609,7 @@ public sealed partial class MasterScrape
                 List<Task<List<EntryModel>>> comparisonTasks = new(currentLists.Count / 2);
                 while (currentLists.Count > 1)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     currentLists.Sort(ByCount);
                     initialMasterDataListCount = currentLists.Count;
                     for (int i = 0; i < currentLists.Count - 1; i += 2)
@@ -558,10 +618,10 @@ public sealed partial class MasterScrape
                         List<EntryModel> larger = currentLists[i + 1];
                         // Intermediate merges skip their internal sort — the dict-based merge
                         // doesn't need sorted inputs, and we sort the final result once below.
-                        comparisonTasks.Add(Task.Run(() => PriceComparison(smaller, larger, sortResult: false)));
+                        comparisonTasks.Add(Task.Run(() => PriceComparison(smaller, larger, sortResult: false), cancellationToken));
                     }
 
-                    currentLists.AddRange(await Task.WhenAll(comparisonTasks));
+                    currentLists.AddRange(await Task.WhenAll(comparisonTasks).WaitAsync(cancellationToken));
                     currentLists.RemoveRange(0, initialMasterDataListCount % 2 == 0 ? initialMasterDataListCount : initialMasterDataListCount - 1);
                     comparisonTasks.Clear();
                 }
@@ -584,13 +644,24 @@ public sealed partial class MasterScrape
                     bookType);
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (LogAndRethrow(ex))
         {
-            _logger.ScrapeExecutionFailed(ex);
+            // Unreachable — LogAndRethrow always returns false. The when-filter lets us log
+            // without swallowing: exception continues propagating to the caller.
+            throw;
         }
         finally
         {
             if (session is not null) await session.DisposeAsync();
+        }
+
+        bool LogAndRethrow(Exception ex)
+        {
+            if (ex is not OperationCanceledException)
+            {
+                _logger.ScrapeExecutionFailed(ex);
+            }
+            return false;
         }
     }
 

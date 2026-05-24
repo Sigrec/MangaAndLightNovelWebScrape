@@ -44,9 +44,9 @@ public sealed partial class InStockTrades : IWebsite
     /// <inheritdoc />
     public const Region REGION = Region.America;
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, ConcurrentDictionary<Website, Exception> errors, IBrowser? browser, Region curRegion, Membership memberships = Membership.None, CancellationToken cancellationToken = default)
         => InternalHelpers.RunHtmlScrapeAsync(
-            this, Website.InStockTrades, bookTitle, bookType, masterDataList, masterLinkList, curRegion);
+            this, Website.InStockTrades, bookTitle, bookType, masterDataList, masterLinkList, errors, curRegion, cancellationToken);
 
     // https://www.instocktrades.com/search?term=world+trigger
     // https://www.instocktrades.com/search?pg=1&title=World+Trigger&publisher=&writer=&artist=&cover=&ps=true
@@ -208,7 +208,8 @@ public sealed partial class InStockTrades : IWebsite
         BookType bookType,
         IPage? page = null,
         bool isMember = false,
-        Region curRegion = Region.America)
+        Region curRegion = Region.America,
+        CancellationToken cancellationToken = default)
     {
         // Normalize ampersand
         if (bookTitle.Contains('&', StringComparison.Ordinal))
@@ -327,10 +328,6 @@ public sealed partial class InStockTrades : IWebsite
                     }
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.ScrapeError(ex, bookTitle, bookType, TITLE);
         }
         finally
         {

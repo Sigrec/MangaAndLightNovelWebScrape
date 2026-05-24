@@ -59,9 +59,9 @@ public sealed partial class AmazonUSA : IWebsite
     [GeneratedRegex(@"\((.*)\)|:(.*)", RegexOptions.IgnoreCase)] private static partial Regex ExtractTextRegex();
     [GeneratedRegex(@"(\d{1,3}) Special Edition.*", RegexOptions.IgnoreCase)] private static partial Regex SpecialEditionRegex();
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, ConcurrentDictionary<Website, Exception> errors, IBrowser? browser, Region curRegion, Membership memberships = Membership.None, CancellationToken cancellationToken = default)
         => InternalHelpers.RunPlaywrightScrapeAsync(
-            this, Website.AmazonUSA, bookTitle, bookType, masterDataList, masterLinkList, browser!, curRegion);
+            this, Website.AmazonUSA, bookTitle, bookType, masterDataList, masterLinkList, errors, browser!, curRegion, cancellationToken);
 
     private string GenerateWebsiteUrl(BookType bookType, uint curPage, string bookTitle)
     {
@@ -209,7 +209,7 @@ public sealed partial class AmazonUSA : IWebsite
     }
 
     // TODO - Need to finish checking tests and cleaning
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America, CancellationToken cancellationToken = default)
     {
         List<EntryModel> data = [];
         List<string> links = [];

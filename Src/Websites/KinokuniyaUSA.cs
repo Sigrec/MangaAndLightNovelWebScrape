@@ -52,9 +52,9 @@ public sealed partial class KinokuniyaUSA : IWebsite
     //https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=overlord+novel&taxon=&x=33&y=8&per_page=100&form_taxon=109
     //https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=classroom+of+the+elite&taxon=&x=33&y=8&per_page=100&form_taxon=109
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, ConcurrentDictionary<Website, Exception> errors, IBrowser? browser, Region curRegion, Membership memberships = Membership.None, CancellationToken cancellationToken = default)
         => InternalHelpers.RunPlaywrightScrapeAsync(
-            this, Website.KinokuniyaUSA, bookTitle, bookType, masterDataList, masterLinkList, browser!, curRegion,
+            this, Website.KinokuniyaUSA, bookTitle, bookType, masterDataList, masterLinkList, errors, browser!, curRegion, cancellationToken,
             isMember: memberships.HasFlag(Membership.KinokuniyaUSA),
             needsUserAgent: true);
 
@@ -303,7 +303,7 @@ public sealed partial class KinokuniyaUSA : IWebsite
         return MasterScrape.FinalCleanRegex().Replace(output, string.Empty);
     }
 
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America, CancellationToken cancellationToken = default)
     {
         List<EntryModel> data = [];
         List<string> links = [];

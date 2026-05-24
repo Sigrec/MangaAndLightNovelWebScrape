@@ -47,9 +47,9 @@ public sealed partial class BooksAMillion : IWebsite
     private static readonly FrozenSet<string> _novelIncludeVals = [ "Light Novel", "Novel", ];
     private static readonly FrozenSet<string> _novelExcludeVals = [ "Manga", "Volumes", "Vol" ];
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, ConcurrentDictionary<Website, Exception> errors, IBrowser? browser, Region curRegion, Membership memberships = Membership.None, CancellationToken cancellationToken = default)
         => InternalHelpers.RunPlaywrightScrapeAsync(
-            this, Website.BooksAMillion, bookTitle, bookType, masterDataList, masterLinkList, browser!, curRegion,
+            this, Website.BooksAMillion, bookTitle, bookType, masterDataList, masterLinkList, errors, browser!, curRegion, cancellationToken,
             isMember: memberships.HasFlag(Membership.BooksAMillion),
             needsUserAgent: true);
 
@@ -211,7 +211,7 @@ public sealed partial class BooksAMillion : IWebsite
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString().Trim(), " ");
     }
 
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America, CancellationToken cancellationToken = default)
     {
         List<EntryModel> data = [];
         List<string> links = [];

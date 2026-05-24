@@ -32,9 +32,9 @@ public sealed partial class MangaMate : IWebsite
     /// <inheritdoc />
     public const Region REGION = Region.Australia;
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, ConcurrentDictionary<Website, Exception> errors, IBrowser? browser, Region curRegion, Membership memberships = Membership.None, CancellationToken cancellationToken = default)
         => InternalHelpers.RunPlaywrightScrapeAsync(
-            this, Website.MangaMate, bookTitle, bookType, masterDataList, masterLinkList, browser!, curRegion);
+            this, Website.MangaMate, bookTitle, bookType, masterDataList, masterLinkList, errors, browser!, curRegion, cancellationToken);
 
     private string GenerateWebsiteUrl(string bookTitle, BookType bookType, ushort pageNum)
     {
@@ -144,7 +144,7 @@ public sealed partial class MangaMate : IWebsite
         return (await page.ContentAsync(), maxPageNum);
     }
 
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America, CancellationToken cancellationToken = default)
     {
         List<EntryModel> data = [];
         List<string> links = [];

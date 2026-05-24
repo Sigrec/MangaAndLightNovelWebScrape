@@ -30,9 +30,9 @@ public sealed partial class TravellingMan : IWebsite
     [GeneratedRegex(@"\d{1,3}-in-\d{1,3}", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
     [GeneratedRegex(@"(?<=Box Set \d{1,3})[^\d{1,3}.]+.*|(?:Box Set) Vol")] private static partial Regex BoxSetRegex();
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, ConcurrentDictionary<Website, Exception> errors, IBrowser? browser, Region curRegion, Membership memberships = Membership.None, CancellationToken cancellationToken = default)
         => InternalHelpers.RunHtmlScrapeAsync(
-            this, Website.TravellingMan, bookTitle, bookType, masterDataList, masterLinkList, curRegion);
+            this, Website.TravellingMan, bookTitle, bookType, masterDataList, masterLinkList, errors, curRegion, cancellationToken);
 
     private string GenerateWebsiteUrl(string bookTitle, BookType bookType, int curPage)
     {
@@ -122,7 +122,7 @@ public sealed partial class TravellingMan : IWebsite
     }
 
     // TODO - Page source issue when a series has multiple pages, unsure why
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America, CancellationToken cancellationToken = default)
     {
         List<EntryModel> data = [];
         List<string> links = [];

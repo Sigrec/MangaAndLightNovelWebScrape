@@ -31,9 +31,9 @@ public sealed partial class RobertsAnimeCornerStore : IWebsite
     /// <inheritdoc />
     public const Region REGION = Region.America;
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, ConcurrentDictionary<Website, Exception> errors, IBrowser? browser, Region curRegion, Membership memberships = Membership.None, CancellationToken cancellationToken = default)
         => InternalHelpers.RunHtmlScrapeAsync(
-            this, Website.RobertsAnimeCornerStore, bookTitle, bookType, masterDataList, masterLinkList, curRegion,
+            this, Website.RobertsAnimeCornerStore, bookTitle, bookType, masterDataList, masterLinkList, errors, curRegion, cancellationToken,
             useLastLink: true);
     
     private string GenerateWebsiteUrl(string bookTitle)
@@ -197,7 +197,7 @@ public sealed partial class RobertsAnimeCornerStore : IWebsite
         return result;
     }
 
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America, CancellationToken cancellationToken = default)
     {
         List<EntryModel> data = [];
         List<string> links = [];
@@ -306,10 +306,6 @@ public sealed partial class RobertsAnimeCornerStore : IWebsite
                     }
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.ScrapeError(ex, bookTitle, bookType, TITLE);
         }
         finally
         {

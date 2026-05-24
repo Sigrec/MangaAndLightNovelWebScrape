@@ -8,6 +8,7 @@ global using Microsoft.Extensions.Logging;
 global using Microsoft.Extensions.Logging.Abstractions;
 global using System.Text;
 global using System.Xml.XPath;
+global using System.Threading;
 global using System.Threading.Tasks;
 global using MangaAndLightNovelWebScrape.Websites;
 global using MangaAndLightNovelWebScrape.Enums;

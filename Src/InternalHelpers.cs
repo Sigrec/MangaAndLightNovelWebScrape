@@ -99,10 +99,12 @@ internal static partial class InternalHelpers
         BookType bookType,
         ConcurrentBag<List<EntryModel>> masterBag,
         ConcurrentDictionary<Website, string> masterDict,
+        ConcurrentDictionary<Website, Exception> errors,
         IBrowser? browser,
         Region curRegion,
         ILoggerFactory loggerFactory,
-        Membership memberships)
+        Membership memberships,
+        CancellationToken cancellationToken)
     {
         foreach (Website site in sites)
         {
@@ -113,9 +115,11 @@ internal static partial class InternalHelpers
                 bookType,
                 masterBag,
                 masterDict,
+                errors,
                 browser,
                 curRegion,
-                memberships
+                memberships,
+                cancellationToken
             );
 
             webTasks.Add(task);
@@ -127,6 +131,10 @@ internal static partial class InternalHelpers
     /// <c>GetData</c>, registers results, and disposes the page + its owning context in
     /// a finally block. This is the shared lifecycle for every Playwright-backed site —
     /// each <c>CreateTask</c> reduces to a one-line delegation.
+    ///
+    /// Per-site failures are caught here, wrapped as <see cref="SiteScrapeException"/>, and
+    /// stored in <paramref name="errors"/>. A site failure never aborts the surrounding
+    /// orchestration — siblings keep running.
     /// </summary>
     /// <param name="useLastLink">
     /// If <c>true</c>, registers <c>Links.Last()</c> instead of <c>Links[0]</c>. Set for sites
@@ -139,8 +147,10 @@ internal static partial class InternalHelpers
         BookType bookType,
         ConcurrentBag<List<EntryModel>> masterDataList,
         ConcurrentDictionary<Website, string> masterLinkList,
+        ConcurrentDictionary<Website, Exception> errors,
         IBrowser browser,
         Region curRegion,
+        CancellationToken cancellationToken,
         bool isMember = false,
         bool needsUserAgent = false,
         bool useLastLink = false)
@@ -148,9 +158,20 @@ internal static partial class InternalHelpers
         IPage page = await PlaywrightFactory.GetPageAsync(browser, needsUserAgent);
         try
         {
-            (List<EntryModel> Data, List<string> Links) = await scraper.GetData(bookTitle, bookType, page, isMember, curRegion);
+            (List<EntryModel> Data, List<string> Links) = await scraper.GetData(bookTitle, bookType, page, isMember, curRegion, cancellationToken);
             masterDataList.Add(Data);
-            masterLinkList.TryAdd(site, useLastLink ? Links.Last() : Links[0]);
+            if (Links.Count > 0)
+            {
+                masterLinkList.TryAdd(site, useLastLink ? Links.Last() : Links[0]);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            errors[site] = new SiteScrapeException(site, ex);
         }
         finally
         {
@@ -160,7 +181,8 @@ internal static partial class InternalHelpers
 
     /// <summary>
     /// HtmlWeb-only version of <see cref="RunPlaywrightScrapeAsync"/>. Skips browser rental —
-    /// the site's <c>GetData</c> handles the network directly via <c>HtmlWeb</c>.
+    /// the site's <c>GetData</c> handles the network directly via <c>HtmlWeb</c>. Same
+    /// per-site failure handling: caught, wrapped, stored in <paramref name="errors"/>.
     /// </summary>
     internal static async Task RunHtmlScrapeAsync(
         IWebsite scraper,
@@ -169,12 +191,28 @@ internal static partial class InternalHelpers
         BookType bookType,
         ConcurrentBag<List<EntryModel>> masterDataList,
         ConcurrentDictionary<Website, string> masterLinkList,
+        ConcurrentDictionary<Website, Exception> errors,
         Region curRegion,
+        CancellationToken cancellationToken,
         bool useLastLink = false)
     {
-        (List<EntryModel> Data, List<string> Links) = await scraper.GetData(bookTitle, bookType, null, false, curRegion);
-        masterDataList.Add(Data);
-        masterLinkList.TryAdd(site, useLastLink ? Links.Last() : Links[0]);
+        try
+        {
+            (List<EntryModel> Data, List<string> Links) = await scraper.GetData(bookTitle, bookType, null, false, curRegion, cancellationToken);
+            masterDataList.Add(Data);
+            if (Links.Count > 0)
+            {
+                masterLinkList.TryAdd(site, useLastLink ? Links.Last() : Links[0]);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            errors[site] = new SiteScrapeException(site, ex);
+        }
     }
 
     internal static IWebsite CreateScraper(Website site, ILoggerFactory loggerFactory)
@@ -519,7 +557,9 @@ internal static partial class InternalHelpers
         if (MasterScrape.IsDebugEnabled)
         {
             // Clean up website string once before using it for file path.
-            string filePath = $@"Data\{website.Replace(" ", string.Empty)}Data.txt";
+            string dataDir = Path.Combine(Directory.GetCurrentDirectory(), "Data");
+            Directory.CreateDirectory(dataDir);
+            string filePath = Path.Combine(dataDir, $"{website.Replace(" ", string.Empty)}Data.txt");
 
             using StreamWriter outputFile = new(filePath);
             if (dataList.Any())

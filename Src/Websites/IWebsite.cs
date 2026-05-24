@@ -17,15 +17,19 @@ public interface IWebsite
     /// <summary>
     /// Builds and runs a scrape for the given title/book-type, appending results to the master
     /// collections. Should be invoked through <c>Task.WhenAll</c> alongside other sites.
+    /// Per-site failures are caught by the shared helper and recorded in
+    /// <paramref name="errors"/>; one site failing never aborts the rest of the scrape.
     /// </summary>
     Task CreateTask(
         string bookTitle,
         BookType bookType,
         ConcurrentBag<List<EntryModel>> masterDataList,
         ConcurrentDictionary<Website, string> masterLinkList,
+        ConcurrentDictionary<Website, Exception> errors,
         IBrowser? browser,
         Region curRegion,
-        Membership memberships = Membership.None);
+        Membership memberships = Membership.None,
+        CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Performs the actual scrape work and returns the parsed entries plus the page URLs visited.
@@ -35,5 +39,6 @@ public interface IWebsite
         BookType bookType,
         IPage? page = null,
         bool isMember = false,
-        Region curRegion = Region.America);
+        Region curRegion = Region.America,
+        CancellationToken cancellationToken = default);
 }

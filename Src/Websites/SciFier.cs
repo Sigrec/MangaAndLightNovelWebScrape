@@ -60,9 +60,9 @@ public sealed partial class SciFier : IWebsite
     private static readonly FrozenSet<string> _mangaKeepStrings =
         FrozenSet.ToFrozenSet(new[] { "Vol", "Box Set", "Color", "Comic", "Anniversary" }, StringComparer.Ordinal);
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, ConcurrentDictionary<Website, Exception> errors, IBrowser? browser, Region curRegion, Membership memberships = Membership.None, CancellationToken cancellationToken = default)
         => InternalHelpers.RunHtmlScrapeAsync(
-            this, Website.SciFier, bookTitle, bookType, masterDataList, masterLinkList, curRegion);
+            this, Website.SciFier, bookTitle, bookType, masterDataList, masterLinkList, errors, curRegion, cancellationToken);
 
     // Has issues where the search is not very strict unforunate
     private string GenerateWebsiteUrl(string bookTitle, BookType bookType, Region curRegion, bool letterIsFrontHalf)
@@ -224,7 +224,7 @@ public sealed partial class SciFier : IWebsite
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
     }
 
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America, CancellationToken cancellationToken = default)
     {
         List<EntryModel> data = [];
         List<string> links = [];
@@ -415,10 +415,6 @@ public sealed partial class SciFier : IWebsite
                     break;
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.ScrapeError(ex, bookTitle, bookType, TITLE);
         }
         finally
         {

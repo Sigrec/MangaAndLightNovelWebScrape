@@ -32,9 +32,9 @@ public sealed partial class Crunchyroll : IWebsite
     [GeneratedRegex(@"(?:\d-in-\d|Omnibus) Edition", RegexOptions.IgnoreCase)] private static partial Regex OmnibusRegex();
     [GeneratedRegex(@"\((\d{1,3}-\d{1,3})\) Bundle", RegexOptions.IgnoreCase)] private static partial Regex BundleVolRegex();
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, Membership memberships = Membership.None)
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, ConcurrentDictionary<Website, Exception> errors, IBrowser? browser, Region curRegion, Membership memberships = Membership.None, CancellationToken cancellationToken = default)
         => InternalHelpers.RunHtmlScrapeAsync(
-            this, Website.Crunchyroll, bookTitle, bookType, masterDataList, masterLinkList, curRegion);
+            this, Website.Crunchyroll, bookTitle, bookType, masterDataList, masterLinkList, errors, curRegion, cancellationToken);
 
     private string GenerateWebsiteUrl(BookType bookType, string bookTitle, bool retry = false)
     {
@@ -136,7 +136,7 @@ public sealed partial class Crunchyroll : IWebsite
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
     }
 
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America, CancellationToken cancellationToken = default)
     {
         List<EntryModel> data = [];
         List<string> links = [];
@@ -263,10 +263,6 @@ public sealed partial class Crunchyroll : IWebsite
                     _logger.EntryRemovedDebug(3, entryTitle);
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            _logger.ScrapeError(ex, bookTitle, bookType, TITLE);
         }
         finally
         {

@@ -8,16 +8,6 @@ internal static partial class ForbiddenPlanetLogging
     public static partial void Snapshot(this ILogger logger, string snapshot);
 
     [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "Loading all entries...")]
-    public static partial void LoadingAllEntries(this ILogger logger);
-
-    [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "Loading more entries...")]
-    public static partial void ForbiddenPlanetLoadingMoreEntries(this ILogger logger);
-
-    [LoggerMessage(
         Level = LogLevel.Debug,
         Message = "Counts: title={Titles} price={Prices} minor={Minor} format={Format} stock={Stock}")]
     public static partial void NodeCounts(this ILogger logger, int titles, int prices, int minor, int format, int stock);
@@ -46,4 +36,9 @@ internal static partial class ForbiddenPlanetLogging
         Level = LogLevel.Information,
         Message = "Checking Comics & Graphic Novel Category")]
     public static partial void CheckingComicsCategory(this ILogger logger);
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Loading more entries...")]
+    public static partial void ForbiddenPlanetLoadingMoreEntries(this ILogger logger);
 }
