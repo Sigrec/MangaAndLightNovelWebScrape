@@ -80,16 +80,13 @@ public sealed partial class MangaMate : IWebsite
 
     private static async Task WaitForProductPageLoad(IPage page)
     {
-        // Wait for the product grid you were waiting on in Selenium
+        // Wait for the product grid to render and the in-flight network to settle.
+        // The old ScrollToBottomUntilStableAsync call targeted a ForbiddenPlanet-specific
+        // separator selector — MangaMate is paginated, not infinite-scroll, so it was
+        // both wrong and unnecessary.
         ILocator grid = page.Locator("(//div[@class='grid grid--uniform'])[2]");
         await grid.WaitForAsync();
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
-        await page.ScrollToBottomUntilStableAsync(
-                "//li[@class='support-links product-list__list__separator owl-off bg-white phl phr pht pb brdr--top brdr--top--thin brdr--top--dotted']", // <- something that appears for each item
-                maxScrolls: 60,
-                stabilityMs: 900,
-                stepPx: 1400
-            );
     }
 
     private async Task<(string Html, uint MaxPageNum)> GetInitialData(IPage page, string url)
@@ -124,8 +121,6 @@ public sealed partial class MangaMate : IWebsite
             .Locator("button[aria-controls='CurrencyList-toolbar'][aria-expanded='true']")
             .WaitForAsync();
 
-        await page.Locator("button[aria-controls='CurrencyList-toolbar'][aria-expanded='true']").WaitForAsync();
-
         // Find the controlled menu *by id* from aria-controls, then click AUD inside it
         string? menuId = await currencyBtn.GetAttributeAsync("aria-controls");   // e.g., "CurrencyList-toolbar"
         ILocator menu = page.Locator($"#{menuId}");
@@ -149,114 +144,186 @@ public sealed partial class MangaMate : IWebsite
         List<EntryModel> data = [];
         List<string> links = [];
 
-        try
+        HtmlWeb html = HtmlFactory.CreateWeb();
+        HtmlDocument doc = HtmlFactory.CreateDocument();
+
+        ushort curPageNum = 1;
+        bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+        string url = GenerateWebsiteUrl(bookTitle, bookType, curPageNum);
+        links.Add(url);
+
+        (string firstHtml, uint maxPageNum) = await GetInitialData(page!, url);
+        doc.LoadHtml(firstHtml);
+
+        while (true)
         {
-            HtmlWeb html = HtmlFactory.CreateWeb();
-            HtmlDocument doc = HtmlFactory.CreateDocument();
+            // Re-create the navigator per page — HtmlAgilityPack's LoadHtml replaces
+            // the subtree under DocumentNode but the old navigator's iterators may
+            // already be bound to stale nodes.
             XPathNavigator nav = doc.DocumentNode.CreateNavigator();
 
-            ushort curPageNum = 1;
-            bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
-            string url = GenerateWebsiteUrl(bookTitle, bookType, curPageNum);
-            links.Add(url);
-
-            (string Html, uint MaxPageNum) = await GetInitialData(page!, url);
-            doc.LoadHtml(Html);
-
-            while (true)
+            // Snapshot the parallel iterators into Lists. The old lockstep MoveNext()
+            // pattern desynced when any of the 5 iterators yielded fewer matches than
+            // titleData; materializing once lets the pre-pass below index in O(1).
+            List<string> titles = CollectValues(nav, _titleXPath);
+            int entryCount = titles.Count;
+            if (entryCount == 0)
             {
-                XPathNodeIterator titleData = nav.Select(_titleXPath);
-                XPathNodeIterator priceData = nav.Select(_priceXPath);
-                XPathNodeIterator stockstatusData = nav.Select(_stockStatusXPath);
-                XPathNodeIterator stockstatusData2 = nav.Select(_stockStatusXPath2);
-                XPathNodeIterator entryLinkData = nav.Select(_entryLinkXPath);
+                if (curPageNum < maxPageNum) goto NextPage;
+                break;
+            }
 
-                while (titleData.MoveNext())
+            List<string> prices = CollectValues(nav, _priceXPath, entryCount);
+            List<string> stocks = CollectValues(nav, _stockStatusXPath, entryCount);
+            List<string> stockClasses = CollectAttributes(nav, _stockStatusXPath2, "class", entryCount);
+            List<string> hrefs = CollectAttributes(nav, _entryLinkXPath, "href", entryCount);
+
+            // Eligibility pre-pass: skip ineligible entries entirely — no point spending
+            // an HTTP detail-page fetch on titles we'll drop anyway. Survivors go into
+            // `keep`, then we batch-fetch all detail pages via Task.WhenAll. Old code
+            // did one sequential `await html.LoadFromWebAsync(...)` per entry inside the
+            // loop — N round-trips per page.
+            bool[] eligible = new bool[entryCount];
+            List<int> needsType = [];
+            for (int i = 0; i < entryCount; i++)
+            {
+                string t = titles[i];
+                if (!InternalHelpers.EntryTitleContainsBookTitle(bookTitle, t))
                 {
-                    priceData.MoveNext();
-                    stockstatusData.MoveNext();
-                    stockstatusData2.MoveNext();
-                    entryLinkData.MoveNext();
-
-                    string entryTitle = titleData.Current!.Value.Trim();
-                    if (InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
-                        && (!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck)
-                        && !(
-                            bookType == BookType.Manga
-                            && (
-                                entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
-                                || (
-                                    InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
-                                    || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Story")
-                                    || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear")
-                                )
-                            )
-                        )
-                    )
-                    {
-                        string? type = (await html.LoadFromWebAsync($"https://mangamate.shop{entryLinkData.Current!.GetAttribute("href", string.Empty)}")).DocumentNode.CreateNavigator().SelectSingleNode(_entryTypeXPath)?.Value;
-                        if (type is null)
-                        {
-                            continue;
-                        }
-                        type = type.Trim();
-                        // LOGGER.Debug("{} | {}", entryTitle, type);
-
-                        if ((bookType == BookType.Manga && (type.Equals("Manga", StringComparison.OrdinalIgnoreCase) || type.Equals("Box Set", StringComparison.OrdinalIgnoreCase))) || (bookType == BookType.LightNovel && (type.Equals("Novel", StringComparison.OrdinalIgnoreCase) || type.Equals("Box Set", StringComparison.OrdinalIgnoreCase))))
-                        {
-                            data.Add(
-                                new EntryModel
-                                (
-                                    ParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType),
-                                    priceData.Current!.Value.Trim(),
-                                    stockstatusData2.Current!.GetAttribute("class", "error").Contains("preorder") ? StockStatus.PO : stockstatusData.Current!.Value.Trim() switch
-                                    {
-                                        "Sold Out" => StockStatus.OOS,
-                                        _ => StockStatus.IS
-                                    },
-                                    TITLE
-                                )
-                            );
-                        }
-                        else
-                        {
-                            _logger.EntryRemovedSimple(entryTitle);
-                        }
-                    }
-                    else
-                    {
-                        _logger.EntryRemoved(1, entryTitle);
-                    }
+                    _logger.EntryRemoved(1, t);
+                    continue;
                 }
-
-                if (curPageNum < MaxPageNum)
+                if (InternalHelpers.ShouldRemoveEntry(t) && !BookTitleRemovalCheck)
                 {
-                    url = GenerateWebsiteUrl(bookTitle, bookType, ++curPageNum);
-                    links.Add(url);
-                    await page!.GotoAsync(url, new PageGotoOptions
-                    {
-                        WaitUntil = WaitUntilState.DOMContentLoaded
-                    });
-                    await WaitForProductPageLoad(page);
-                    doc.LoadHtml(await page.ContentAsync());
+                    _logger.EntryRemoved(1, t);
+                    continue;
                 }
-                else
+                if (bookType == BookType.Manga &&
+                    (t.Contains("Novel", StringComparison.OrdinalIgnoreCase)
+                     || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", t, "Boruto")
+                     || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", t, "Story")
+                     || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", t, "Can't Fear")))
                 {
-                    break;
+                    _logger.EntryRemoved(1, t);
+                    continue;
+                }
+                if (!string.IsNullOrWhiteSpace(hrefs[i]))
+                {
+                    eligible[i] = true;
+                    needsType.Add(i);
                 }
             }
 
-            data.TrimExcess();
-            links.TrimExcess();
-            data.RemoveDuplicates(_logger);
-            data.SortByVolume();
-            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
-        }
-        catch (Exception ex)
-        {
-            _logger.ScrapeError(ex, bookTitle, bookType, TITLE);
+            HtmlDocument?[] typeDocs = new HtmlDocument?[entryCount];
+            if (needsType.Count > 0)
+            {
+                Task<HtmlDocument>[] fetches = new Task<HtmlDocument>[needsType.Count];
+                for (int j = 0; j < needsType.Count; j++)
+                {
+                    string href = hrefs[needsType[j]];
+                    string fullUrl = href.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                        ? href
+                        : href.StartsWith('/') ? $"{BASE_URL}{href}" : $"{BASE_URL}/{href}";
+                    fetches[j] = html.LoadFromWebAsync(fullUrl);
+                }
+                HtmlDocument[] docs = await Task.WhenAll(fetches);
+                for (int j = 0; j < needsType.Count; j++)
+                {
+                    typeDocs[needsType[j]] = docs[j];
+                }
+            }
+
+            for (int i = 0; i < entryCount; i++)
+            {
+                if (!eligible[i]) continue;
+
+                string entryTitle = titles[i];
+                HtmlDocument? detail = typeDocs[i];
+                string? type = detail?.DocumentNode.CreateNavigator().SelectSingleNode(_entryTypeXPath)?.Value?.Trim();
+                if (string.IsNullOrEmpty(type))
+                {
+                    continue;
+                }
+
+                bool typeMatchesManga = bookType == BookType.Manga
+                    && (type.Equals("Manga", StringComparison.OrdinalIgnoreCase)
+                        || type.Equals("Box Set", StringComparison.OrdinalIgnoreCase));
+                bool typeMatchesNovel = bookType == BookType.LightNovel
+                    && (type.Equals("Novel", StringComparison.OrdinalIgnoreCase)
+                        || type.Equals("Box Set", StringComparison.OrdinalIgnoreCase));
+                if (!(typeMatchesManga || typeMatchesNovel))
+                {
+                    _logger.EntryRemovedSimple(entryTitle);
+                    continue;
+                }
+
+                StockStatus stockStatus = stockClasses[i].Contains("preorder", StringComparison.Ordinal)
+                    ? StockStatus.PO
+                    : stocks[i].Trim() switch
+                    {
+                        "Sold Out" => StockStatus.OOS,
+                        _ => StockStatus.IS,
+                    };
+
+                data.Add(new EntryModel(
+                    ParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType),
+                    prices[i].Trim(),
+                    stockStatus,
+                    TITLE));
+            }
+
+        NextPage:
+            if (curPageNum < maxPageNum)
+            {
+                url = GenerateWebsiteUrl(bookTitle, bookType, ++curPageNum);
+                links.Add(url);
+                await page!.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
+                await WaitForProductPageLoad(page);
+                doc.LoadHtml(await page.ContentAsync());
+            }
+            else
+            {
+                break;
+            }
         }
 
+        data.TrimExcess();
+        links.TrimExcess();
+        data.RemoveDuplicates(_logger);
+        data.SortByVolume();
+        InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
+
         return (data, links);
+    }
+
+    private static List<string> CollectValues(XPathNavigator nav, XPathExpression xpath)
+    {
+        List<string> result = [];
+        XPathNodeIterator iter = nav.Select(xpath);
+        while (iter.MoveNext())
+        {
+            result.Add(iter.Current?.Value ?? string.Empty);
+        }
+        return result;
+    }
+
+    private static List<string> CollectValues(XPathNavigator nav, XPathExpression xpath, int expectedCount)
+    {
+        List<string> result = CollectValues(nav, xpath);
+        // Pad to align with the title list so per-index access in the main loop is safe.
+        while (result.Count < expectedCount) result.Add(string.Empty);
+        return result;
+    }
+
+    private static List<string> CollectAttributes(XPathNavigator nav, XPathExpression xpath, string attribute, int expectedCount)
+    {
+        List<string> result = [];
+        XPathNodeIterator iter = nav.Select(xpath);
+        while (iter.MoveNext())
+        {
+            result.Add(iter.Current?.GetAttribute(attribute, string.Empty) ?? string.Empty);
+        }
+        while (result.Count < expectedCount) result.Add(string.Empty);
+        return result;
     }
 }
