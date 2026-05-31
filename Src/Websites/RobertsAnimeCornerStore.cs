@@ -35,6 +35,10 @@ public sealed partial class RobertsAnimeCornerStore : IWebsite
         => InternalHelpers.RunHtmlScrapeAsync(
             this, Website.RobertsAnimeCornerStore, bookTitle, bookType, masterDataList, masterLinkList, errors, curRegion, cancellationToken,
             useLastLink: true);
+
+    /// <inheritdoc />
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+        => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
     
     private string GenerateWebsiteUrl(string bookTitle)
     {

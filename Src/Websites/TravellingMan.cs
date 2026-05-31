@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using MangaAndLightNovelWebScrape.Services;
 using Microsoft.Playwright;
 
@@ -19,11 +20,19 @@ public sealed partial class TravellingMan : IWebsite
     /// <inheritdoc />
     public const Region REGION = Region.Britain;
 
-    private static readonly List<string> _descRemovalStrings = ["novel", "figure", "sculpture", "collection of", "figurine", "statue", "miniature", "Figuarts"];
+    // FrozenSet not List — the old `static readonly List<string>` was being MUTATED per
+    // scrape (lines that removed items matching the book title or "novel" for LN). Static
+    // mutable state means concurrent scrapes interleaved removals and after the first run
+    // some items were gone for the rest of the process lifetime. Per-scrape effective set
+    // is built locally inside GetData.
+    private static readonly FrozenSet<string> _descRemovalDefaults =
+        FrozenSet.ToFrozenSet(["novel", "figure", "sculpture", "collection of", "figurine", "statue", "miniature", "Figuarts"], StringComparer.OrdinalIgnoreCase);
 
     private static readonly XPathExpression _titleXPath = XPathExpression.Compile("//li[@class='list-view-item']/div/div/div[2]/div/span");
     private static readonly XPathExpression _priceXPath = XPathExpression.Compile("//li[@class='list-view-item']/div/div/div[3]/dl/div[2]/dd[2]/span[1]");
+    private static readonly XPathExpression _entryLinkXPath = XPathExpression.Compile("//li[@class='list-view-item']/div/a");
     private static readonly XPathExpression _pageCheckXPath = XPathExpression.Compile("//ul[@class='list--inline pagination']/li[3]/a");
+    private static readonly XPathExpression _descXPath = XPathExpression.Compile("//div[@class='product-single__description rte'] | //div[@class='product-single__description rte']//p");
 
     [GeneratedRegex(@"Volume|Vol\.", RegexOptions.IgnoreCase)] internal static partial Regex FixVolumeRegex();
     [GeneratedRegex(@",| The Manga| Manga|\(.*?\)", RegexOptions.IgnoreCase)] private static partial Regex CleanAndParseTitleRegex();
@@ -34,12 +43,33 @@ public sealed partial class TravellingMan : IWebsite
         => InternalHelpers.RunHtmlScrapeAsync(
             this, Website.TravellingMan, bookTitle, bookType, masterDataList, masterLinkList, errors, curRegion, cancellationToken);
 
+    /// <inheritdoc />
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+        => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
+
     private string GenerateWebsiteUrl(string bookTitle, BookType bookType, int curPage)
     {
-        // https://travellingman.com/search?page=2&q=naruto+manga
-        string url = $"{BASE_URL}/search?page={curPage}&q={InternalHelpers.FilterBookTitle(bookTitle.Replace(" ", "+"))}{(bookType == BookType.Manga ? "+manga" : "+novel")}";
+        // https://travellingman.com/search?page=2&q=naruto
+        string url = $"{BASE_URL}/search?page={curPage}&q={bookTitle.Replace(' ', '+')}";
         _logger.PageUrlGenerated(curPage, url);
         return url;
+    }
+
+    /// <summary>
+    /// Cheap sanity check matching what <see cref="EntryModel.ParsePrice"/> needs: a
+    /// leading or trailing currency symbol with digits inbetween. Lets us skip merchandise
+    /// entries (no price element) before they reach the dedup/sort pass.
+    /// </summary>
+    private static bool LooksLikePrice(string price)
+    {
+        if (price.Length < 2) return false;
+        // Either first char is a digit (e.g. "1099¥") or first char is a currency symbol
+        // followed by at least one digit.
+        if (char.IsDigit(price[0]))
+        {
+            return char.IsDigit(price[^1]) || !char.IsLetterOrDigit(price[^1]);
+        }
+        return price.Length >= 2 && char.IsDigit(price[1]);
     }
 
     private static string CleanAndParseTitle(string entryTitle, string bookTitle, BookType bookType)
@@ -121,120 +151,185 @@ public sealed partial class TravellingMan : IWebsite
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(result, " ").Trim();
     }
 
-    // TODO - Page source issue when a series has multiple pages, unsure why
     public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America, CancellationToken cancellationToken = default)
     {
         List<EntryModel> data = [];
         List<string> links = [];
 
-        try
+        HtmlWeb web = HtmlFactory.CreateWeb();
+
+        bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+        bool bookTitleContainsNovel = bookTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase);
+        bool bookTitleContainsManga = bookTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase);
+
+        // Per-scrape effective desc-removal set. Old code mutated a static List on every
+        // scrape (corrupting it across concurrent runs); we now build a fresh local set
+        // from the immutable default and drop entries that the user's bookTitle already
+        // implies (e.g. searching for a series literally named "Figure" wouldn't want
+        // to drop entries containing "figure").
+        HashSet<string> descRemoval = new(_descRemovalDefaults, StringComparer.OrdinalIgnoreCase);
+        foreach (string term in _descRemovalDefaults)
         {
-            HtmlWeb web = HtmlFactory.CreateWeb();
-            HtmlDocument doc = HtmlFactory.CreateDocument();
+            if (bookTitle.Contains(term, StringComparison.OrdinalIgnoreCase)) descRemoval.Remove(term);
+        }
+        if (bookType == BookType.LightNovel) descRemoval.Remove("novel");
 
-            int nextPage = 1;
-            bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
-            for (int x = 0; x < _descRemovalStrings.Count; x++)
+        int nextPage = 1;
+        while (true)
+        {
+            string url = GenerateWebsiteUrl(bookTitle, bookType, nextPage);
+            links.Add(url);
+
+            HtmlDocument doc = await web.LoadFromWebAsync(url);
+            doc.ConfigurePerf();
+
+            HtmlNodeCollection? titleData = doc.DocumentNode.SelectNodes(_titleXPath);
+            HtmlNodeCollection? priceData = doc.DocumentNode.SelectNodes(_priceXPath);
+            HtmlNodeCollection? linkData = doc.DocumentNode.SelectNodes(_entryLinkXPath);
+            HtmlNode? pageCheck = doc.DocumentNode.SelectSingleNode(_pageCheckXPath);
+
+            if (titleData is null || priceData is null) break;
+
+            // Materialize per-entry fields with sane defaults. The old MoveNext()-style
+            // lockstep walked four collections (title, price, anchors-by-index) without
+            // verifying counts; a short collection would NRE on `titleData[x]`. Bounding
+            // explicitly by the title count and padding the others is safer and lets the
+            // desc-fetch pre-pass index by position.
+            int entryCount = titleData.Count;
+            string[] entryTitles = new string[entryCount];
+            string[] prices = new string[entryCount];
+            string?[] hrefs = new string?[entryCount];
+
+            for (int i = 0; i < entryCount; i++)
             {
-                if (bookTitle.Contains(_descRemovalStrings[x])) _descRemovalStrings.RemoveAt(x);
+                entryTitles[i] = titleData[i].InnerText.Trim();
+                prices[i] = i < priceData.Count ? priceData[i].InnerText.Trim() : string.Empty;
+                hrefs[i] = linkData is not null && i < linkData.Count
+                    ? linkData[i].GetAttributeValue<string?>("href", null)
+                    : null;
             }
-            if (bookType == BookType.LightNovel) _descRemovalStrings.Remove("novel");
 
+            // Eligibility pre-pass + desc-fetch index collection. Each eligible Manga
+            // entry without a Vol/Box-Set marker AND every LightNovel entry needs the
+            // product detail page checked. Old code awaited the fetch sequentially inside
+            // the entry loop (N round-trips per page); collect indices, batch via WhenAll.
+            bool[] eligible = new bool[entryCount];
+            List<int> needsDesc = [];
 
-            while (true)
+            for (int i = 0; i < entryCount; i++)
             {
-                // Initialize the html doc for crawling
-                string url = GenerateWebsiteUrl(bookTitle, bookType, nextPage);
-                links.Add(url);
-                
-                doc = await web.LoadFromWebAsync(url);
+                string entryTitle = entryTitles[i];
 
-                // Get the page data from the HTML doc
-                HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(_titleXPath);
-                HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(_priceXPath);
-                HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(_pageCheckXPath);
-                if (priceData == null) { goto Stop; }
-
-                for (int x = 0; x < priceData.Count; x++)
+                if (entryTitle.ContainsAny(["Banpresto", "Nendoroid"])
+                    || !InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
+                    || (InternalHelpers.ShouldRemoveEntry(entryTitle) && !BookTitleRemovalCheck))
                 {
-                    string entryTitle = titleData[x].InnerText.Trim();
-                    if (!entryTitle.ContainsAny(["Banpresto", "Nendoroid"])
-                        && InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
-                        && (!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck)
-                        && (
-                            (bookType == BookType.Manga
-                            && (
-                                !bookTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) &&
-                                !entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
-                                && !(
-                                        InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto")
-                                    )
-                                )
-                            )
-                            ||
-                            bookType == BookType.LightNovel &&
-                            !entryTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase) &&
-                            !bookTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase)
-                            && !(
-                                    InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Overlord", entryTitle, "Kharadron")
-                                )
-                            )
-                        && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "overlord", entryTitle, "Unimplemented")
-                        )
+                    _logger.EntryRemoved(1, entryTitle);
+                    continue;
+                }
+
+                bool mangaPath = bookType == BookType.Manga
+                    && !bookTitleContainsNovel
+                    && !entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
+                    && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto");
+
+                bool novelPath = bookType == BookType.LightNovel
+                    && !entryTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase)
+                    && !bookTitleContainsManga
+                    && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Overlord", entryTitle, "Kharadron");
+
+                if (!(mangaPath || novelPath)
+                    || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "overlord", entryTitle, "Unimplemented"))
+                {
+                    _logger.EntryRemoved(1, entryTitle);
+                    continue;
+                }
+
+                eligible[i] = true;
+
+                if (bookType == BookType.LightNovel
+                    || !entryTitle.ContainsAny(["Vol.", "Volume", "Box Set", "Comic"]))
+                {
+                    if (!string.IsNullOrWhiteSpace(hrefs[i])) needsDesc.Add(i);
+                }
+            }
+
+            HtmlDocument?[] descDocs = new HtmlDocument?[entryCount];
+            if (needsDesc.Count > 0)
+            {
+                Task<HtmlDocument>[] fetches = new Task<HtmlDocument>[needsDesc.Count];
+                for (int j = 0; j < needsDesc.Count; j++)
+                {
+                    string href = hrefs[needsDesc[j]]!;
+                    string fullUrl = href.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                        ? href
+                        : href.StartsWith('/') ? $"{BASE_URL}{href}" : $"{BASE_URL}/{href}";
+                    fetches[j] = web.LoadFromWebAsync(fullUrl);
+                }
+                HtmlDocument[] docs = await Task.WhenAll(fetches);
+                for (int j = 0; j < needsDesc.Count; j++)
+                {
+                    descDocs[needsDesc[j]] = docs[j];
+                }
+            }
+
+            for (int i = 0; i < entryCount; i++)
+            {
+                if (!eligible[i]) continue;
+                string entryTitle = entryTitles[i];
+
+                bool descIsValid = true;
+                if (descDocs[i] is HtmlDocument descDoc)
+                {
+                    HtmlNodeCollection? descNodes = descDoc.DocumentNode.SelectNodes(_descXPath.Expression);
+                    StringBuilder descBuilder = new();
+                    if (descNodes is not null)
                     {
-                        bool descIsValid = true;
-
-                        if (bookType == BookType.LightNovel || !entryTitle.ContainsAny(["Vol.", "Volume", "Box Set", "Comic"]))
-                        {
-                            HtmlNodeCollection descData = (await web.LoadFromWebAsync($"{BASE_URL}{doc.DocumentNode.SelectSingleNode($"(//li[@class='list-view-item']/div/a)[{x + 1}]").GetAttributeValue("href", string.Empty)}")).DocumentNode.SelectNodes("//div[@class='product-single__description rte'] | //div[@class='product-single__description rte']//p");
-                            StringBuilder desc = new();
-                            foreach (HtmlNode node in descData) { desc.AppendLine(node.InnerText); }
-                            if (bookType == BookType.LightNovel)
-                            {
-                                descIsValid = entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) || desc.ToString().Contains("novel", StringComparison.OrdinalIgnoreCase);
-                            }
-                            else
-                            {
-                                descIsValid = !desc.ToString().ContainsAny(_descRemovalStrings);
-                            }
-                        }
-
-                        if (descIsValid)
-                            {
-                                data.Add(
-                                    new EntryModel
-                                    (
-                                        CleanAndParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType),
-                                        priceData[x].InnerText.Trim(),
-                                        StockStatus.IS,
-                                        TITLE
-                                    )
-                                );
-                            }
-                            else { _logger.EntryRemoved(2, entryTitle); }
+                        foreach (HtmlNode node in descNodes) descBuilder.AppendLine(node.InnerText);
                     }
-                    else { _logger.EntryRemoved(1, entryTitle); }
+                    string descText = descBuilder.ToString();
+                    descIsValid = bookType == BookType.LightNovel
+                        ? entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) || descText.Contains("novel", StringComparison.OrdinalIgnoreCase)
+                        : !descText.ContainsAny(descRemoval);
                 }
 
-            Stop:
-                if (priceData != null && priceData.Count == titleData.Count && pageCheck != null)
+                if (!descIsValid)
                 {
-                    nextPage++;
+                    _logger.EntryRemoved(2, entryTitle);
+                    continue;
                 }
-                else
+
+                // Skip entries with no parseable price. Without a `+manga` filter on the
+                // query, the search now returns merch (t-shirts, plushies, gift cards)
+                // whose listing card has no price element — EntryModel.ParsePrice indexes
+                // the first char unconditionally and would crash the dedup pass.
+                string price = prices[i];
+                if (string.IsNullOrWhiteSpace(price) || !LooksLikePrice(price))
                 {
-                    break;
+                    _logger.EntryRemoved(2, entryTitle);
+                    continue;
                 }
+
+                data.Add(new EntryModel(
+                    CleanAndParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType),
+                    price,
+                    StockStatus.IS,
+                    TITLE));
             }
 
-            data.SortByVolume();
-            data.RemoveDuplicates(_logger);
-            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
+            if (priceData.Count == titleData.Count && pageCheck is not null)
+            {
+                nextPage++;
+            }
+            else
+            {
+                break;
+            }
         }
-        catch (Exception ex)
-        {
-            _logger.ScrapeError(ex, bookTitle, bookType, TITLE);
-        }
+
+        data.SortByVolume();
+        data.RemoveDuplicates(_logger);
+        InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
 
         return (data, links);
     }

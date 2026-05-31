@@ -36,6 +36,10 @@ public sealed partial class MangaMate : IWebsite
         => InternalHelpers.RunPlaywrightScrapeAsync(
             this, Website.MangaMate, bookTitle, bookType, masterDataList, masterLinkList, errors, browser!, curRegion, cancellationToken);
 
+    /// <inheritdoc />
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+        => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
+
     private string GenerateWebsiteUrl(string bookTitle, BookType bookType, ushort pageNum)
     {
         // https://mangamate.shop/search?q=akane%20banashi&options%5Bprefix%5D=last
@@ -80,12 +84,24 @@ public sealed partial class MangaMate : IWebsite
 
     private static async Task WaitForProductPageLoad(IPage page)
     {
-        // Wait for the product grid to render and the in-flight network to settle.
-        // The old ScrollToBottomUntilStableAsync call targeted a ForbiddenPlanet-specific
-        // separator selector — MangaMate is paginated, not infinite-scroll, so it was
-        // both wrong and unnecessary.
-        ILocator grid = page.Locator("(//div[@class='grid grid--uniform'])[2]");
-        await grid.WaitForAsync();
+        // Wait on the title element directly — that's the thing we parse, and waiting on
+        // it sidesteps brittle container selectors that get renamed across redesigns.
+        // The old `(//div[@class='grid grid--uniform'])[2]` selector started timing out
+        // after MangaMate rebuilt their grid wrapper.
+        try
+        {
+            await page.WaitForSelectorAsync(
+                "//div[@class='grid-product__title grid-product__title--body']",
+                new PageWaitForSelectorOptions
+                {
+                    State = WaitForSelectorState.Attached,
+                    Timeout = 15000
+                });
+        }
+        catch (TimeoutException)
+        {
+            // No products on the page — let the caller's parse return 0 and end the loop.
+        }
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
     }
 
@@ -97,6 +113,11 @@ public sealed partial class MangaMate : IWebsite
         });
 
         await WaitForProductPageLoad(page);
+
+        // Snapshot the page early so debug dumps survive any subsequent timeout
+        // (e.g. a missing currency picker after a site redesign).
+        string earlyHtml = await page.ContentAsync();
+        DumpDebugHtml(earlyHtml, "after_load");
 
         // Get the max page number (//span[@class='page'][last()])
         uint maxPageNum = 1;
@@ -112,30 +133,44 @@ public sealed partial class MangaMate : IWebsite
         }
         _logger.MaxPageNum(maxPageNum);
 
-        // Open currency dropdown: //button[@aria-controls='CurrencyList-toolbar']
-        ILocator currencyBtn = page.Locator("//button[@aria-controls='CurrencyList-toolbar']");
-        await currencyBtn.ClickAsync();
+        // Currency picker is a nice-to-have — if the button is gone the scrape should
+        // still proceed in the site's default currency, not fail outright with a 30s timeout.
+        try
+        {
+            ILocator currencyBtn = page.Locator("//button[@aria-controls='CurrencyList-toolbar']");
+            if (await currencyBtn.CountAsync() == 0)
+            {
+                _logger.ClickedAudCurrency();
+                return (earlyHtml, maxPageNum);
+            }
 
-        // Ensure it's open (aria-expanded == "true")
-        await page
-            .Locator("button[aria-controls='CurrencyList-toolbar'][aria-expanded='true']")
-            .WaitForAsync();
+            await currencyBtn.ClickAsync(new LocatorClickOptions { Timeout = 5000 });
+            await page.Locator("button[aria-controls='CurrencyList-toolbar'][aria-expanded='true']")
+                .WaitForAsync(new LocatorWaitForOptions { Timeout = 5000 });
 
-        // Find the controlled menu *by id* from aria-controls, then click AUD inside it
-        string? menuId = await currencyBtn.GetAttributeAsync("aria-controls");   // e.g., "CurrencyList-toolbar"
-        ILocator menu = page.Locator($"#{menuId}");
-        await menu.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Visible });
+            string? menuId = await currencyBtn.GetAttributeAsync("aria-controls");
+            ILocator menu = page.Locator($"#{menuId}");
+            await menu.WaitForAsync(new LocatorWaitForOptions
+            {
+                State = WaitForSelectorState.Visible,
+                Timeout = 5000
+            });
+            await menu.Locator("a.disclosure-list__option[data-value='AU']").First
+                .ClickAsync(new LocatorClickOptions { Timeout = 5000 });
 
-        // Now select the AUD option *within that menu only*
-        await menu.Locator("a.disclosure-list__option[data-value='AU']").First.ClickAsync();
+            await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+            _logger.ClickedAudCurrency();
+            await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        }
+        catch (TimeoutException)
+        {
+            // Currency picker UI changed or is missing — proceed with default currency.
+        }
+        catch (PlaywrightException)
+        {
+            // Same: any Playwright-side issue selecting the currency shouldn't crater the scrape.
+        }
 
-
-        // Wait for the page to settle and grid to be present again
-        await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
-        // await WaitForProductPageLoad(page);
-
-        _logger.ClickedAudCurrency();
-        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
         return (await page.ContentAsync(), maxPageNum);
     }
 
@@ -294,6 +329,18 @@ public sealed partial class MangaMate : IWebsite
         InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
 
         return (data, links);
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private static void DumpDebugHtml(string html, string label)
+    {
+        try
+        {
+            string dir = Path.Combine(Directory.GetCurrentDirectory(), "Data");
+            Directory.CreateDirectory(dir);
+            File.WriteAllText(Path.Combine(dir, $"MangaMate_{label}.html"), html ?? string.Empty);
+        }
+        catch { /* diagnostic only */ }
     }
 
     private static List<string> CollectValues(XPathNavigator nav, XPathExpression xpath)

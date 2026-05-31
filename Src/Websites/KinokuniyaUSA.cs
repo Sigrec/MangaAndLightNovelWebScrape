@@ -44,13 +44,11 @@ public sealed partial class KinokuniyaUSA : IWebsite
     private static readonly FrozenSet<string> _skipBookTitles = ["Attack on Titan"];
     private static readonly FrozenSet<string> _bookTypeKeyWords = ["Vol", "Box Set", "Anniversary"];
 
-    // Manga English Search
-    //https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=world+trigger&taxon=2&x=39&y=4&page=1&per_page=100&form_taxon=109
-    // https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=Skeleton+Knight+in+Another+World&taxon=2&x=39&y=11&page=1&per_page=100
-
-    // Light Novel English Search
-    //https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=overlord+novel&taxon=&x=33&y=8&per_page=100&form_taxon=109
-    //https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=classroom+of+the+elite&taxon=&x=33&y=8&per_page=100&form_taxon=109
+    // Search URL (no server-side category filter — Manga/Novel narrowing happens via the
+    // on-page "Manga" facet click). Old code passed `taxon=2&x=39&y=11&page=1&per_page=100`
+    // which no longer works after Kinokuniya's redesign.
+    //   https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=jujutsu+kaisen&taxon=&x=0&y=0
+    //   https://united-states.kinokuniya.com/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords=classroom+of+the+elite+novel&taxon=&x=0&y=0
 
     public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, ConcurrentDictionary<Website, Exception> errors, IBrowser? browser, Region curRegion, Membership memberships = Membership.None, CancellationToken cancellationToken = default)
         => InternalHelpers.RunPlaywrightScrapeAsync(
@@ -58,9 +56,13 @@ public sealed partial class KinokuniyaUSA : IWebsite
             isMember: memberships.HasFlag(Membership.KinokuniyaUSA),
             needsUserAgent: true);
 
+    /// <inheritdoc />
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+        => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
+
     private string GenerateWebsiteUrl(string bookTitle, BookType bookType)
     {
-        string url = $"{BASE_URL}/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords={bookTitle.Replace(" ", "+")}{(bookType == BookType.LightNovel ? "+novel" : string.Empty)}&taxon=2&x=39&y=11&page=1&per_page=100";
+        string url = $"{BASE_URL}/products?utf8=%E2%9C%93&is_searching=true&restrictBy%5Bavailable_only%5D=1&keywords={bookTitle.Replace(" ", "+")}{(bookType == BookType.LightNovel ? "+novel" : string.Empty)}&taxon=&x=0&y=0";
         _logger.UrlGenerated(url);
         return url;
     }
@@ -308,66 +310,104 @@ public sealed partial class KinokuniyaUSA : IWebsite
         List<EntryModel> data = [];
         List<string> links = [];
 
+        int maxPageCount = -1, curPageNum = 1;
+        bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+        bool bookTitleHasDigit = HasAnyDigit(bookTitle);
+        XPathExpression priceXPath = isMember ? _memberPriceXPath : _nonMemberPriceXPath;
+
+        // Dedup at insert time via a hash set keyed by the cleaned title — replaces the
+        // old per-entry `data.Any(...)` linear scan that was O(N²) overall.
+        HashSet<string> seenTitles = new(StringComparer.OrdinalIgnoreCase);
+
+        HtmlDocument doc = HtmlFactory.CreateDocument();
+
+        string url = GenerateWebsiteUrl(bookTitle, bookType);
+        links.Add(url);
+        await page!.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
+        await WaitForPageLoad(page);
+
+        // Dump early so we always have something to look at if the toggles below fail.
+        DumpDebugHtml(await page.ContentAsync(), "after_load");
+
+        // Best-effort: expand the per-page selector to 100 so we hit fewer paginated
+        // hops. `per_page=100` used to be a URL param; the new UI requires the user
+        // (or us) to select it via the on-page control. If the selector is missing or
+        // renamed, fall through — we just take more pages.
+        await TrySelectPerPageAsync(page, 100);
+
+        // Best-effort: click the "List" display toggle. The old code hard-required this
+        // to expose stock-status text under each entry, but a missing toggle (after the
+        // site redesigned the search UI) shouldn't crater the scrape. If the click fails
+        // we fall through and parse whatever the default layout exposes.
         try
         {
-            int maxPageCount = -1, curPageNum = 1;
-            bool oneShotCheck = false;
-            string entryTitle, entryDesc;
-            bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
-
-            HtmlDocument doc = HtmlFactory.CreateDocument();
-            XPathNavigator nav = doc.DocumentNode.CreateNavigator();
-
-            string url = GenerateWebsiteUrl(bookTitle, bookType);
-            links.Add(url);
-            await page!.GotoAsync(url, new PageGotoOptions
-            {
-                WaitUntil = WaitUntilState.DOMContentLoaded
-            });
-            await WaitForPageLoad(page);
-
-            // Click the list display mode so it shows stock status data with entry
-            await page.Locator("li#detail-button a:has-text(\"List\")").ForceClickAsync();
+            await page.Locator("li#detail-button a:has-text(\"List\")")
+                .ForceClickAsync(timeout: 5000);
             await WaitForPageLoad(page);
             _logger.ClickedListMode();
+        }
+        catch (TimeoutException) { /* toggle missing — proceed in default mode */ }
+        catch (PlaywrightException) { }
 
-            if (bookType == BookType.Manga)
+        if (bookType == BookType.Manga)
+        {
+            try
             {
-                // Click the Manga
-                await page.GetByText("Manga", new PageGetByTextOptions { Exact = true }).ForceClickAsync();
+                await page.GetByText("Manga", new PageGetByTextOptions { Exact = true })
+                    .ForceClickAsync(timeout: 5000);
                 await WaitForPageLoad(page);
                 _logger.ClickedManga();
             }
+            catch (TimeoutException) { /* facet missing — proceed unfiltered */ }
+            catch (PlaywrightException) { }
+        }
 
-            while (true)
+        while (true)
+        {
+            doc.LoadHtml(await page.ContentAsync());
+
+            // Re-create the navigator per page — HtmlAgilityPack's LoadHtml replaces the
+            // subtree under DocumentNode but the old navigator's iterators may already be
+            // bound to stale nodes.
+            XPathNavigator nav = doc.DocumentNode.CreateNavigator();
+
+            // Snapshot the parallel iterators into Lists. The old lockstep MoveNext()
+            // chain across 4 iterators desynced whenever any of price/desc/stock yielded
+            // fewer matches than title; materializing once makes the main loop a clean
+            // per-index walk.
+            List<string> titles = CollectValues(nav, _titleXPath);
+            int entryCount = titles.Count;
+            if (entryCount == 0)
             {
-                doc.LoadHtml(await page.ContentAsync());
+                if (maxPageCount > 0 && curPageNum < maxPageCount) goto NextPage;
+                break;
+            }
 
-                // Get the page data from the HTML doc
-                XPathNodeIterator titleData = nav.Select(_titleXPath);
-                XPathNodeIterator priceData = nav.Select(isMember ? _memberPriceXPath : _nonMemberPriceXPath);
-                XPathNodeIterator descData = nav.Select(_descXPath);
-                XPathNodeIterator stockStatusData = nav.Select(_stockStatusXPath);
-                if (maxPageCount == -1) { maxPageCount = Convert.ToInt32(doc.DocumentNode.SelectSingleNode(_pageCheckXPath).InnerText); }
+            List<string> prices = CollectValues(nav, priceXPath, entryCount);
+            List<string> descs = CollectValues(nav, _descXPath, entryCount);
+            List<string> stocks = CollectValues(nav, _stockStatusXPath, entryCount);
+
+            if (maxPageCount == -1)
+            {
+                // The category pager element is absent for single-page result sets; default
+                // to 1 in that case rather than NRE on .InnerText.
+                HtmlNode? pageNode = doc.DocumentNode.SelectSingleNode(_pageCheckXPath);
+                maxPageCount = pageNode is not null && int.TryParse(pageNode.InnerText, out int parsed) ? parsed : 1;
                 _logger.MaxPageCount(maxPageCount);
+            }
 
-                // Determine if the series is a one shot or not
-                oneShotCheck = maxPageCount == 1 && titleData.Count == 1 && !titleData.Cast<XPathNavigator>().AsValueEnumerable().Any(title => title.Value.Contains("Vol", StringComparison.OrdinalIgnoreCase));
+            // One-shot detection: a single-result single-page listing with no "Vol" in
+            // the title is an artbook / one-shot / standalone volume rather than a series.
+            bool oneShotCheck = maxPageCount == 1
+                && entryCount == 1
+                && !titles[0].Contains("Vol", StringComparison.OrdinalIgnoreCase);
 
-                    // Remove all of the novels from the list if user is searching for manga
-                while (titleData.MoveNext())
-                {
-                    priceData.MoveNext();
-                    descData.MoveNext();
-                    stockStatusData.MoveNext();
+            for (int i = 0; i < entryCount; i++)
+            {
+                string entryTitle = WebUtility.HtmlDecode(titles[i]);
+                string entryDesc = descs[i];
 
-                    XPathNavigator? curTitleData = titleData.Current;
-                    if (curTitleData is null) continue;
-
-                    entryTitle = WebUtility.HtmlDecode(curTitleData.Value);
-                    entryDesc = descData.Current!.Value;
-
-                    if (
+                if (!(
                         InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
                         && (!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck)
                         && (
@@ -382,7 +422,7 @@ public sealed partial class KinokuniyaUSA : IWebsite
                                         oneShotCheck ||
                                         FixVolumeRegex().IsMatch(entryTitle) ||
                                         entryDesc.ContainsAny(["Collection", "volumes", "color edition", "box set"]) ||
-                                        (entryTitle.Any(char.IsDigit) && !bookTitle.Any(char.IsDigit)))
+                                        (HasAnyDigit(entryTitle) && !bookTitleHasDigit))
                                     && !(
                                         InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony") ||
                                         InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear Your Own World") ||
@@ -398,63 +438,133 @@ public sealed partial class KinokuniyaUSA : IWebsite
                                     && entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
                                 )
                             )
-                        )
-                    {
-                        _logger.TitleBefore(entryTitle);
-                        entryTitle = ParseAndCleanTitle(entryTitle, bookType, bookTitle, entryDesc, oneShotCheck);
-                        _logger.TitleAfter(entryTitle);
-
-                        if (!data.AsValueEnumerable().Any(entry => entry.Entry.Equals(entryTitle, StringComparison.OrdinalIgnoreCase)))
-                        {
-                            data.Add(
-                                new EntryModel(
-                                    entryTitle,
-                                    priceData.Current!.Value.Trim(),
-                                    stockStatusData.Current!.Value.Trim().AsSpan(STATUS_START_INDEX) switch
-                                    {
-                                        "In stock at the Fulfilment Center." => StockStatus.IS,
-                                        "Available for Pre Order" => StockStatus.PO,
-                                        "Out of stock." => StockStatus.OOS,
-                                        "Available for order from suppliers." => StockStatus.BO,
-                                        _ => StockStatus.NA
-                                    },
-                                    TITLE
-                                )
-                            );
-                        }
-                        else
-                        {
-                            _logger.EntryRemoved(2, entryTitle);
-                        }
-                    }
-                    else
-                    {
-                        _logger.EntryRemoved(1, entryTitle);
-                    }
+                    ))
+                {
+                    _logger.EntryRemoved(1, entryTitle);
+                    continue;
                 }
 
-                if (curPageNum != maxPageCount)
+                _logger.TitleBefore(entryTitle);
+                string cleaned = ParseAndCleanTitle(entryTitle, bookType, bookTitle, entryDesc, oneShotCheck);
+                _logger.TitleAfter(cleaned);
+
+                if (!seenTitles.Add(cleaned))
                 {
-                    curPageNum++;
-                    await page.Locator("p.pagerArrowR").ForceClickAsync();
-                    await WaitForPageLoad(page);
-                    _logger.PageVisited(curPageNum, page.Url);
+                    _logger.EntryRemoved(2, cleaned);
+                    continue;
                 }
-                else
-                {
-                    break;
-                }
+
+                // "Availability Status : <X>" is the format; everything past the prefix is
+                // the status string. Guard the offset so a truncated/empty value can't NRE.
+                string rawStock = stocks[i].Trim();
+                StockStatus stockStatus = rawStock.Length >= STATUS_START_INDEX
+                    ? rawStock.AsSpan(STATUS_START_INDEX) switch
+                    {
+                        "In stock at the Fulfilment Center." => StockStatus.IS,
+                        "Available for Pre Order" => StockStatus.PO,
+                        "Out of stock." => StockStatus.OOS,
+                        "Available for order from suppliers." => StockStatus.BO,
+                        _ => StockStatus.NA,
+                    }
+                    : StockStatus.NA;
+
+                data.Add(new EntryModel(cleaned, prices[i].Trim(), stockStatus, TITLE));
             }
 
-            data.TrimExcess();
-            data.SortByVolume();
-            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
-        }
-        catch (Exception ex)
-        {
-            _logger.ScrapeError(ex, bookTitle, bookType, TITLE);
+        NextPage:
+            if (curPageNum < maxPageCount)
+            {
+                curPageNum++;
+                await page.Locator("p.pagerArrowR").ForceClickAsync();
+                await WaitForPageLoad(page);
+                _logger.PageVisited(curPageNum, page.Url);
+            }
+            else
+            {
+                break;
+            }
         }
 
+        data.TrimExcess();
+        data.SortByVolume();
+        InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
+
         return (data, links);
+    }
+
+    /// <summary>
+    /// Tight inline replacement for <c>str.Any(char.IsDigit)</c> — avoids the LINQ
+    /// enumerator alloc on a per-entry hot path.
+    /// </summary>
+    private static bool HasAnyDigit(string str)
+    {
+        foreach (char c in str.AsSpan())
+        {
+            if (c >= '0' && c <= '9') return true;
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Best-effort attempt to set the listing's per-page count to <paramref name="perPage"/>.
+    /// The <c>&lt;select name='per_page'&gt;</c> control is in the DOM but CSS-hidden,
+    /// so <see cref="ILocator.SelectOptionAsync"/> blocks indefinitely on the visibility
+    /// check. We bypass it by setting <c>value</c> + dispatching a <c>change</c> event in
+    /// JS, which is exactly what the page's own click handler does behind the scenes.
+    /// </summary>
+    private async Task TrySelectPerPageAsync(IPage page, int perPage)
+    {
+        try
+        {
+            bool dispatched = await page.EvaluateAsync<bool>(
+                @"(value) => {
+                    const s = document.querySelector(""select[name='per_page']"");
+                    if (!s) return false;
+                    if (![...s.options].some(o => o.value == value)) return false;
+                    s.value = value;
+                    s.dispatchEvent(new Event('change', { bubbles: true }));
+                    return true;
+                }",
+                perPage.ToString());
+
+            if (dispatched)
+            {
+                await WaitForPageLoad(page);
+                _logger.SelectedPerPage(perPage);
+            }
+        }
+        catch (PlaywrightException) { /* swallow — per-page sizing is best-effort */ }
+        catch (TimeoutException) { }
+    }
+
+    [System.Diagnostics.Conditional("DEBUG")]
+    private static void DumpDebugHtml(string html, string label)
+    {
+        try
+        {
+            string dir = Path.Combine(Directory.GetCurrentDirectory(), "Data");
+            Directory.CreateDirectory(dir);
+            File.WriteAllText(Path.Combine(dir, $"KinokuniyaUSA_{label}.html"), html ?? string.Empty);
+        }
+        catch { /* diagnostic only */ }
+    }
+
+    private static List<string> CollectValues(XPathNavigator nav, XPathExpression xpath)
+    {
+        List<string> result = [];
+        XPathNodeIterator iter = nav.Select(xpath);
+        while (iter.MoveNext())
+        {
+            result.Add(iter.Current?.Value ?? string.Empty);
+        }
+        return result;
+    }
+
+    private static List<string> CollectValues(XPathNavigator nav, XPathExpression xpath, int expectedCount)
+    {
+        List<string> result = CollectValues(nav, xpath);
+        // Pad to align with the title list so per-index access in the main loop is safe.
+        while (result.Count < expectedCount) result.Add(string.Empty);
+        return result;
     }
 }

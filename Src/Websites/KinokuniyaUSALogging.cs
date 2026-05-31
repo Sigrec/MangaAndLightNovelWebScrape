@@ -31,4 +31,9 @@ internal static partial class KinokuniyaUSALogging
         Level = LogLevel.Information,
         Message = "Page {PageNum} = {Url}")]
     public static partial void PageVisited(this ILogger logger, int pageNum, string url);
+
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "Selected {PerPage} per page")]
+    public static partial void SelectedPerPage(this ILogger logger, int perPage);
 }

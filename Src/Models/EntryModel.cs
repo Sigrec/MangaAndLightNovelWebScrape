@@ -46,15 +46,27 @@ namespace MangaAndLightNovelWebScrape
         /// intermediate substring is allocated — important because this is called per
         /// dedup pair and per merge probe.
         /// </summary>
+        /// <remarks>
+        /// Returns <c>0m</c> for empty / whitespace-only / unparseable prices. Sites should
+        /// be filtering merchandise entries before they reach the data list, but the
+        /// safety net here means one bad row can't crash the whole dedup pass.
+        /// </remarks>
         public decimal ParsePrice()
         {
+            ReadOnlySpan<char> price = this.Price.AsSpan().Trim();
+            if (price.IsEmpty) return 0m;
+
             // Currency at front (USD, GBP, etc.): "$10.99" → slice off symbol.
             // Currency at end (JPY ¥, etc.): "1099¥" → slice off symbol.
-            ReadOnlySpan<char> span = char.IsDigit(this.Price[0])
-                ? this.Price.AsSpan(0, this.Price.Length - 1)
-                : this.Price.AsSpan(1);
+            // If the only non-digit char is in the middle (malformed), TryParse below
+            // catches it and returns 0 — better than throwing inside dedup.
+            ReadOnlySpan<char> span = char.IsDigit(price[0])
+                ? char.IsDigit(price[^1]) ? price : price[..^1]
+                : price.Length > 1 ? price[1..] : default;
 
-            return decimal.Parse(span, System.Globalization.CultureInfo.InvariantCulture);
+            return decimal.TryParse(span, System.Globalization.CultureInfo.InvariantCulture, out decimal value)
+                ? value
+                : 0m;
         }
 
         /// <summary>

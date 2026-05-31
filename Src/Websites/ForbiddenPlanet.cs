@@ -41,6 +41,10 @@ public sealed partial class ForbiddenPlanet : IWebsite
             this, Website.ForbiddenPlanet, bookTitle, bookType, masterDataList, masterLinkList, errors, browser!, curRegion, cancellationToken,
             needsUserAgent: true);
 
+    /// <inheritdoc />
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+        => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
+
     private string GenerateWebsiteUrl(BookType bookType, string entryTitle, bool isSecondCategory, int pageNum)
     {
         // https://forbiddenplanet.com/catalog/manga/?q=Naruto&show_out_of_stock=on&sort=release-date-asc&page=1

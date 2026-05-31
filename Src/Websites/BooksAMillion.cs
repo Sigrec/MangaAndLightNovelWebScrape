@@ -56,6 +56,10 @@ public sealed partial class BooksAMillion : IWebsite
             isMember: memberships.HasFlag(Membership.BooksAMillion),
             needsUserAgent: true);
 
+    /// <inheritdoc />
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+        => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
+
     private static string GenerateWebsiteUrl(string bookTitle, bool boxSetCheck, BookType bookType, int pageNum)
     {
         // Initialize a StringBuilder

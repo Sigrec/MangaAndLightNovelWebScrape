@@ -38,6 +38,10 @@ public sealed partial class MangaMart : IWebsite
         => InternalHelpers.RunPlaywrightScrapeAsync(
             this, Website.MangaMart, bookTitle, bookType, masterDataList, masterLinkList, errors, browser!, curRegion, cancellationToken);
 
+    /// <inheritdoc />
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+        => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
+
     /// <summary>
     /// URL builder for a given page. The <paramref name="encodedBookTitle"/> is pre-escaped by
     /// the caller — escaping happens once per scrape rather than per page.

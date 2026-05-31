@@ -25,6 +25,11 @@ internal static partial class MasterScrapeLogging
     public static partial void BrowserSet(this ILogger logger, Browser browser);
 
     [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "{Site} skipped — pre-flight reachability check failed")]
+    public static partial void SiteSkippedUnavailable(this ILogger logger, Website site);
+
+    [LoggerMessage(
         Level = LogLevel.Information,
         Message = "Applying stock filters")]
     public static partial void ApplyingStockFilters(this ILogger logger);

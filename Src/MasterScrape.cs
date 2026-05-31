@@ -40,6 +40,15 @@ public sealed partial class MasterScrape
     /// </summary>
     public Membership Memberships { get; set; }
     /// <summary>
+    /// When <c>true</c>, <see cref="InitializeScrapeAsync"/> first probes every requested
+    /// site via <see cref="IsSiteAvailableAsync"/> in parallel and silently drops any that
+    /// don't respond. The omitted sites are recorded in <see cref="Errors"/> as
+    /// <see cref="SiteUnavailableException"/> so the caller can still see what was skipped.
+    /// Defaults to <c>false</c> — every site in the input list is dispatched and a
+    /// down site costs its full scrape timeout.
+    /// </summary>
+    public bool SkipUnavailableSites { get; set; }
+    /// <summary>
     /// Determines whether debug mode is enabled (Disabled by default)
     /// </summary>
     internal static bool IsDebugEnabled { get; set; } = false;
@@ -130,6 +139,42 @@ public sealed partial class MasterScrape
     /// </code>
     /// </example>
     public IReadOnlyDictionary<Website, Exception> Errors => _errors;
+
+    /// <summary>
+    /// Reachability probe for a single <see cref="Website"/>. Returns <c>true</c> when
+    /// the site's host resolves and the server answers — including auth-gated (4xx) and
+    /// CDN-challenged (Cloudflare) responses. DNS failures, connection refusals, timeouts,
+    /// and 5xx responses return <c>false</c>.
+    /// </summary>
+    /// <remarks>
+    /// Useful as a pre-flight before <see cref="InitializeScrapeAsync"/> when you want to
+    /// skip a known-down site instead of waiting on the scrape's per-site timeout.
+    /// </remarks>
+    public Task<bool> IsSiteAvailableAsync(Website site, CancellationToken cancellationToken = default)
+        => Services.SiteHealth.IsReachableAsync(Helpers.GetWebsiteLink(site, this.Region), cancellationToken);
+
+    /// <summary>
+    /// Batched reachability probe for the supplied sites. Runs each check in parallel
+    /// and returns a snapshot of which sites are currently reachable.
+    /// </summary>
+    public async Task<IReadOnlyDictionary<Website, bool>> CheckSitesAvailableAsync(
+        IEnumerable<Website> sites,
+        CancellationToken cancellationToken = default)
+    {
+        Website[] siteArray = [.. sites];
+        Task<bool>[] checks = new Task<bool>[siteArray.Length];
+        for (int i = 0; i < siteArray.Length; i++)
+        {
+            checks[i] = IsSiteAvailableAsync(siteArray[i], cancellationToken);
+        }
+        bool[] results = await Task.WhenAll(checks);
+        Dictionary<Website, bool> map = new(siteArray.Length);
+        for (int i = 0; i < siteArray.Length; i++)
+        {
+            map[siteArray[i]] = results[i];
+        }
+        return map;
+    }
 
     /// <summary>
     /// Returns the per-site URLs the most recent scrape visited.
@@ -529,6 +574,37 @@ public sealed partial class MasterScrape
 
         cancellationToken.ThrowIfCancellationRequested();
         _errors.Clear();
+
+        // Pre-flight reachability check. Skip down sites instead of waiting on the
+        // scrape's per-site timeout. Skipped sites are recorded in Errors with a
+        // SiteUnavailableException so the caller can still tell what happened.
+        if (this.SkipUnavailableSites && siteList.Count > 0)
+        {
+            IReadOnlyDictionary<Website, bool> reach = await CheckSitesAvailableAsync(siteList, cancellationToken);
+            HashSet<Website> reachable = [];
+            foreach ((Website site, bool isUp) in reach)
+            {
+                if (isUp)
+                {
+                    reachable.Add(site);
+                }
+                else
+                {
+                    _errors[site] = new SiteUnavailableException(site);
+                    _logger.SiteSkippedUnavailable(site);
+                }
+            }
+
+            if (reachable.Count == 0)
+            {
+                _masterDataList.Clear();
+                _masterLinkDict.Clear();
+                _finalResults = null;
+                return;
+            }
+            siteList = reachable;
+            cancellationToken.ThrowIfCancellationRequested();
+        }
 
         PlaywrightSession? session = null;
         if (InternalHelpers.NeedPlaywright(siteList))

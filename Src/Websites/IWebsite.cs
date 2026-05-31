@@ -41,4 +41,19 @@ public interface IWebsite
         bool isMember = false,
         Region curRegion = Region.America,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Reachability probe — returns <c>true</c> when the site's host resolves and the
+    /// server answers with any non-5xx status. DNS failures, connection refusals,
+    /// timeouts, and 5xx responses all return <c>false</c>. CDN challenges (Cloudflare
+    /// interstitials) and auth gates (401/403) count as "up": the server is alive,
+    /// even if the listing endpoint requires further work to reach.
+    /// </summary>
+    /// <remarks>
+    /// Useful as a pre-flight before <see cref="CreateTask"/> when you want to skip
+    /// dead sites instead of waiting for the scrape's own timeout. Each implementation
+    /// delegates to <c>MangaAndLightNovelWebScrape.Services.SiteHealth.IsReachableAsync</c>
+    /// with its own <c>BASE_URL</c>.
+    /// </remarks>
+    Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default);
 }

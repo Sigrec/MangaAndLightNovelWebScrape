@@ -63,6 +63,10 @@ public sealed partial class AmazonUSA : IWebsite
         => InternalHelpers.RunPlaywrightScrapeAsync(
             this, Website.AmazonUSA, bookTitle, bookType, masterDataList, masterLinkList, errors, browser!, curRegion, cancellationToken);
 
+    /// <inheritdoc />
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+        => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
+
     private string GenerateWebsiteUrl(BookType bookType, uint curPage, string bookTitle)
     {
         string url = string.Empty;

@@ -64,6 +64,10 @@ public sealed partial class SciFier : IWebsite
         => InternalHelpers.RunHtmlScrapeAsync(
             this, Website.SciFier, bookTitle, bookType, masterDataList, masterLinkList, errors, curRegion, cancellationToken);
 
+    /// <inheritdoc />
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+        => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
+
     // Has issues where the search is not very strict unforunate
     private string GenerateWebsiteUrl(string bookTitle, BookType bookType, Region curRegion, bool letterIsFrontHalf)
     {

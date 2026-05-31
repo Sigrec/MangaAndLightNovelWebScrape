@@ -48,6 +48,10 @@ public sealed partial class InStockTrades : IWebsite
         => InternalHelpers.RunHtmlScrapeAsync(
             this, Website.InStockTrades, bookTitle, bookType, masterDataList, masterLinkList, errors, curRegion, cancellationToken);
 
+    /// <inheritdoc />
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+        => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
+
     // https://www.instocktrades.com/search?term=world+trigger
     // https://www.instocktrades.com/search?pg=1&title=World+Trigger&publisher=&writer=&artist=&cover=&ps=true
     // https://www.instocktrades.com/search?title=overlord+novel&publisher=&writer=&artist=&cover=&ps=true

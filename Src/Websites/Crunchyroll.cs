@@ -45,6 +45,10 @@ public sealed partial class Crunchyroll : IWebsite
         => InternalHelpers.RunHtmlScrapeAsync(
             this, Website.Crunchyroll, bookTitle, bookType, masterDataList, masterLinkList, errors, curRegion, cancellationToken);
 
+    /// <inheritdoc />
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+        => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
+
     private string GenerateWebsiteUrl(BookType bookType, string bookTitle, bool retry = false)
     {
         // Manga: filter by category=Manga&Books + subcategory=Specialty Books|Manga|Bundles

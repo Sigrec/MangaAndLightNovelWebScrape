@@ -40,6 +40,10 @@ public sealed partial class MerryManga : IWebsite
         => InternalHelpers.RunPlaywrightScrapeAsync(
             this, Website.MerryManga, bookTitle, bookType, masterDataList, masterLinkList, errors, browser!, curRegion, cancellationToken);
 
+    /// <inheritdoc />
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+        => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
+
     // https://www.merrymanga.com/?s=Naruto&post_type=product&_categories=box-sets
     // https://www.merrymanga.com/?s=jujutsu+kaisen&post_type=product&orderby=release_date&_categories=manga
     private string GenerateWebsiteUrl(string bookTitle, BookType bookType, bool hasBoxSet)
