@@ -12,6 +12,10 @@ namespace MangaAndLightNovelWebScrape;
 /// </summary>
 public sealed class ScrapeBrowserLaunchException : ScrapeException
 {
+    /// <summary>
+    /// Wraps the underlying Playwright launch failure — typically a missing browser
+    /// channel install, a missing Node driver, or a sandbox/permissions issue on the host.
+    /// </summary>
     public ScrapeBrowserLaunchException(Exception innerException)
         : base($"Failed to launch the Playwright browser: {innerException.Message}", innerException)
     {

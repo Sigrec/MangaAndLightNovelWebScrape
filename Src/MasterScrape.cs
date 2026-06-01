@@ -7,10 +7,18 @@ using Microsoft.Playwright;
 namespace MangaAndLightNovelWebScrape;
 
 /// <summary>
-/// Debug mode is disabled by default
+/// Top-level entry point for the library. Holds scrape configuration
+/// (<see cref="Region"/>, <see cref="Browser"/>, stock filter, memberships) and exposes
+/// <see cref="InitializeScrapeAsync"/> to fan out per-site scrapes, merge results, and
+/// dedup the cheapest copy of each volume across every retailer.
+/// <para>
+/// Designed to be constructed once and reused — every call to
+/// <see cref="InitializeScrapeAsync"/> resets all per-run state. A single instance is NOT
+/// safe to drive two scrapes concurrently.
+/// </para>
 /// </summary>
 public sealed partial class MasterScrape
-{ 
+{
     private readonly ConcurrentBag<List<EntryModel>> _masterDataList = [];
     private readonly ConcurrentDictionary<Website, string> _masterLinkDict = [];
     private readonly ConcurrentDictionary<Website, Exception> _errors = [];
@@ -23,15 +31,22 @@ public sealed partial class MasterScrape
     private static readonly Comparison<List<EntryModel>> ByCount = static (a, b) => a.Count.CompareTo(b.Count);
 
     /// <summary>
-    /// The current region of the Scrape
+    /// Geographic region the scrape runs against. Only the sites listed for this region by
+    /// <see cref="Helpers.GetRegionWebsiteList(Region)"/> may be passed to
+    /// <see cref="InitializeScrapeAsync"/>. Multi-region values (combined flags) are rejected.
     /// </summary>
     public Region Region { get; set; }
     /// <summary>
-    /// The current browser of the Scrape
+    /// Playwright browser channel used by sites that require JS rendering. HTML-only sites
+    /// ignore this setting. Defaults to <see cref="Browser.Edge"/>.
     /// </summary>
     public Browser Browser { get; set; }
     /// <summary>
-    /// The current stock filter of the scrape
+    /// Stock statuses to drop from the merged result set. Use one of the pre-built arrays
+    /// on <see cref="MangaAndLightNovelWebScrape.Models.StockStatusFilter"/>, or supply a
+    /// custom <c>StockStatus[]</c>. The default
+    /// (<see cref="MangaAndLightNovelWebScrape.Models.StockStatusFilter.EXCLUDE_NONE_FILTER"/>)
+    /// keeps everything except <see cref="StockStatus.NA"/>, which is always implicitly removed.
     /// </summary>
     public StockStatus[] Filter { get; set; } = StockStatusFilter.EXCLUDE_NONE_FILTER;
     /// <summary>
@@ -58,6 +73,23 @@ public sealed partial class MasterScrape
     [GeneratedRegex(@"\s{2,}|(?:--|\u2014)\s*| - ")] internal static partial Regex MultipleWhiteSpaceRegex();
     [GeneratedRegex(@"(?<=\b(?:Vol|Novel)\.?\s+(?:\d{1,3}|\d{1,3}\.\d{1}))[^\d.].*")] internal static partial Regex FinalCleanRegex();
 
+    /// <summary>
+    /// Creates a new <see cref="MasterScrape"/> with the specified configuration.
+    /// </summary>
+    /// <param name="Filter">Stock statuses to drop from the merged result. Use one of the
+    /// presets on <see cref="MangaAndLightNovelWebScrape.Models.StockStatusFilter"/>.</param>
+    /// <param name="Region">Region the scrape runs against. Only sites supported by this
+    /// region may be passed to <see cref="InitializeScrapeAsync"/>. Defaults to
+    /// <see cref="Region.America"/>.</param>
+    /// <param name="Browser">Playwright browser channel for JS-requiring sites. Defaults to
+    /// <see cref="Browser.Edge"/>.</param>
+    /// <param name="Memberships">Bit-flags marking sites where the caller has paid
+    /// membership pricing. Combine with <c>|</c>. Defaults to <see cref="Membership.None"/>.</param>
+    /// <param name="loggerFactory">Optional <see cref="ILoggerFactory"/>. When null, all
+    /// library logging is dropped (NullLogger). Provider-agnostic: works with Serilog,
+    /// NLog, console, or any other Microsoft.Extensions.Logging-compatible provider.</param>
+    /// <exception cref="NotSupportedException">Thrown when <paramref name="Region"/> has
+    /// more than one flag set.</exception>
     public MasterScrape(
         StockStatus[] Filter,
         Region Region = Region.America,

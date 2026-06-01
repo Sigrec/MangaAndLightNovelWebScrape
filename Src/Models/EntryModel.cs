@@ -1,22 +1,32 @@
 namespace MangaAndLightNovelWebScrape
 {
+    /// <summary>
+    /// One row in a scrape result — a single volume/box-set listing from a single retailer.
+    /// Equality is by <see cref="Entry"/>, <see cref="Price"/>, and <see cref="Website"/>;
+    /// dedup across sites uses just <see cref="Entry"/>.
+    /// </summary>
     public partial struct EntryModel : IEquatable<EntryModel>
     {
+        /// <summary>Cleaned title text, e.g. <c>"Jujutsu Kaisen Vol 12"</c>.</summary>
         public string Entry { get; set; }
+        /// <summary>Display price with currency symbol, e.g. <c>"$9.99"</c> or <c>"£6.38"</c>.</summary>
         public string Price { get; set; }
+        /// <summary>Availability state on the source site at scrape time.</summary>
         public StockStatus StockStatus { get; set; }
+        /// <summary>Source retailer title (e.g. <c>"Crunchyroll"</c>) — the site's <c>TITLE</c> constant.</summary>
         public string  Website { get; set; }
         internal static VolumeSort VolumeSort = new();
         // [GeneratedRegex(@"[Vol|Box Set].*?(\d+).*")]  private static partial Regex VolumeNumRegex();
         [GeneratedRegex(@"(?:.*(?<int> \d{1,3})|.*(?<double> \d{1,3}\.\d{1,3}))(?:\s+Novel$|$)|(?:.*(?<int> \d{1,3})-\d{1,3})")] private static partial Regex ExtractDoubleRegex();
 
         /// <summary>
-        /// Model for a series's book entry
+        /// Builds an <see cref="EntryModel"/> for a single scraped row. Per-site scrapers
+        /// construct this once per qualifying listing they parse.
         /// </summary>
-        /// <param name="entry">The title and vol # of a series entry</param>
-        /// <param name="price">The price of the entry</param>
-        /// <param name="stockStatus">The stockstatus of an entry, either IS, PO, OOS, OOP</param>
-        /// <param name="website">The website in which the entry is found at</param>
+        /// <param name="Entry">Cleaned title including the volume / box-set marker.</param>
+        /// <param name="Price">Display-form price string with currency symbol.</param>
+        /// <param name="StockStatus">Availability state read off the listing.</param>
+        /// <param name="Website">Source retailer title — usually the site's <c>TITLE</c> const.</param>
         public EntryModel (string Entry, string Price, StockStatus StockStatus, string Website)
         {
             this.Entry = Entry;
@@ -36,6 +46,12 @@ namespace MangaAndLightNovelWebScrape
             return decimal.Subtract(initialPrice, decimal.Multiply(initialPrice, discount)).ToString("0.00");
         }
 
+        /// <summary>
+        /// Returns a compact display string in the form
+        /// <c>[Entry, Price, StockStatus, Website]</c>. Used by
+        /// <see cref="MasterScrapeExtensions.PrintResultsToConsole"/> and friends when
+        /// <c>isAsciiTable</c> is <c>false</c>.
+        /// </summary>
         public override string ToString()
         {
             return $"[{this.Entry}, {this.Price}, {this.StockStatus}, {this.Website}]";
@@ -99,6 +115,7 @@ namespace MangaAndLightNovelWebScrape
             return -1;
         }
 
+        /// <inheritdoc/>
         public override bool Equals(object? obj)
         {
             // only true if the boxed obj is an EntryModel
@@ -110,6 +127,12 @@ namespace MangaAndLightNovelWebScrape
             return false;
         }
 
+        /// <summary>
+        /// Two entries are equal when <see cref="Entry"/>, <see cref="Price"/>, and
+        /// <see cref="Website"/> match. <see cref="StockStatus"/> is intentionally
+        /// excluded so the same listing at the same price counts as equal even if its
+        /// availability state changed between snapshots.
+        /// </summary>
         public bool Equals(EntryModel other)
         {
             // compare all fields you care about
@@ -118,23 +141,29 @@ namespace MangaAndLightNovelWebScrape
                 && Website     == other.Website;
         }
 
+        /// <inheritdoc/>
         public override int GetHashCode()
         {
             return HashCode.Combine(Entry, Price, StockStatus, Website);
         }
 
+        /// <summary>Value-equality comparison; see <see cref="Equals(EntryModel)"/>.</summary>
         public static bool operator ==(EntryModel left, EntryModel right)
         {
             return EqualityComparer<EntryModel>.Default.Equals(left, right);
         }
 
+        /// <summary>Inverse of <c>operator ==</c>.</summary>
         public static bool operator !=(EntryModel left, EntryModel right)
         {
             return !(left == right);
         }
     }
     /// <summary>
-    /// Compares EntryModel's by entry title
+    /// Sorts <see cref="EntryModel"/> rows by series name then ascending volume number.
+    /// Used by <c>List&lt;EntryModel&gt;.SortByVolume()</c> on per-site results and on the
+    /// final merged list. Entries whose names don't match (or aren't close enough by
+    /// Damerau-Levenshtein distance) fall back to ordinal title ordering.
     /// </summary>
     public partial class VolumeSort : IComparer<EntryModel>
     {
@@ -142,12 +171,12 @@ namespace MangaAndLightNovelWebScrape
         [GeneratedRegex(@"[^\p{L}\p{N}\s\.]")] internal static partial Regex FilterNameRegex();
 
         /// <summary>
-        /// Extracts the entry's volume number and checks to see if they are equal or similar enough
-        /// then compares there volumes numbers to sort in ascending order.
+        /// Returns a value &lt; 0 if <paramref name="entry1"/> sorts before
+        /// <paramref name="entry2"/>, 0 if equal, &gt; 0 if after. Two entries from the
+        /// same series sort by volume number; otherwise by ordinal title.
         /// </summary>
-        /// <param name="entry1">THe first EntryModel in the VolumeSort comparison</param>
-        /// <param name="entry2">The second EntryModel in the VolumeSort comparison</param>
-        /// <returns></returns>
+        /// <param name="entry1">The left-hand entry.</param>
+        /// <param name="entry2">The right-hand entry.</param>
         public int Compare(EntryModel entry1, EntryModel entry2)
         {
             string entry1Text = FilterNameRegex().Replace(entry1.Entry, " ");

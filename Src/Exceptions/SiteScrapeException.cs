@@ -8,9 +8,14 @@ namespace MangaAndLightNovelWebScrape;
 /// </summary>
 public sealed class SiteScrapeException : ScrapeException
 {
-    /// <summary>The website that failed.</summary>
+    /// <summary>The website whose scrape threw.</summary>
     public Website Site { get; }
 
+    /// <summary>
+    /// Builds a wrapper for a single-site failure. The <paramref name="innerException"/>
+    /// is whatever the site's <c>GetData</c> threw — typically a Playwright timeout, an
+    /// HTTP error, or a parsing exception.
+    /// </summary>
     public SiteScrapeException(Website site, Exception innerException)
         : base($"Scrape failed for {site}: {innerException.Message}", innerException)
     {

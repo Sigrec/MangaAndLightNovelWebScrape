@@ -8,11 +8,19 @@ namespace MangaAndLightNovelWebScrape;
 /// </summary>
 public abstract class ScrapeException : Exception
 {
+    /// <summary>
+    /// Initializes the base exception with a message. Used by derived types whose failure
+    /// has no underlying cause (e.g. pre-flight skips).
+    /// </summary>
     protected ScrapeException(string message)
         : base(message)
     {
     }
 
+    /// <summary>
+    /// Initializes the base exception with a message and the underlying exception that
+    /// triggered the failure (e.g. the Playwright error, the HTTP error).
+    /// </summary>
     protected ScrapeException(string message, Exception innerException)
         : base(message, innerException)
     {
