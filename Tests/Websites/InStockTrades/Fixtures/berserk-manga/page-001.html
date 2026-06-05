@@ -1,0 +1,1697 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search - InStockTrades</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <meta name="description" content="Trade paperbacks from Marvel, DC, Image, Dark Horse and more! Discounted up to 42% off. No shipping on orders over $50.">
+    <meta name="keywords" content="trade paperbacks,comic books,marvel,dc,image,dark horse,superman,batman,flash,wonder woman,spiderman,fantastic four,the hulk,captain america,thor">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    
+    <link rel="shortcut icon" href="/images/logo.png">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans|Roboto:400,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/content/site.min.css?v=3">
+    <link rel="stylesheet" href="/content/jquery-ui.min.css">
+    <link rel="stylesheet" href="/content/jquery-ui.theme.min.css">
+    <script src="/bundles/modernizr?v=inCVuEFe6J4Q07A0AcRsbJic_UE5MwpRMNGcOtk94TE1"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css">
+    <script src="/scripts/cookieconsent-config.min.js" type="module"></script>
+</head>
+<body>
+    
+<div class="navbar-header">
+    <a href="/"><img class="logo" src="/images/logo.png" alt="Instocktrades.com"></a>
+    <div class="navbar-heading">
+        <span class="giftcertificates"><a href="/giftcertificates" class="highlight">Gift Certificates</a></span>
+        <span class="help"><a href="/home/help">Help</a></span>
+            <span class="greeting"><a href="/account/login">Sign In</a></span>
+    </div>
+    <a href="/cart" class="navbar-cart">
+        <div class="cartcount">0</div>
+    </a>
+    <div class="navbar-search">
+        <form id="sitesearchform" name="sitesearchform" method="get" action="/search">
+            <input type="text" name="term" id="sitesearch" placeholder="Search..." autocomplete="off" required oninvalid="this.setCustomValidity('Please Enter a valid search term')" oninput="setCustomValidity('')">
+            <button type="submit" id="navsearchbutton" class="navsearchbutton" onclick="javascript: return document.getElementById('sitesearch').value.trim() != '';"><img src="/images/search.png" alt="search"></button>
+        </form>
+        <div style="text-align:right;"><a href="/search?ps=true" class="action">Advanced Search</a></div>
+    </div>
+    <div class="navbar-menubar">
+        <div class="navbar-menu trades hoverable">
+            <a href="#trades" class="menu-label responsive">Trades <span class="navarrow"></span></a>
+            <div class="navbar-menuitems responsive">
+                <a href="/newreleases">New Releases</a>
+                
+                <a href="/comingsoon">Coming Soon</a>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#" class="menu-label">Publishers <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                            <a href="/publishers/image">Image</a>
+                            <a href="/publishers/dc-comics">DC Comics</a>
+                            <a href="/publishers/marvel">Marvel</a>
+                            <a href="/publishers/viz-media">Viz Media</a>
+                            <a href="/publishers/dark-horse">Dark Horse</a>
+                            <a href="/publishers/seven-seas">Seven Seas</a>
+                            <a href="/publishers/kodansha">Kodansha</a>
+                            <a href="/publishers/idw">IDW</a>
+                            <a href="/publishers/titan">Titan</a>
+                        <a href="/publishers">View All Publishers</a>
+                    </div>
+                </div>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#sales" class="menu-label">Sales <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                        <a href="/clearance">Clearance</a>
+                        <a href="/damages">Damages</a>
+                            <a href="/specials/630/red-tag-sale">Red Tag Sale</a>
+                            <a href="/specials/632/24-hour-flash-sale!!">24-Hour Flash Sale!!</a>
+                            <a href="/specials/715/best-sellers-dc">Best Sellers: DC</a>
+                            <a href="/specials/716/best-sellers-marvel">Best Sellers: Marvel</a>
+                            <a href="/specials/718/creator-spotlight-inio-asano">Creator Spotlight: Inio Asano</a>
+                            <a href="/specials/719/creator-spotlight-clamp">Creator Spotlight: CLAMP</a>
+                    </div>
+                </div>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#creators" class="menu-label">Featured Creators <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                            <a href="/creator/giantgenerator">Giant Generator by Rick Remender</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="navbar-menu topsellers">
+            <a href="/products/topsellers">Top Sellers</a>
+        </div>
+        <div class="navbar-menu account hoverable">
+            <a href="#account" class="menu-label">Account <span class="navarrow"></span></a>
+            <div class="navbar-menuitems">
+                <a href="/account/wishlist">Wishlist</a>
+                <a href="/account">Account Profile</a>
+                <a href="/account/orderhistory">Order History</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+    
+    <div class="container body-content">
+        
+
+        
+
+
+
+
+<div class="section products">
+    <h2>Search</h2>
+    <div class="section">
+        <div class="message form">
+            <div><h4 style="display:inline-block;">Search Option:</h4>
+                <select name="searchtype" id="searchtype" style="padding:7px;">
+                    <option value="default">Free Text</option>
+                    <option value="power" selected>Advanced Search</option>
+                </select>
+            </div>
+            <div>
+                <div id="defaultsearch" style="display:none;">
+                    <h4>Search results matches ANY words...</h4>
+                    <form method="get" action="/search">
+                        <div class="fieldgroup">
+                            <div class="fieldset">
+                                <div><label>Title, Publisher, Description or Product Code</label></div>
+                                <input name="term" type="text" maxlength="200" style="max-width:400px; display:inline-block;">
+                                <button type="submit" class="btn hotaction">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div id="advancedsearch" style="display:block;">
+                    <h4>Advanced Search. Results match ALL words and conditions...</h4>
+                    <form method="get" action="/search">
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Title</label></div>
+                                <input name="title" placeholder="Title" type="text" maxlength="200" autocomplete="off" value="Berserk">
+                            </div>
+                            <div class="fieldset">
+                                <div><label>Publisher</label></div>
+                                <input name="publisher" placeholder="Publisher" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                        </div>
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Writer</label></div>
+                                <input name="writer" placeholder="Writer" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                            <div class="fieldset">
+                                <div><label>Artist</label></div>
+                                <input name="artist" placeholder="Artist" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                        </div>
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Cover Artist</label></div>
+                                <input name="cover" placeholder="Cover Artist" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                            <div class="fieldset">
+                                <div><label></label></div>
+                                
+                            </div>
+                        </div>
+                        <div class="fieldgroup">
+                            <div class="fieldset">
+                                <input type="hidden" name="ps" value="true">
+                                <button type="submit" class="btn hotaction">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <div class="pageoptions">
+        
+            <div class="productsortselection">
+                <span class="productsortlabel">Sort By:</span> <select id="sortselection" name="sortselection"><option selected="selected" value="relevance">Relevance</option>
+<option value="title">Title</option>
+<option value="publisher">Publisher</option>
+<option value="price">Price</option>
+<option value="discount">Discount</option>
+</select>
+            </div>
+                    <div class="viewselection">
+                <span class="viewselectlabel">View: </span>
+                <div id="thumbplusview" class="viewselect selected" data-val="1"><img src="/images/thumbplus.png" alt="thumbnail plus view" title="Thumbnail Plus View"></div>
+                <div id="thumbview" class="viewselect" data-val="0"><img src="/images/thumbs.png" alt="thumbnail only view" title="Thumbnails Only View"></div>
+                <div id="listview" class="viewselect" data-val="2"><img src="/images/thumblist.png" alt="thumbnail list view" title="Thumbnail List View"></div>
+                
+            </div>
+    </div>
+    <div class="row">
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/nov241065/berserk-tp-vol-42-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/NOV241065.jpg" alt="BERSERK TP VOL 42 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/nov241065/berserk-tp-vol-42-(mr)">Berserk TP Vol 42 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Kentaro Miura, Koji Mori (A) Studio Gaga, Koji Mori
+The first new Berserk chapter since the passing of original creator Kentaro Miura in 2021! Volume 42 has been made by Miura&#39;s longtime assistants Studio Gaga, under the supervision of his closest friend, Koji Mori. The shocking appearance of Griffith on Elf Island has provoked rage and terror in Guts and Casca… and carved a rift into the enchanted isle itself, setting loose a corrosive horde of devourers from beneath the earth! If the Black Swordsman cannot rely upon even his legendary blade, escape by ship seems the only hope for survival… but not everyone is leaving Elf Island together! Contains a double-sided, full-color illustrated foldout!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="92955" data-title="Berserk TP Vol 42 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="NOV241065" data-title="Berserk TP Vol 42 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jul220388/berserk-tp-vol-41"><img class="itemimg" src="https://media.instocktrades.com/small/JUL220388.jpg" alt="BERSERK TP VOL 41"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jul220388/berserk-tp-vol-41">Berserk TP Vol 41</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Kentaro Miura
+The world of manga was devastated by the May 2021 death of Berserk creator Kentaro Miura. But Miura-sensei left behind one final volume to cap his thirty-plus-year commitment to his signature vision, a fitting curtain call for the beloved series, filled with joy, sadness, and laughter.   Though released from the prison of her mind, Casca cannot escape the reminders of the terrors she has experienced. And nothing triggers these harrowing memories more than Guts the Black Swordsman, who faced those same horrors in his relentless quest to see Casca healed. But could the reappearance of a strange, mute boy be the key to bringing peace to Casca&#39;s troubled soul?   &#39;For those with darker tastes, there is nothing greater than relishing in Miura&#39;s dark fantasy.&#39; -Grimdark Magazine
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="76569" data-title="Berserk TP Vol 41" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUL220388" data-title="Berserk TP Vol 41" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/mar180105/berserk-tp-vol-39-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/MAR180105.jpg" alt="BERSERK TP VOL 39 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/mar180105/berserk-tp-vol-39-(mr)">Berserk TP Vol 39 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Kentaro Miura
+To cure the afflicted Casca, Guts and company battle Elf Island&#39;s magical defenses and finally reach Elfhelm, where the elven ruler opens the Corridor of Dreams, projecting Schierke and Farnese into the forbidding wasteland of Casca&#39;s mind. But horrors lurk there, some more foul than any in the material world!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="57315" data-title="Berserk TP Vol 39 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="MAR180105" data-title="Berserk TP Vol 39 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/mar170101/berserk-tp-vol-38-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/MAR170101.jpg" alt="BERSERK TP VOL 38 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/mar170101/berserk-tp-vol-38-(mr)">Berserk TP Vol 38 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Kentaro Miura
+Guts and company reach the isle of Skellig in hopes that elven magic can cure the afflicted Casca. Meanwhile, Guts&#39;s Band of the Hawk comrade Rickert journeys to Falconia, the seat of power for Griffith, the Hawks&#39; former commander. But the glittering towers of Falconia cast deadly shadows! o Over a million copies sold of Dark Horse Berserk manga! o One of the most popular long-running adult manga series ever published. o New Berserk anime TV series to air in 2017.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="49612" data-title="Berserk TP Vol 38 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="MAR170101" data-title="Berserk TP Vol 38 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/may120066/berserk-tp-vol-36-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/MAY120066.jpg" alt="BERSERK TP VOL 36 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/may120066/berserk-tp-vol-36-(mr)">Berserk TP Vol 36 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            What Guts the Black Swordsman and his companions had seen as an island refuge from monstrous sea creatures and the ghost ship of the demonic Bonebeard is in fact the very lair of the malefic sea god that controls them. With no avenue of escape, Guts must once again don the Berserker armor to give his company any chance of survival. But without the protective influence of the sorceress Schierke, Guts risks being forever lost within the cursed armor and becoming an even greater threat to his comrades!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="21758" data-title="Berserk TP Vol 36 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="MAY120066" data-title="Berserk TP Vol 36 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/may110051/berserk-tp-vol-35-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/MAY110051.jpg" alt="BERSERK TP VOL 35 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/may110051/berserk-tp-vol-35-(mr)">Berserk TP Vol 35 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            After a hellish battle against ravenous sea monsters, Guts the Black Swordsman and his companions are forced to seek refuge on a small island so their ship can be repaired. But this island is not the safe haven they&#39;d hoped for-it&#39;s a sinister place rife with dark energy, watched over by an ancient, vengeful god. And with a full moon on the rise, that god&#39;s power is about to be unleashed . . .
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="18555" data-title="Berserk TP Vol 35 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="MAY110051" data-title="Berserk TP Vol 35 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/apr100072/berserk-tp-vol-34-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/APR100072.jpg" alt="BERSERK TP VOL 34 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/apr100072/berserk-tp-vol-34-(mr)">Berserk TP Vol 34 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Faced with the Kushan emperor&#39;s horrific new form, and the bloody swath of destruction and spawning demons he leaves in his wake with every step, the soldiers in Griffith&#39;s new Band of the Hawk must assume their true unholy forms to battle the emperor, revealing their true faces to the citizens of Midland. How will these tormented refugees react when they discover that their would-be rescuers are as monstrous as their enemies? And could this titanic confrontation threaten to unleash even greater horrors upon the human world?  Like a sledge striking anvil, Berserk hammers the sensibilities of readers worldwide, pounding out a steady stream of epic action, gruesome horror, and dark humor that places Berserk among the most respected-and feared-manga series ever published.  o Over 500,000 copies of Dark Horse Berserk volumes in print!  Currently Berserk is one of the biggest selling anime tie-ins.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="14611" data-title="Berserk TP Vol 34 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="APR100072" data-title="Berserk TP Vol 34 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jul090120d/berserk-tp-vol-32-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/JUL090120.jpg" alt="BERSERK TP VOL 32 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jul090120d/berserk-tp-vol-32-(mr)">Berserk TP Vol 32 (MR)</a>
+                    </div>
+                    <div class="damage">Damaged</div>
+                                            <div class="shortdesc desc">
+                            Guts, the Black Swordsman, joins forces with a most unlikely ally, the fiendish Nosferatu Zodd, in a desperate attempt to defeat the Kushan emperor&#39;s malevolent astral form. But Griffith, Guts&#39; former commander and friend reborn as a demonic lord of the Godhand, has plans of his own for the emperor, and for Midland itself. Guts and his companions&#39; only hope is to reach the promised safety of the elf Puck&#39;s homeland, Elfhelm, but if Griffith and the emperor turn their attention back to this motley band of travelers, there may be nowhere left for Guts and crew to hide!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $7.50
+                            </div>
+                            <div class="discount">
+50%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="101543" data-title="Berserk TP Vol 32 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUL090120D" data-title="Berserk TP Vol 32 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jul090120/berserk-tp-vol-32-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/JUL090120.jpg" alt="BERSERK TP VOL 32 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jul090120/berserk-tp-vol-32-(mr)">Berserk TP Vol 32 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Guts, the Black Swordsman, joins forces with a most unlikely ally, the fiendish Nosferatu Zodd, in a desperate attempt to defeat the Kushan emperor&#39;s malevolent astral form. But Griffith, Guts&#39; former commander and friend reborn as a demonic lord of the Godhand, has plans of his own for the emperor, and for Midland itself. Guts and his companions&#39; only hope is to reach the promised safety of the elf Puck&#39;s homeland, Elfhelm, but if Griffith and the emperor turn their attention back to this motley band of travelers, there may be nowhere left for Guts and crew to hide!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="12048" data-title="Berserk TP Vol 32 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUL090120" data-title="Berserk TP Vol 32 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jul138278/berserk-tp-vol-30-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/MAR090086.jpg" alt="BERSERK TP VOL 30 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jul138278/berserk-tp-vol-30-(mr)">Berserk TP Vol 30 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Thanks to Lady Farnese&#39;s selfless sacrifice, Guts, the Black Swordsman, and the rest of his companions are free to carry on their journey aboard a ship arranged by Farnese&#39;s brother, Magnifico-that is, if they&#39;re willing to leave Farnese behind. But having to choose between their mission and their loyalties might not be a problem for long if the Kushan emperor and his legion of monstrous minions have their way. With a host of Kushan forces descending on Vritannis, there might not be much left of Farnese&#39;s family-or any of the citizenry-to worry about! &#39;Berserk is as shocking and unique as ever this far into the series. There are few titles out there that can sustain the level of intensity and relevance as this.&#39;  -animeondvd.com. Each volume of Berserk comes shrink-wrapped and carries an 18+ content advisory.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="11048" data-title="Berserk TP Vol 30 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUL138278" data-title="Berserk TP Vol 30 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jul138277/berserk-tp-vol-29-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/JAN090139.jpg" alt="BERSERK TP VOL 29 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jul138277/berserk-tp-vol-29-(mr)">Berserk TP Vol 29 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Guts, the Black Swordsman, and his companions have finally broken free of the monster-infested wilderness and arrived at the port city of Vritannis. But the band finds out all too quickly that humans can be just as monstrous as the nightmarish creatures and apostles they battled in the forest. As Schierke and Isidro face off against pirate slavers, Farnese&#39;s power-hungry family tries to force her once again under the yoke of their political ambitions. The group&#39;s only hope is to find a ship out of the city, but even if they manage to secure a vessel, will everyone be free to leave? Each volume of Berserk comes shrink-wrapped and carries an 18+ content advisory. &#39;Berserk is as shocking and unique as ever this far into the series. There are few titles out there that can sustain the level of intensity and relevance as this.&#39; -AnimeOnDVD.com &#39; . . . you&#39;ll want to start from the beginning and follow this masterwork all the way through . . .&#39; - Advanced Media Network
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="10607" data-title="Berserk TP Vol 29 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUL138277" data-title="Berserk TP Vol 29 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jul138275/berserk-tp-vol-27-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/SEP080070.jpg" alt="BERSERK TP VOL 27 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jul138275/berserk-tp-vol-27-(mr)">Berserk TP Vol 27 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Now equipped with the mystical Berserker Armor, Guts fights on against the dragon-form of Grunbeld and his legion of fanatic apostle soldiers. But the very armor that holds Guts together-in a nightmarishly literal sense-might be the last straw that tears his tortured mind apart. While Guts struggles to hold his own against his inner demons, monsters of a very different sort rally in Windham as the Kushan Emperor, Ganishka, and the newly reborn Griffith rally their forces in a head-to-head struggle for control of all of Midland. But when the dust finally settles, there may be little left of the kingdom to claim!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="9607" data-title="Berserk TP Vol 27 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUL138275" data-title="Berserk TP Vol 27 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct138331/berserk-tp-vol-26-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/JUL080067.jpg" alt="BERSERK TP VOL 26 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct138331/berserk-tp-vol-26-(mr)">Berserk TP Vol 26 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Guts, the Black Swordsman, goes from the frying pan to the fire as he enters the mating chamber in the horrifying lair of the trolls to rescue his love, Casca, and the Lady Farnese from the loathsome attentions of the hideous beasts. But while even an army of trolls cannot stand against Guts&#39;s boundless fury, the mightiest of warriors is no match for a demon lord. And so when Slan of the Godhand manifests from the entrails of slain trolls and takes Guts into her deadly embrace, Guts discovers he may not only be fighting for his life, but for his very soul!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="9124" data-title="Berserk TP Vol 26 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT138331" data-title="Berserk TP Vol 26 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct138330/berserk-tp-vol-25-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/MAY080070.jpg" alt="BERSERK TP VOL 25 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct138330/berserk-tp-vol-25-(mr)">Berserk TP Vol 25 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Guts the Black Swordsman just can&#39;t seem to find a little peace. On his way to the idyllic tranquility of his miniature pal Puck&#39;s homeland of Elfhelm, Guts and his companions, at the behest of a local witch, assist a village beset by a plague of hideous and deadly trolls. Assisted by the witch&#39;s disciple, Schierke, the warrior band manages to turn the tide against the beasts, but when a monstrous ogre hits town, a tide of another kind is needed, a mystic flood to wash the town clean. But when Casca and Farnese are carried away by the flood, they become prisoners in the trolls, den, where a fate far worse than any imaginable death awaits!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="8551" data-title="Berserk TP Vol 25 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT138330" data-title="Berserk TP Vol 25 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct138329/berserk-tp-vol-24-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/MAR080020.jpg" alt="BERSERK TP VOL 24 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct138329/berserk-tp-vol-24-(mr)">Berserk TP Vol 24 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Desperate to find a sanctuary where his lover, Casca, will be safe from the demons drawn to her Brand of Sacrifice, Guts the Black Swordsman pushes his motley band of followers onward towards fairy Puck&#39;s homeland, Elfhelm. With new allies who make their home in a mystically guarded woodland paradise, Guts&#39; goal seems within reach, but danger lurks in the shadows of even the most dazzling utopias, and even fairy witchery may not protect the wondrous kingdom from an army of marauding, murderous trolls! Created by Kentaro Miura, Berserk is a runaway manga locomotive, a crashing colossus of teeth-rattling action, spine-chilling horror, and taboo-breaking humor that fires the boilers of its devoted devotees and just fires the rest. Ashes to ashes! 
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="7993" data-title="Berserk TP Vol 24 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT138329" data-title="Berserk TP Vol 24 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct138328/berserk-tp-vol-23-(mr)-"><img class="itemimg" src="https://media.instocktrades.com/small/JAN080098.jpg" alt="BERSERK TP VOL 23 (MR) "></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct138328/berserk-tp-vol-23-(mr)-">Berserk TP Vol 23 (MR) </a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Desperate as Guts, the Black Swordsman, has been to reunite with his former captain and lover, the now-mad Casca, he&#39;s quickly learning that being together is as dangerous as being apart.  What should be a simple journey to the safety of Puck&#39;s homeland proves to be a gauntlet of perils, as the Mark of Sacrifice each bears brings the fury of Hell down upon them, and Guts discovers that in his darkest moments he himself is the greatest danger to the woman he loves.    Created by Kentaro Miura, Berserk is a fiery manga apocalypse, an ominous omnibus of furious action, fearsome horror, and funereal humor that strikes a power chord in the hearts of its devoted followers and strikes down the rest like a scythe through wheat. Bring in the sheaves! Co-pubished with Digital Manga Publishing.   •  Over 100,000 books sold in this series in one year alone!    • Volume comes shrink-wrapped and carries an 18+ content advisory. 
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="7438" data-title="Berserk TP Vol 23 (MR) " data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT138328" data-title="Berserk TP Vol 23 (MR) " title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jul138274/berserk-tp-vol-22-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/NOV070058.jpg" alt="BERSERK TP VOL 22 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jul138274/berserk-tp-vol-22-(mr)">Berserk TP Vol 22 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            The world of Guts, the Black Swordsman, is changing in a hurry. Though a demonic maelstrom has leveled the dreaded Tower of Conviction and ended the reign of terror of its grand inquisitor, Mozgus, peace has not returned to Midland. The Tower&#39;s fall has heralded the unexpected return of Griffith, Guts&#39;s former leader, last seen transformed from a shattered husk into one of the demon lords of the Godhand. But Griffith looks like his old self again-and with his dreams of carving out a kingdom by his own hand still intact. He&#39;s raising a new Band of the Hawk, but this time he&#39;s recruiting from the dark side to fulfill his deadly destiny!   • Each volume comes shrink-wrapped and carries an 18+ content advisory.  • Beginning with volume 13, the Dark Horse editions of Berserk contain material never-before-adapted to anime! 
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="6882" data-title="Berserk TP Vol 22 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUL138274" data-title="Berserk TP Vol 22 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jan118120/berserk-tp-vol-21-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/SEP070086.jpg" alt="BERSERK TP VOL 21 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jan118120/berserk-tp-vol-21-(mr)">Berserk TP Vol 21 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Guts, the feared Black Swordsman, is on the rampage . . . and it&#39;s personal. Mozgus, the malefic master Inquisitor of the Holy See, in his murderous campaign against heretics, has captured Guts&#39; former lover Casca and has her at the ready to be burned at the stake in the Tower of Conviction, little knowing that Casca&#39;s demonic Mark of Sacrifice is drawing hideous dark powers to the Tower. It&#39;ll take everything Guts has and more to defeat Mozgus-who is much, much more than a man-and even if he can, will be be able to save Casca from the hordes of Hell amidst the Inquisitor&#39;s disintegrating citadel?  No Guts, no glory!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="6334" data-title="Berserk TP Vol 21 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JAN118120" data-title="Berserk TP Vol 21 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/feb118122/berserk-tp-vol-20-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/JUL070054.jpg" alt="BERSERK TP VOL 20 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/feb118122/berserk-tp-vol-20-(mr)">Berserk TP Vol 20 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            The Black Swordsman Guts&#39; former captain and lover, Casca, has been taken by the Holy Iron Chain Knights to the &#39;Tower of Conviction&#39; of the fanatic torturer of the Holy See, Mozgus, who plans to treat the rumored witch to the proper agonies of the damned. And Guts is on his way to rescue Casca and dish out some chastisement of his own on any who get in his way. But forces in the demonic realms are in motion and are being drawn to the torture tower in what may be a prelude to a second Eclipse and an unprecedented release of malign spirits into the world! 
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="5916" data-title="Berserk TP Vol 20 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="FEB118122" data-title="Berserk TP Vol 20 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jul138273/berserk-tp-vol-19-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/MAY070051.jpg" alt="BERSERK TP VOL 19 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jul138273/berserk-tp-vol-19-(mr)">Berserk TP Vol 19 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            The bewildered and near-mad Casca, former captain of the Band of the Hawk-and former lover of Guts, the Black Swordsman-has been adopted by Midland&#39;s pagan cults as a witch, due to her demonic Mark of Sacrifice. But the Holy Iron Chain Knights&#39; campaign to rid the kingdom of heretics by any means necessary puts Casca in mortal danger, and Guts is having none of it. But all parties involved may end up with more than they bargained for as demonic spirits, drawn to Casca&#39;s brand, begin to possess the heretics and unleash the forces of hell. But hell hath no fury like the Black Swordsman!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="5293" data-title="Berserk TP Vol 19 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUL138273" data-title="Berserk TP Vol 19 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jul138272/berserk-tp-vol-18-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/MAR070076.jpg" alt="BERSERK TP VOL 18 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jul138272/berserk-tp-vol-18-(mr)">Berserk TP Vol 18 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Hell has broken loose in the kingdom of Midland. On the death of  Midland&#39;s king comes invasion, demonic forces seem to be on the rise, underground pagan cults are running wild, and the church is busily rounding up and teaching heretics the errors of their ways. While Guts is busy testing out his newly repaired sword on the invaders, his former captain and lover, Casca, her mind wrecked by her unholy tryst with the demon lord, has fallen in with a rough crowd who don&#39;t exactly wish her well. But she, like Guts, is marked with the Brand of Sacrifice, and her abusers may soon find themselves face-to-face with the unholy abominations that are inexorably drawn to the Brand!  Created by Kentaro Miura, Berserk is an unstoppable manga avalanche, an overwhelming epic of unbridled action, unsettling horror, and uncivil humor that has crushed both friend and foe alike in its relentless path of destruction. No pain, no gain!  • Dark Horse has sold over a quarter-million copies of the first thirteen volumes of Berserk.   • Each volume comes shrink-wrapped and carries an 18+ content advisory.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="4683" data-title="Berserk TP Vol 18 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUL138272" data-title="Berserk TP Vol 18 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jan118119/berserk-tp-vol-17-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/JAN070084.jpg" alt="BERSERK TP VOL 17 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jan118119/berserk-tp-vol-17-(mr)">Berserk TP Vol 17 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Renegade devil-slayer Guts, the Black Swordsman, may be the bane of the demonic realm, but the citizenry of Midland, the kingdom he formerly served, aren&#39;t exactly members of his fan club, either. When the holier-than-thou Knights of the Holy Iron Chain capture Guts and decide to whip (literally) some repentance into him, Guts develops a few ideas of his own . . . like taking the Iron Chain&#39;s leader hostage and showing her that when Hell comes calling, the only thing worth praying for is a sword!  Created by Kentaro Miura, Berserk is an out-of-control manga flashfire, a searing epic of blazing action, blasphemous horror, and black humor that has left scorched earth and toasted readers in its fiery wake. Burn, baby, burn!  • Comes shrink wrapped and carries an 18+ content advisory.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="4327" data-title="Berserk TP Vol 17 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JAN118119" data-title="Berserk TP Vol 17 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct108143/berserk-tp-vol-16-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/NOV060043.jpg" alt="BERSERK TP VOL 16 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct108143/berserk-tp-vol-16-(mr)">Berserk TP Vol 16 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Warrior supreme Guts has been marked for sacrifice to the armies of the damned, and now he has the blood of a village of possessed children on his hands, a horde of elf-demons straight out of a fairy-tale fever dream. But now Guts must deal with the Queen of the Elves herself, and though she may be cute as a button, she has hideous power and lethal intent, and in her wake, no one lives happily ever after!  • Each volume of Berserk comes shrink-wrapped and carries an 18+ content advisory.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="4124" data-title="Berserk TP Vol 16 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT108143" data-title="Berserk TP Vol 16 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jul138271/berserk-tp-vol-14-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/JUL060042.jpg" alt="BERSERK TP VOL 14 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jul138271/berserk-tp-vol-14-(mr)">Berserk TP Vol 14 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            The once unbeatable Band of the Hawk is smashed, and their former leader, Griffith, has made an unholy pact with the demon lords of the Godhand, sacrificing his former troops to resurrect his crippled body and ascend to stand in power beside these profane gods. The Invocation of Doom has unleashed a plague of unspeakable horrors upon the earth, and the first battle not only shatters the Hawks, but the hand of their champion, Guts, and the mind of their captain and Guts&#39; lover, Casca. And while time may heal some of Guts&#39; wounds, it will not heal his desire for vengeance. And his discovery of a gigantic, dragon-slaying sword might be just the ticket to deal out some king-sized payback!  Also included in this volume: &#39;Berserk Prototype,&#39; the very first Berserk story, created during Kentaro Miura&#39;s college days as his audition that sold the series!  • Each volume of Berserk comes shrink-wrapped and carries an 18+ content advisory.  • The first ten volumes of Berserk have sold over 175,000 copies! 
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="3394" data-title="Berserk TP Vol 14 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUL138271" data-title="Berserk TP Vol 14 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/apr108172/berserk-tp-vol-13-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/JUN060016.jpg" alt="BERSERK TP VOL 13 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/apr108172/berserk-tp-vol-13-(mr)">Berserk TP Vol 13 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            The Band of the Hawk may have been the most formidable band of fighters around, but when matched up against an army of abyssal monstrosities, earthly fighting skills don&#39;t amount to a hill of beans. The Hawks&#39; tortured and mutilated former leader, Griffith, has used the accursed Crimson Behelit to open the gates to a shadowy realm of unspeakable horrors, the realm of the demon lords of the Godhand, who are willing to transform Griffith into a being of terrible power and majesty as long as Griffith is willing to give up his former command as sacrifices in the Invocation of Doom. But nobody takes down the Hawks without a fight, and their berserker champion, Guts, will take on anything Hell can throw at him in order to save his lover, Casca, from the sordid violations that only Hell can offer.  • Each volume of Berserk comes shrink-wrapped and carries an 18+ content advisory.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="3166" data-title="Berserk TP Vol 13 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="APR108172" data-title="Berserk TP Vol 13 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct108142/berserk-tp-vol-12-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/APR060054.jpg" alt="BERSERK TP VOL 12 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct108142/berserk-tp-vol-12-(mr)">Berserk TP Vol 12 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="2954" data-title="Berserk TP Vol 12 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT108142" data-title="Berserk TP Vol 12 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct108141/berserk-tp-vol-11-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/JAN060084.jpg" alt="BERSERK TP VOL 11 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct108141/berserk-tp-vol-11-(mr)">Berserk TP Vol 11 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            The Band of the Hawk-what&#39;s left of them-are on the run, Guts and Casca having rescued the Hawks&#39; leader, Griffith, from the horrors of the King of Midland&#39;s dungeons. Starved, tortured mercilessly, and imprisoned in an iron mask, Griffith hangs on to life and sanity by a thread . . . and he&#39;ll be no help against the King&#39;s latest charges sent to bring him back to pay for his dalliance with the King&#39;s daughter. Now the depleted Hawks will have to face the Knights of the Black Dog, led by the merciless, bestial Wyald . . . one bad dog who&#39;s even worse when he unleashes the beast within!  FOR MATURE READERS  • Each volume of Berserk comes shrink-wrapped and carries an 18+ content advisory.  • The first seven volumes of Berserk have sold over 125,000 copies!  • Created by Kentaro Miura, Berserk is a manic manga massacre, a brute-force free-for-all of action, horror, and grim humor that inspired the wildly popular anime series.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="2599" data-title="Berserk TP Vol 11 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT108141" data-title="Berserk TP Vol 11 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/aug108205/berserk-tp-vol-10-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/OCT050046.jpg" alt="BERSERK TP VOL 10 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/aug108205/berserk-tp-vol-10-(mr)">Berserk TP Vol 10 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Warrior supreme Guts has returned, and just in time to save the weakened Band of the Hawk from certain destruction…and to form an intimate bond with the beautiful warrior Casca. But job one is to find a way to free Griffith, the Hawks&#39; leader, from the dank dungeons and &#39;round-the-clock tortures of the Hawks&#39; former benefactor, the King of Midland. But while the flayed and starved Griffith may be in isolation, he is not alone. Horrors beyond imagination await Guts and the Hawks in the catacombs, and those who die may just be the lucky ones! Each volume of Berserk comes shrink-wrapped and carries an 18+ content advisory.  The first seven volumes of Berserk have sold over 125,000 copies! Created by Kentaro Miura, Berserk is a manic manga massacre, a brute-force free-for-all of action, horror, and grim humor that inspired the wildly popular anime series.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="2396" data-title="Berserk TP Vol 10 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="AUG108205" data-title="Berserk TP Vol 10 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct108140d/berserk-tp-vol-09-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/OCT108140.jpg" alt="BERSERK TP VOL 09 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct108140d/berserk-tp-vol-09-(mr)">Berserk TP Vol 09 (MR)</a>
+                    </div>
+                    <div class="damage">Damaged</div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Kentaro Miura
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $7.49
+                            </div>
+                            <div class="discount">
+50%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="46641" data-title="Berserk TP Vol 09 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT108140D" data-title="Berserk TP Vol 09 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct108140/berserk-tp-vol-09-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/OCT108140.jpg" alt="BERSERK TP VOL 09 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct108140/berserk-tp-vol-09-(mr)">Berserk TP Vol 09 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Griffith, charismatic leader of the elite mercenary Band of the Hawk, has seen better days. His fearless champion, Guts, has left the Band, defeating Griffith in personal combat as his ticket out. With his judgment clouded by this unthinkable humiliation, Griffith eases his pain in the arms of the daughter of Midland&#39;s king. But the King doesn&#39;t take kindly to an employee picking the royal flowers, and the next stop for Griffith is the dungeon and the torture rack! Without Griffith and Guts, the Hawks become easy prey for Midland&#39;s army, and the AWOL Guts may be the only answer to the Hawks&#39;-and Griffith&#39;s-lethal problems.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="30140" data-title="Berserk TP Vol 09 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT108140" data-title="Berserk TP Vol 09 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/aug118201/berserk-tp-vol-08-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/APR050036.jpg" alt="BERSERK TP VOL 08 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/aug118201/berserk-tp-vol-08-(mr)">Berserk TP Vol 08 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            The century-spanning war between Midland and Chuder continues unabated. The two warring kingdoms, vying for supremacy, launch headfirst into what will become the final battle. Leading the Midland forces are the Band of the Hawk, lead by the charismatic Griffith, with the fearless Guts as his trusted champion. But should the Hawks triumph again on the battlefield, the war with Chuder may end, but the secret war within Midland may begin as those who seek to rise within the court see the ambitious Griffith as an obstacle to obtaining power. And nothing is more formidable than an enemy unseen!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="1766" data-title="Berserk TP Vol 08 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="AUG118201" data-title="Berserk TP Vol 08 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jul108097/berserk-tp-vol-07-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/JAN050088.jpg" alt="BERSERK TP VOL 07 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jul108097/berserk-tp-vol-07-(mr)">Berserk TP Vol 07 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Two feudal kingdoms, Midland and Chuder, battle for supremacy in what will become the final clash in a century-long struggle. Spearheading the Midland forces is the Band of the Hawk, a legendary cadre of elite mercenaries led by the charismatic Griffith and with the fearless Guts as its berserker champion. The Hawks&#39; ferocity, courage, and fearsome skills-not to mention Guts&#39; enormous broadsword-are just what Midland needs to turn the bloody tide, but during the fray, Guts and Griffith&#39;s most trusted lieutenant, Casca, fall together from a cliff into a raging river. Both miraculously survive-barely-and Guts tends to Casca&#39;s wounds as she tells of having her life saved by Griffith, her induction into the Band of the Hawk, and her deep feelings toward Griffith. And she even seems to finally be warming up to the grim Guts. But this greeting-card moment won&#39;t last long, for Chuder warriors are on the prowl, and the only greetings they carry are on the points of their spears! Each volume of Berserk comes shrink-wrapped and carries a cover content advisory. One of the most eagerly anticipa
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="1765" data-title="Berserk TP Vol 07 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUL108097" data-title="Berserk TP Vol 07 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/aug108204/berserk-tp-vol-05-(new-ptg)-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/JUL040051.jpg" alt="BERSERK TP VOL 05 (NEW PTG) (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/aug108204/berserk-tp-vol-05-(new-ptg)-(mr)">Berserk TP Vol 05 (New Ptg) (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            He is Guts, the Black Swordsman, a warrior of legendary prowess-relentless, fearless, merciless. As cold and brutal as the iron of the massive sword he wields. Bent on revenge against the unholy forces that have branded him for sacrifice, but especially on Griffith, one of the demon lords of the Godhand. But Griffith was once a man, the leader of the Hawks, a renowned cadre of elite fighters with a young Guts as its fiercest champion. Though forged in a crucible of cruelty and violence, nothing could prepare Guts for a confrontation with Nosferatu Zodd, a superhuman beast who slaughters Guts&#39; comrades as easily as a scythe cuts wheat. Even Guts and Griffith are no match for the abomination&#39;s power ... but something Griffith wears around his neck may well be! One of the most eagerly anticipated manga properties in recent years, Berserk was originally published in Japan and has been serialized in Young Animal Magazine since the early 1990s. The Berserk manga has been adapted into a best-selling anime series available from Media Blasters! NOTE: Each volume of Berserk is shipped shrink-w
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="1763" data-title="Berserk TP Vol 05 (New Ptg) (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="AUG108204" data-title="Berserk TP Vol 05 (New Ptg) (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/mar108102/berserk-tp-vol-04-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/APR040076.jpg" alt="BERSERK TP VOL 04 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/mar108102/berserk-tp-vol-04-(mr)">Berserk TP Vol 04 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Now that the evil Count has been killed and dragged to Hell by the demon lords of the Godhand, Guts, the Black Swordsman, hooks up with his former benefactor, the mercenary Gambino. But it&#39;s a deadly reunion, one that nearly takes Guts&#39; life. The following years see Guts wandering  from battlefield to battlefield, where his awesome skills as a slayer catch the eye of both warring parties, including the legendary Griffith, warrior leader of the Band of the Hawk, who is eager to test his combat skills against those of the Black Swordsman. Co-published with Digital Manga. One of the most eagerly anticipated manga properties in recent years, Berserk was originally published in Japan and has been serialized in Young Animal Magazine since the early 1990s. NOTE: Each volume of Berserk is shipped shrink-wrapped and carries a cover content advisory.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="1762" data-title="Berserk TP Vol 04 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="MAR108102" data-title="Berserk TP Vol 04 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/sep098116/berserk-tp-vol-03-(mr)-"><img class="itemimg" src="https://media.instocktrades.com/small/JAN040039.jpg" alt="BERSERK TP VOL 03 (MR) "></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/sep098116/berserk-tp-vol-03-(mr)-">Berserk TP Vol 03 (MR) </a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Guts, the feared Black Swordsman, finishes his desperate battle with the monstrous Count, but the Count&#39;s dying pleas activate the Behelit, summoning the five God Hands, demon lords of immeasurable power. Guts&#39; journey so far has been a long road of pain and death, but it&#39;s a walk in the park compared to fighting his way out of Hell itself! Created by Kenturo Miura, Berserk is exactly what its title advertises; a savage, gruesome, and often humorous roller-coaster ride, inspiring the internationally popular anime series. Each volume of Berserk comes shrink-wrapped and carries a cover content advisory. One of the most eagerly anticipated manga properties in recent years, Berserk was originally published in Japan and has been serialized in Young Animal Magazine since the early 1990s. The Berserk manga has been adapted into a best-selling anime series available from Media Blasters!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="1761" data-title="Berserk TP Vol 03 (MR) " data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="SEP098116" data-title="Berserk TP Vol 03 (MR) " title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/sep098115/berserk-tp-vol-02-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/OCT030045.jpg" alt="BERSERK TP VOL 02 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/sep098115/berserk-tp-vol-02-(mr)">Berserk TP Vol 02 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Kentaro Miura
+
+The evil Count uses his dark powers to transform a defeated guard captain into an inhuman horror to combat Guts, the Black Swordsman. Puck, Guts&#39; pint-sized fairy sidekick, is captured when he attempts to stop an old doctor&#39;s execution, and he is given as a gift to the count&#39;s daughter, a sweet girl in a gilded cage, imprisoned by her father in her own room. Guts, determined to make mincemeat of the Count, assaults the castle and carves a swath of blood-soaked destruction through the Count&#39;s minions. Face-to-face with the Black Swordsman at last, the Count reveals his true form, and even Guts&#39; super-sized sword may not be big enough to contend with this demonic monstrosity! 
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="1760" data-title="Berserk TP Vol 02 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="SEP098115" data-title="Berserk TP Vol 02 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/aug108203/berserk-tp-vol-01-black-swordsman-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/STAR20106.jpg" alt="BERSERK TP VOL 01 BLACK SWORDSMAN (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/aug108203/berserk-tp-vol-01-black-swordsman-(mr)">Berserk TP Vol 01 Black Swordsman (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Kentaro Miura
+
+His name is Guts, the Black Swordsman, a feared warrior spoken of only in whispers. Bearer of a gigantic sword, an iron hand, and the scars of countless battles and tortures, his flesh is also indelibly marked with The Brand, an unholy symbol that draws the forces of darkness to him and dooms him as their sacrifice. But Guts won&#39;t take his fate lying down; he&#39;ll cut a crimson swath of carnage through the ranks of the damned -- and anyone else foolish enough to oppose him! Accompanied by Puck the Elf, more an annoyance than a companion, Guts relentlessly follows a dark, bloodstained path that leads only to death...or vengeance. Created by Kenturo Miura, Berserk is manga mayhem to the extreme -- violent, horrifying, and mercilessly funny -- and the wellspring for the internationally popular anime series. Not for the squeamish or the easily offended, Berserk asks for no quarter -- and offers none!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="1759" data-title="Berserk TP Vol 01 Black Swordsman (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="AUG108203" data-title="Berserk TP Vol 01 Black Swordsman (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/mar222236d/berserk-of-gluttony-light-novel-vol-06-(c-0-1-1)"><img class="itemimg" src="https://media.instocktrades.com/small/MAR222236.jpg" alt="BERSERK OF GLUTTONY LIGHT NOVEL VOL 06 (C: 0-1-1)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/mar222236d/berserk-of-gluttony-light-novel-vol-06-(c-0-1-1)">Berserk of Gluttony Light Novel Vol 06 (C: 0-1-1)</a>
+                    </div>
+                    <div class="damage">Damaged</div>
+                                            <div class="shortdesc desc">
+                            (W) Isshiki Ichika (A) fame
+Fate has a new quest: chase down Myne and close the Door to Distant Lands-and maybe get some answers out of his resurrected father. This time, however, he&#39;s heading out with a whole party in tow, including Eris, Memil, and Roxy. But Fate&#39;s not the only one wrestling with this new camaraderie. Roxy&#39;s glad to finally be fighting by Fate&#39;s side, but she knows she won&#39;t be able to stay there unless she too reaches the Domain of E... if she can survive it.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $7.50
+                            </div>
+                            <div class="discount">
+50%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="96730" data-title="Berserk of Gluttony Light Novel Vol 06 (C: 0-1-1)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="MAR222236D" data-title="Berserk of Gluttony Light Novel Vol 06 (C: 0-1-1)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/mar222236/berserk-of-gluttony-light-novel-vol-06-(c-0-1-1)"><img class="itemimg" src="https://media.instocktrades.com/small/MAR222236.jpg" alt="BERSERK OF GLUTTONY LIGHT NOVEL VOL 06 (C: 0-1-1)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/mar222236/berserk-of-gluttony-light-novel-vol-06-(c-0-1-1)">Berserk of Gluttony Light Novel Vol 06 (C: 0-1-1)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Isshiki Ichika (A) fame
+Fate has a new quest: chase down Myne and close the Door to Distant Lands-and maybe get some answers out of his resurrected father. This time, however, he&#39;s heading out with a whole party in tow, including Eris, Memil, and Roxy. But Fate&#39;s not the only one wrestling with this new camaraderie. Roxy&#39;s glad to finally be fighting by Fate&#39;s side, but she knows she won&#39;t be able to stay there unless she too reaches the Domain of E... if she can survive it.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="81514" data-title="Berserk of Gluttony Light Novel Vol 06 (C: 0-1-1)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="MAR222236" data-title="Berserk of Gluttony Light Novel Vol 06 (C: 0-1-1)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/may212011/berserk-of-gluttony-light-novel-vol-03-(c-0-1-1)"><img class="itemimg" src="https://media.instocktrades.com/small/MAY212011.jpg" alt="BERSERK OF GLUTTONY LIGHT NOVEL VOL 03 (C: 0-1-1)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/may212011/berserk-of-gluttony-light-novel-vol-03-(c-0-1-1)">Berserk of Gluttony Light Novel Vol 03 (C: 0-1-1)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Isshiki Ichika (A) fame
+Fate Graphite has never tasted real power. Born with the magical skill Gluttony, he has been shunned and looked down upon his entire life, and constantly hungers in a way that can&#39;t be satiated. One day, while working as a gatekeeper for a noble family and fighting a trespassing thief, he discovers Gluttony&#39;s true power: when he kills someone, he devours their skills and feeds his gnawing hunger at last. In that grisly realization, Fate is awakened to his true potential. How many lives will he feed on to satisfy this hunger, and is the world ready for the terrifying warrior he&#39;ll become?
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="81516" data-title="Berserk of Gluttony Light Novel Vol 03 (C: 0-1-1)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="MAY212011" data-title="Berserk of Gluttony Light Novel Vol 03 (C: 0-1-1)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+    </div>
+
+    <div>
+                    <span>Page <input type="text" id="currentpage" class="pagenumber" data-max="2" data-sf="" value="1"> of 2</span>
+                    <a href="/search?pg=2&amp;ps=true&amp;title=Berserk&amp;publisher=&amp;writer=&amp;artist=&amp;cover=" class="btn hotaction">&#8680;</a>
+    </div>
+    <div>Results 1 - 40 of 60</div>
+
+
+
+</div>
+
+
+
+
+    </div>
+    <footer>
+        <div class="section" style="overflow:hidden;">
+            <ul>
+                <li class="heading">Main Menu</li>
+                <li><a href="/">Home</a></li>
+                <li><a href="/newreleases">New Releases</a></li>
+                <li><a href="/comingsoon">Coming Soon</a></li>
+                <li><a href="/clearance">Clearance</a></li>
+                <li><a href="/damages">Damages</a></li>
+                <li class="condensed"><a href="/publishers">Publishers</a></li>
+                <li class="condensed"><a href="/writers">Writers</a></li>
+                <li class="condensed"><a href="/artists">Artists</a></li>
+                <li><a href="/giftcertificates">Gift Certificates</a></li>
+                <li><a href="/home/help">Help</a></li>
+                <li><a href="/home/privacy">Privacy and Security</a></li>
+                <li><a href="/wishlists">Find a Wishlist</a></li>
+                <li><a href="/home/contact">Contact Us</a></li>
+            </ul>
+            <ul class="expanded">
+                <li class="heading">Publishers</li>
+                    <li><a href="/publishers/image">Image</a></li>
+                    <li><a href="/publishers/dc-comics">DC Comics</a></li>
+                    <li><a href="/publishers/marvel">Marvel</a></li>
+                    <li><a href="/publishers/viz-media">Viz Media</a></li>
+                    <li><a href="/publishers/dark-horse">Dark Horse</a></li>
+                    <li><a href="/publishers/seven-seas">Seven Seas</a></li>
+                    <li><a href="/publishers/kodansha">Kodansha</a></li>
+                    <li><a href="/publishers/idw">IDW</a></li>
+                    <li><a href="/publishers/titan">Titan</a></li>
+                <li><a href="/publishers">View All Publishers</a></li>
+            </ul>
+            <ul class="expanded">
+                <li class="heading">Genres</li>
+                    <li><a href="/genres/action-adventure">Action/Adventure</a></li>
+                    <li><a href="/genres/crime">Crime</a></li>
+                    <li><a href="/genres/fantasy">Fantasy</a></li>
+                    <li><a href="/genres/horror">Horror</a></li>
+                    <li><a href="/genres/humor-comedy">Humor/Comedy</a></li>
+                    <li><a href="/genres/reference-art-books-how-to">Reference/Art Books/How To</a></li>
+                    <li><a href="/genres/romance">Romance</a></li>
+                    <li><a href="/genres/science-fiction">Science Fiction</a></li>
+                    <li><a href="/genres/sports">Sports</a></li>
+                    <li><a href="/genres/super-hero">Super-hero</a></li>
+            </ul>
+                <ul class="expanded">
+                    <li class="heading">Writers</li>
+                        <li><a href="/writers/robert-kirkman">Robert Kirkman</a></li>
+                        <li><a href="/writers/jeff-lemire">Jeff Lemire</a></li>
+                        <li><a href="/writers/kentaro-miura">Kentaro Miura</a></li>
+                        <li><a href="/writers/rick-remender">Rick Remender</a></li>
+                        <li><a href="/writers/brian-k-vaughan">Brian K. Vaughan</a></li>
+                        <li><a href="/writers/ed-brubaker">Ed Brubaker</a></li>
+                        <li><a href="/writers/tom-king">Tom King</a></li>
+                        <li><a href="/writers/jonathan-hickman">Jonathan Hickman</a></li>
+                        <li><a href="/writers/geoff-johns">Geoff Johns</a></li>
+                        <li><a href="/writers/mark-waid">Mark Waid</a></li>
+                    <li><a href="/writers">View All Writers</a></li>
+                </ul>
+                            <ul class="expanded">
+                    <li class="heading">Artists</li>
+                        <li><a href="/artists/kentaro-miura">Kentaro Miura</a></li>
+                        <li><a href="/artists/sean-phillips">Sean Phillips</a></li>
+                        <li><a href="/artists/fiona-staples">Fiona Staples</a></li>
+                        <li><a href="/artists/ryan-ottley">Ryan Ottley</a></li>
+                        <li><a href="/artists/cliff-chiang">Cliff Chiang</a></li>
+                        <li><a href="/artists/dustin-nguyen">Dustin Nguyen</a></li>
+                        <li><a href="/artists/charlie-adlard">Charlie Adlard</a></li>
+                        <li><a href="/artists/hiroaki-samura">Hiroaki Samura</a></li>
+                        <li><a href="/artists/andrea-sorrentino">Andrea Sorrentino</a></li>
+                        <li><a href="/artists/michael-lark">Michael Lark</a></li>
+                    <li><a href="/artists">View All Artists</a></li>
+                </ul>
+            <ul class="footerpromos">
+                <li><img src="/images/ist42.jpg" alt="Instocktrades.com 42% off!" width="227" height="87"></li>
+                <li><a href="https://www.dcbservice.com" target="_blank"><img src="/images/dcbs40.jpg" width="227" height="87" alt="Discount Comic Book Service"></a></li>
+            </ul>
+            <div class="copyright">
+                &copy; 2026 Discount Comic Book Service (DCBS). All images &copy; respective owners and used with permission.
+            </div>
+        </div>
+    </footer>
+
+    <div id="confirmmsg">
+
+    </div>
+    <script type="text/javascript" src="/scripts/js.cookie.min.js"></script>
+    <script src="/bundles/jquery?v=2u0aRenDpYxArEyILB59ETSCA2cfQkSMlxb6jbMBqf81"></script>
+
+    <script type="text/javascript" src="/scripts/jquery-ui.min.js"></script>
+    
+    <script type="text/javascript" src="/scripts/jquery.hoverIntent.min.js"></script>
+    <script type="text/javascript" src="/scripts/app.min.js?v=3"></script>
+    
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#searchtype').on('change', function () {
+                var isDefault = $(this).val() == "default";
+                $('#defaultsearch').css('display', (isDefault ? "block" : "none"));
+                $('#advancedsearch').css('display', (isDefault ? "none" : "block"));
+            });
+        });
+    </script>
+
+    <script id="free_accessibility_plugin_script" src="https://accessibility.f-static.com/site/free-accessibility-plugin/accessibility.min.js?lan=en&place=bottom-right&distance=20" crossorigin="anonymous" type="text/plain" data-category="functionality"></script>
+</body>
+</html>

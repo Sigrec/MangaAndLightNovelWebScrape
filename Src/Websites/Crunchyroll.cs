@@ -49,7 +49,7 @@ public sealed partial class Crunchyroll : IWebsite
     public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
         => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
 
-    private string GenerateWebsiteUrl(BookType bookType, string bookTitle, bool retry = false)
+    internal string GenerateWebsiteUrl(BookType bookType, string bookTitle, bool retry = false)
     {
         // Manga: filter by category=Manga&Books + subcategory=Specialty Books|Manga|Bundles
         //   https://store.crunchyroll.com/search?q=jujutsu%20kaisen&prefn1=category&prefv1=Manga%20%26%20Books&prefn2=subcategory&prefv2=Specialty%20Books%7CManga%7CBundles&sz=2147483647
@@ -186,8 +186,7 @@ public sealed partial class Crunchyroll : IWebsite
                 return true;
             };
 
-            bool bookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
-            _logger.BookTitleRemovalCheck(bookTitleRemovalCheck);
+            _logger.BookTitleRemovalCheck(InternalHelpers.ShouldRemoveEntry(bookTitle));
 
             string url = GenerateWebsiteUrl(bookType, bookTitle);
             links.Add(url);
@@ -196,11 +195,9 @@ public sealed partial class Crunchyroll : IWebsite
             doc.ConfigurePerf();
             DumpDebugHtml(doc.Text, "search");
 
-            HtmlNodeCollection? products = doc.DocumentNode.SelectNodes(_productTileXPath.Expression);
-
             // Search URL sometimes returns no results for a series that DOES have a
             // /collections/{slug}/ landing page. Retry once before giving up.
-            if (products is null || products.Count == 0)
+            if (HasProducts(doc) == 0)
             {
                 _logger.TryingSecondLink();
                 links.Clear();
@@ -210,122 +207,146 @@ public sealed partial class Crunchyroll : IWebsite
                 doc = await html.LoadFromWebAsync(url);
                 doc.ConfigurePerf();
                 DumpDebugHtml(doc.Text, "collections");
-                products = doc.DocumentNode.SelectNodes(_productTileXPath.Expression);
             }
 
-            if (products is null || products.Count == 0)
+            if (HasProducts(doc) == 0)
             {
                 _logger.NoResultsAfterRetry(bookTitle, bookType);
                 return (data, links);
             }
 
-            foreach (HtmlNode tile in products)
-            {
-                HtmlNode? titleNode = tile.SelectSingleNode(_titleRel);
-                if (titleNode is null) continue;
-
-                string entryTitle = WebUtility.HtmlDecode(titleNode.InnerText.Trim());
-
-                if (!InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle))
-                {
-                    _logger.EntryRemovedDebug(1, entryTitle);
-                    continue;
-                }
-
-                // The site no longer enforces category/subcategory filters server-side
-                // (they're applied client-side via JS, which HtmlWeb can't run). The
-                // results page returns figures / t-shirts / desk mats alongside books,
-                // so reject anything that doesn't carry a book-like volume marker.
-                bool isBookProduct = bookType == BookType.Manga
-                    ? entryTitle.ContainsAny(["Manga", "Vol ", "Volume ", "Box Set", "Omnibus", "Bundle"])
-                    : entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase);
-                if (!isBookProduct)
-                {
-                    _logger.EntryRemovedDebug(4, entryTitle);
-                    continue;
-                }
-
-                // Crunchyroll sells variant/exclusive editions of mainline manga
-                // volumes (e.g. "Jujutsu Kaisen Variant Cover Manga Volume 30 - Crunchyroll
-                // Exclusive"). The global removal list contains "Exclusive" — strip the
-                // marker before the removal check so the entry survives, then re-append
-                // it as a suffix after the title is parsed.
-                bool isCrunchyrollExclusive = entryTitle.Contains("Crunchyroll Exclusive", StringComparison.OrdinalIgnoreCase);
-                string titleForRemovalCheck = isCrunchyrollExclusive
-                    ? entryTitle.Replace("Crunchyroll Exclusive", string.Empty, StringComparison.OrdinalIgnoreCase)
-                    : entryTitle;
-
-                if (InternalHelpers.ShouldRemoveEntry(titleForRemovalCheck) && !bookTitleRemovalCheck)
-                {
-                    _logger.EntryRemovedDebug(2, entryTitle);
-                    continue;
-                }
-
-                bool shouldRemoveEntry = false;
-                if (bookType == BookType.Manga)
-                {
-                    shouldRemoveEntry =
-                        (!bookTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) && entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)) ||
-                        InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, ["of Gluttony", "Darkness Ink"]) ||
-                        InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto") ||
-                        InternalHelpers.RemoveUnintendedVolumes(bookTitle, "One Piece", entryTitle, "Pirate Recipes");
-                }
-                else if (bookType == BookType.LightNovel)
-                {
-                    shouldRemoveEntry = InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Overlord", entryTitle, "Unimplemented");
-                }
-
-                if (shouldRemoveEntry)
-                {
-                    _logger.EntryRemovedDebug(3, entryTitle);
-                    continue;
-                }
-
-                string baseTitleText = titleNode.InnerText;
-                entryTitle = FixVolumeRegex().Replace(entryTitle, "Vol");
-
-                bool isBundle = entryTitle.Contains("Bundle");
-                entryTitle = isBundle
-                    ? BundleParseRegex().Replace(entryTitle, string.Empty)
-                    : ParseAndCleanTitleRegex().Replace(entryTitle, string.Empty);
-
-                string cleanedTitle = ParseAndCleanTitle(entryTitle, baseTitleText, bookTitle, bookType);
-
-                if (isCrunchyrollExclusive)
-                {
-                    // The strip pipeline drops "Crunchyroll Exclusive" (it lives after the
-                    // vol number, which the regex truncates). Re-append it as a suffix and
-                    // drop the redundant "Variant Cover" tag — the Exclusive marker alone
-                    // is enough to disambiguate this from the mainline edition.
-                    cleanedTitle = cleanedTitle
-                        .Replace("Variant Cover ", string.Empty, StringComparison.OrdinalIgnoreCase)
-                        .TrimEnd();
-                    cleanedTitle = $"{cleanedTitle} Crunchyroll Exclusive";
-                }
-
-                // data-price on the current-price <b> is the cleanest source — clean
-                // numeric, no currency symbol, no whitespace. Empty means we couldn't find it.
-                HtmlNode? priceNode = tile.SelectSingleNode(_priceRel);
-                string price = priceNode?.GetAttributeValue("data-price", "ERROR") ?? "ERROR";
-
-                // preandbackOrderAvailability holds "Release date : M/D/YYYY" for pre-orders;
-                // empty for in-stock items. No explicit OOS / Back-Order signal in the listing
-                // grid — those products carry it on the detail page only.
-                HtmlNode? availNode = tile.SelectSingleNode(_availabilityRel);
-                bool isPreOrder = availNode is not null && !string.IsNullOrWhiteSpace(availNode.InnerText);
-                StockStatus stockStatus = isPreOrder ? StockStatus.PO : StockStatus.IS;
-
-                data.Add(new EntryModel(cleanedTitle, $"${price}", stockStatus, TITLE));
-            }
+            data = ParseProducts(doc, bookTitle, bookType);
         }
         finally
         {
-            data.TrimExcess();
             links.TrimExcess();
-            data.SortByVolume();
             InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         }
-        
+
         return (data, links);
+    }
+
+    /// <summary>
+    /// Counts product tiles in a pre-loaded listing document. Exposed as <c>internal</c> so
+    /// fixture-based tests and the retry path in <see cref="GetData"/> share a single
+    /// definition of "did this URL return anything".
+    /// </summary>
+    internal static int HasProducts(HtmlDocument doc)
+        => doc.DocumentNode.SelectNodes(_productTileXPath.Expression)?.Count ?? 0;
+
+    /// <summary>
+    /// Parses one Crunchyroll listing page into <see cref="EntryModel"/>s. Holds the entire
+    /// per-tile filter / removal / clean-title pipeline so that fixture-based tests can
+    /// drive the same code path <see cref="GetData"/> uses without network I/O.
+    /// </summary>
+    internal List<EntryModel> ParseProducts(HtmlDocument doc, string bookTitle, BookType bookType)
+    {
+        List<EntryModel> data = [];
+
+        HtmlNodeCollection? products = doc.DocumentNode.SelectNodes(_productTileXPath.Expression);
+        if (products is null || products.Count == 0) return data;
+
+        bool bookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+
+        foreach (HtmlNode tile in products)
+        {
+            HtmlNode? titleNode = tile.SelectSingleNode(_titleRel);
+            if (titleNode is null) continue;
+
+            string entryTitle = WebUtility.HtmlDecode(titleNode.InnerText.Trim());
+
+            if (!InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle))
+            {
+                _logger.EntryRemovedDebug(1, entryTitle);
+                continue;
+            }
+
+            // The site no longer enforces category/subcategory filters server-side (they're
+            // applied client-side via JS, which HtmlWeb can't run). The results page returns
+            // figures / t-shirts / desk mats alongside books, so reject anything that doesn't
+            // carry a book-like volume marker.
+            bool isBookProduct = bookType == BookType.Manga
+                ? entryTitle.ContainsAny(["Manga", "Vol ", "Volume ", "Box Set", "Omnibus", "Bundle"])
+                : entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase);
+            if (!isBookProduct)
+            {
+                _logger.EntryRemovedDebug(4, entryTitle);
+                continue;
+            }
+
+            // Crunchyroll sells variant/exclusive editions of mainline manga volumes (e.g.
+            // "Jujutsu Kaisen Variant Cover Manga Volume 30 - Crunchyroll Exclusive"). The
+            // global removal list contains "Exclusive" — strip the marker before the removal
+            // check so the entry survives, then re-append it as a suffix after the title is
+            // parsed.
+            bool isCrunchyrollExclusive = entryTitle.Contains("Crunchyroll Exclusive", StringComparison.OrdinalIgnoreCase);
+            string titleForRemovalCheck = isCrunchyrollExclusive
+                ? entryTitle.Replace("Crunchyroll Exclusive", string.Empty, StringComparison.OrdinalIgnoreCase)
+                : entryTitle;
+
+            if (InternalHelpers.ShouldRemoveEntry(titleForRemovalCheck) && !bookTitleRemovalCheck)
+            {
+                _logger.EntryRemovedDebug(2, entryTitle);
+                continue;
+            }
+
+            bool shouldRemoveEntry = false;
+            if (bookType == BookType.Manga)
+            {
+                shouldRemoveEntry =
+                    (!bookTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase) && entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)) ||
+                    InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, ["of Gluttony", "Darkness Ink"]) ||
+                    InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto") ||
+                    InternalHelpers.RemoveUnintendedVolumes(bookTitle, "One Piece", entryTitle, "Pirate Recipes");
+            }
+            else if (bookType == BookType.LightNovel)
+            {
+                shouldRemoveEntry = InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Overlord", entryTitle, "Unimplemented");
+            }
+
+            if (shouldRemoveEntry)
+            {
+                _logger.EntryRemovedDebug(3, entryTitle);
+                continue;
+            }
+
+            string baseTitleText = titleNode.InnerText;
+            entryTitle = FixVolumeRegex().Replace(entryTitle, "Vol");
+
+            bool isBundle = entryTitle.Contains("Bundle");
+            entryTitle = isBundle
+                ? BundleParseRegex().Replace(entryTitle, string.Empty)
+                : ParseAndCleanTitleRegex().Replace(entryTitle, string.Empty);
+
+            string cleanedTitle = ParseAndCleanTitle(entryTitle, baseTitleText, bookTitle, bookType);
+
+            if (isCrunchyrollExclusive)
+            {
+                // The strip pipeline drops "Crunchyroll Exclusive" (it lives after the vol
+                // number, which the regex truncates). Re-append it as a suffix and drop the
+                // redundant "Variant Cover" tag — the Exclusive marker alone is enough to
+                // disambiguate this from the mainline edition.
+                cleanedTitle = cleanedTitle
+                    .Replace("Variant Cover ", string.Empty, StringComparison.OrdinalIgnoreCase)
+                    .TrimEnd();
+                cleanedTitle = $"{cleanedTitle} Crunchyroll Exclusive";
+            }
+
+            HtmlNode? priceNode = tile.SelectSingleNode(_priceRel);
+            string price = priceNode?.GetAttributeValue("data-price", "ERROR") ?? "ERROR";
+
+            // preandbackOrderAvailability holds "Release date : M/D/YYYY" for pre-orders;
+            // empty for in-stock items. No explicit OOS / Back-Order signal in the listing
+            // grid — those products carry it on the detail page only.
+            HtmlNode? availNode = tile.SelectSingleNode(_availabilityRel);
+            bool isPreOrder = availNode is not null && !string.IsNullOrWhiteSpace(availNode.InnerText);
+            StockStatus stockStatus = isPreOrder ? StockStatus.PO : StockStatus.IS;
+
+            data.Add(new EntryModel(cleanedTitle, $"${price}", stockStatus, TITLE));
+        }
+
+        data.TrimExcess();
+        data.SortByVolume();
+        return data;
     }
 }

@@ -55,11 +55,28 @@ public sealed partial class InStockTrades : IWebsite
     // https://www.instocktrades.com/search?term=world+trigger
     // https://www.instocktrades.com/search?pg=1&title=World+Trigger&publisher=&writer=&artist=&cover=&ps=true
     // https://www.instocktrades.com/search?title=overlord+novel&publisher=&writer=&artist=&cover=&ps=true
-    private string GenerateWebsiteUrl(uint currPageNum, string bookTitle)
+    internal string GenerateWebsiteUrl(uint currPageNum, string bookTitle)
     {
         string url = $"{BASE_URL}/search?pg={currPageNum}&title={bookTitle.Replace(' ', '+')}&publisher=&writer=&artist=&cover=&ps=true";
         _logger.UrlGenerated(url);
         return url;
+    }
+
+    /// <summary>
+    /// Reads the <c>data-max</c> attribute off the <c>#currentpage</c> input element on
+    /// page 1 to discover total page count. Exposed as <c>internal</c> so fixture-based
+    /// tests can drive the same loop logic <see cref="GetData"/> uses, without a live fetch.
+    /// </summary>
+    internal static uint GetMaxPages(HtmlDocument firstPage)
+    {
+        HtmlNode? pageCheck = firstPage.DocumentNode.SelectSingleNode(PageCheckXPath);
+        if (pageCheck != null
+            && uint.TryParse(pageCheck.GetAttributeValue("data-max", "0"), out uint parsed)
+            && parsed > 0)
+        {
+            return parsed;
+        }
+        return 1;
     }
 
     private static string ParseAndCleanTitle(
@@ -226,7 +243,6 @@ public sealed partial class InStockTrades : IWebsite
 
         try
         {
-            // Fetch page 1 first — we don't know maxPages until we parse it.
             HtmlWeb html = HtmlFactory.CreateWeb();
 
             string url = GenerateWebsiteUrl(1, bookTitle);
@@ -235,21 +251,15 @@ public sealed partial class InStockTrades : IWebsite
             HtmlDocument firstPage = await html.LoadFromWebAsync(url);
             firstPage.ConfigurePerf();
 
-            uint maxPages = 1;
-            HtmlNode pageCheck = firstPage.DocumentNode.SelectSingleNode(PageCheckXPath);
-            if (pageCheck != null
-                && uint.TryParse(pageCheck.GetAttributeValue("data-max", "0"), out uint parsed)
-                && parsed > 0)
+            uint maxPages = GetMaxPages(firstPage);
+            if (maxPages > 1)
             {
-                maxPages = parsed;
                 links.Capacity = (int)maxPages;
-                data.EnsureCapacity((int)maxPages * 10);
             }
 
-            // Fan-out the remaining pages in parallel. The old code awaited each next-page fetch
-            // inside the processing loop, so an N-page scrape paid N serial network round-trips
-            // (plus a sync html.Load that blocked the thread). With maxPages already known,
-            // pages 2..N are independent — batch them.
+            // Fan-out the remaining pages in parallel. The old code awaited each next-page
+            // fetch inside the processing loop, so an N-page scrape paid N serial network
+            // round-trips. With maxPages already known, pages 2..N are independent — batch.
             HtmlDocument[] pages;
             if (maxPages > 1)
             {
@@ -270,77 +280,101 @@ public sealed partial class InStockTrades : IWebsite
                 pages = [firstPage];
             }
 
-            bool replaceAdv = !bookTitle.Contains("Adv", StringComparison.Ordinal);
-            bool isMangaType = bookType == BookType.Manga;
-            bool isNovelType = bookType == BookType.LightNovel;
-            bool titleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
-
-            // Process each page sequentially — CPU-bound work, single-threaded is fine.
-            foreach (HtmlDocument doc in pages)
-            {
-                if (doc != firstPage) doc.ConfigurePerf();
-
-                HtmlNodeCollection details = doc.DocumentNode.SelectNodes(_detailsXPath);
-                HtmlNodeCollection prices = doc.DocumentNode.SelectNodes(_priceXPath);
-                if (details == null || prices == null) continue;
-
-                int count = details.Count;
-
-                for (int i = 0; i < count; i++)
-                {
-                    HtmlNode titleNode = details[i].SelectSingleNode(_titleXPath);
-                    if (titleNode == null) continue;
-
-                    string entryTitle = titleNode.InnerText;
-                    if (replaceAdv)
-                    {
-                        entryTitle = entryTitle.Replace(" Adv ", " Adventure ");
-                    }
-                    _logger.EntrySeen(entryTitle);
-
-                    bool isOneShot = count == 1 && !entryTitle.ContainsAny(_oneShotCheckFilter);
-
-                    bool validBook = (titleRemovalCheck
-                            || InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle))
-                        && !details[i].InnerText.Contains("Damaged")
-                        && !InternalHelpers.ShouldRemoveEntry(entryTitle);
-
-                    bool validManga = isMangaType
-                        && !entryTitle.ContainsAny(_excludeMangaFilters)
-                        && (isOneShot || entryTitle.ContainsAny(_mangaFilters))
-                        && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony")
-                        && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto");
-
-                    bool validNovel = isNovelType
-                        && entryTitle.ContainsAny(_novelFilters)
-                        && !entryTitle.ContainsAny(_excludeNovelFilters)
-                        && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "overlord", entryTitle, "Joined Party");
-
-                    if (validBook && (validManga || validNovel))
-                    {
-                        data.Add(new EntryModel(
-                            ParseAndCleanTitle(bookTitle, entryTitle, bookType),
-                            prices[i].InnerText.Trim(),
-                            StockStatus.IS,
-                            TITLE));
-                    }
-                    else
-                    {
-                        // [LoggerMessage] source-gen already short-circuits when Debug is filtered —
-                        // no need to wrap in an extra _logger.IsEnabled(...) guard.
-                        _logger.EntryRemovedSimpleDebug(entryTitle);
-                    }
-                }
-            }
+            data = ParsePages(pages, bookTitle, bookType);
         }
         finally
         {
-            data.TrimExcess();
             links.TrimExcess();
-            data.SortByVolume();
             InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         }
 
         return (data, links);
+    }
+
+    /// <summary>
+    /// Parses the per-page details/prices XPaths off pre-loaded <see cref="HtmlDocument"/>s
+    /// and applies the per-entry filter, manga-vs-novel keyword check, and title cleanup.
+    /// Returns a sorted, trimmed list. Exposed as <c>internal</c> so fixture-based tests
+    /// can drive the same code path that <see cref="GetData"/> uses without network I/O.
+    /// </summary>
+    internal List<EntryModel> ParsePages(
+        IReadOnlyList<HtmlDocument> pages,
+        string bookTitle,
+        BookType bookType)
+    {
+        // Normalize ampersand — same as GetData. Tests call ParsePages directly so the
+        // normalization has to live here too, not just in the public entry point.
+        if (bookTitle.Contains('&', StringComparison.Ordinal))
+        {
+            bookTitle = bookTitle.Replace("&", "and");
+        }
+
+        List<EntryModel> data = [];
+        data.EnsureCapacity(pages.Count * 10);
+
+        bool replaceAdv = !bookTitle.Contains("Adv", StringComparison.Ordinal);
+        bool isMangaType = bookType == BookType.Manga;
+        bool isNovelType = bookType == BookType.LightNovel;
+        bool titleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+
+        // Process each page sequentially — CPU-bound work, single-threaded is fine.
+        foreach (HtmlDocument doc in pages)
+        {
+            doc.ConfigurePerf();
+
+            HtmlNodeCollection details = doc.DocumentNode.SelectNodes(_detailsXPath);
+            HtmlNodeCollection prices = doc.DocumentNode.SelectNodes(_priceXPath);
+            if (details == null || prices == null) continue;
+
+            int count = details.Count;
+
+            for (int i = 0; i < count; i++)
+            {
+                HtmlNode titleNode = details[i].SelectSingleNode(_titleXPath);
+                if (titleNode == null) continue;
+
+                string entryTitle = titleNode.InnerText;
+                if (replaceAdv)
+                {
+                    entryTitle = entryTitle.Replace(" Adv ", " Adventure ");
+                }
+                _logger.EntrySeen(entryTitle);
+
+                bool isOneShot = count == 1 && !entryTitle.ContainsAny(_oneShotCheckFilter);
+
+                bool validBook = (titleRemovalCheck
+                        || InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle))
+                    && !details[i].InnerText.Contains("Damaged")
+                    && !InternalHelpers.ShouldRemoveEntry(entryTitle);
+
+                bool validManga = isMangaType
+                    && !entryTitle.ContainsAny(_excludeMangaFilters)
+                    && (isOneShot || entryTitle.ContainsAny(_mangaFilters))
+                    && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony")
+                    && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto");
+
+                bool validNovel = isNovelType
+                    && entryTitle.ContainsAny(_novelFilters)
+                    && !entryTitle.ContainsAny(_excludeNovelFilters)
+                    && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "overlord", entryTitle, "Joined Party");
+
+                if (validBook && (validManga || validNovel))
+                {
+                    data.Add(new EntryModel(
+                        ParseAndCleanTitle(bookTitle, entryTitle, bookType),
+                        prices[i].InnerText.Trim(),
+                        StockStatus.IS,
+                        TITLE));
+                }
+                else
+                {
+                    _logger.EntryRemovedSimpleDebug(entryTitle);
+                }
+            }
+        }
+
+        data.TrimExcess();
+        data.SortByVolume();
+        return data;
     }
 }

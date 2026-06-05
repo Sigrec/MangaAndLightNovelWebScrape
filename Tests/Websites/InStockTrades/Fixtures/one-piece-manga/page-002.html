@@ -1,0 +1,460 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search - InStockTrades</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <meta name="description" content="Trade paperbacks from Marvel, DC, Image, Dark Horse and more! Discounted up to 42% off. No shipping on orders over $50.">
+    <meta name="keywords" content="trade paperbacks,comic books,marvel,dc,image,dark horse,superman,batman,flash,wonder woman,spiderman,fantastic four,the hulk,captain america,thor">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    
+    <link rel="shortcut icon" href="/images/logo.png">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans|Roboto:400,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/content/site.min.css?v=3">
+    <link rel="stylesheet" href="/content/jquery-ui.min.css">
+    <link rel="stylesheet" href="/content/jquery-ui.theme.min.css">
+    <script src="/bundles/modernizr?v=inCVuEFe6J4Q07A0AcRsbJic_UE5MwpRMNGcOtk94TE1"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css">
+    <script src="/scripts/cookieconsent-config.min.js" type="module"></script>
+</head>
+<body>
+    
+<div class="navbar-header">
+    <a href="/"><img class="logo" src="/images/logo.png" alt="Instocktrades.com"></a>
+    <div class="navbar-heading">
+        <span class="giftcertificates"><a href="/giftcertificates" class="highlight">Gift Certificates</a></span>
+        <span class="help"><a href="/home/help">Help</a></span>
+            <span class="greeting"><a href="/account/login">Sign In</a></span>
+    </div>
+    <a href="/cart" class="navbar-cart">
+        <div class="cartcount">0</div>
+    </a>
+    <div class="navbar-search">
+        <form id="sitesearchform" name="sitesearchform" method="get" action="/search">
+            <input type="text" name="term" id="sitesearch" placeholder="Search..." autocomplete="off" required oninvalid="this.setCustomValidity('Please Enter a valid search term')" oninput="setCustomValidity('')">
+            <button type="submit" id="navsearchbutton" class="navsearchbutton" onclick="javascript: return document.getElementById('sitesearch').value.trim() != '';"><img src="/images/search.png" alt="search"></button>
+        </form>
+        <div style="text-align:right;"><a href="/search?ps=true" class="action">Advanced Search</a></div>
+    </div>
+    <div class="navbar-menubar">
+        <div class="navbar-menu trades hoverable">
+            <a href="#trades" class="menu-label responsive">Trades <span class="navarrow"></span></a>
+            <div class="navbar-menuitems responsive">
+                <a href="/newreleases">New Releases</a>
+                
+                <a href="/comingsoon">Coming Soon</a>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#" class="menu-label">Publishers <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                            <a href="/publishers/image">Image</a>
+                            <a href="/publishers/dc-comics">DC Comics</a>
+                            <a href="/publishers/marvel">Marvel</a>
+                            <a href="/publishers/viz-media">Viz Media</a>
+                            <a href="/publishers/dark-horse">Dark Horse</a>
+                            <a href="/publishers/seven-seas">Seven Seas</a>
+                            <a href="/publishers/kodansha">Kodansha</a>
+                            <a href="/publishers/idw">IDW</a>
+                            <a href="/publishers/titan">Titan</a>
+                        <a href="/publishers">View All Publishers</a>
+                    </div>
+                </div>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#sales" class="menu-label">Sales <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                        <a href="/clearance">Clearance</a>
+                        <a href="/damages">Damages</a>
+                            <a href="/specials/630/red-tag-sale">Red Tag Sale</a>
+                            <a href="/specials/632/24-hour-flash-sale!!">24-Hour Flash Sale!!</a>
+                            <a href="/specials/715/best-sellers-dc">Best Sellers: DC</a>
+                            <a href="/specials/716/best-sellers-marvel">Best Sellers: Marvel</a>
+                            <a href="/specials/718/creator-spotlight-inio-asano">Creator Spotlight: Inio Asano</a>
+                            <a href="/specials/719/creator-spotlight-clamp">Creator Spotlight: CLAMP</a>
+                    </div>
+                </div>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#creators" class="menu-label">Featured Creators <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                            <a href="/creator/giantgenerator">Giant Generator by Rick Remender</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="navbar-menu topsellers">
+            <a href="/products/topsellers">Top Sellers</a>
+        </div>
+        <div class="navbar-menu account hoverable">
+            <a href="#account" class="menu-label">Account <span class="navarrow"></span></a>
+            <div class="navbar-menuitems">
+                <a href="/account/wishlist">Wishlist</a>
+                <a href="/account">Account Profile</a>
+                <a href="/account/orderhistory">Order History</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+    
+    <div class="container body-content">
+        
+
+        
+
+
+
+
+<div class="section products">
+    <h2>Search</h2>
+    <div class="section">
+        <div class="message form">
+            <div><h4 style="display:inline-block;">Search Option:</h4>
+                <select name="searchtype" id="searchtype" style="padding:7px;">
+                    <option value="default">Free Text</option>
+                    <option value="power" selected>Advanced Search</option>
+                </select>
+            </div>
+            <div>
+                <div id="defaultsearch" style="display:none;">
+                    <h4>Search results matches ANY words...</h4>
+                    <form method="get" action="/search">
+                        <div class="fieldgroup">
+                            <div class="fieldset">
+                                <div><label>Title, Publisher, Description or Product Code</label></div>
+                                <input name="term" type="text" maxlength="200" style="max-width:400px; display:inline-block;">
+                                <button type="submit" class="btn hotaction">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div id="advancedsearch" style="display:block;">
+                    <h4>Advanced Search. Results match ALL words and conditions...</h4>
+                    <form method="get" action="/search">
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Title</label></div>
+                                <input name="title" placeholder="Title" type="text" maxlength="200" autocomplete="off" value="One Piece">
+                            </div>
+                            <div class="fieldset">
+                                <div><label>Publisher</label></div>
+                                <input name="publisher" placeholder="Publisher" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                        </div>
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Writer</label></div>
+                                <input name="writer" placeholder="Writer" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                            <div class="fieldset">
+                                <div><label>Artist</label></div>
+                                <input name="artist" placeholder="Artist" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                        </div>
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Cover Artist</label></div>
+                                <input name="cover" placeholder="Cover Artist" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                            <div class="fieldset">
+                                <div><label></label></div>
+                                
+                            </div>
+                        </div>
+                        <div class="fieldgroup">
+                            <div class="fieldset">
+                                <input type="hidden" name="ps" value="true">
+                                <button type="submit" class="btn hotaction">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <div class="pageoptions">
+        
+            <div class="productsortselection">
+                <span class="productsortlabel">Sort By:</span> <select id="sortselection" name="sortselection"><option selected="selected" value="relevance">Relevance</option>
+<option value="title">Title</option>
+<option value="publisher">Publisher</option>
+<option value="price">Price</option>
+<option value="discount">Discount</option>
+</select>
+            </div>
+                    <div class="viewselection">
+                <span class="viewselectlabel">View: </span>
+                <div id="thumbplusview" class="viewselect selected" data-val="1"><img src="/images/thumbplus.png" alt="thumbnail plus view" title="Thumbnail Plus View"></div>
+                <div id="thumbview" class="viewselect" data-val="0"><img src="/images/thumbs.png" alt="thumbnail only view" title="Thumbnails Only View"></div>
+                <div id="listview" class="viewselect" data-val="2"><img src="/images/thumblist.png" alt="thumbnail list view" title="Thumbnail List View"></div>
+                
+            </div>
+    </div>
+    <div class="row">
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct242045/one-piece-3in1-tp-vol-34"><img class="itemimg" src="https://media.instocktrades.com/small/OCT242045.jpg" alt="ONE PIECE 3IN1 TP VOL 34"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct242045/one-piece-3in1-tp-vol-34">One Piece 3In1 TP Vol 34</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A) Eiichiro Oda
+A superstar battle royale begins as Luffy&#39;s crew once again goes up against Kaido and the power players allied with the Four Emperors of the Sea. Luffy&#39;s Akazaya samurai allies are playing offense, but when Big Mom&#39;s pirate progeny get in on the action and Kaido&#39;s daughter switches sides, the fight becomes a family affair!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$16.99<br>
+                            </div>
+                            <div class="price">
+                                $11.89
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="91540" data-title="One Piece 3In1 TP Vol 34" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT242045" data-title="One Piece 3In1 TP Vol 34" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/feb101126/one-piece-3in1-tp-vol-04"><img class="itemimg" src="https://media.instocktrades.com/small/FEB101126.jpg" alt="ONE PIECE 3IN1 TP VOL 04"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/feb101126/one-piece-3in1-tp-vol-04">One Piece 3In1 TP Vol 04</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Follow the beginning of Luffy&#39;s search for the greatest treasure in the world... one guy alone in a rowboat, in search of the legendary &quot;One Piece.&quot; Three volumes of One Piece for the price of two!  (Contains volumes 10,11,12).
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$16.99<br>
+                            </div>
+                            <div class="price">
+                                $11.89
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="13313" data-title="One Piece 3In1 TP Vol 04" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="FEB101126" data-title="One Piece 3In1 TP Vol 04" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/feb101125/one-piece-3in1-tp-vol-03"><img class="itemimg" src="https://media.instocktrades.com/small/FEB101125.jpg" alt="ONE PIECE 3IN1 TP VOL 03"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/feb101125/one-piece-3in1-tp-vol-03">One Piece 3In1 TP Vol 03</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Follow the beginning of Luffy&#39;s search for the greatest treasure in the world... one guy alone in a rowboat, in search of the legendary &quot;One Piece.&quot; Three volumes of One Piece for the price of two!  (Contains volumes 7,8,9).
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$16.99<br>
+                            </div>
+                            <div class="price">
+                                $11.89
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="14133" data-title="One Piece 3In1 TP Vol 03" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="FEB101125" data-title="One Piece 3In1 TP Vol 03" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct091136/one-piece-3in1-tp-vol-02"><img class="itemimg" src="https://media.instocktrades.com/small/OCT091136.jpg" alt="ONE PIECE 3IN1 TP VOL 02"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct091136/one-piece-3in1-tp-vol-02">One Piece 3In1 TP Vol 02</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Buy 3 volumes for the price of 2! Rating: T
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$16.99<br>
+                            </div>
+                            <div class="price">
+                                $11.89
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="12407" data-title="One Piece 3In1 TP Vol 02" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT091136" data-title="One Piece 3In1 TP Vol 02" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+    </div>
+
+    <div>
+            <a href="/search?pg=1&amp;ps=true&amp;title=One Piece&amp;publisher=&amp;writer=&amp;artist=&amp;cover=" class="btn hotaction">&#8678;</a>
+                    <span>Page <input type="text" id="currentpage" class="pagenumber" data-max="2" data-sf="" value="2"> of 2</span>
+            </div>
+    <div>Results 41 - 44 of 44</div>
+
+
+
+</div>
+
+
+
+
+    </div>
+    <footer>
+        <div class="section" style="overflow:hidden;">
+            <ul>
+                <li class="heading">Main Menu</li>
+                <li><a href="/">Home</a></li>
+                <li><a href="/newreleases">New Releases</a></li>
+                <li><a href="/comingsoon">Coming Soon</a></li>
+                <li><a href="/clearance">Clearance</a></li>
+                <li><a href="/damages">Damages</a></li>
+                <li class="condensed"><a href="/publishers">Publishers</a></li>
+                <li class="condensed"><a href="/writers">Writers</a></li>
+                <li class="condensed"><a href="/artists">Artists</a></li>
+                <li><a href="/giftcertificates">Gift Certificates</a></li>
+                <li><a href="/home/help">Help</a></li>
+                <li><a href="/home/privacy">Privacy and Security</a></li>
+                <li><a href="/wishlists">Find a Wishlist</a></li>
+                <li><a href="/home/contact">Contact Us</a></li>
+            </ul>
+            <ul class="expanded">
+                <li class="heading">Publishers</li>
+                    <li><a href="/publishers/image">Image</a></li>
+                    <li><a href="/publishers/dc-comics">DC Comics</a></li>
+                    <li><a href="/publishers/marvel">Marvel</a></li>
+                    <li><a href="/publishers/viz-media">Viz Media</a></li>
+                    <li><a href="/publishers/dark-horse">Dark Horse</a></li>
+                    <li><a href="/publishers/seven-seas">Seven Seas</a></li>
+                    <li><a href="/publishers/kodansha">Kodansha</a></li>
+                    <li><a href="/publishers/idw">IDW</a></li>
+                    <li><a href="/publishers/titan">Titan</a></li>
+                <li><a href="/publishers">View All Publishers</a></li>
+            </ul>
+            <ul class="expanded">
+                <li class="heading">Genres</li>
+                    <li><a href="/genres/action-adventure">Action/Adventure</a></li>
+                    <li><a href="/genres/crime">Crime</a></li>
+                    <li><a href="/genres/fantasy">Fantasy</a></li>
+                    <li><a href="/genres/horror">Horror</a></li>
+                    <li><a href="/genres/humor-comedy">Humor/Comedy</a></li>
+                    <li><a href="/genres/reference-art-books-how-to">Reference/Art Books/How To</a></li>
+                    <li><a href="/genres/romance">Romance</a></li>
+                    <li><a href="/genres/science-fiction">Science Fiction</a></li>
+                    <li><a href="/genres/sports">Sports</a></li>
+                    <li><a href="/genres/super-hero">Super-hero</a></li>
+            </ul>
+                <ul class="expanded">
+                    <li class="heading">Writers</li>
+                        <li><a href="/writers/robert-kirkman">Robert Kirkman</a></li>
+                        <li><a href="/writers/jeff-lemire">Jeff Lemire</a></li>
+                        <li><a href="/writers/kentaro-miura">Kentaro Miura</a></li>
+                        <li><a href="/writers/rick-remender">Rick Remender</a></li>
+                        <li><a href="/writers/brian-k-vaughan">Brian K. Vaughan</a></li>
+                        <li><a href="/writers/ed-brubaker">Ed Brubaker</a></li>
+                        <li><a href="/writers/tom-king">Tom King</a></li>
+                        <li><a href="/writers/jonathan-hickman">Jonathan Hickman</a></li>
+                        <li><a href="/writers/geoff-johns">Geoff Johns</a></li>
+                        <li><a href="/writers/mark-waid">Mark Waid</a></li>
+                    <li><a href="/writers">View All Writers</a></li>
+                </ul>
+                            <ul class="expanded">
+                    <li class="heading">Artists</li>
+                        <li><a href="/artists/kentaro-miura">Kentaro Miura</a></li>
+                        <li><a href="/artists/sean-phillips">Sean Phillips</a></li>
+                        <li><a href="/artists/fiona-staples">Fiona Staples</a></li>
+                        <li><a href="/artists/ryan-ottley">Ryan Ottley</a></li>
+                        <li><a href="/artists/cliff-chiang">Cliff Chiang</a></li>
+                        <li><a href="/artists/dustin-nguyen">Dustin Nguyen</a></li>
+                        <li><a href="/artists/charlie-adlard">Charlie Adlard</a></li>
+                        <li><a href="/artists/hiroaki-samura">Hiroaki Samura</a></li>
+                        <li><a href="/artists/andrea-sorrentino">Andrea Sorrentino</a></li>
+                        <li><a href="/artists/michael-lark">Michael Lark</a></li>
+                    <li><a href="/artists">View All Artists</a></li>
+                </ul>
+            <ul class="footerpromos">
+                <li><img src="/images/ist42.jpg" alt="Instocktrades.com 42% off!" width="227" height="87"></li>
+                <li><a href="https://www.dcbservice.com" target="_blank"><img src="/images/dcbs40.jpg" width="227" height="87" alt="Discount Comic Book Service"></a></li>
+            </ul>
+            <div class="copyright">
+                &copy; 2026 Discount Comic Book Service (DCBS). All images &copy; respective owners and used with permission.
+            </div>
+        </div>
+    </footer>
+
+    <div id="confirmmsg">
+
+    </div>
+    <script type="text/javascript" src="/scripts/js.cookie.min.js"></script>
+    <script src="/bundles/jquery?v=2u0aRenDpYxArEyILB59ETSCA2cfQkSMlxb6jbMBqf81"></script>
+
+    <script type="text/javascript" src="/scripts/jquery-ui.min.js"></script>
+    
+    <script type="text/javascript" src="/scripts/jquery.hoverIntent.min.js"></script>
+    <script type="text/javascript" src="/scripts/app.min.js?v=3"></script>
+    
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#searchtype').on('change', function () {
+                var isDefault = $(this).val() == "default";
+                $('#defaultsearch').css('display', (isDefault ? "block" : "none"));
+                $('#advancedsearch').css('display', (isDefault ? "none" : "block"));
+            });
+        });
+    </script>
+
+    <script id="free_accessibility_plugin_script" src="https://accessibility.f-static.com/site/free-accessibility-plugin/accessibility.min.js?lan=en&place=bottom-right&distance=20" crossorigin="anonymous" type="text/plain" data-category="functionality"></script>
+</body>
+</html>
