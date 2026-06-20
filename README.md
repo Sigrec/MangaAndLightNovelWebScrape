@@ -52,6 +52,7 @@ If you want a website or region to be added, file an [issue request](https://git
 #### Australia
 
 ```txt
+✅ All Star Comics
 ⌛ AmazonAU (Not Started)
 ✅ MangaMate
 ✅ SciFier
@@ -62,6 +63,7 @@ If you want a website or region to be added, file an [issue request](https://git
 ```txt
 ⌛ AmazonUK (Not Started)
 ✅ ForbiddenPlanet
+✅ OK Comics
 ✅ SciFier
 ❌ SpeedyHen (No longer supported — Cloudflare CAPTCHA)
 ✅ TravellingMan

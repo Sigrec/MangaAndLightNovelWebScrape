@@ -24,6 +24,11 @@ internal static partial class WebsiteLogging
         Message = "{BookTitle} ({BookType}) Error @ {Website}")]
     public static partial void ScrapeError(this ILogger logger, Exception ex, string bookTitle, BookType bookType, string website);
 
+    [LoggerMessage(
+        Level = LogLevel.Information,
+        Message = "{Website} does not stock {BookType} — skipping site for this scrape")]
+    public static partial void BookTypeNotSupported(this ILogger logger, string website, BookType bookType);
+
     #endregion
 
     #region Entry removal

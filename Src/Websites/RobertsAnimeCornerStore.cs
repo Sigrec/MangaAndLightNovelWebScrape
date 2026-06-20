@@ -40,7 +40,7 @@ public sealed partial class RobertsAnimeCornerStore : IWebsite
     public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
         => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
     
-    private string GenerateWebsiteUrl(string bookTitle)
+    internal string GenerateWebsiteUrl(string bookTitle)
     {
         if (string.IsNullOrWhiteSpace(bookTitle))
         {
@@ -208,116 +208,148 @@ public sealed partial class RobertsAnimeCornerStore : IWebsite
 
         try
         {
-            // Start scraping the URL where the data is found
             HtmlWeb html = HtmlFactory.CreateWeb();
+            HtmlDocument landing = await html.LoadFromWebAsync(GenerateWebsiteUrl(bookTitle));
+            landing.ConfigurePerf();
 
-            HtmlDocument doc = await html.LoadFromWebAsync(GenerateWebsiteUrl(bookTitle));
-            doc.ConfigurePerf();
-
-            int bookTitleSpaceCount = bookTitle.AsSpan().Count(' ');
-            HtmlNodeCollection? seriesData = doc.DocumentNode.SelectNodes(SeriesTitleXPath);
-            if (seriesData is null)
-            {
-                return (data, links);
-            }
-
-            foreach (HtmlNode series in seriesData)
-            {
-                // Cache InnerText — the property builds a fresh string from all descendants.
-                // Old code called it twice per iteration.
-                string innerSeriesText = series.InnerText;
-
-                // Cheap pre-filter for Manga searches: this landing page mixes manga ("Graphic
-                // Novels") and light novels in one list. Skip the expensive regex/Similar walk
-                // on entries that can't possibly match the requested book type.
-                if (bookType == BookType.Manga && !innerSeriesText.Contains("Graphic Novels"))
-                {
-                    continue;
-                }
-
-                string seriesText = MasterScrape.MultipleWhiteSpaceRegex()
-                    .Replace(innerSeriesText.Replace("Graphic Novels", string.Empty).Replace("Novels", string.Empty), " ")
-                    .Trim();
-
-                bool matchesByName = seriesText.Contains(bookTitle, StringComparison.OrdinalIgnoreCase)
-                    || InternalHelpers.Similar(bookTitle, seriesText,
-                        ((string.IsNullOrWhiteSpace(seriesText) || bookTitle.Length > seriesText.Length)
-                            ? bookTitle.Length / 6
-                            : seriesText.Length / 6) + bookTitleSpaceCount) != -1;
-
-                if (matchesByName)
-                {
-                    links.Add($"https://www.animecornerstore.com/{series.GetAttributeValue("href", "Url Error")}");
-                }
-            }
+            links = SelectSeriesLinks(landing, bookTitle, bookType);
 
             if (links.Count != 0)
             {
-                bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
-                foreach (string link in links)
+                List<HtmlDocument> seriesDocs = [];
+                Task<HtmlDocument>[] fetches = new Task<HtmlDocument>[links.Count];
+                for (int i = 0; i < links.Count; i++)
                 {
-                    _logger.UrlGenerated(link);
-                    // Async fetch — was synchronous html.Load(link), which blocked the thread.
-                    doc = await html.LoadFromWebAsync(link);
-
-                    List<HtmlNode> titleData = doc.DocumentNode
-                        .SelectNodes(TitleXPath)?
-                        .AsValueEnumerable()
-                        .Where(title => !string.IsNullOrWhiteSpace(title.InnerText))
-                        .ToList() ?? [];
-                    HtmlNodeCollection? priceData = doc.DocumentNode.SelectNodes(PriceXPath);
-                    if (priceData is null || titleData.Count == 0)
-                    {
-                        continue;
-                    }
-
-                    int pairCount = Math.Min(titleData.Count, priceData.Count);
-                    for (int x = 0; x < pairCount; x++)
-                    {
-                        // titleData was built from already-trimmed InnerText below; no need to
-                        // Trim again per iteration.
-                        string entryTitle = titleData[x].InnerText.Trim();
-                        bool containsGraphicNovel = entryTitle.Contains("Graphic Novel");
-
-                        bool isMangaWithGraphicNovel = bookType == BookType.Manga && containsGraphicNovel
-                            && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "berserk", entryTitle, "Berserk With Darkness Ink");
-
-                        bool isLightNovel = bookType == BookType.LightNovel && !containsGraphicNovel;
-
-                        // Combine the conditions for title and book type checks
-                        bool isValidTitle =
-                            (InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle) ||
-                            (isMangaWithGraphicNovel && InternalHelpers.RemoveUnintendedVolumes(bookTitle, "attack on titan", entryTitle, "Spoof")))
-                            && (!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck)
-                            && (isMangaWithGraphicNovel || isLightNovel);
-
-                        if (isValidTitle)
-                        {
-                            StockStatus status = entryTitle.Contains("Pre Order") ? StockStatus.PO :
-                                entryTitle.Contains("Backorder") ? StockStatus.BO :
-                                StockStatus.IS;
-
-                            data.Add(new EntryModel(
-                                CleanAndParseTitle(entryTitle, bookTitle, bookType),
-                                priceData[x].InnerText.Trim(),
-                                status,
-                                TITLE));
-                        }
-                        else
-                        {
-                            _logger.EntryRemovedSimple(entryTitle);
-                        }
-                    }
+                    _logger.UrlGenerated(links[i]);
+                    fetches[i] = html.LoadFromWebAsync(links[i]);
                 }
+                HtmlDocument[] docs = await Task.WhenAll(fetches);
+                foreach (HtmlDocument d in docs)
+                {
+                    seriesDocs.Add(d);
+                }
+                data = ParseSeriesPages(seriesDocs, bookTitle, bookType);
             }
         }
         finally
         {
-            data.TrimExcess();
             links.TrimExcess();
-            data.SortByVolume();
             InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         }
         return (data, links);
+    }
+
+    /// <summary>
+    /// Walks the alphabetic landing page (e.g. <c>mangalitenovjk.html</c>) and returns the
+    /// absolute URLs of every series whose name matches <paramref name="bookTitle"/>. The
+    /// match runs against both substring and Damerau–Levenshtein with a bookTitle-length
+    /// budget so near-misses (typos, ampersand vs "and") still hit. Exposed as
+    /// <c>internal</c> so the test path can call it with a saved landing-page fixture.
+    /// </summary>
+    internal static List<string> SelectSeriesLinks(HtmlDocument landing, string bookTitle, BookType bookType)
+    {
+        List<string> hits = [];
+        int bookTitleSpaceCount = bookTitle.AsSpan().Count(' ');
+
+        HtmlNodeCollection? seriesData = landing.DocumentNode.SelectNodes(SeriesTitleXPath);
+        if (seriesData is null) return hits;
+
+        foreach (HtmlNode series in seriesData)
+        {
+            string innerSeriesText = series.InnerText;
+
+            // Cheap pre-filter for Manga searches: this landing page mixes manga ("Graphic
+            // Novels") and light novels in one list. Skip the expensive regex/Similar walk
+            // on entries that can't possibly match the requested book type.
+            if (bookType == BookType.Manga && !innerSeriesText.Contains("Graphic Novels"))
+            {
+                continue;
+            }
+
+            string seriesText = MasterScrape.MultipleWhiteSpaceRegex()
+                .Replace(innerSeriesText.Replace("Graphic Novels", string.Empty).Replace("Novels", string.Empty), " ")
+                .Trim();
+
+            bool matchesByName = seriesText.Contains(bookTitle, StringComparison.OrdinalIgnoreCase)
+                || InternalHelpers.Similar(bookTitle, seriesText,
+                    ((string.IsNullOrWhiteSpace(seriesText) || bookTitle.Length > seriesText.Length)
+                        ? bookTitle.Length / 6
+                        : seriesText.Length / 6) + bookTitleSpaceCount) != -1;
+
+            if (matchesByName)
+            {
+                hits.Add($"https://www.animecornerstore.com/{series.GetAttributeValue("href", "Url Error")}");
+            }
+        }
+
+        return hits;
+    }
+
+    /// <summary>
+    /// Parses per-series volume pages into <see cref="EntryModel"/>s. Holds the per-entry
+    /// filter / removal / clean-title pipeline so fixture-based tests can drive the same
+    /// code path <see cref="GetData"/> uses without network I/O.
+    /// </summary>
+    internal List<EntryModel> ParseSeriesPages(
+        IReadOnlyList<HtmlDocument> seriesPages,
+        string bookTitle,
+        BookType bookType)
+    {
+        List<EntryModel> data = [];
+        bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+        string normalizedBookTitle = InternalHelpers.NormalizeForTitleMatch(bookTitle);
+
+        foreach (HtmlDocument doc in seriesPages)
+        {
+            List<HtmlNode> titleData = doc.DocumentNode
+                .SelectNodes(TitleXPath)?
+                .AsValueEnumerable()
+                .Where(title => !string.IsNullOrWhiteSpace(title.InnerText))
+                .ToList() ?? [];
+            HtmlNodeCollection? priceData = doc.DocumentNode.SelectNodes(PriceXPath);
+            if (priceData is null || titleData.Count == 0)
+            {
+                continue;
+            }
+
+            int pairCount = Math.Min(titleData.Count, priceData.Count);
+            for (int x = 0; x < pairCount; x++)
+            {
+                string entryTitle = titleData[x].InnerText.Trim();
+                bool containsGraphicNovel = entryTitle.Contains("Graphic Novel");
+
+                bool isMangaWithGraphicNovel = bookType == BookType.Manga && containsGraphicNovel
+                    && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "berserk", entryTitle, "Berserk With Darkness Ink");
+
+                bool isLightNovel = bookType == BookType.LightNovel && !containsGraphicNovel;
+
+                bool isValidTitle =
+                    (InternalHelpers.EntryTitleContainsNormalizedBookTitle(normalizedBookTitle, entryTitle) ||
+                    (isMangaWithGraphicNovel && InternalHelpers.RemoveUnintendedVolumes(bookTitle, "attack on titan", entryTitle, "Spoof")))
+                    && (!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck)
+                    && (isMangaWithGraphicNovel || isLightNovel);
+
+                if (isValidTitle)
+                {
+                    StockStatus status = entryTitle.Contains("Pre Order") ? StockStatus.PO :
+                        entryTitle.Contains("Backorder") ? StockStatus.BO :
+                        StockStatus.IS;
+
+                    data.Add(new EntryModel(
+                        CleanAndParseTitle(entryTitle, bookTitle, bookType),
+                        priceData[x].InnerText.Trim(),
+                        status,
+                        TITLE));
+                }
+                else
+                {
+                    _logger.EntryRemovedSimple(entryTitle);
+                }
+            }
+        }
+
+        data.TrimExcess();
+        data.SortByVolume();
+        return data;
     }
 }

@@ -47,7 +47,7 @@ public sealed partial class TravellingMan : IWebsite
     public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
         => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
 
-    private string GenerateWebsiteUrl(string bookTitle, BookType bookType, int curPage)
+    internal string GenerateWebsiteUrl(string bookTitle, BookType bookType, int curPage)
     {
         // https://travellingman.com/search?page=2&q=naruto
         string url = $"{BASE_URL}/search?page={curPage}&q={bookTitle.Replace(' ', '+')}";
@@ -158,22 +158,9 @@ public sealed partial class TravellingMan : IWebsite
 
         HtmlWeb web = HtmlFactory.CreateWeb();
 
-        bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
-        bool bookTitleContainsNovel = bookTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase);
-        bool bookTitleContainsManga = bookTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase);
-
-        // Per-scrape effective desc-removal set. Old code mutated a static List on every
-        // scrape (corrupting it across concurrent runs); we now build a fresh local set
-        // from the immutable default and drop entries that the user's bookTitle already
-        // implies (e.g. searching for a series literally named "Figure" wouldn't want
-        // to drop entries containing "figure").
-        HashSet<string> descRemoval = new(_descRemovalDefaults, StringComparer.OrdinalIgnoreCase);
-        foreach (string term in _descRemovalDefaults)
-        {
-            if (bookTitle.Contains(term, StringComparison.OrdinalIgnoreCase)) descRemoval.Remove(term);
-        }
-        if (bookType == BookType.LightNovel) descRemoval.Remove("novel");
-
+        // Walk pagination, gathering listing docs. The parse + per-entry desc resolution
+        // lives in ParsePages so fixture-based tests can drive the same code path.
+        List<HtmlDocument> listingPages = [];
         int nextPage = 1;
         while (true)
         {
@@ -182,19 +169,69 @@ public sealed partial class TravellingMan : IWebsite
 
             HtmlDocument doc = await web.LoadFromWebAsync(url);
             doc.ConfigurePerf();
+            listingPages.Add(doc);
 
             HtmlNodeCollection? titleData = doc.DocumentNode.SelectNodes(_titleXPath);
             HtmlNodeCollection? priceData = doc.DocumentNode.SelectNodes(_priceXPath);
-            HtmlNodeCollection? linkData = doc.DocumentNode.SelectNodes(_entryLinkXPath);
             HtmlNode? pageCheck = doc.DocumentNode.SelectSingleNode(_pageCheckXPath);
-
             if (titleData is null || priceData is null) break;
+            if (!(priceData.Count == titleData.Count && pageCheck is not null)) break;
+            nextPage++;
+        }
 
-            // Materialize per-entry fields with sane defaults. The old MoveNext()-style
-            // lockstep walked four collections (title, price, anchors-by-index) without
-            // verifying counts; a short collection would NRE on `titleData[x]`. Bounding
-            // explicitly by the title count and padding the others is safer and lets the
-            // desc-fetch pre-pass index by position.
+        data = await ParsePages(
+            listingPages,
+            bookTitle,
+            bookType,
+            async href =>
+            {
+                string fullUrl = href.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                    ? href
+                    : href.StartsWith('/') ? $"{BASE_URL}{href}" : $"{BASE_URL}/{href}";
+                HtmlDocument descDoc = await web.LoadFromWebAsync(fullUrl);
+                return descDoc;
+            });
+
+        InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
+        return (data, links);
+    }
+
+    /// <summary>
+    /// Runs the per-page parse + per-entry filter + desc-keyword check on pre-loaded
+    /// listing docs. The <paramref name="resolveDescDoc"/> delegate fetches a product
+    /// detail page from a (possibly relative) href — live path uses <see cref="HtmlWeb"/>;
+    /// tests pass an offline dictionary lookup so the run is fully reproducible.
+    /// </summary>
+    internal async Task<List<EntryModel>> ParsePages(
+        IReadOnlyList<HtmlDocument> listingPages,
+        string bookTitle,
+        BookType bookType,
+        Func<string, Task<HtmlDocument>> resolveDescDoc)
+    {
+        List<EntryModel> data = [];
+
+        bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+        string normalizedBookTitle = InternalHelpers.NormalizeForTitleMatch(bookTitle);
+        bool bookTitleContainsNovel = bookTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase);
+        bool bookTitleContainsManga = bookTitle.Contains("Manga", StringComparison.OrdinalIgnoreCase);
+
+        // Per-scrape effective desc-removal set. Old code mutated a static List on every
+        // scrape (corrupting it across concurrent runs); we now build a fresh local set
+        // from the immutable default and drop terms the user's bookTitle already implies.
+        HashSet<string> descRemoval = new(_descRemovalDefaults, StringComparer.OrdinalIgnoreCase);
+        foreach (string term in _descRemovalDefaults)
+        {
+            if (bookTitle.Contains(term, StringComparison.OrdinalIgnoreCase)) descRemoval.Remove(term);
+        }
+        if (bookType == BookType.LightNovel) descRemoval.Remove("novel");
+
+        foreach (HtmlDocument doc in listingPages)
+        {
+            HtmlNodeCollection? titleData = doc.DocumentNode.SelectNodes(_titleXPath);
+            HtmlNodeCollection? priceData = doc.DocumentNode.SelectNodes(_priceXPath);
+            HtmlNodeCollection? linkData = doc.DocumentNode.SelectNodes(_entryLinkXPath);
+            if (titleData is null || priceData is null) continue;
+
             int entryCount = titleData.Count;
             string[] entryTitles = new string[entryCount];
             string[] prices = new string[entryCount];
@@ -209,10 +246,10 @@ public sealed partial class TravellingMan : IWebsite
                     : null;
             }
 
-            // Eligibility pre-pass + desc-fetch index collection. Each eligible Manga
-            // entry without a Vol/Box-Set marker AND every LightNovel entry needs the
-            // product detail page checked. Old code awaited the fetch sequentially inside
-            // the entry loop (N round-trips per page); collect indices, batch via WhenAll.
+            // Eligibility pre-pass. Each eligible Manga entry without a Vol/Box-Set marker
+            // AND every LightNovel entry needs the product detail page checked. Old code
+            // awaited the fetch sequentially inside the entry loop — collect indices,
+            // batch through the resolver.
             bool[] eligible = new bool[entryCount];
             List<int> needsDesc = [];
 
@@ -221,7 +258,7 @@ public sealed partial class TravellingMan : IWebsite
                 string entryTitle = entryTitles[i];
 
                 if (entryTitle.ContainsAny(["Banpresto", "Nendoroid"])
-                    || !InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
+                    || !InternalHelpers.EntryTitleContainsNormalizedBookTitle(normalizedBookTitle, entryTitle)
                     || (InternalHelpers.ShouldRemoveEntry(entryTitle) && !BookTitleRemovalCheck))
                 {
                     _logger.EntryRemoved(1, entryTitle);
@@ -260,11 +297,7 @@ public sealed partial class TravellingMan : IWebsite
                 Task<HtmlDocument>[] fetches = new Task<HtmlDocument>[needsDesc.Count];
                 for (int j = 0; j < needsDesc.Count; j++)
                 {
-                    string href = hrefs[needsDesc[j]]!;
-                    string fullUrl = href.StartsWith("http", StringComparison.OrdinalIgnoreCase)
-                        ? href
-                        : href.StartsWith('/') ? $"{BASE_URL}{href}" : $"{BASE_URL}/{href}";
-                    fetches[j] = web.LoadFromWebAsync(fullUrl);
+                    fetches[j] = resolveDescDoc(hrefs[needsDesc[j]]!);
                 }
                 HtmlDocument[] docs = await Task.WhenAll(fetches);
                 for (int j = 0; j < needsDesc.Count; j++)
@@ -299,10 +332,7 @@ public sealed partial class TravellingMan : IWebsite
                     continue;
                 }
 
-                // Skip entries with no parseable price. Without a `+manga` filter on the
-                // query, the search now returns merch (t-shirts, plushies, gift cards)
-                // whose listing card has no price element — EntryModel.ParsePrice indexes
-                // the first char unconditionally and would crash the dedup pass.
+                // Skip entries with no parseable price (merch, gift cards, etc).
                 string price = prices[i];
                 if (string.IsNullOrWhiteSpace(price) || !LooksLikePrice(price))
                 {
@@ -316,21 +346,20 @@ public sealed partial class TravellingMan : IWebsite
                     StockStatus.IS,
                     TITLE));
             }
-
-            if (priceData.Count == titleData.Count && pageCheck is not null)
-            {
-                nextPage++;
-            }
-            else
-            {
-                break;
-            }
         }
 
         data.SortByVolume();
         data.RemoveDuplicates(_logger);
-        InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
-
-        return (data, links);
+        return data;
     }
+
+    /// <summary>
+    /// Test helper: returns a resolver that looks each href up in <paramref name="hrefToDoc"/>.
+    /// Throws when a fixture is missing — that's a regenerate gap, not a silent miscompare.
+    /// </summary>
+    internal static Func<string, Task<HtmlDocument>> CreateOfflineDescResolver(IReadOnlyDictionary<string, HtmlDocument> hrefToDoc)
+        => href => hrefToDoc.TryGetValue(href, out HtmlDocument? doc)
+            ? Task.FromResult(doc)
+            : throw new KeyNotFoundException(
+                $"Desc fixture missing for href '{href}'. Re-run the Regenerate task to capture it.");
 }

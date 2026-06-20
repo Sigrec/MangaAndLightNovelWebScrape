@@ -184,6 +184,7 @@ public sealed partial class MangaMate : IWebsite
 
         ushort curPageNum = 1;
         bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+        string normalizedBookTitle = InternalHelpers.NormalizeForTitleMatch(bookTitle);
         string url = GenerateWebsiteUrl(bookTitle, bookType, curPageNum);
         links.Add(url);
 
@@ -223,7 +224,7 @@ public sealed partial class MangaMate : IWebsite
             for (int i = 0; i < entryCount; i++)
             {
                 string t = titles[i];
-                if (!InternalHelpers.EntryTitleContainsBookTitle(bookTitle, t))
+                if (!InternalHelpers.EntryTitleContainsNormalizedBookTitle(normalizedBookTitle, t))
                 {
                     _logger.EntryRemoved(1, t);
                     continue;

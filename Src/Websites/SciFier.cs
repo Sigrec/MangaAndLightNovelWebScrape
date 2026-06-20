@@ -69,7 +69,7 @@ public sealed partial class SciFier : IWebsite
         => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
 
     // Has issues where the search is not very strict unforunate
-    private string GenerateWebsiteUrl(string bookTitle, BookType bookType, Region curRegion, bool letterIsFrontHalf)
+    internal string GenerateWebsiteUrl(string bookTitle, BookType bookType, Region curRegion, bool letterIsFrontHalf)
     {
         // https://scifier.com/search.php?setCurrencyId=4&section=product&search_query_adv=jujutsu+kaisen&searchsubs=ON&brand=&price_from=&price_to=&featured=&category%5B%5D=2060&section=product
 
@@ -98,12 +98,13 @@ public sealed partial class SciFier : IWebsite
     private static bool PassesBroadFilter(
         string entryTitle,
         string bookTitle,
+        string normalizedBookTitle,
         bool bookTitleRemovalCheck,
         string summaryInnerText,
         BookType bookType)
     {
         return (!InternalHelpers.ShouldRemoveEntry(entryTitle) || bookTitleRemovalCheck)
-            && InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
+            && InternalHelpers.EntryTitleContainsNormalizedBookTitle(normalizedBookTitle, entryTitle)
             && !entryTitle.Contains("USED COPY", StringComparison.OrdinalIgnoreCase)
             && !TitleRemoveRegex().IsMatch(entryTitle)
             && (
@@ -232,7 +233,7 @@ public sealed partial class SciFier : IWebsite
     {
         List<EntryModel> data = [];
         List<string> links = [];
-        
+
         try
         {
             HtmlWeb html = HtmlFactory.CreateWeb();
@@ -241,210 +242,270 @@ public sealed partial class SciFier : IWebsite
             // (the ones starting with the search letter), we request ascending sort for titles
             // beginning a-m (front half of the alphabet) and descending for n-z. The bit-trick
             // `c & 0b11111` maps ASCII A-Z and a-z both to 1-26, so position <= 13 ⇒ a-m.
-            // Non-ASCII first chars (CJK, accented) fall into "front half" by default — that's
-            // acceptable because the early-exit check inside the loop handles misclassification.
             bool letterIsFrontHalf = char.IsDigit(bookTitle[0]) || (bookTitle[0] & 0b11111) <= 13;
-            bool ShouldEndEarly = false, IsSingleName = true;
             string url = GenerateWebsiteUrl(bookTitle, bookType, curRegion, letterIsFrontHalf);
             links.Add(url);
 
+            // Walk pagination, gathering listing docs. The actual parse + box-set-desc fetch
+            // pipeline lives in ParsePages so fixture-based tests can drive the same code path.
+            List<HtmlDocument> listingPages = [];
             HtmlDocument doc = await html.LoadFromWebAsync(url);
             doc.ConfigurePerf();
-
-            bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+            listingPages.Add(doc);
 
             while (true)
             {
-                HtmlNodeCollection titleData = doc.DocumentNode.SelectNodes(_titleXPath);
-                char firstEntryFirstChar = char.ToLowerInvariant(titleData[0].InnerText.TrimStart()[0]);
-                char lastEntryFirstChar = char.ToLowerInvariant(titleData[^1].InnerText.TrimStart()[0]);
-                char bookTitleFirstChar = char.ToLowerInvariant(bookTitle.TrimStart()[0]);
-
-                HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(_pageCheckXPath);
-
-                if ((letterIsFrontHalf && (firstEntryFirstChar > bookTitleFirstChar)) || (!letterIsFrontHalf && (firstEntryFirstChar < bookTitleFirstChar)))
+                if (ShouldStopPagination(doc, bookTitle, letterIsFrontHalf, out bool stop))
                 {
-                    _logger.EndingScrapeEarly(lastEntryFirstChar, letterIsFrontHalf ? '>' : '<', firstEntryFirstChar);
-                    ShouldEndEarly = true;
-                    goto EndEarly;
-                }
-                else if ((letterIsFrontHalf && firstEntryFirstChar < bookTitleFirstChar && lastEntryFirstChar < bookTitleFirstChar) || (!letterIsFrontHalf && firstEntryFirstChar > bookTitleFirstChar && lastEntryFirstChar > bookTitleFirstChar))
-                {
-                    char cmp = letterIsFrontHalf ? '<' : '>';
-                    _logger.SkippingPage(firstEntryFirstChar, cmp, bookTitleFirstChar, lastEntryFirstChar, cmp, bookTitleFirstChar);
-                    goto EndEarly;
+                    if (stop) break;
+                    // skippingPage path — fall through to grab the next page without parsing this one
                 }
 
-                HtmlNodeCollection priceData = doc.DocumentNode.SelectNodes(_priceXPath);
-                HtmlNodeCollection summaryData = doc.DocumentNode.SelectNodes(_summaryXPath);
-                HtmlNodeCollection stockStatusData = doc.DocumentNode.SelectNodes(_stockStatusXPath);
+                HtmlNode? pageCheck = doc.DocumentNode.SelectSingleNode(_pageCheckXPath);
+                if (pageCheck is null) break;
 
-                int count = titleData.Count;
-
-                // Cache the decoded + Vol-normalized entry title per index. Used by both the
-                // LightNovel pre-pass and the main processing loop, so compute once.
-                string[] entryTitles = new string[count];
-                for (int x = 0; x < count; x++)
-                {
-                    entryTitles[x] = WebUtility.HtmlDecode(FixVolumeRegex().Replace(titleData[x].InnerText.Trim(), "Vol"));
-                }
-
-                // Light-novel desc-page fetches are the slowest thing on this scrape — each one
-                // is an HTTP round-trip and they were previously awaited serially inside the entry
-                // loop. Pre-pass identifies which entries need a fetch, then Task.WhenAll runs
-                // them in parallel. Main loop reads the cached result instead of awaiting.
-                HtmlDocument?[] lnDescCache = new HtmlDocument?[count];
-                if (bookType == BookType.LightNovel)
-                {
-                    List<int> needsLnDesc = [];
-                    for (int x = 0; x < count; x++)
-                    {
-                        if (!entryTitles[x].Contains("novel", StringComparison.OrdinalIgnoreCase)
-                            && PassesBroadFilter(entryTitles[x], bookTitle, BookTitleRemovalCheck, summaryData[x].InnerText, bookType))
-                        {
-                            needsLnDesc.Add(x);
-                        }
-                    }
-
-                    if (needsLnDesc.Count > 0)
-                    {
-                        Task<HtmlDocument>[] fetches = new Task<HtmlDocument>[needsLnDesc.Count];
-                        for (int i = 0; i < needsLnDesc.Count; i++)
-                        {
-                            string href = titleData[needsLnDesc[i]].GetAttributeValue<string>("href", "ERROR");
-                            fetches[i] = html.LoadFromWebAsync(href);
-                        }
-                        HtmlDocument[] docs = await Task.WhenAll(fetches);
-                        for (int i = 0; i < needsLnDesc.Count; i++)
-                        {
-                            lnDescCache[needsLnDesc[i]] = docs[i];
-                        }
-                    }
-                }
-
-                int foundCheck = 0;
-                for (int x = 0; x < count; x++)
-                {
-                    string entryTitle = entryTitles[x];
-                    if (!PassesBroadFilter(entryTitle, bookTitle, BookTitleRemovalCheck, summaryData[x].InnerText, bookType))
-                    {
-                        _logger.EntryRemovedDebug(1, entryTitle);
-                        continue;
-                    }
-
-                    // LightNovel filter — use the pre-fetched desc doc, no await here.
-                    if (bookType == BookType.LightNovel && !entryTitle.Contains("novel", StringComparison.OrdinalIgnoreCase))
-                    {
-                        HtmlNode? descNode = lnDescCache[x]?.DocumentNode.SelectSingleNode(_entryDescXPath);
-                        if (descNode is null
-                            || !descNode.InnerText.ContainsAny(["novel series", "series of prose novels"]))
-                        {
-                            _logger.EntryRemoved(3, entryTitle);
-                            continue;
-                        }
-                    }
-
-                    foundCheck++;
-                    if (foundCheck == 1)
-                    {
-                        if (entryTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase))
-                        {
-                            IsSingleName = !string.IsNullOrWhiteSpace(GetAuthorAndIdRegex().Match(entryTitle).Groups[1].Value);
-                        }
-                        else
-                        {
-                            string author = GetAuthorAndIdNoVolRegex().Match(entryTitle).Groups[1].Value;
-                            IsSingleName = !string.IsNullOrWhiteSpace(author) && author.Count(char.IsUpper) == 2;
-                        }
-                    }
-
-                    entryTitle = IsSingleName
-                        ? RemoveAuthorAndIdSingleRegex().Replace(entryTitle, string.Empty)
-                        : RemoveAuthorAndIdRegex().Replace(entryTitle, string.Empty);
-
-                    if (InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
-                        || InternalHelpers.Similar(bookTitle, entryTitle, Math.Min(bookTitle.Length, entryTitle.Length) / 6) != -1)
-                    {
-                        // InnerText.Trim() is never null; the old `string?` decls + null guards
-                        // were defensive code for a contract that doesn't exist.
-                        string price = priceData[x].InnerText.Trim();
-                        string priceCheck = PriceRangeRegex().Match(price).Groups[1].Value;
-                        string stockStatus = stockStatusData[x].InnerText.Trim();
-
-                        entryTitle = CleanAndParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType);
-
-                        // Box-set check still sequential. Affects <15% of entries in practice
-                        // (only those whose cleaned title lacks "Vol"/"Box Set"); not worth
-                        // the phase-split for the parallelization shape.
-                        if (!entryTitle.ContainsAny(_checkDescStrings))
-                        {
-                            _logger.CheckingDescription(entryTitle);
-                            HtmlNode descNode = (await html.LoadFromWebAsync(titleData[x].GetAttributeValue<string>("href", "ERROR")))
-                                .DocumentNode.SelectSingleNode(_entryDescXPath);
-                            if (descNode is not null && descNode.InnerText.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
-                            {
-                                entryTitle += " Box Set";
-                            }
-                        }
-
-                        data.Add(new EntryModel(
-                            entryTitle,
-                            string.IsNullOrWhiteSpace(priceCheck) ? price : priceCheck,
-                            stockStatus switch
-                            {
-                                string status when status.Contains("Pre-Order", StringComparison.OrdinalIgnoreCase) => StockStatus.PO,
-                                string status when status.Contains("Add to Cart", StringComparison.OrdinalIgnoreCase) => StockStatus.IS,
-                                _ => StockStatus.OOS,
-                            },
-                            TITLE));
-                    }
-                    else
-                    {
-                        _logger.EntryRemovedDebug(2, entryTitle);
-                    }
-                }
-
-            EndEarly:
-                if (!ShouldEndEarly && pageCheck != null)
-                {
-                    url = $"https://scifier.com{WebUtility.HtmlDecode(pageCheck.GetAttributeValue("href", "Url Error"))}";
-                    doc = await html.LoadFromWebAsync(url);
-                    // Each visited page URL recorded exactly once. The old per-entry duplicate
-                    // (links.Add(url) inside the entry loop) inflated this list to 100x or more.
-                    links.Add(url);
-                    _logger.NextPageUrl(url);
-                }
-                else
-                {
-                    break;
-                }
+                url = $"https://scifier.com{WebUtility.HtmlDecode(pageCheck.GetAttributeValue("href", "Url Error"))}";
+                doc = await html.LoadFromWebAsync(url);
+                doc.ConfigurePerf();
+                links.Add(url);
+                _logger.NextPageUrl(url);
+                listingPages.Add(doc);
             }
+
+            // Real-network desc resolver — fetches each detail-page URL on demand. The test
+            // path swaps this for a dictionary-backed resolver that returns pre-loaded fixtures.
+            data = await ParsePages(
+                listingPages,
+                bookTitle,
+                bookType,
+                async href =>
+                {
+                    HtmlDocument descDoc = await html.LoadFromWebAsync(href);
+                    return descDoc;
+                });
         }
         finally
         {
-            data.TrimExcess();
             links.TrimExcess();
-            data.SortByVolume();
-
-            // For Manga scrapes, prune entries that don't look like real volumes — unless the
-            // result set contained no "Vol" markers at all (one-shot / artbook series, where
-            // every entry is the parent product).
-            if (bookType == BookType.Manga)
-            {
-                bool hasAnyVol = false;
-                foreach (EntryModel e in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(data))
-                {
-                    if (e.Entry.Contains("Vol")) { hasAnyVol = true; break; }
-                }
-                if (hasAnyVol)
-                {
-                    data.RemoveAll(entry => !entry.Entry.ContainsAny(_mangaKeepStrings) && entry.ParsePrice() <= 50);
-                }
-            }
-
             InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         }
 
         return (data, links);
     }
+
+    /// <summary>
+    /// Returns <c>true</c> when pagination is over for the current alphabetical letter run.
+    /// <paramref name="stop"/> is <c>true</c> for the "skip past relevant letters" exit;
+    /// <c>false</c> means "this page is irrelevant but the next might still match". Exposed
+    /// as <c>internal</c> so fixture-based tests can validate page selection independently.
+    /// </summary>
+    internal bool ShouldStopPagination(HtmlDocument doc, string bookTitle, bool letterIsFrontHalf, out bool stop)
+    {
+        stop = false;
+        HtmlNodeCollection? titleData = doc.DocumentNode.SelectNodes(_titleXPath);
+        if (titleData is null || titleData.Count == 0) return true;
+
+        char firstEntryFirstChar = char.ToLowerInvariant(titleData[0].InnerText.TrimStart()[0]);
+        char lastEntryFirstChar = char.ToLowerInvariant(titleData[^1].InnerText.TrimStart()[0]);
+        char bookTitleFirstChar = char.ToLowerInvariant(bookTitle.TrimStart()[0]);
+
+        if ((letterIsFrontHalf && firstEntryFirstChar > bookTitleFirstChar)
+            || (!letterIsFrontHalf && firstEntryFirstChar < bookTitleFirstChar))
+        {
+            _logger.EndingScrapeEarly(lastEntryFirstChar, letterIsFrontHalf ? '>' : '<', firstEntryFirstChar);
+            stop = true;
+            return true;
+        }
+
+        if ((letterIsFrontHalf && firstEntryFirstChar < bookTitleFirstChar && lastEntryFirstChar < bookTitleFirstChar)
+            || (!letterIsFrontHalf && firstEntryFirstChar > bookTitleFirstChar && lastEntryFirstChar > bookTitleFirstChar))
+        {
+            char cmp = letterIsFrontHalf ? '<' : '>';
+            _logger.SkippingPage(firstEntryFirstChar, cmp, bookTitleFirstChar, lastEntryFirstChar, cmp, bookTitleFirstChar);
+            // Irrelevant page — caller should fetch next without parsing this one.
+            return true;
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Runs the per-page parse + per-entry filter + box-set-desc check on pre-loaded listing
+    /// docs. The <paramref name="resolveDescDoc"/> delegate fetches a detail page by href —
+    /// the live path calls <c>HtmlWeb</c>; tests pass a dictionary-backed resolver so the
+    /// run is fully offline.
+    /// </summary>
+    internal async Task<List<EntryModel>> ParsePages(
+        IReadOnlyList<HtmlDocument> listingPages,
+        string bookTitle,
+        BookType bookType,
+        Func<string, Task<HtmlDocument>> resolveDescDoc)
+    {
+        List<EntryModel> data = [];
+        bool IsSingleName = true;
+        bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+        string normalizedBookTitle = InternalHelpers.NormalizeForTitleMatch(bookTitle);
+
+        foreach (HtmlDocument doc in listingPages)
+        {
+            HtmlNodeCollection? titleData = doc.DocumentNode.SelectNodes(_titleXPath);
+            if (titleData is null) continue;
+            HtmlNodeCollection? priceData = doc.DocumentNode.SelectNodes(_priceXPath);
+            HtmlNodeCollection? summaryData = doc.DocumentNode.SelectNodes(_summaryXPath);
+            HtmlNodeCollection? stockStatusData = doc.DocumentNode.SelectNodes(_stockStatusXPath);
+            if (priceData is null || summaryData is null || stockStatusData is null) continue;
+
+            int count = titleData.Count;
+
+            // Cache the decoded + Vol-normalized entry title per index. Used by both the
+            // LightNovel pre-pass and the main processing loop, so compute once.
+            string[] entryTitles = new string[count];
+            for (int x = 0; x < count; x++)
+            {
+                entryTitles[x] = WebUtility.HtmlDecode(FixVolumeRegex().Replace(titleData[x].InnerText.Trim(), "Vol"));
+            }
+
+            // Light-novel desc-page fetches are the slowest thing on this scrape. Pre-pass
+            // identifies which entries need a fetch, then Task.WhenAll runs them in parallel
+            // through the supplied resolver. Main loop reads the cached result.
+            HtmlDocument?[] lnDescCache = new HtmlDocument?[count];
+            if (bookType == BookType.LightNovel)
+            {
+                List<int> needsLnDesc = [];
+                for (int x = 0; x < count; x++)
+                {
+                    if (!entryTitles[x].Contains("novel", StringComparison.OrdinalIgnoreCase)
+                        && PassesBroadFilter(entryTitles[x], bookTitle, normalizedBookTitle, BookTitleRemovalCheck, summaryData[x].InnerText, bookType))
+                    {
+                        needsLnDesc.Add(x);
+                    }
+                }
+
+                if (needsLnDesc.Count > 0)
+                {
+                    Task<HtmlDocument>[] fetches = new Task<HtmlDocument>[needsLnDesc.Count];
+                    for (int i = 0; i < needsLnDesc.Count; i++)
+                    {
+                        string href = titleData[needsLnDesc[i]].GetAttributeValue<string>("href", "ERROR");
+                        fetches[i] = resolveDescDoc(href);
+                    }
+                    HtmlDocument[] docs = await Task.WhenAll(fetches);
+                    for (int i = 0; i < needsLnDesc.Count; i++)
+                    {
+                        lnDescCache[needsLnDesc[i]] = docs[i];
+                    }
+                }
+            }
+
+            int foundCheck = 0;
+            for (int x = 0; x < count; x++)
+            {
+                string entryTitle = entryTitles[x];
+                if (!PassesBroadFilter(entryTitle, bookTitle, normalizedBookTitle, BookTitleRemovalCheck, summaryData[x].InnerText, bookType))
+                {
+                    _logger.EntryRemovedDebug(1, entryTitle);
+                    continue;
+                }
+
+                if (bookType == BookType.LightNovel && !entryTitle.Contains("novel", StringComparison.OrdinalIgnoreCase))
+                {
+                    HtmlNode? descNode = lnDescCache[x]?.DocumentNode.SelectSingleNode(_entryDescXPath);
+                    if (descNode is null
+                        || !descNode.InnerText.ContainsAny(["novel series", "series of prose novels"]))
+                    {
+                        _logger.EntryRemoved(3, entryTitle);
+                        continue;
+                    }
+                }
+
+                foundCheck++;
+                if (foundCheck == 1)
+                {
+                    if (entryTitle.Contains("Vol", StringComparison.OrdinalIgnoreCase))
+                    {
+                        IsSingleName = !string.IsNullOrWhiteSpace(GetAuthorAndIdRegex().Match(entryTitle).Groups[1].Value);
+                    }
+                    else
+                    {
+                        string author = GetAuthorAndIdNoVolRegex().Match(entryTitle).Groups[1].Value;
+                        IsSingleName = !string.IsNullOrWhiteSpace(author) && author.Count(char.IsUpper) == 2;
+                    }
+                }
+
+                entryTitle = IsSingleName
+                    ? RemoveAuthorAndIdSingleRegex().Replace(entryTitle, string.Empty)
+                    : RemoveAuthorAndIdRegex().Replace(entryTitle, string.Empty);
+
+                if (InternalHelpers.EntryTitleContainsNormalizedBookTitle(normalizedBookTitle, entryTitle)
+                    || InternalHelpers.Similar(bookTitle, entryTitle, Math.Min(bookTitle.Length, entryTitle.Length) / 6) != -1)
+                {
+                    string price = priceData[x].InnerText.Trim();
+                    string priceCheck = PriceRangeRegex().Match(price).Groups[1].Value;
+                    string stockStatus = stockStatusData[x].InnerText.Trim();
+
+                    entryTitle = CleanAndParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol"), bookTitle, bookType);
+
+                    if (!entryTitle.ContainsAny(_checkDescStrings))
+                    {
+                        _logger.CheckingDescription(entryTitle);
+                        string href = titleData[x].GetAttributeValue<string>("href", "ERROR");
+                        HtmlDocument descDoc = await resolveDescDoc(href);
+                        HtmlNode descNode = descDoc.DocumentNode.SelectSingleNode(_entryDescXPath);
+                        if (descNode is not null && descNode.InnerText.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
+                        {
+                            entryTitle += " Box Set";
+                        }
+                    }
+
+                    data.Add(new EntryModel(
+                        entryTitle,
+                        string.IsNullOrWhiteSpace(priceCheck) ? price : priceCheck,
+                        stockStatus switch
+                        {
+                            string status when status.Contains("Pre-Order", StringComparison.OrdinalIgnoreCase) => StockStatus.PO,
+                            string status when status.Contains("Add to Cart", StringComparison.OrdinalIgnoreCase) => StockStatus.IS,
+                            _ => StockStatus.OOS,
+                        },
+                        TITLE));
+                }
+                else
+                {
+                    _logger.EntryRemovedDebug(2, entryTitle);
+                }
+            }
+        }
+
+        data.TrimExcess();
+        data.SortByVolume();
+
+        // For Manga scrapes, prune entries that don't look like real volumes — unless the
+        // result set contained no "Vol" markers at all (one-shot / artbook series, where
+        // every entry is the parent product).
+        if (bookType == BookType.Manga)
+        {
+            bool hasAnyVol = false;
+            foreach (EntryModel e in System.Runtime.InteropServices.CollectionsMarshal.AsSpan(data))
+            {
+                if (e.Entry.Contains("Vol")) { hasAnyVol = true; break; }
+            }
+            if (hasAnyVol)
+            {
+                data.RemoveAll(entry => !entry.Entry.ContainsAny(_mangaKeepStrings) && entry.ParsePrice() <= 50);
+            }
+        }
+
+        return data;
+    }
+
+    /// <summary>
+    /// Helper for fixture-based tests: returns a desc-resolver closure that looks each href
+    /// up in <paramref name="hrefToDoc"/>. Throws <see cref="KeyNotFoundException"/> if the
+    /// parse path requests a fixture that wasn't saved — that's a regenerate gap and should
+    /// fail loudly rather than silently mis-render.
+    /// </summary>
+    internal static Func<string, Task<HtmlDocument>> CreateOfflineDescResolver(IReadOnlyDictionary<string, HtmlDocument> hrefToDoc)
+        => href => hrefToDoc.TryGetValue(href, out HtmlDocument? doc)
+            ? Task.FromResult(doc)
+            : throw new KeyNotFoundException(
+                $"Desc fixture missing for href '{href}'. Re-run the Regenerate task to capture it.");
 }

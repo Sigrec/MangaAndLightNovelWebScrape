@@ -82,6 +82,7 @@ public sealed partial class CDJapan
             HtmlDocument doc = new();
             int currPageNum = 1;
             bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+            string normalizedBookTitle = InternalHelpers.NormalizeForTitleMatch(bookTitle);
 
             while (true)
             {
@@ -98,7 +99,7 @@ public sealed partial class CDJapan
                     string titleText = altTitle is null
                         ? titleData[x].InnerText
                         : titleData[x].InnerText.Replace(altTitle, bookTitle, StringComparison.OrdinalIgnoreCase);
-                    if (InternalHelpers.EntryTitleContainsBookTitle(bookTitle, titleText) 
+                    if (InternalHelpers.EntryTitleContainsNormalizedBookTitle(normalizedBookTitle, titleText)
                     && (!InternalHelpers.ShouldRemoveEntry(titleText) || BookTitleRemovalCheck) 
                     && !titleText.Contains("Manga Set"))
                     {

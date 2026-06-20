@@ -247,6 +247,7 @@ public sealed partial class Crunchyroll : IWebsite
         if (products is null || products.Count == 0) return data;
 
         bool bookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+        string normalizedBookTitle = InternalHelpers.NormalizeForTitleMatch(bookTitle);
 
         foreach (HtmlNode tile in products)
         {
@@ -255,7 +256,7 @@ public sealed partial class Crunchyroll : IWebsite
 
             string entryTitle = WebUtility.HtmlDecode(titleNode.InnerText.Trim());
 
-            if (!InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle))
+            if (!InternalHelpers.EntryTitleContainsNormalizedBookTitle(normalizedBookTitle, entryTitle))
             {
                 _logger.EntryRemovedDebug(1, entryTitle);
                 continue;

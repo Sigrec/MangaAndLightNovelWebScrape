@@ -316,6 +316,7 @@ public sealed partial class InStockTrades : IWebsite
         bool isMangaType = bookType == BookType.Manga;
         bool isNovelType = bookType == BookType.LightNovel;
         bool titleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+        string normalizedBookTitle = InternalHelpers.NormalizeForTitleMatch(bookTitle);
 
         // Process each page sequentially — CPU-bound work, single-threaded is fine.
         foreach (HtmlDocument doc in pages)
@@ -343,7 +344,7 @@ public sealed partial class InStockTrades : IWebsite
                 bool isOneShot = count == 1 && !entryTitle.ContainsAny(_oneShotCheckFilter);
 
                 bool validBook = (titleRemovalCheck
-                        || InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle))
+                        || InternalHelpers.EntryTitleContainsNormalizedBookTitle(normalizedBookTitle, entryTitle))
                     && !details[i].InnerText.Contains("Damaged")
                     && !InternalHelpers.ShouldRemoveEntry(entryTitle);
 

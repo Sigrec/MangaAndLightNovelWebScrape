@@ -60,7 +60,7 @@ public sealed partial class BooksAMillion : IWebsite
     public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
         => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
 
-    private static string GenerateWebsiteUrl(string bookTitle, bool boxSetCheck, BookType bookType, int pageNum)
+    internal static string GenerateWebsiteUrl(string bookTitle, bool boxSetCheck, BookType bookType, int pageNum)
     {
         // Initialize a StringBuilder
         StringBuilder stringBuilder = new($"{BASE_URL}/search2?");
@@ -223,11 +223,6 @@ public sealed partial class BooksAMillion : IWebsite
         List<EntryModel> data = [];
         List<string> links = [];
 
-        HtmlDocument doc = HtmlFactory.CreateDocument();
-
-        // HtmlWeb for batched per-entry desc fetches. BaM's CDN gates on UA, so set a
-        // modern Chrome string via PreRequest. (Playwright drives the listing nav so
-        // that Cloudflare's challenge gets cleared automatically.)
         HtmlWeb descHtml = HtmlFactory.CreateWeb();
         descHtml.PreRequest += req =>
         {
@@ -235,8 +230,15 @@ public sealed partial class BooksAMillion : IWebsite
             return true;
         };
 
+        // Walk the Playwright-driven listing pagination (regular pass, then box-set pass
+        // if validated), capturing each settled DOM into an HtmlDocument. The captured
+        // docs preserve the boxSetCheck flag and pageNum in their order — pass 1 first,
+        // box-set pass second. ParsePages re-implements the same iteration order and
+        // resolves desc pages via the supplied delegate.
+        List<HtmlDocument> listingPages = [];
+        List<bool> boxSetFlags = [];
+
         bool boxSetCheck = false, boxsetValidation = false;
-        bool bookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
         int pageNum = 1;
         string curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, pageNum);
         _logger.InitialUrl(curUrl);
@@ -244,8 +246,6 @@ public sealed partial class BooksAMillion : IWebsite
 
         await page!.GotoAsync(curUrl, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
 
-        // Dismiss the promotion popup if it appears — persisted in localStorage so it
-        // shouldn't reappear on subsequent navigations within the same scrape.
         IReadOnlyList<IElementHandle> popupContainer = await page.QuerySelectorAllAsync(".ltkpopup-container");
         if (popupContainer.Count > 0)
         {
@@ -255,16 +255,131 @@ public sealed partial class BooksAMillion : IWebsite
         while (true)
         {
             await page.WaitForSelectorAsync(".search-item-title");
+            HtmlDocument doc = HtmlFactory.CreateDocument();
             doc.LoadHtml(await page.ContentAsync());
+            listingPages.Add(doc);
+            boxSetFlags.Add(boxSetCheck);
 
-            // Re-create the navigator per page — HtmlAgilityPack's LoadHtml replaces
-            // the subtree under DocumentNode but the old navigator's iterators may
-            // already be bound to stale nodes.
+            // Probe just enough to make pagination/pivot decisions — full parsing happens
+            // in ParsePages over the captured docs.
+            XPathNavigator nav = doc.DocumentNode.CreateNavigator();
+            List<string> titlesProbe = [];
+            {
+                XPathNodeIterator iter = nav.Select(_titleXPath);
+                while (iter.MoveNext())
+                {
+                    if (iter.Current is null) continue;
+                    titlesProbe.Add(iter.Current.Value);
+                }
+            }
+            if (titlesProbe.Count == 0)
+            {
+                _logger.HelmCollectionEmpty();
+                break;
+            }
+            XPathNavigator? pageCheck = nav.SelectSingleNode(_pageCheckXPath);
+
+            // Detect whether this pass turned up any qualifying box-set match — drives
+            // the pivot to the box-set pass after we exhaust the regular pages.
+            if (!boxsetValidation)
+            {
+                foreach (string raw in titlesProbe)
+                {
+                    string t = WebUtility.HtmlDecode(raw.Trim());
+                    if (t.Contains(bookTitle, StringComparison.OrdinalIgnoreCase)
+                        && t.ContainsAny(_boxSetIncludeVals)
+                        && (bookType == BookType.Manga
+                            || (!t.ContainsAny(["Manga", "Volumes", "Vol"])
+                                && !MangaRemovalRegex().IsMatch(t))))
+                    {
+                        boxsetValidation = true;
+                        break;
+                    }
+                }
+            }
+
+            if (pageCheck != null)
+            {
+                curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, ++pageNum);
+                links.Add(curUrl);
+                _logger.NextPage(curUrl);
+                await page.GotoAsync(curUrl, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
+            }
+            else if (boxsetValidation && !boxSetCheck)
+            {
+                boxSetCheck = true;
+                pageNum = 1;
+                curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, pageNum);
+                links.Add(curUrl);
+                _logger.BoxSetUrl(curUrl);
+                await page.GotoAsync(curUrl, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        data = await ParsePages(
+            listingPages,
+            boxSetFlags,
+            bookTitle,
+            bookType,
+            isMember,
+            async href =>
+            {
+                string fullUrl = href.StartsWith("http", StringComparison.OrdinalIgnoreCase)
+                    ? href
+                    : href.StartsWith('/') ? $"{BASE_URL}{href}" : $"{BASE_URL}/{href}";
+                return await descHtml.LoadFromWebAsync(fullUrl);
+            });
+
+        links.TrimExcess();
+        InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
+        return (data, links);
+    }
+
+    /// <summary>
+    /// Parses pre-loaded BooksAMillion listing docs into <see cref="EntryModel"/>s. The
+    /// <paramref name="boxSetFlags"/> list pairs each doc with whether it was captured
+    /// during the regular pass (false) or the box-set pass (true) — affects the per-entry
+    /// eligibility check. <paramref name="resolveDescDoc"/> turns a product href into the
+    /// detail-page HTML — live runs use <see cref="HtmlWeb"/>; tests use an offline lookup.
+    /// </summary>
+    internal async Task<List<EntryModel>> ParsePages(
+        IReadOnlyList<HtmlDocument> listingPages,
+        IReadOnlyList<bool> boxSetFlags,
+        string bookTitle,
+        BookType bookType,
+        bool isMember,
+        Func<string, Task<HtmlDocument>> resolveDescDoc)
+    {
+        List<EntryModel> data = [];
+        bool bookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+        string normalizedBookTitle = InternalHelpers.NormalizeForTitleMatch(bookTitle);
+        bool bookTitleHasDigit = HasAnyDigit(bookTitle);
+
+        // pageNum is reconstructed per-pass: starts at 1 each time boxSet flag flips.
+        int pageNumWithinPass = 0;
+        bool? prevBoxSet = null;
+
+        for (int docIdx = 0; docIdx < listingPages.Count; docIdx++)
+        {
+            HtmlDocument doc = listingPages[docIdx];
+            bool boxSetCheck = boxSetFlags[docIdx];
+            if (prevBoxSet != boxSetCheck)
+            {
+                pageNumWithinPass = 1;
+                prevBoxSet = boxSetCheck;
+            }
+            else
+            {
+                pageNumWithinPass++;
+            }
+            int pageNum = pageNumWithinPass;
+
             XPathNavigator nav = doc.DocumentNode.CreateNavigator();
 
-            // Snapshot the parallel iterators into Lists. The old MoveNext()-in-lockstep
-            // pattern was fragile across navigator state changes and made the desc-fetch
-            // pre-pass impossible. Materializing once lets the pre-pass index in O(1).
             List<string> titles = [];
             List<string?> titleHrefs = [];
             {
@@ -278,23 +393,12 @@ public sealed partial class BooksAMillion : IWebsite
                 }
             }
             int entryCount = titles.Count;
-
-            if (entryCount == 0)
-            {
-                _logger.HelmCollectionEmpty();
-                break;
-            }
+            if (entryCount == 0) continue;
 
             List<string> bookQualities = CollectValues(nav, _bookQualityXPath, entryCount);
             List<string> prices = CollectValues(nav, _pricexPath, entryCount);
             List<string> stocks = CollectValues(nav, _stockStatusXPath, entryCount);
-            XPathNavigator? pageCheck = nav.SelectSingleNode(_pageCheckXPath);
 
-            // Desc-fetch pre-pass: any Manga entry whose title lacks a Vol/Box-Set/Comic
-            // marker needs the product detail page to disambiguate from a novel. Old
-            // code awaited each fetch serially via Playwright GotoAsync (+ a back-nav
-            // to the listing). Pre-collect indices, batch the fetches via HtmlWeb,
-            // cache the resulting docs by index.
             HtmlDocument?[] descCache = new HtmlDocument?[entryCount];
             if (bookType == BookType.Manga)
             {
@@ -311,11 +415,7 @@ public sealed partial class BooksAMillion : IWebsite
                     Task<HtmlDocument>[] fetches = new Task<HtmlDocument>[needsDesc.Count];
                     for (int i = 0; i < needsDesc.Count; i++)
                     {
-                        string href = titleHrefs[needsDesc[i]]!;
-                        string fullUrl = href.StartsWith("http", StringComparison.OrdinalIgnoreCase)
-                            ? href
-                            : href.StartsWith('/') ? $"{BASE_URL}{href}" : $"{BASE_URL}/{href}";
-                        fetches[i] = descHtml.LoadFromWebAsync(fullUrl);
+                        fetches[i] = resolveDescDoc(titleHrefs[needsDesc[i]]!);
                     }
                     HtmlDocument[] docs = await Task.WhenAll(fetches);
                     for (int i = 0; i < needsDesc.Count; i++)
@@ -325,10 +425,6 @@ public sealed partial class BooksAMillion : IWebsite
                 }
             }
 
-            // Title-flag tables computed once per entry. The old per-entry block
-            // called ContainsAny(_mangaIncludeVals)/ContainsAny(_boxSetIncludeVals) and
-            // MangaRemovalRegex().IsMatch up to 3x each — hoist into locals so we pay
-            // the cost once per row instead of per check.
             bool[] hasMangaMarker = new bool[entryCount];
             bool[] hasBoxSetMarker = new bool[entryCount];
             bool[] matchesMangaRemoval = new bool[entryCount];
@@ -340,7 +436,6 @@ public sealed partial class BooksAMillion : IWebsite
                 matchesMangaRemoval[i] = MangaRemovalRegex().IsMatch(titles[i]);
                 entryHasDigit[i] = HasAnyDigit(titles[i]);
             }
-            bool bookTitleHasDigit = HasAnyDigit(bookTitle);
 
             for (int i = 0; i < entryCount; i++)
             {
@@ -349,19 +444,16 @@ public sealed partial class BooksAMillion : IWebsite
                 bool entryHasBoxSet = hasBoxSetMarker[i];
                 bool entryMatchesMangaRemoval = matchesMangaRemoval[i];
 
-                if (!boxsetValidation &&
-                    entryTitle.Contains(bookTitle, StringComparison.OrdinalIgnoreCase) &&
-                    entryHasBoxSet &&
-                    (bookType == BookType.Manga ||
-                        (
-                            bookType == BookType.LightNovel &&
-                            !entryTitle.ContainsAny(["Manga", "Volumes", "Vol"]) &&
-                            !entryMatchesMangaRemoval
-                        )
-                    )
-                )
+                // Box-set "validation" rows are skipped by the parser; their job is purely
+                // signal to pivot to the box-set listing pass (already done in GetData).
+                if (entryTitle.Contains(bookTitle, StringComparison.OrdinalIgnoreCase)
+                    && entryHasBoxSet
+                    && !boxSetCheck
+                    && (bookType == BookType.Manga ||
+                        (bookType == BookType.LightNovel &&
+                         !entryTitle.ContainsAny(["Manga", "Volumes", "Vol"]) &&
+                         !entryMatchesMangaRemoval)))
                 {
-                    boxsetValidation = true;
                     continue;
                 }
 
@@ -374,7 +466,7 @@ public sealed partial class BooksAMillion : IWebsite
                 string bookQuality = bookQualities[i];
 
                 if (
-                    InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle) &&
+                    InternalHelpers.EntryTitleContainsNormalizedBookTitle(normalizedBookTitle, entryTitle) &&
                     (string.IsNullOrEmpty(bookQuality) || !bookQuality.Contains("Library Binding")) &&
                     (
                         entryCount == 1 && !boxSetCheck ||
@@ -426,7 +518,6 @@ public sealed partial class BooksAMillion : IWebsite
                         continue;
                     }
 
-                    // Strip a leading '$' if present; otherwise parse the whole value.
                     ReadOnlySpan<char> priceSpan = price.StartsWith('$') ? price.AsSpan(1) : price.AsSpan();
                     if (!decimal.TryParse(priceSpan, out decimal priceVal))
                     {
@@ -468,37 +559,22 @@ public sealed partial class BooksAMillion : IWebsite
                     _logger.EntryRemovedDebug(1, entryTitle);
                 }
             }
-
-            if (pageCheck != null)
-            {
-                curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, ++pageNum);
-                links.Add(curUrl);
-                _logger.NextPage(curUrl);
-                await page.GotoAsync(curUrl, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
-            }
-            else if (boxsetValidation && !boxSetCheck)
-            {
-                boxSetCheck = true;
-                pageNum = 1;
-                curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, pageNum);
-                links.Add(curUrl);
-                _logger.BoxSetUrl(curUrl);
-                await page.GotoAsync(curUrl, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
-            }
-            else
-            {
-                break;
-            }
         }
 
         data.TrimExcess();
-        links.TrimExcess();
         data.SortByVolume();
         data.RemoveDuplicates(_logger);
-        InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
-
-        return (data, links);
+        return data;
     }
+
+    /// <summary>
+    /// Test helper: returns a resolver that looks each href up in <paramref name="hrefToDoc"/>.
+    /// </summary>
+    internal static Func<string, Task<HtmlDocument>> CreateOfflineDescResolver(IReadOnlyDictionary<string, HtmlDocument> hrefToDoc)
+        => href => hrefToDoc.TryGetValue(href, out HtmlDocument? doc)
+            ? Task.FromResult(doc)
+            : throw new KeyNotFoundException(
+                $"Desc fixture missing for href '{href}'. Re-run the Regenerate task to capture it.");
 
     /// <summary>
     /// Tight inline replacement for <c>str.Any(char.IsDigit)</c> — avoids the

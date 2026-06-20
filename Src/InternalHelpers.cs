@@ -1,5 +1,4 @@
 using System.Buffers;
-using System.Collections.Frozen;
 using System.Runtime.InteropServices;
 using MangaAndLightNovelWebScrape.Services;
 using Microsoft.Playwright;
@@ -13,8 +12,8 @@ internal static partial class InternalHelpers
 
     private const int StackallocThreshold = 512;
 
-    private static readonly FrozenSet<string> _entryRemovalTerms = new[]
-    {
+    private static readonly string[] _entryRemovalTermArray =
+    [
         "Bluray", "Blu-ray", "Choose Path", "Encyclopedia", "Anthology", "Official", "Character", "Guide",
         "Illustration", "Anime Profiles", "Choose Your Path", "Compendium",
         "Artbook", "Art Book", "Error", "Advertising", "(Osi)", "Ani-manga",
@@ -23,8 +22,13 @@ internal static partial class InternalHelpers
         "Retrospective", "Notebook", "Journal", "Art of", "the Anime",
         "Calendar", "Adventure Book", "Coloring Book", "Sketchbook", "PLUSH",
         "Pirate Recipes", "Exclusive", "Hobby", "Model Kit", "Funko POP", "Creator of the", "the Movie", "UniVersus"
-    }
-    .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+    ];
+
+    // Vectorized multi-substring search over the removal-term set. Replaces ~50 sequential
+    // case-insensitive `string.Contains` calls per entry with one SIMD-friendly scan. The
+    // hot path: every entry on every site flows through `ShouldRemoveEntry(title)`.
+    private static readonly SearchValues<string> _entryRemovalTermSearch
+        = SearchValues.Create(_entryRemovalTermArray, StringComparison.OrdinalIgnoreCase);
 
     internal static bool NeedPlaywright(HashSet<Website> siteList)
     {
@@ -53,19 +57,18 @@ internal static partial class InternalHelpers
             return false;
         }
 
-        // Combine built‑in and additional terms
-        IEnumerable<string> combinedTerms;
-        if (additionalTerms != null)
+        // Fast path: single vectorized multi-substring scan over the built-in terms.
+        if (title.AsSpan().IndexOfAny(_entryRemovalTermSearch) >= 0)
         {
-            combinedTerms = _entryRemovalTerms.Concat(additionalTerms);
-        }
-        else
-        {
-            combinedTerms = _entryRemovalTerms;
+            return true;
         }
 
-        // Full substring scan (case‐insensitive)
-        foreach (string term in combinedTerms)
+        if (additionalTerms is null)
+        {
+            return false;
+        }
+
+        foreach (string term in additionalTerms)
         {
             if (title.Contains(term, StringComparison.OrdinalIgnoreCase))
             {
@@ -162,7 +165,7 @@ internal static partial class InternalHelpers
             masterDataList.Add(Data);
             if (Links.Count > 0)
             {
-                masterLinkList.TryAdd(site, useLastLink ? Links.Last() : Links[0]);
+                masterLinkList.TryAdd(site, useLastLink ? Links[^1] : Links[0]);
             }
         }
         catch (OperationCanceledException)
@@ -202,7 +205,7 @@ internal static partial class InternalHelpers
             masterDataList.Add(Data);
             if (Links.Count > 0)
             {
-                masterLinkList.TryAdd(site, useLastLink ? Links.Last() : Links[0]);
+                masterLinkList.TryAdd(site, useLastLink ? Links[^1] : Links[0]);
             }
         }
         catch (OperationCanceledException)
@@ -231,12 +234,14 @@ internal static partial class InternalHelpers
 
             // Britain
             Website.ForbiddenPlanet => new ForbiddenPlanet(loggerFactory.CreateLogger<ForbiddenPlanet>()),
+            Website.OKComics => new OKComics(loggerFactory.CreateLogger<OKComics>()),
             Website.TravellingMan => new TravellingMan(loggerFactory.CreateLogger<TravellingMan>()),
 
             // Canada
 
 
             // Australia
+            Website.AllStarComics => new AllStarComics(loggerFactory.CreateLogger<AllStarComics>()),
             Website.MangaMate => new MangaMate(loggerFactory.CreateLogger<MangaMate>()),
 
             // Multi
@@ -306,14 +311,29 @@ internal static partial class InternalHelpers
     }
 
     /// <summary>
-    /// Determines if the book title inputted by the user is contained within the current title scraped from the website
+    /// Strips non-word characters (keeping <c>\w</c> + literal <c>+</c>) so cross-site title
+    /// comparisons ignore whitespace, punctuation, and casing artifacts. Cache the result
+    /// once per scrape (the input <c>bookTitle</c> doesn't change per entry) and reuse via
+    /// <see cref="EntryTitleContainsNormalizedBookTitle"/> in the inner loop.
     /// </summary>
-    /// <param name="bookTitle">The title inputed by the user to initialize the scrape</param>
-    /// <param name="curTitle">The current title scraped from the website</param>
+    internal static string NormalizeForTitleMatch(string title)
+        => RemoveNonWordsRegex().Replace(title, string.Empty);
+
+    /// <summary>
+    /// Determines if the book title inputted by the user is contained within the current
+    /// title scraped from the website. Re-normalizes <paramref name="bookTitle"/> on every
+    /// call — prefer <see cref="EntryTitleContainsNormalizedBookTitle"/> in hot loops.
+    /// </summary>
     internal static bool EntryTitleContainsBookTitle(string bookTitle, string curTitle)
-    {
-        return RemoveNonWordsRegex().Replace(curTitle, string.Empty).Contains(RemoveNonWordsRegex().Replace(bookTitle, string.Empty), StringComparison.OrdinalIgnoreCase);
-    }
+        => EntryTitleContainsNormalizedBookTitle(NormalizeForTitleMatch(bookTitle), curTitle);
+
+    /// <summary>
+    /// Hot-path variant: caller pre-normalizes <paramref name="normalizedBookTitle"/> once
+    /// via <see cref="NormalizeForTitleMatch"/> and reuses it across every entry.
+    /// </summary>
+    internal static bool EntryTitleContainsNormalizedBookTitle(string normalizedBookTitle, string curTitle)
+        => RemoveNonWordsRegex().Replace(curTitle, string.Empty)
+            .Contains(normalizedBookTitle, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Determines whether this entry should be removed if it contains a certain text that is also not contained in the book title
@@ -328,9 +348,15 @@ internal static partial class InternalHelpers
     }
 
     internal static bool TitleStartsWithCheck(string bookTitle, string curTitle)
-    {
-        return RemoveNonWordsRegex().Replace(curTitle, string.Empty).StartsWith(RemoveNonWordsRegex().Replace(bookTitle, string.Empty), StringComparison.OrdinalIgnoreCase);
-    }
+        => TitleStartsWithNormalizedBookTitle(NormalizeForTitleMatch(bookTitle), curTitle);
+
+    /// <summary>
+    /// Hot-path variant of <see cref="TitleStartsWithCheck"/>: caller pre-normalizes
+    /// <paramref name="normalizedBookTitle"/> via <see cref="NormalizeForTitleMatch"/>.
+    /// </summary>
+    internal static bool TitleStartsWithNormalizedBookTitle(string normalizedBookTitle, string curTitle)
+        => RemoveNonWordsRegex().Replace(curTitle, string.Empty)
+            .StartsWith(normalizedBookTitle, StringComparison.OrdinalIgnoreCase);
 
     internal static void ReplaceMultipleTextInEntryTitle(ref StringBuilder curTitle, string bookTitle, IEnumerable<string> containsText, string replaceText)
     {
@@ -440,6 +466,9 @@ internal static partial class InternalHelpers
         // Estimate: most characters stay 1→1, escaped ones become 3 chars ("%HH")
         StringBuilder sb = new(bookTitle.Length * 2);
 
+        // Hoisted outside the loop — CA2014 (stackalloc must not run per iteration).
+        Span<char> hex = stackalloc char[2];
+
         foreach (char c in bookTitle)
         {
             // Unreserved per RFC3986: A–Z a–z 0–9 - . _ ~
@@ -455,8 +484,9 @@ internal static partial class InternalHelpers
             }
             else
             {
-                sb.Append('%');
-                sb.Append(((int)c).ToString("X2"));
+                // TryFormat writes directly into the stack span — no string allocation per char.
+                ((int)c).TryFormat(hex, out _, "X2");
+                sb.Append('%').Append(hex);
             }
         }
 
@@ -636,11 +666,27 @@ internal static partial class InternalHelpers
         }
 
         // Sort an index array against the precomputed keys, then materialize the result back
-        // into `data`. Array.Sort with a Comparison delegate is in-place on the index array.
+        // into `data`. Use a struct comparer instead of a closure-capturing lambda so we don't
+        // allocate a delegate + display class per sort.
         int[] indices = new int[count];
         for (int i = 0; i < count; i++) indices[i] = i;
 
-        Array.Sort(indices, (a, b) =>
+        Array.Sort(indices, new VolumeIndexComparer(entryTypes, volNums, filteredNames, filteredTexts));
+
+        // Apply the permutation. Two-pass with a temporary buffer is the simplest correct
+        // approach; cycle-following would save the buffer but tangles the code.
+        EntryModel[] reordered = new EntryModel[count];
+        for (int i = 0; i < count; i++) reordered[i] = span[indices[i]];
+        for (int i = 0; i < count; i++) span[i] = reordered[i];
+    }
+
+    private readonly struct VolumeIndexComparer(
+        byte[] entryTypes,
+        double[] volNums,
+        string[] filteredNames,
+        string[] filteredTexts) : IComparer<int>
+    {
+        public int Compare(int a, int b)
         {
             if (entryTypes[a] != 0 && entryTypes[a] == entryTypes[b]
                 && volNums[a] != -1 && volNums[b] != -1)
@@ -653,21 +699,25 @@ internal static partial class InternalHelpers
                 }
             }
             return string.Compare(filteredTexts[a], filteredTexts[b], StringComparison.OrdinalIgnoreCase);
-        });
-
-        // Apply the permutation. Two-pass with a temporary buffer is the simplest correct
-        // approach; cycle-following would save the buffer but tangles the code.
-        EntryModel[] reordered = new EntryModel[count];
-        for (int i = 0; i < count; i++) reordered[i] = span[indices[i]];
-        for (int i = 0; i < count; i++) span[i] = reordered[i];
+        }
     }
 
     /// <summary>
-    /// Removes duplicate <see cref="EntryModel"/> rows in place, keeping the cheaper price when
-    /// the same <c>Entry</c> appears more than once. Order-independent — does not require a
-    /// pre-sort. Single pass, O(N), with parsed prices cached so each entry's
-    /// <see cref="EntryModel.ParsePrice"/> runs at most once.
+    /// Removes duplicate <see cref="EntryModel"/> rows in place. When the same
+    /// <c>Entry</c> appears more than once, the survivor is picked by:
+    /// <list type="number">
+    ///   <item><description>Availability rank: <c>IS &gt; PO &gt; BO &gt; CS &gt; OOS &gt; NA</c>.</description></item>
+    ///   <item><description>Tie-break: lower <see cref="EntryModel.ParsePrice"/>.</description></item>
+    /// </list>
+    /// Order-independent — does not require a pre-sort. Single pass, O(N), with parsed
+    /// prices cached so each entry's <see cref="EntryModel.ParsePrice"/> runs at most once.
     /// </summary>
+    /// <remarks>
+    /// Stock-awareness handles the reprint/original-print case: All Star Comics (and other
+    /// Diamond-distribution retailers) sometimes list an OOS original-print SKU cheaper than
+    /// the in-stock reprint. Without the availability rank the cheaper-but-unbuyable copy
+    /// would win and the user would see a "deal" they can't actually claim.
+    /// </remarks>
     internal static void RemoveDuplicates(this List<EntryModel> input, ILogger logger)
     {
         int count = input.Count;
@@ -675,14 +725,16 @@ internal static partial class InternalHelpers
 
         Span<EntryModel> span = CollectionsMarshal.AsSpan(input);
 
-        // Cache parsed prices — same-key collisions would otherwise re-parse each visit.
+        // Cache parsed prices and availability ranks once per row.
         decimal[] prices = new decimal[count];
+        int[] availRanks = new int[count];
         for (int i = 0; i < count; i++)
         {
             prices[i] = span[i].ParsePrice();
+            availRanks[i] = AvailabilityRank(span[i].StockStatus);
         }
 
-        // Map Entry → index of the cheapest occurrence seen so far.
+        // Map Entry → index of the current best survivor.
         Dictionary<string, int> bestSeen = new(count, StringComparer.OrdinalIgnoreCase);
         bool[] toRemove = new bool[count];
 
@@ -692,7 +744,13 @@ internal static partial class InternalHelpers
             if (bestSeen.TryGetValue(key, out int existing))
             {
                 logger.DuplicateInputPair(span[i], span[existing]);
-                if (prices[i] < prices[existing])
+
+                // Lower rank wins (IS=0, OOS=4). If ranks tie, lower price wins.
+                bool iIsBetter =
+                    availRanks[i] < availRanks[existing]
+                    || (availRanks[i] == availRanks[existing] && prices[i] < prices[existing]);
+
+                if (iIsBetter)
                 {
                     logger.RemovedDuplicate(span[existing]);
                     toRemove[existing] = true;
@@ -722,6 +780,22 @@ internal static partial class InternalHelpers
         }
         input.RemoveRange(write, count - write);
     }
+
+    /// <summary>
+    /// Lower rank = more buyable. Used by <see cref="RemoveDuplicates"/> to break ties in
+    /// favor of stock the user can actually purchase right now. Unknown values map to a
+    /// rank worse than every defined status.
+    /// </summary>
+    private static int AvailabilityRank(StockStatus status) => status switch
+    {
+        StockStatus.IS => 0,   // In Stock — directly purchasable
+        StockStatus.PO => 1,   // Pre-Order — committed, will ship at release
+        StockStatus.BO => 2,   // Backorder — will fulfill when restocked
+        StockStatus.CS => 3,   // Coming Soon — announced, no pre-order yet
+        StockStatus.OOS => 4,  // Out of Stock — currently unavailable
+        StockStatus.NA => 5,   // Not Available — no signal at all
+        _ => 6,
+    };
 
     /// <summary>
     /// Applies a coupon to the price by substracting the coupon amount

@@ -229,6 +229,7 @@ public sealed partial class AmazonUSA : IWebsite
             HtmlNodeCollection pageNums = doc.DocumentNode.SelectNodes(PageCheckXPath);
             uint maxPage = pageNums != null ? Convert.ToUInt32(pageNums.Last().InnerText.Trim()) : 0;
             bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle, _titleRemovalStrings);
+            string normalizedBookTitle = InternalHelpers.NormalizeForTitleMatch(bookTitle);
 
             while (true)
             {
@@ -250,7 +251,7 @@ public sealed partial class AmazonUSA : IWebsite
                     string entryInfo = entryInfoData[x].InnerText.Trim();
                     _logger.BeforeEntry(x, entryTitle, entryInfo);
 
-                    if (InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
+                    if (InternalHelpers.EntryTitleContainsNormalizedBookTitle(normalizedBookTitle, entryTitle)
                         && (!InternalHelpers.ShouldRemoveEntry(entryTitle, _titleRemovalStrings) || BookTitleRemovalCheck)
                         && !EntryTitleCheckRegex().IsMatch(entryTitle)
                         && entryInfo.ContainsAny(_validPriceStrings)

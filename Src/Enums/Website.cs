@@ -9,6 +9,8 @@ namespace MangaAndLightNovelWebScrape.Enums
     /// </summary>
     public enum Website
     {
+        /// <summary>allstarcomics.com.au — Australia.</summary>
+        AllStarComics,
         /// <summary>amazon.co.jp — Japan.</summary>
         AmazonJapan,
         /// <summary>amazon.com — America.</summary>
@@ -31,6 +33,8 @@ namespace MangaAndLightNovelWebScrape.Enums
         MangaMate,
         /// <summary>merrymanga.com — America.</summary>
         MerryManga,
+        /// <summary>okcomics.co.uk — Britain.</summary>
+        OKComics,
         /// <summary>animecornerstore.com — America.</summary>
         RobertsAnimeCornerStore,
         /// <summary>scifier.com — America, Australia, Britain, Canada, Europe (multi-region).</summary>

@@ -99,12 +99,12 @@ public static class Helpers
             ],
             [Region.Australia] =
             [
-                Website.MangaMate, Website.SciFier
+                Website.AllStarComics, Website.MangaMate, Website.SciFier
             ],
             [Region.Britain] =
             [
-                Website.ForbiddenPlanet, Website.SciFier,
-                Website.TravellingMan, 
+                Website.ForbiddenPlanet, Website.OKComics, Website.SciFier,
+                Website.TravellingMan,
             ],
             [Region.Canada] =
             [
@@ -126,6 +126,7 @@ public static class Helpers
     internal static readonly FrozenDictionary<string, Website> WebsiteTitleMap
         = new Dictionary<string, Website>(StringComparer.OrdinalIgnoreCase)
         {
+            [AllStarComics.TITLE] = Website.AllStarComics,
             [AmazonUSA.TITLE] = Website.AmazonUSA,
             [BooksAMillion.TITLE] = Website.BooksAMillion,
             [Crunchyroll.TITLE] = Website.Crunchyroll,
@@ -134,6 +135,7 @@ public static class Helpers
             [MangaMart.TITLE] = Website.MangaMart,
             [MangaMate.TITLE] = Website.MangaMate,
             [MerryManga.TITLE] = Website.MerryManga,
+            [OKComics.TITLE] = Website.OKComics,
             [RobertsAnimeCornerStore.TITLE] = Website.RobertsAnimeCornerStore,
             [SciFier.TITLE] = Website.SciFier,
             [ForbiddenPlanet.TITLE] = Website.ForbiddenPlanet,
@@ -218,6 +220,7 @@ public static class Helpers
 
         return site switch
         {
+            Website.AllStarComics => AllStarComics.BASE_URL,
             Website.AmazonUSA => AmazonUSA.BASE_URL,
             Website.BooksAMillion => BooksAMillion.BASE_URL,
             Website.CDJapan => CDJapan.WEBSITE_URL,
@@ -228,6 +231,7 @@ public static class Helpers
             Website.MangaMart => MangaMart.BASE_URL,
             Website.MangaMate => MangaMate.BASE_URL,
             Website.MerryManga => MerryManga.BASE_URL,
+            Website.OKComics => OKComics.BASE_URL,
             Website.RobertsAnimeCornerStore => RobertsAnimeCornerStore.BASE_URL,
             Website.TravellingMan => TravellingMan.BASE_URL,
             _ => throw new NotImplementedException($"No URL for {site}")

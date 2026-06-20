@@ -45,7 +45,7 @@ public sealed partial class ForbiddenPlanet : IWebsite
     public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
         => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
 
-    private string GenerateWebsiteUrl(BookType bookType, string entryTitle, bool isSecondCategory, int pageNum)
+    internal string GenerateWebsiteUrl(BookType bookType, string entryTitle, bool isSecondCategory, int pageNum)
     {
         // https://forbiddenplanet.com/catalog/manga/?q=Naruto&show_out_of_stock=on&sort=release-date-asc&page=1
         string url = $"{BASE_URL}/catalog/{(!isSecondCategory ? "manga" : "comics-and-graphic-novels")}/?q={(bookType == BookType.Manga ? InternalHelpers.FilterBookTitle(entryTitle) : $"{InternalHelpers.FilterBookTitle(entryTitle)}%20light%20novel")}&show_out_of_stock=on&sort=release-date-asc&page={pageNum}";
@@ -243,9 +243,8 @@ public sealed partial class ForbiddenPlanet : IWebsite
         List<EntryModel> data = [];
         List<string> links = [];
 
-        HtmlDocument doc = HtmlFactory.CreateDocument();
         HtmlWeb html = HtmlFactory.CreateWeb();
-        bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+        List<HtmlDocument> listingPages = [];
 
         // Two-category sweep: Manga first, then Comics & Graphic Novels.
         for (int category = 0; category < 2; category++)
@@ -273,18 +272,61 @@ public sealed partial class ForbiddenPlanet : IWebsite
 
             await LoadAllEntries(page);
 
+            HtmlDocument doc = HtmlFactory.CreateDocument();
             doc.LoadHtml(await page.ContentAsync());
-            int parsed = await ProcessPageAsync(doc, bookTitle, bookType, BookTitleRemovalCheck, html, data);
+            listingPages.Add(doc);
+        }
+
+        data = await ParsePages(
+            listingPages,
+            bookTitle,
+            bookType,
+            async href =>
+            {
+                HtmlDocument descDoc = await html.LoadFromWebAsync($"{BASE_URL}{href}");
+                return descDoc;
+            });
+
+        InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
+        return (data, links);
+    }
+
+    /// <summary>
+    /// Parses pre-loaded ForbiddenPlanet listing docs into <see cref="EntryModel"/>s. The
+    /// <paramref name="resolveDescDoc"/> delegate fetches the detail page for entries that
+    /// need a Hardcover / no-vol-marker desc check. Fixture-based tests pass an offline
+    /// dictionary lookup so the run is reproducible.
+    /// </summary>
+    internal async Task<List<EntryModel>> ParsePages(
+        IReadOnlyList<HtmlDocument> listingPages,
+        string bookTitle,
+        BookType bookType,
+        Func<string, Task<HtmlDocument>> resolveDescDoc)
+    {
+        List<EntryModel> data = [];
+        bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+        string normalizedBookTitle = InternalHelpers.NormalizeForTitleMatch(bookTitle);
+
+        foreach (HtmlDocument doc in listingPages)
+        {
+            int parsed = await ProcessPageWithResolverAsync(doc, bookTitle, normalizedBookTitle, bookType, BookTitleRemovalCheck, resolveDescDoc, data);
             _logger.NodeCounts(parsed, parsed, parsed, parsed, parsed);
         }
 
         data.TrimExcess();
         data.SortByVolume();
         data.RemoveDuplicates(_logger);
-        InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
-
-        return (data, links);
+        return data;
     }
+
+    /// <summary>
+    /// Test helper: returns a resolver that looks each href up in <paramref name="hrefToDoc"/>.
+    /// </summary>
+    internal static Func<string, Task<HtmlDocument>> CreateOfflineDescResolver(IReadOnlyDictionary<string, HtmlDocument> hrefToDoc)
+        => href => hrefToDoc.TryGetValue(href, out HtmlDocument? doc)
+            ? Task.FromResult(doc)
+            : throw new KeyNotFoundException(
+                $"Desc fixture missing for href '{href}'. Re-run the Regenerate task to capture it.");
 
     /// <summary>
     /// Clicks the page's Load More button until it disappears. After each click, waits
@@ -329,12 +371,13 @@ public sealed partial class ForbiddenPlanet : IWebsite
     /// <paramref name="data"/>. Returns the number of product <c>&lt;li&gt;</c> nodes seen
     /// — used by the caller to decide whether to stop paginating.
     /// </summary>
-    private async Task<int> ProcessPageAsync(
+    private async Task<int> ProcessPageWithResolverAsync(
         HtmlDocument doc,
         string bookTitle,
+        string normalizedBookTitle,
         BookType bookType,
         bool bookTitleRemovalCheck,
-        HtmlWeb html,
+        Func<string, Task<HtmlDocument>> resolveDescDoc,
         List<EntryModel> data)
     {
         HtmlNodeCollection? products = doc.DocumentNode.SelectNodes(_productListXPath);
@@ -394,7 +437,7 @@ public sealed partial class ForbiddenPlanet : IWebsite
 
                 string entryTitle = decodedTitles[i];
 
-                if (!PassesBroadFilter(bookTitle, entryTitle, bookFormatVals[i], bookTitleRemovalCheck, bookType))
+                if (!PassesBroadFilter(bookTitle, normalizedBookTitle, entryTitle, bookFormatVals[i], bookTitleRemovalCheck, bookType))
                 {
                     continue;
                 }
@@ -413,7 +456,7 @@ public sealed partial class ForbiddenPlanet : IWebsite
                 Task<HtmlDocument>[] fetches = new Task<HtmlDocument>[needsDesc.Count];
                 for (int i = 0; i < needsDesc.Count; i++)
                 {
-                    fetches[i] = html.LoadFromWebAsync($"{BASE_URL}{detailHrefs[needsDesc[i]]}");
+                    fetches[i] = resolveDescDoc(detailHrefs[needsDesc[i]]!);
                 }
                 HtmlDocument[] docs = await Task.WhenAll(fetches);
                 for (int i = 0; i < needsDesc.Count; i++)
@@ -440,7 +483,7 @@ public sealed partial class ForbiddenPlanet : IWebsite
                 continue;
             }
 
-            if (!PassesBroadFilter(bookTitle, entryTitle, bookFormat, bookTitleRemovalCheck, bookType))
+            if (!PassesBroadFilter(bookTitle, normalizedBookTitle, entryTitle, bookFormat, bookTitleRemovalCheck, bookType))
             {
                 _logger.EntryRemoved(1, entryTitle);
                 continue;
@@ -493,9 +536,9 @@ public sealed partial class ForbiddenPlanet : IWebsite
         return entryCount;
     }
 
-    private static bool PassesBroadFilter(string bookTitle, string entryTitle, string bookFormat, bool bookTitleRemovalCheck, BookType bookType)
+    private static bool PassesBroadFilter(string bookTitle, string normalizedBookTitle, string entryTitle, string bookFormat, bool bookTitleRemovalCheck, BookType bookType)
     {
-        if (!InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)) return false;
+        if (!InternalHelpers.EntryTitleContainsNormalizedBookTitle(normalizedBookTitle, entryTitle)) return false;
         if (InternalHelpers.ShouldRemoveEntry(entryTitle) && !bookTitleRemovalCheck) return false;
 
         if (bookType == BookType.Manga)

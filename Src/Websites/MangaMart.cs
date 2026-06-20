@@ -46,7 +46,7 @@ public sealed partial class MangaMart : IWebsite
     /// URL builder for a given page. The <paramref name="encodedBookTitle"/> is pre-escaped by
     /// the caller — escaping happens once per scrape rather than per page.
     /// </summary>
-    private string GenerateWebsiteUrl(BookType bookType, string encodedBookTitle, uint curPageNum)
+    internal string GenerateWebsiteUrl(BookType bookType, string encodedBookTitle, uint curPageNum)
     {
         // https://mangamart.com/search?type=product&q=jujutsu+kaisen&page=2
         // https://mangamart.com/search?type=product&q=overlord+novel
@@ -132,19 +132,20 @@ public sealed partial class MangaMart : IWebsite
         List<string> links = [];
 
         HtmlWeb html = HtmlFactory.CreateWeb();
-        HtmlDocument doc = HtmlFactory.CreateDocument();
-
-        // Encode the search term once — it's identical for every page URL.
         string encodedBookTitle = Uri.EscapeDataString(bookTitle);
-        bool bookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
 
+        // Walk paginated Playwright navigation, capturing each settled DOM into an
+        // HtmlDocument. Parsing happens in ParsePages so fixture-based tests can replay.
+        List<HtmlDocument> listingPages = [];
         uint curPageNum = 1;
         string url = GenerateWebsiteUrl(bookType, encodedBookTitle, curPageNum);
         links.Add(url);
 
         await page!.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
         await WaitForStablePageLoadAsync(page);
+        HtmlDocument doc = HtmlFactory.CreateDocument();
         doc.LoadHtml(await page.ContentAsync());
+        listingPages.Add(doc);
 
         int maxPageNum;
         {
@@ -154,16 +155,52 @@ public sealed partial class MangaMart : IWebsite
         }
         _logger.MaxPages(maxPageNum);
 
-        while (curPageNum <= maxPageNum)
+        while (curPageNum < maxPageNum)
         {
-            // Re-create the navigator per page — HtmlAgilityPack's LoadHtml replaces the
-            // subtree under DocumentNode but the old navigator's iterators may already be
-            // bound to stale nodes. Cheaper than reusing and risking a subtle staleness bug.
+            curPageNum++;
+            url = GenerateWebsiteUrl(bookType, encodedBookTitle, curPageNum);
+            links.Add(url);
+            await page.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
+            await WaitForStablePageLoadAsync(page);
+            HtmlDocument next = HtmlFactory.CreateDocument();
+            next.LoadHtml(await page.ContentAsync());
+            listingPages.Add(next);
+        }
+
+        data = await ParsePages(
+            listingPages,
+            bookTitle,
+            bookType,
+            async href =>
+            {
+                string fullUrl = href.StartsWith('/') ? $"{BASE_URL}{href}" : $"{BASE_URL}/{href}";
+                return await html.LoadFromWebAsync(fullUrl);
+            });
+
+        InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
+        return (data, links);
+    }
+
+    /// <summary>
+    /// Parses pre-loaded MangaMart listing docs into <see cref="EntryModel"/>s. The
+    /// <paramref name="resolveDescDoc"/> delegate turns a product href into the detail-page
+    /// HTML — live path uses <see cref="HtmlWeb"/>; tests pass an offline dictionary lookup.
+    /// </summary>
+    internal async Task<List<EntryModel>> ParsePages(
+        IReadOnlyList<HtmlDocument> listingPages,
+        string bookTitle,
+        BookType bookType,
+        Func<string, Task<HtmlDocument>> resolveDescDoc)
+    {
+        List<EntryModel> data = [];
+        bool bookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+        string normalizedBookTitle = InternalHelpers.NormalizeForTitleMatch(bookTitle);
+
+        foreach (HtmlDocument doc in listingPages)
+        {
+            // Re-create the navigator per page — old code reused one bound to a stale subtree.
             XPathNavigator nav = doc.DocumentNode.CreateNavigator();
 
-            // Snapshot title/price/stock as parallel lists so the desc-fetch pre-pass can
-            // index into them without re-iterating the XPath state machine.
-            List<XPathNavigator> titleNodes = [];
             List<string> entryTitles = [];
             List<string?> hrefs = [];
             {
@@ -174,8 +211,6 @@ public sealed partial class MangaMart : IWebsite
                     if (cur is null) continue;
                     string? entryTitle = WebUtility.HtmlDecode(cur.Value)?.Trim();
                     if (entryTitle is null) continue;
-
-                    titleNodes.Add(cur.Clone());
                     entryTitles.Add(entryTitle);
                     hrefs.Add(cur.GetAttribute("href", string.Empty));
                 }
@@ -201,10 +236,8 @@ public sealed partial class MangaMart : IWebsite
 
             int entryCount = entryTitles.Count;
 
-            // Desc-fetch pre-pass: for Manga searches, entries without "Vol" in the title
-            // need a detail-page fetch to confirm they aren't secretly light novels. The old
-            // code awaited each fetch serially inside the entry loop. Pre-collect indices,
-            // batch via Task.WhenAll.
+            // Desc-fetch pre-pass: Manga entries without "Vol" need a detail check to filter
+            // out light novels. Collect indices, batch through the resolver.
             HtmlDocument?[] descCache = new HtmlDocument?[entryCount];
             if (bookType == BookType.Manga)
             {
@@ -212,15 +245,11 @@ public sealed partial class MangaMart : IWebsite
                 for (int i = 0; i < entryCount; i++)
                 {
                     if (entryTitles[i].Contains("Vol", StringComparison.OrdinalIgnoreCase)) continue;
-
-                    // Cheap pre-filter — replicate just enough of the per-entry checks to
-                    // avoid fetching for entries we already know we'll discard.
-                    if (!InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitles[i])
+                    if (!InternalHelpers.EntryTitleContainsNormalizedBookTitle(normalizedBookTitle, entryTitles[i])
                         || (!bookTitleRemovalCheck && InternalHelpers.ShouldRemoveEntry(entryTitles[i])))
                     {
                         continue;
                     }
-
                     string? href = hrefs[i];
                     if (!string.IsNullOrWhiteSpace(href)) needsDesc.Add(i);
                 }
@@ -230,11 +259,7 @@ public sealed partial class MangaMart : IWebsite
                     Task<HtmlDocument>[] fetches = new Task<HtmlDocument>[needsDesc.Count];
                     for (int i = 0; i < needsDesc.Count; i++)
                     {
-                        // Avoid the // double-slash the old code produced — BASE_URL already
-                        // has no trailing slash and hrefs may start with one.
-                        string href = hrefs[needsDesc[i]]!;
-                        string fullUrl = href.StartsWith('/') ? $"{BASE_URL}{href}" : $"{BASE_URL}/{href}";
-                        fetches[i] = html.LoadFromWebAsync(fullUrl);
+                        fetches[i] = resolveDescDoc(hrefs[needsDesc[i]]!);
                     }
                     HtmlDocument[] docs = await Task.WhenAll(fetches);
                     for (int i = 0; i < needsDesc.Count; i++)
@@ -244,12 +269,11 @@ public sealed partial class MangaMart : IWebsite
                 }
             }
 
-            // Main per-entry loop — uses descCache instead of awaiting fetches.
             for (int i = 0; i < entryCount; i++)
             {
                 string entryTitle = entryTitles[i];
 
-                bool shouldRemoveEntry = !InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
+                bool shouldRemoveEntry = !InternalHelpers.EntryTitleContainsNormalizedBookTitle(normalizedBookTitle, entryTitle)
                     || (!bookTitleRemovalCheck && InternalHelpers.ShouldRemoveEntry(entryTitle));
 
                 if (bookType == BookType.Manga)
@@ -307,23 +331,20 @@ public sealed partial class MangaMart : IWebsite
                     _logger.EntryRemovedSimpleDebug(entryTitle);
                 }
             }
-
-            curPageNum++;
-            if (curPageNum <= maxPageNum)
-            {
-                url = GenerateWebsiteUrl(bookType, encodedBookTitle, curPageNum);
-                links.Add(url);
-                await page.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
-                await WaitForStablePageLoadAsync(page);
-                doc.LoadHtml(await page.ContentAsync());
-            }
         }
 
         data.TrimExcess();
         data.SortByVolume();
         data.RemoveDuplicates(_logger);
-        InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
-
-        return (data, links);
+        return data;
     }
+
+    /// <summary>
+    /// Test helper: returns a resolver that looks each href up in <paramref name="hrefToDoc"/>.
+    /// </summary>
+    internal static Func<string, Task<HtmlDocument>> CreateOfflineDescResolver(IReadOnlyDictionary<string, HtmlDocument> hrefToDoc)
+        => href => hrefToDoc.TryGetValue(href, out HtmlDocument? doc)
+            ? Task.FromResult(doc)
+            : throw new KeyNotFoundException(
+                $"Desc fixture missing for href '{href}'. Re-run the Regenerate task to capture it.");
 }
