@@ -6,6 +6,7 @@ on:
 permissions:
   contents: write
   packages: write
+  id-token: write  # Required for NuGet Trusted Publishing (OIDC token exchange).
 
 jobs:
   release:
@@ -70,9 +71,15 @@ jobs:
           "path=$pattern" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
           Write-Host "nupkg: $pattern"
 
+      - name: 🔐 NuGet login (Trusted Publishing)
+        id: nuget_login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ vars.NUGET_USER }}
+
       - name: 🚀 Push to NuGet
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.nuget_login.outputs.NUGET_API_KEY }}
         run: dotnet nuget push "${{ steps.pkg.outputs.path }}" --api-key "$env:NUGET_API_KEY" --source "https://api.nuget.org/v3/index.json" --skip-duplicate
 
       - name: 🔖 Create/Push Tag Version
