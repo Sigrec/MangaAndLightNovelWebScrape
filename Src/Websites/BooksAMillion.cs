@@ -244,19 +244,19 @@ public sealed partial class BooksAMillion : IWebsite
         _logger.InitialUrl(curUrl);
         links.Add(curUrl);
 
-        await page!.GotoAsync(curUrl, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
+        await page!.GotoAsync(curUrl, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded }).ConfigureAwait(false);
 
-        IReadOnlyList<IElementHandle> popupContainer = await page.QuerySelectorAllAsync(".ltkpopup-container");
+        IReadOnlyList<IElementHandle> popupContainer = await page.QuerySelectorAllAsync(".ltkpopup-container").ConfigureAwait(false);
         if (popupContainer.Count > 0)
         {
-            await page.ClickAsync(".ltkpopup-close");
+            await page.ClickAsync(".ltkpopup-close").ConfigureAwait(false);
         }
 
         while (true)
         {
-            await page.WaitForSelectorAsync(".search-item-title");
+            await page.WaitForSelectorAsync(".search-item-title").ConfigureAwait(false);
             HtmlDocument doc = HtmlFactory.CreateDocument();
-            doc.LoadHtml(await page.ContentAsync());
+            doc.LoadHtml(await page.ContentAsync().ConfigureAwait(false));
             listingPages.Add(doc);
             boxSetFlags.Add(boxSetCheck);
 
@@ -303,7 +303,7 @@ public sealed partial class BooksAMillion : IWebsite
                 curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, ++pageNum);
                 links.Add(curUrl);
                 _logger.NextPage(curUrl);
-                await page.GotoAsync(curUrl, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
+                await page.GotoAsync(curUrl, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded }).ConfigureAwait(false);
             }
             else if (boxsetValidation && !boxSetCheck)
             {
@@ -312,7 +312,7 @@ public sealed partial class BooksAMillion : IWebsite
                 curUrl = GenerateWebsiteUrl(bookTitle, boxSetCheck, bookType, pageNum);
                 links.Add(curUrl);
                 _logger.BoxSetUrl(curUrl);
-                await page.GotoAsync(curUrl, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
+                await page.GotoAsync(curUrl, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded }).ConfigureAwait(false);
             }
             else
             {
@@ -331,8 +331,8 @@ public sealed partial class BooksAMillion : IWebsite
                 string fullUrl = href.StartsWith("http", StringComparison.OrdinalIgnoreCase)
                     ? href
                     : href.StartsWith('/') ? $"{BASE_URL}{href}" : $"{BASE_URL}/{href}";
-                return await descHtml.LoadFromWebAsync(fullUrl);
-            });
+                return await descHtml.LoadFromWebAsync(fullUrl).ConfigureAwait(false);
+            }).ConfigureAwait(false);
 
         links.TrimExcess();
         InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
@@ -417,7 +417,7 @@ public sealed partial class BooksAMillion : IWebsite
                     {
                         fetches[i] = resolveDescDoc(titleHrefs[needsDesc[i]]!);
                     }
-                    HtmlDocument[] docs = await Task.WhenAll(fetches);
+                    HtmlDocument[] docs = await Task.WhenAll(fetches).ConfigureAwait(false);
                     for (int i = 0; i < needsDesc.Count; i++)
                     {
                         descCache[needsDesc[i]] = docs[i];

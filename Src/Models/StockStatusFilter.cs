@@ -9,7 +9,7 @@ namespace MangaAndLightNovelWebScrape.Models
     /// regardless of which preset is selected.
     /// </para>
     /// </summary>
-    public readonly struct StockStatusFilter
+    public static class StockStatusFilter
     {
         /// <summary>Empty filter — every entry is kept. Default for <see cref="MasterScrape.Filter"/>.</summary>
         public static readonly StockStatus[] EXCLUDE_NONE_FILTER = [];

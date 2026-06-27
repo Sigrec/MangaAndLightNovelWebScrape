@@ -5,10 +5,11 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <Configuration>Release</Configuration>
-    <!-- <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies> -->
   </PropertyGroup>
 
+  <!-- Pass -c Release on the command line. BDN's JitOptimizationsValidator (configured in
+       Program.cs) refuses to run benchmarks when optimizations are off, so an accidental
+       Debug run fails loud instead of producing misleading numbers. -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize>true</Optimize>
   </PropertyGroup>

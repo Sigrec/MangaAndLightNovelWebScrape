@@ -249,7 +249,7 @@ public sealed partial class SciFier : IWebsite
             // Walk pagination, gathering listing docs. The actual parse + box-set-desc fetch
             // pipeline lives in ParsePages so fixture-based tests can drive the same code path.
             List<HtmlDocument> listingPages = [];
-            HtmlDocument doc = await html.LoadFromWebAsync(url);
+            HtmlDocument doc = await html.LoadFromWebAsync(url).ConfigureAwait(false);
             doc.ConfigurePerf();
             listingPages.Add(doc);
 
@@ -265,7 +265,7 @@ public sealed partial class SciFier : IWebsite
                 if (pageCheck is null) break;
 
                 url = $"https://scifier.com{WebUtility.HtmlDecode(pageCheck.GetAttributeValue("href", "Url Error"))}";
-                doc = await html.LoadFromWebAsync(url);
+                doc = await html.LoadFromWebAsync(url).ConfigureAwait(false);
                 doc.ConfigurePerf();
                 links.Add(url);
                 _logger.NextPageUrl(url);
@@ -280,9 +280,9 @@ public sealed partial class SciFier : IWebsite
                 bookType,
                 async href =>
                 {
-                    HtmlDocument descDoc = await html.LoadFromWebAsync(href);
+                    HtmlDocument descDoc = await html.LoadFromWebAsync(href).ConfigureAwait(false);
                     return descDoc;
-                });
+                }).ConfigureAwait(false);
         }
         finally
         {
@@ -389,7 +389,7 @@ public sealed partial class SciFier : IWebsite
                         string href = titleData[needsLnDesc[i]].GetAttributeValue<string>("href", "ERROR");
                         fetches[i] = resolveDescDoc(href);
                     }
-                    HtmlDocument[] docs = await Task.WhenAll(fetches);
+                    HtmlDocument[] docs = await Task.WhenAll(fetches).ConfigureAwait(false);
                     for (int i = 0; i < needsLnDesc.Count; i++)
                     {
                         lnDescCache[needsLnDesc[i]] = docs[i];
@@ -449,7 +449,7 @@ public sealed partial class SciFier : IWebsite
                     {
                         _logger.CheckingDescription(entryTitle);
                         string href = titleData[x].GetAttributeValue<string>("href", "ERROR");
-                        HtmlDocument descDoc = await resolveDescDoc(href);
+                        HtmlDocument descDoc = await resolveDescDoc(href).ConfigureAwait(false);
                         HtmlNode descNode = descDoc.DocumentNode.SelectSingleNode(_entryDescXPath);
                         if (descNode is not null && descNode.InnerText.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
                         {

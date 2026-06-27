@@ -209,13 +209,13 @@ public sealed partial class MerryManga : IWebsite
         ILocator heading = page.Locator("h2.popup_heading");
 
         // Wait a short moment to see if it appears (optional)
-        if (await heading.CountAsync() > 0)
+        if (await heading.CountAsync().ConfigureAwait(false) > 0)
         {
-            string text = (await heading.First.InnerTextAsync()).Trim();
+            string text = (await heading.First.InnerTextAsync().ConfigureAwait(false)).Trim();
 
             if (text.Equals("This product is rated 18+", StringComparison.OrdinalIgnoreCase))
             {
-                await page.Locator("button.btn_submit#submit").ClickAsync();
+                await page.Locator("button.btn_submit#submit").ClickAsync().ConfigureAwait(false);
                 _logger.ProceededFromAgePopup();
             }
         }
@@ -234,11 +234,11 @@ public sealed partial class MerryManga : IWebsite
         string url = GenerateWebsiteUrl(bookTitleLower, bookType, hasBoxSet);
         links.Add(url);
 
-        await page!.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
-        await page.WaitForSelectorAsync("div.container.main-content");
+        await page!.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded }).ConfigureAwait(false);
+        await page.WaitForSelectorAsync("div.container.main-content").ConfigureAwait(false);
 
         HtmlDocument doc = HtmlFactory.CreateDocument();
-        doc.LoadHtml(await page.ContentAsync());
+        doc.LoadHtml(await page.ContentAsync().ConfigureAwait(false));
 
         if (hasBoxSet && doc.Text.Contains("No products were found matching your selection."))
         {
@@ -248,15 +248,15 @@ public sealed partial class MerryManga : IWebsite
             url = GenerateWebsiteUrl(bookTitleLower, bookType, hasBoxSet);
             links.Add(url);
 
-            await page.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
-            await page.WaitForSelectorAsync("div.container.main-content");
+            await page.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded }).ConfigureAwait(false);
+            await page.WaitForSelectorAsync("div.container.main-content").ConfigureAwait(false);
         }
 
-        await CheckAndProceedIfRated18Async(page);
-        await ExhaustLoadMoreAsync(page);
+        await CheckAndProceedIfRated18Async(page).ConfigureAwait(false);
+        await ExhaustLoadMoreAsync(page).ConfigureAwait(false);
 
         doc = HtmlFactory.CreateDocument();
-        doc.LoadHtml(await page.ContentAsync());
+        doc.LoadHtml(await page.ContentAsync().ConfigureAwait(false));
         listingPages.Add(doc);
 
         if (hasBoxSet)
@@ -277,7 +277,7 @@ public sealed partial class MerryManga : IWebsite
     private async Task ExhaustLoadMoreAsync(IPage page)
     {
         ILocator visibleBtn = page.Locator("button.facetwp-load-more:not(.facetwp-hidden)");
-        if (await visibleBtn.CountAsync() == 0) return;
+        if (await visibleBtn.CountAsync().ConfigureAwait(false) == 0) return;
 
         ILocator hiddenBtn = page.Locator("button.facetwp-load-more.facetwp-hidden");
         ILocator pager = page.Locator("div.facetwp-facet.facetwp-facet-load_more.facetwp-type-pager");
@@ -285,9 +285,9 @@ public sealed partial class MerryManga : IWebsite
 
         while (true)
         {
-            if (await noProducts.CountAsync() > 0)
+            if (await noProducts.CountAsync().ConfigureAwait(false) > 0)
             {
-                string text = (await noProducts.First.InnerTextAsync()).Trim();
+                string text = (await noProducts.First.InnerTextAsync().ConfigureAwait(false)).Trim();
                 if (text.Equals("No products were found matching your selection.", StringComparison.OrdinalIgnoreCase))
                 {
                     break;
@@ -295,21 +295,21 @@ public sealed partial class MerryManga : IWebsite
             }
 
             _logger.MerryMangaLoadingMoreEntries();
-            if (await visibleBtn.CountAsync() == 0) break;
+            if (await visibleBtn.CountAsync().ConfigureAwait(false) == 0) break;
 
-            await visibleBtn.First.ClickAsync();
+            await visibleBtn.First.ClickAsync().ConfigureAwait(false);
             await pager.First.WaitForAsync(new LocatorWaitForOptions
             {
                 State = WaitForSelectorState.Attached,
                 Timeout = 5000
-            });
+            }).ConfigureAwait(false);
 
             Task tHidden = hiddenBtn.First.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached, Timeout = 4000 });
             Task tGone = visibleBtn.First.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Detached, Timeout = 4000 });
-            await Task.WhenAny(tHidden, tGone);
-            await page.WaitForTimeoutAsync(50);
+            await Task.WhenAny(tHidden, tGone).ConfigureAwait(false);
+            await page.WaitForTimeoutAsync(50).ConfigureAwait(false);
 
-            if (await hiddenBtn.CountAsync() > 0 || await visibleBtn.CountAsync() == 0)
+            if (await hiddenBtn.CountAsync().ConfigureAwait(false) > 0 || await visibleBtn.CountAsync().ConfigureAwait(false) == 0)
             {
                 break;
             }

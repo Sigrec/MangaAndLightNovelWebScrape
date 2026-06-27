@@ -101,7 +101,7 @@ public sealed partial class MangaMart : IWebsite
                     State = WaitForSelectorState.Attached,
                     Timeout = 5_000
                 }
-            );
+            ).ConfigureAwait(false);
 
             await page.WaitForSelectorAsync(
                 "span.price.price--highlight",
@@ -110,19 +110,19 @@ public sealed partial class MangaMart : IWebsite
                     State = WaitForSelectorState.Attached,
                     Timeout = 5_000
                 }
-            );
+            ).ConfigureAwait(false);
         }
         catch (TimeoutException) { }
         finally
         {
-            await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+            await page.WaitForLoadStateAsync(LoadState.NetworkIdle).ConfigureAwait(false);
 
             await page.ScrollToBottomUntilStableAsync(
                 "span.price.price--highlight",
                 maxScrolls: 60,
                 stabilityMs: 900,
                 stepPx: 1400
-            );
+            ).ConfigureAwait(false);
         }
     }
 
@@ -141,10 +141,10 @@ public sealed partial class MangaMart : IWebsite
         string url = GenerateWebsiteUrl(bookType, encodedBookTitle, curPageNum);
         links.Add(url);
 
-        await page!.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
-        await WaitForStablePageLoadAsync(page);
+        await page!.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded }).ConfigureAwait(false);
+        await WaitForStablePageLoadAsync(page).ConfigureAwait(false);
         HtmlDocument doc = HtmlFactory.CreateDocument();
-        doc.LoadHtml(await page.ContentAsync());
+        doc.LoadHtml(await page.ContentAsync().ConfigureAwait(false));
         listingPages.Add(doc);
 
         int maxPageNum;
@@ -160,10 +160,10 @@ public sealed partial class MangaMart : IWebsite
             curPageNum++;
             url = GenerateWebsiteUrl(bookType, encodedBookTitle, curPageNum);
             links.Add(url);
-            await page.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
-            await WaitForStablePageLoadAsync(page);
+            await page.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded }).ConfigureAwait(false);
+            await WaitForStablePageLoadAsync(page).ConfigureAwait(false);
             HtmlDocument next = HtmlFactory.CreateDocument();
-            next.LoadHtml(await page.ContentAsync());
+            next.LoadHtml(await page.ContentAsync().ConfigureAwait(false));
             listingPages.Add(next);
         }
 
@@ -174,8 +174,8 @@ public sealed partial class MangaMart : IWebsite
             async href =>
             {
                 string fullUrl = href.StartsWith('/') ? $"{BASE_URL}{href}" : $"{BASE_URL}/{href}";
-                return await html.LoadFromWebAsync(fullUrl);
-            });
+                return await html.LoadFromWebAsync(fullUrl).ConfigureAwait(false);
+            }).ConfigureAwait(false);
 
         InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         return (data, links);
@@ -261,7 +261,7 @@ public sealed partial class MangaMart : IWebsite
                     {
                         fetches[i] = resolveDescDoc(hrefs[needsDesc[i]]!);
                     }
-                    HtmlDocument[] docs = await Task.WhenAll(fetches);
+                    HtmlDocument[] docs = await Task.WhenAll(fetches).ConfigureAwait(false);
                     for (int i = 0; i < needsDesc.Count; i++)
                     {
                         descCache[needsDesc[i]] = docs[i];

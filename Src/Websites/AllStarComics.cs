@@ -166,7 +166,7 @@ public sealed partial class AllStarComics : IWebsite
             string url = GenerateWebsiteUrl(bookTitle, curPage);
             links.Add(url);
 
-            HtmlDocument doc = await web.LoadFromWebAsync(url);
+            HtmlDocument doc = await web.LoadFromWebAsync(url).ConfigureAwait(false);
             doc.ConfigurePerf();
             listingPages.Add(doc);
 

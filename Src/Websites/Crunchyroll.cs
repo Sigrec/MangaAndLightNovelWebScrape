@@ -191,7 +191,7 @@ public sealed partial class Crunchyroll : IWebsite
             string url = GenerateWebsiteUrl(bookType, bookTitle);
             links.Add(url);
 
-            HtmlDocument doc = await html.LoadFromWebAsync(url);
+            HtmlDocument doc = await html.LoadFromWebAsync(url).ConfigureAwait(false);
             doc.ConfigurePerf();
             DumpDebugHtml(doc.Text, "search");
 
@@ -204,7 +204,7 @@ public sealed partial class Crunchyroll : IWebsite
 
                 url = GenerateWebsiteUrl(bookType, bookTitle, true);
                 links.Add(url);
-                doc = await html.LoadFromWebAsync(url);
+                doc = await html.LoadFromWebAsync(url).ConfigureAwait(false);
                 doc.ConfigurePerf();
                 DumpDebugHtml(doc.Text, "collections");
             }

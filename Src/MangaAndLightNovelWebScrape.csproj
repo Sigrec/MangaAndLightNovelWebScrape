@@ -2,8 +2,15 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Optimize>true</Optimize>
-    <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
     <PlatformTarget>AnyCPU</PlatformTarget>
+    <!-- JSON is fully source-generated via AniListJsonContext. Microsoft.Playwright still
+         performs runtime reflection over its Node-RPC driver protocol, so consumers using
+         Playwright-rendered sites (KinokuniyaUSA / BooksAMillion / AmazonUSA / MerryManga /
+         ForbiddenPlanet / MangaMate / MangaMart / AmazonJapan) cannot run under NativeAOT
+         even though this library is now AOT-clean from a code perspective. HTML-only
+         consumers can self-host AOT today by referencing the library and ignoring those
+         sites. Keep this `false` until Playwright ships an AOT-compatible release. -->
+    <IsAotCompatible>false</IsAotCompatible>
     <PackageVersion>6.0.0</PackageVersion>
     <Version>6.0.0</Version>
     <FileVersion>6.0.0.0</FileVersion>
@@ -19,7 +26,10 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseFile>LICENSE.md</PackageLicenseFile>
     <!--  <GeneratePackageOnBuild>True</GeneratePackageOnBuild> -->
-    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
+    <!-- All JSON paths in this library are source-generated. Setting this to `false` ensures
+         a consumer's reflection-based JsonSerializer call fails loudly under trim/AOT instead
+         of silently falling back to reflection. -->
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
 
   <ItemGroup>
@@ -39,8 +49,6 @@
     <PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.9" />
     <PackageReference Include="Microsoft.Playwright" Version="1.61.0" />
-    <PackageReference Include="GraphQL.Client" Version="6.1.0" />
-    <PackageReference Include="GraphQL.Client.Serializer.SystemTextJson" Version="6.1.0" />
     <PackageReference Include="ZLinq" Version="1.5.6" />
   </ItemGroup>
 </Project>

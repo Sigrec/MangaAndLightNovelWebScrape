@@ -209,7 +209,7 @@ public sealed partial class RobertsAnimeCornerStore : IWebsite
         try
         {
             HtmlWeb html = HtmlFactory.CreateWeb();
-            HtmlDocument landing = await html.LoadFromWebAsync(GenerateWebsiteUrl(bookTitle));
+            HtmlDocument landing = await html.LoadFromWebAsync(GenerateWebsiteUrl(bookTitle)).ConfigureAwait(false);
             landing.ConfigurePerf();
 
             links = SelectSeriesLinks(landing, bookTitle, bookType);
@@ -223,7 +223,7 @@ public sealed partial class RobertsAnimeCornerStore : IWebsite
                     _logger.UrlGenerated(links[i]);
                     fetches[i] = html.LoadFromWebAsync(links[i]);
                 }
-                HtmlDocument[] docs = await Task.WhenAll(fetches);
+                HtmlDocument[] docs = await Task.WhenAll(fetches).ConfigureAwait(false);
                 foreach (HtmlDocument d in docs)
                 {
                     seriesDocs.Add(d);

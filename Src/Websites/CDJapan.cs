@@ -25,13 +25,13 @@ public sealed partial class CDJapan
 
     internal async Task CreateCDJapanTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> MasterDataList)
     {
-        string? altTitle = await TranslateAPI.ToEnglish(bookTitle, bookType == BookType.Manga ? "MANGA" : "NOVEL") ?? await TranslateAPI.ToRomaji(bookTitle, bookType == BookType.Manga ? "MANGA" : "NOVEL");
+        string? altTitle = await TranslateAPI.ToEnglish(bookTitle, bookType == BookType.Manga ? "MANGA" : "NOVEL").ConfigureAwait(false) ?? await TranslateAPI.ToRomaji(bookTitle, bookType == BookType.Manga ? "MANGA" : "NOVEL").ConfigureAwait(false);
         _logger.AltTitle(altTitle);
 
-        await Task.Run(() => 
+        await Task.Run(() =>
         {
             MasterDataList.Add(GetCDJapanData(bookTitle, altTitle, bookType));
-        });
+        }).ConfigureAwait(false);
     }
     
     internal void ClearData()

@@ -1,10 +1,11 @@
-﻿using BenchmarkDotNet.Running;
+using BenchmarkDotNet.Running;
 using BenchmarkDotNet.Configs;
 using BenchmarkDotNet.Exporters;
 using BenchmarkDotNet.Loggers;
 using BenchmarkDotNet.Columns;
-using System.Reflection;
 using BenchmarkDotNet.Diagnosers;
+using BenchmarkDotNet.Validators;
+using System.Reflection;
 using Benchmark.Websites.Crunchyroll;
 using Benchmark.Websites.RobertsAnimeCornerStore;
 using Benchmark.Websites.InStockTrades;
@@ -18,47 +19,58 @@ namespace Benchmark;
 
 public class Program
 {
+    // Single source of truth: maps every alias (full name + short code) to its benchmark Type
+    // via case-insensitive string lookup. Previous shape used Dictionary<string[], Type>, which
+    // is keyed by array *reference* rather than contents — every lookup had to fall back to a
+    // linear scan with .Keys.Any(keys => keys.Contains(...)).
+    private static readonly Dictionary<string, Type> Benchmarks = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Crunchyroll"] = typeof(CrunchyrollBenchmarks),
+        ["CR"]          = typeof(CrunchyrollBenchmarks),
+
+        ["InStockTrades"] = typeof(InStockTradesBenchmarks),
+        ["IST"]           = typeof(InStockTradesBenchmarks),
+
+        ["RobertsAnimeCornerStore"] = typeof(RobertsAnimeCornerStoreBenchmarks),
+        ["ROB"]                     = typeof(RobertsAnimeCornerStoreBenchmarks),
+
+        ["BooksAMillion"] = typeof(BooksAMillionBenchmarks),
+        ["BAM"]           = typeof(BooksAMillionBenchmarks),
+
+        ["KinokuniyaUSA"] = typeof(KinokuniyaUSABenchmarks),
+        ["KINOUS"]        = typeof(KinokuniyaUSABenchmarks),
+
+        ["SciFier"] = typeof(SciFierBenchmarks),
+        ["SF"]      = typeof(SciFierBenchmarks),
+
+        ["MerryManga"] = typeof(MerryMangaBenchmarks),
+        ["MERRY"]      = typeof(MerryMangaBenchmarks),
+
+        ["MangaMart"] = typeof(MangaMartBenchmarks),
+        ["MART"]      = typeof(MangaMartBenchmarks),
+    };
+
     public static void Main(string[] args)
     {
-        // Dictionary to map website names to their corresponding benchmark classes
-        Dictionary<string[], Type> websiteBenchmarks = new()
-        {
-            { [ "Crunchyroll", "CR" ], typeof(CrunchyrollBenchmarks) },
-            { [ "InStockTrades", "IST" ], typeof(InStockTradesBenchmarks) },
-            { [ "RobertsAnimeCornerStore", "ROB" ], typeof(RobertsAnimeCornerStoreBenchmarks) },
-            { [ "BooksAMillion", "BAM" ], typeof(BooksAMillionBenchmarks) },
-            { [ "KinokuniyaUSA", "KINOUS" ], typeof(KinokuniyaUSABenchmarks) },
-            { [ "SciFier", "SF" ], typeof(SciFierBenchmarks) },
-            { [ "MerryManga", "MERRY" ], typeof(MerryMangaBenchmarks) },
-            { [ "MangaMart", "MART" ], typeof(MangaMartBenchmarks) },
-        };
-
-
-        // Check if an argument is given, if not, run all benchmarks
         if (args.Length == 0)
         {
             Console.WriteLine("No arguments provided. Running all benchmarks...");
-            RunBenchmarks(null, null);
+            RunBenchmarks(null);
+            return;
         }
-        else
+
+        string requested = args[0];
+        if (!Benchmarks.ContainsKey(requested))
         {
-            // If an argument is given, run the specific benchmark
-            string website = args[0]; // Assume the first argument is the website name
-            if (websiteBenchmarks.Keys.Any(keys => keys.Contains(website)))
-            {
-                RunBenchmarks(website, websiteBenchmarks);
-            }
-            else
-            {
-                Console.WriteLine($"Unknown website: {website}. Please provide a valid website name.");
-            }
+            Console.WriteLine($"Unknown website: {requested}. Valid aliases: {string.Join(", ", Benchmarks.Keys)}");
+            return;
         }
+
+        RunBenchmarks(requested);
     }
 
-    private static void RunBenchmarks(string? website, Dictionary<string[], Type>? websiteBenchmarks)
+    private static void RunBenchmarks(string? website)
     {
-
-        // Create a custom configuration for BenchmarkDotNet with an output folder
         ManualConfig config = ManualConfig.CreateEmpty()
             .WithOptions(ConfigOptions.JoinSummary)
             .AddExporter(MarkdownExporter.GitHub)
@@ -66,35 +78,28 @@ public class Program
             .AddDiagnoser(MemoryDiagnoser.Default)
             .AddColumnProvider(DefaultColumnProviders.Instance)
             .AddColumn(StatisticColumn.OperationsPerSecond)
-            .WithArtifactsPath(GetArtifactsPath(websiteBenchmarks!
-                .FirstOrDefault(entry => entry.Key.Contains(website))
-                .Key.FirstOrDefault())
-            );
+            // FailOnError on the JIT optimizations validator catches accidental Debug runs
+            // before they pollute the results with non-optimized numbers.
+            .AddValidator(JitOptimizationsValidator.FailOnError)
+            .WithArtifactsPath(GetArtifactsPath(website));
 
-        if (website == null)
+        if (website is null)
         {
-            // If no specific website, run all benchmarks
             BenchmarkSwitcher.FromAssembly(Assembly.GetExecutingAssembly()).Run([], config);
         }
         else
         {
-            // If a specific website is given, run that website's benchmark
-            Type benchmarkType = websiteBenchmarks!
-                .FirstOrDefault(entry => entry.Key.Contains(website))
-                .Value;
+            Type benchmarkType = Benchmarks[website];
             string filter = $"*{benchmarkType.Name}*";
-
-            // Run the specific benchmark with the filter and output configuration
             BenchmarkSwitcher.FromAssembly(benchmarkType.Assembly).Run(["--filter", filter], config);
         }
     }
 
     private static string GetArtifactsPath(string? website)
     {
-        // If a website is provided, use it to create a folder under 'results'
-        // Otherwise, create a generic folder for all results
-        string folderName = @$"Websites/{website}" ?? "AllBenchmarks";
-        Directory.CreateDirectory(@$"Websites/{folderName}"); // Ensure the directory exists
+        // One bucket per benchmark target; the "AllBenchmarks" bucket holds the no-arg run.
+        string folderName = $"Websites/{website ?? "AllBenchmarks"}";
+        Directory.CreateDirectory(folderName);
         return folderName;
     }
 }

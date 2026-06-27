@@ -21,7 +21,7 @@ internal sealed class PlaywrightSession : IAsyncDisposable
 
     public async ValueTask DisposeAsync()
     {
-        await Browser.CloseAsync();
+        await Browser.CloseAsync().ConfigureAwait(false);
         Playwright.Dispose();
     }
 }
@@ -46,7 +46,7 @@ internal static class PlaywrightFactory
             Browser target = Browser.Edge,
             bool headless = true)
     {
-        IPlaywright playwright = await Playwright.CreateAsync();
+        IPlaywright playwright = await Playwright.CreateAsync().ConfigureAwait(false);
 
         try
         {
@@ -57,18 +57,18 @@ internal static class PlaywrightFactory
                     Headless = headless,
                     Channel = "msedge",
                     Args = CHROMIUM_ARGS_PLAYWRIGHT,
-                }),
+                }).ConfigureAwait(false),
                 Browser.Chrome => await playwright.Chromium.LaunchAsync(new()
                 {
                     Headless = headless,
                     Channel = "chrome",
                     Args = CHROMIUM_ARGS_PLAYWRIGHT,
-                }),
+                }).ConfigureAwait(false),
                 Browser.FireFox => await playwright.Firefox.LaunchAsync(new()
                 {
                     Headless = headless,
                     ExecutablePath = ResolveFirefoxExecutablePath(),
-                }),
+                }).ConfigureAwait(false),
                 _ => throw new ArgumentOutOfRangeException(nameof(target), $"Unsupported browser: {target}"),
             };
 
@@ -106,10 +106,10 @@ internal static class PlaywrightFactory
 
         if (needsUserAgent || !string.IsNullOrWhiteSpace(userAgentOverride))
         {
-            opts.UserAgent = ResolveUserAgent(needsUserAgent, userAgentOverride);
+            opts.UserAgent = ResolveUserAgent(userAgentOverride);
         }
 
-        IBrowserContext context = await browser.NewContextAsync(opts);
+        IBrowserContext context = await browser.NewContextAsync(opts).ConfigureAwait(false);
 
         if (blockImages)
         {
@@ -119,22 +119,22 @@ internal static class PlaywrightFactory
                 // Never abort the HTML itself
                 if (type is "document")
                 {
-                    await route.ContinueAsync();
+                    await route.ContinueAsync().ConfigureAwait(false);
                     return;
                 }
 
                 // Block heavy/visual assets the scraper never reads
                 if (type is "image" or "font" or "media" or "stylesheet")
                 {
-                    await route.AbortAsync();
+                    await route.AbortAsync().ConfigureAwait(false);
                     return;
                 }
 
-                await route.ContinueAsync();
-            });
+                await route.ContinueAsync().ConfigureAwait(false);
+            }).ConfigureAwait(false);
         }
 
-        IPage page = await context.NewPageAsync();
+        IPage page = await context.NewPageAsync().ConfigureAwait(false);
         page.SetDefaultTimeout(defaultTimeout);
         page.SetDefaultNavigationTimeout(defaultTimeout);
 
@@ -150,34 +150,23 @@ internal static class PlaywrightFactory
         IBrowserContext context = page.Context;
         try
         {
-            await page.CloseAsync();
+            await page.CloseAsync().ConfigureAwait(false);
         }
         finally
         {
-            await context.CloseAsync();
+            await context.CloseAsync().ConfigureAwait(false);
         }
     }
 
-    private static string ResolveUserAgent(bool needsUserAgent, string? userAgentOverride)
-    {
-        if (!string.IsNullOrWhiteSpace(userAgentOverride))
-        {
-            return userAgentOverride;
-        }
+    // Modern desktop Chrome UA — shipped as a literal so we don't allocate an HtmlWeb just to
+    // peek at its default. Update when sites start rejecting this string as too old.
+    private const string DEFAULT_USER_AGENT =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+        "AppleWebKit/537.36 (KHTML, like Gecko) " +
+        "Chrome/124.0.0.0 Safari/537.36";
 
-        if (needsUserAgent)
-        {
-            HtmlWeb web = new();
-            if (!string.IsNullOrWhiteSpace(web.UserAgent))
-            {
-                return web.UserAgent;
-            }
-        }
-
-        return "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-               "AppleWebKit/537.36 (KHTML, like Gecko) " +
-               "Chrome/124.0.0.0 Safari/537.36";
-    }
+    private static string ResolveUserAgent(string? userAgentOverride)
+        => string.IsNullOrWhiteSpace(userAgentOverride) ? DEFAULT_USER_AGENT : userAgentOverride;
 
     /// <summary>
     /// Returns a system Firefox executable path on Windows; on other OSes returns null so
@@ -222,24 +211,24 @@ internal static class PlaywrightFactory
     {
         async Task<int> getHeight() =>
             await page.EvaluateAsync<int>(
-                "() => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)");
+                "() => Math.max(document.body.scrollHeight, document.documentElement.scrollHeight)").ConfigureAwait(false);
 
         async Task scrollBy(int dy) =>
-            await page.EvaluateAsync("dy => window.scrollBy(0, dy)", dy);
+            await page.EvaluateAsync("dy => window.scrollBy(0, dy)", dy).ConfigureAwait(false);
 
-        int lastHeight = await getHeight();
+        int lastHeight = await getHeight().ConfigureAwait(false);
         int stableFor = 0;
         int previousCount = -1;
         const int pollMs = 150;
 
         for (int i = 0; i < maxScrolls; i++)
         {
-            await scrollBy(stepPx);
-            await Task.Delay(250);
+            await scrollBy(stepPx).ConfigureAwait(false);
+            await Task.Delay(250).ConfigureAwait(false);
 
-            int newHeight = await getHeight();
+            int newHeight = await getHeight().ConfigureAwait(false);
 
-            int count = await page.Locator(watchSelector).CountAsync();
+            int count = await page.Locator(watchSelector).CountAsync().ConfigureAwait(false);
             if (count != previousCount)
             {
                 previousCount = count;
@@ -256,7 +245,7 @@ internal static class PlaywrightFactory
             lastHeight = newHeight;
         }
 
-        await page.EvaluateAsync("() => window.scrollTo(0, document.body.scrollHeight)");
+        await page.EvaluateAsync("() => window.scrollTo(0, document.body.scrollHeight)").ConfigureAwait(false);
     }
 
     /// <summary>
@@ -271,12 +260,12 @@ internal static class PlaywrightFactory
             {
                 State = WaitForSelectorState.Visible,
                 Timeout = timeout
-            });
-            await locator.ClickAsync();
+            }).ConfigureAwait(false);
+            await locator.ClickAsync().ConfigureAwait(false);
         }
         catch
         {
-            await locator.ClickAsync(new LocatorClickOptions { Force = true });
+            await locator.ClickAsync(new LocatorClickOptions { Force = true }).ConfigureAwait(false);
         }
     }
 }

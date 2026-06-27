@@ -255,7 +255,7 @@ public sealed partial class ForbiddenPlanet : IWebsite
             string url = GenerateWebsiteUrl(bookType, bookTitle, isSecondCategory, 1);
             links.Add(url);
 
-            await page!.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
+            await page!.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded }).ConfigureAwait(false);
 
             try
             {
@@ -263,17 +263,17 @@ public sealed partial class ForbiddenPlanet : IWebsite
                 {
                     State = WaitForSelectorState.Attached,
                     Timeout = 15000
-                });
+                }).ConfigureAwait(false);
             }
             catch (TimeoutException)
             {
                 continue;
             }
 
-            await LoadAllEntries(page);
+            await LoadAllEntries(page).ConfigureAwait(false);
 
             HtmlDocument doc = HtmlFactory.CreateDocument();
-            doc.LoadHtml(await page.ContentAsync());
+            doc.LoadHtml(await page.ContentAsync().ConfigureAwait(false));
             listingPages.Add(doc);
         }
 
@@ -283,9 +283,9 @@ public sealed partial class ForbiddenPlanet : IWebsite
             bookType,
             async href =>
             {
-                HtmlDocument descDoc = await html.LoadFromWebAsync($"{BASE_URL}{href}");
+                HtmlDocument descDoc = await html.LoadFromWebAsync($"{BASE_URL}{href}").ConfigureAwait(false);
                 return descDoc;
-            });
+            }).ConfigureAwait(false);
 
         InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         return (data, links);
@@ -309,7 +309,7 @@ public sealed partial class ForbiddenPlanet : IWebsite
 
         foreach (HtmlDocument doc in listingPages)
         {
-            int parsed = await ProcessPageWithResolverAsync(doc, bookTitle, normalizedBookTitle, bookType, BookTitleRemovalCheck, resolveDescDoc, data);
+            int parsed = await ProcessPageWithResolverAsync(doc, bookTitle, normalizedBookTitle, bookType, BookTitleRemovalCheck, resolveDescDoc, data).ConfigureAwait(false);
             _logger.NodeCounts(parsed, parsed, parsed, parsed, parsed);
         }
 
@@ -342,12 +342,12 @@ public sealed partial class ForbiddenPlanet : IWebsite
         const int MaxClicks = 50;
         for (int i = 0; i < MaxClicks; i++)
         {
-            if (!await loadMore.IsVisibleAsync()) break;
-            if (!await loadMore.IsEnabledAsync()) break;
+            if (!await loadMore.IsVisibleAsync().ConfigureAwait(false)) break;
+            if (!await loadMore.IsEnabledAsync().ConfigureAwait(false)) break;
 
-            int before = await productItems.CountAsync();
+            int before = await productItems.CountAsync().ConfigureAwait(false);
             _logger.ForbiddenPlanetLoadingMoreEntries();
-            await loadMore.ClickAsync();
+            await loadMore.ClickAsync().ConfigureAwait(false);
 
             try
             {
@@ -355,7 +355,7 @@ public sealed partial class ForbiddenPlanet : IWebsite
                 // within a couple seconds; 15s is a generous ceiling for slow networks.
                 await page.WaitForFunctionAsync(
                     $"() => document.querySelectorAll('div.full > ul > li').length > {before}",
-                    new PageWaitForFunctionOptions { Timeout = 15000 });
+                    new PageWaitForFunctionOptions { Timeout = 15000 }).ConfigureAwait(false);
             }
             catch (TimeoutException)
             {
@@ -458,7 +458,7 @@ public sealed partial class ForbiddenPlanet : IWebsite
                 {
                     fetches[i] = resolveDescDoc(detailHrefs[needsDesc[i]]!);
                 }
-                HtmlDocument[] docs = await Task.WhenAll(fetches);
+                HtmlDocument[] docs = await Task.WhenAll(fetches).ConfigureAwait(false);
                 for (int i = 0; i < needsDesc.Count; i++)
                 {
                     descCache[needsDesc[i]] = docs[i];

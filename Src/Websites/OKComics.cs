@@ -98,7 +98,7 @@ public sealed partial class OKComics : IWebsite
         {
             string url = GenerateWebsiteUrl(bookTitle, bookType, curPage);
             links.Add(url);
-            HtmlDocument doc = await web.LoadFromWebAsync(url);
+            HtmlDocument doc = await web.LoadFromWebAsync(url).ConfigureAwait(false);
             doc.ConfigurePerf();
             listingPages.Add(doc);
 
@@ -117,8 +117,8 @@ public sealed partial class OKComics : IWebsite
                 string fullUrl = href.StartsWith("http", StringComparison.OrdinalIgnoreCase)
                     ? href
                     : href.StartsWith('/') ? $"{BASE_URL}{href}" : $"{BASE_URL}/{href}";
-                return await web.LoadFromWebAsync(fullUrl);
-            });
+                return await web.LoadFromWebAsync(fullUrl).ConfigureAwait(false);
+            }).ConfigureAwait(false);
 
         InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         return (data, links);

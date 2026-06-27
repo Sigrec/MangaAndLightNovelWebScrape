@@ -5,6 +5,11 @@ internal static partial class MasterScrapeLogging
     #region Scrape lifecycle
 
     [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "MangaAndLightNovelWebScrape results are best-effort — retailers change DOMs, swap themes, or rate-limit, which can produce stale, missing, or incorrect entries until the scraper catches up. Report drift at https://github.com/Sigrec/MangaAndLightNovelWebScrape/issues.")]
+    public static partial void LibraryAccuracyDisclaimer(this ILogger logger);
+
+    [LoggerMessage(
         Level = LogLevel.Critical,
         Message = "User inputted a multi region instead of a singular region")]
     public static partial void MultiRegionRejected(this ILogger logger);

@@ -159,7 +159,7 @@ public sealed partial class KingsComics : IWebsite
             string url = GenerateWebsiteUrl(bookTitle, curPage);
             links.Add(url);
 
-            HtmlDocument doc = await web.LoadFromWebAsync(url);
+            HtmlDocument doc = await web.LoadFromWebAsync(url).ConfigureAwait(false);
             doc.ConfigurePerf();
 
             HtmlNodeCollection? cards = doc.DocumentNode.SelectNodes(_productCardXPath);

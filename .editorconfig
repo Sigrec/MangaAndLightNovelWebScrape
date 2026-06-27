@@ -1,0 +1,134 @@
+root = true
+
+[*]
+indent_style = space
+indent_size = 4
+end_of_line = crlf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.cs]
+
+# Flag unused using directives so `dotnet format style --diagnostics IDE0005` can remove them.
+dotnet_diagnostic.IDE0005.severity = warning
+
+# "Can be simplified" family — surface as warnings so they show up in
+# dotnet build / CI, not just as IDE hints. Pure code-style; no runtime
+# behavior change. Auto-fixable with `dotnet format style`.
+
+# Null / coalesce / null-propagation
+dotnet_diagnostic.IDE0029.severity = warning  # Use coalesce expression (non-nullable)
+dotnet_diagnostic.IDE0030.severity = warning  # Use coalesce expression (nullable)
+dotnet_diagnostic.IDE0031.severity = suggestion  # Use null propagation (?.) — silenced in build because `?.` is illegal inside EF expression-tree Selects (CS8072); IDE still surfaces it as a hint for plain delegate code
+dotnet_diagnostic.IDE0041.severity = warning  # Use 'is null' check
+dotnet_diagnostic.IDE0074.severity = warning  # Use compound assignment (??=)
+dotnet_diagnostic.IDE0150.severity = warning  # Prefer null check over type check
+dotnet_diagnostic.IDE0270.severity = warning  # Null check can be simplified
+
+# Object / collection / new() initialization
+dotnet_diagnostic.IDE0017.severity = warning  # Use object initializer
+dotnet_diagnostic.IDE0028.severity = warning  # Use collection initializer
+dotnet_diagnostic.IDE0090.severity = warning  # Simplify 'new' (target-typed)
+dotnet_diagnostic.IDE0300.severity = warning  # Use collection expression []
+dotnet_diagnostic.IDE0301.severity = warning  # Collection expression for empty
+dotnet_diagnostic.IDE0302.severity = warning  # Collection expression for stackalloc
+dotnet_diagnostic.IDE0303.severity = warning  # Collection expression for Create()
+dotnet_diagnostic.IDE0304.severity = warning  # Collection expression for builder
+dotnet_diagnostic.IDE0305.severity = warning  # Collection expression for fluent
+
+# Pattern matching / switch expressions
+dotnet_diagnostic.IDE0019.severity = warning  # Pattern match: 'as' + null check
+dotnet_diagnostic.IDE0020.severity = warning  # Pattern match: 'is' + cast
+dotnet_diagnostic.IDE0066.severity = warning  # Use switch expression
+dotnet_diagnostic.IDE0078.severity = warning  # Use pattern matching
+dotnet_diagnostic.IDE0083.severity = warning  # Use pattern matching ('not' operator)
+
+# Conditional / boolean simplification
+dotnet_diagnostic.IDE0045.severity = warning  # Conditional expression for assignment
+dotnet_diagnostic.IDE0046.severity = warning  # Conditional expression for return
+dotnet_diagnostic.IDE0075.severity = warning  # Simplify conditional expression
+
+# Expression-bodied members (matches CLAUDE.md "use expression-body for single-expression members")
+# Preference is `when_on_single_line` so block bodies are only flagged when the body is a single
+# expression — multi-line members keep their braces without warnings.
+csharp_style_expression_bodied_constructors    = when_on_single_line:warning
+csharp_style_expression_bodied_methods         = when_on_single_line:warning
+csharp_style_expression_bodied_operators       = when_on_single_line:warning
+csharp_style_expression_bodied_properties      = when_on_single_line:warning
+csharp_style_expression_bodied_indexers        = when_on_single_line:warning
+csharp_style_expression_bodied_accessors       = when_on_single_line:warning
+csharp_style_expression_bodied_local_functions = when_on_single_line:warning
+csharp_style_expression_bodied_lambdas         = when_on_single_line:warning
+
+dotnet_diagnostic.IDE0021.severity = warning  # Expression body for constructors
+dotnet_diagnostic.IDE0022.severity = warning  # Expression body for methods
+dotnet_diagnostic.IDE0023.severity = warning  # Expression body for conversion operators
+dotnet_diagnostic.IDE0024.severity = warning  # Expression body for operators
+dotnet_diagnostic.IDE0025.severity = warning  # Expression body for properties
+dotnet_diagnostic.IDE0026.severity = warning  # Expression body for indexers
+dotnet_diagnostic.IDE0027.severity = warning  # Expression body for accessors
+dotnet_diagnostic.IDE0061.severity = warning  # Expression body for local function
+
+# Misc simplifications
+dotnet_diagnostic.IDE0001.severity = warning  # Simplify name (drop redundant qualifier)
+dotnet_diagnostic.IDE0002.severity = warning  # Simplify member access
+dotnet_diagnostic.IDE0004.severity = warning  # Remove unnecessary cast
+dotnet_diagnostic.IDE0034.severity = warning  # Simplify default expression
+dotnet_diagnostic.IDE0037.severity = warning  # Use inferred member name (tuples / anonymous types)
+dotnet_diagnostic.IDE0054.severity = warning  # Use compound assignment
+dotnet_diagnostic.IDE0056.severity = warning  # Use index operator (^1)
+dotnet_diagnostic.IDE0057.severity = warning  # Use range operator (..)
+dotnet_diagnostic.IDE0063.severity = warning  # Use simple 'using' statement
+dotnet_diagnostic.IDE0070.severity = warning  # Use HashCode.Combine
+dotnet_diagnostic.IDE0071.severity = warning  # Simplify interpolation
+dotnet_diagnostic.IDE0079.severity = warning  # Remove unnecessary suppression
+dotnet_diagnostic.IDE0080.severity = warning  # Remove unnecessary suppression operator
+dotnet_diagnostic.IDE0100.severity = warning  # Remove unnecessary equality
+dotnet_diagnostic.IDE0110.severity = warning  # Remove unnecessary discard
+dotnet_diagnostic.IDE0180.severity = warning  # Use tuple to swap values
+
+# Constants: PascalCase (must be defined before field rules to take priority)
+dotnet_naming_rule.constants_should_be_pascal_case.severity = warning
+dotnet_naming_rule.constants_should_be_pascal_case.symbols = constant_fields
+dotnet_naming_rule.constants_should_be_pascal_case.style = pascal_case
+
+dotnet_naming_symbols.constant_fields.applicable_kinds = field
+dotnet_naming_symbols.constant_fields.applicable_accessibilities = *
+dotnet_naming_symbols.constant_fields.required_modifiers = const
+
+dotnet_naming_style.pascal_case.capitalization = pascal_case
+
+# Private fields (including static): _camelCase
+dotnet_naming_rule.private_fields_should_be_camel_case.severity = warning
+dotnet_naming_rule.private_fields_should_be_camel_case.symbols = private_fields
+dotnet_naming_rule.private_fields_should_be_camel_case.style = underscore_camel_case
+
+dotnet_naming_symbols.private_fields.applicable_kinds = field
+dotnet_naming_symbols.private_fields.applicable_accessibilities = private, private_protected
+
+dotnet_naming_style.underscore_camel_case.required_prefix = _
+dotnet_naming_style.underscore_camel_case.capitalization = camel_case
+
+# Private static fields: _camelCase (same convention)
+dotnet_naming_rule.private_static_fields_should_be_camel_case.severity = warning
+dotnet_naming_rule.private_static_fields_should_be_camel_case.symbols = private_static_fields
+dotnet_naming_rule.private_static_fields_should_be_camel_case.style = underscore_camel_case
+
+dotnet_naming_symbols.private_static_fields.applicable_kinds = field
+dotnet_naming_symbols.private_static_fields.applicable_accessibilities = private, private_protected
+dotnet_naming_symbols.private_static_fields.required_modifiers = static
+
+# Never use var — always use explicit types
+csharp_style_var_for_built_in_types = false:warning
+csharp_style_var_when_type_is_apparent = false:warning
+csharp_style_var_elsewhere = false:warning
+
+[*.json]
+indent_size = 2
+
+[*.{yml,yaml}]
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false

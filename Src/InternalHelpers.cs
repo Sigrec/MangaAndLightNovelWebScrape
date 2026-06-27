@@ -158,10 +158,10 @@ internal static partial class InternalHelpers
         bool needsUserAgent = false,
         bool useLastLink = false)
     {
-        IPage page = await PlaywrightFactory.GetPageAsync(browser, needsUserAgent);
+        IPage page = await PlaywrightFactory.GetPageAsync(browser, needsUserAgent).ConfigureAwait(false);
         try
         {
-            (List<EntryModel> Data, List<string> Links) = await scraper.GetData(bookTitle, bookType, page, isMember, curRegion, cancellationToken);
+            (List<EntryModel> Data, List<string> Links) = await scraper.GetData(bookTitle, bookType, page, isMember, curRegion, cancellationToken).ConfigureAwait(false);
             masterDataList.Add(Data);
             if (Links.Count > 0)
             {
@@ -178,7 +178,7 @@ internal static partial class InternalHelpers
         }
         finally
         {
-            await page.DisposeContextAsync();
+            await page.DisposeContextAsync().ConfigureAwait(false);
         }
     }
 
@@ -201,7 +201,7 @@ internal static partial class InternalHelpers
     {
         try
         {
-            (List<EntryModel> Data, List<string> Links) = await scraper.GetData(bookTitle, bookType, null, false, curRegion, cancellationToken);
+            (List<EntryModel> Data, List<string> Links) = await scraper.GetData(bookTitle, bookType, null, false, curRegion, cancellationToken).ConfigureAwait(false);
             masterDataList.Add(Data);
             if (Links.Count > 0)
             {
@@ -585,7 +585,7 @@ internal static partial class InternalHelpers
 
     internal static void PrintWebsiteData(string website, string bookTitle, BookType bookType, IEnumerable<EntryModel> dataList, ILogger logger)
     {
-        if (MasterScrape.IsDebugEnabled)
+        if (MasterScrape.IsDebugEnabledForCurrentScrape)
         {
             // Clean up website string once before using it for file path.
             string dataDir = Path.Combine(Directory.GetCurrentDirectory(), "Data");

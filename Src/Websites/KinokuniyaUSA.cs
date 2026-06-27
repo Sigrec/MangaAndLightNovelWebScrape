@@ -79,7 +79,7 @@ public sealed partial class KinokuniyaUSA : IWebsite
         while (true)
         {
             // Check if the element is hidden
-            bool isHidden = await loadingElement.IsHiddenAsync();
+            bool isHidden = await loadingElement.IsHiddenAsync().ConfigureAwait(false);
 
             if (isHidden)
             {
@@ -94,7 +94,7 @@ public sealed partial class KinokuniyaUSA : IWebsite
             }
 
             // Wait a short duration before checking again
-            await Task.Delay(100);
+            await Task.Delay(100).ConfigureAwait(false);
         }
     }
 
@@ -312,17 +312,17 @@ public sealed partial class KinokuniyaUSA : IWebsite
 
         string url = GenerateWebsiteUrl(bookTitle, bookType);
         links.Add(url);
-        await page!.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
-        await WaitForPageLoad(page);
+        await page!.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded }).ConfigureAwait(false);
+        await WaitForPageLoad(page).ConfigureAwait(false);
 
-        DumpDebugHtml(await page.ContentAsync(), "after_load");
+        DumpDebugHtml(await page.ContentAsync().ConfigureAwait(false), "after_load");
 
         // Best-effort UI fiddling — expand per-page to 100, switch to list view, filter to Manga.
-        await TrySelectPerPageAsync(page, 100);
+        await TrySelectPerPageAsync(page, 100).ConfigureAwait(false);
         try
         {
-            await page.Locator("li#detail-button a:has-text(\"List\")").ForceClickAsync(timeout: 5000);
-            await WaitForPageLoad(page);
+            await page.Locator("li#detail-button a:has-text(\"List\")").ForceClickAsync(timeout: 5000).ConfigureAwait(false);
+            await WaitForPageLoad(page).ConfigureAwait(false);
             _logger.ClickedListMode();
         }
         catch (TimeoutException) { }
@@ -333,8 +333,8 @@ public sealed partial class KinokuniyaUSA : IWebsite
             try
             {
                 await page.GetByText("Manga", new PageGetByTextOptions { Exact = true })
-                    .ForceClickAsync(timeout: 5000);
-                await WaitForPageLoad(page);
+                    .ForceClickAsync(timeout: 5000).ConfigureAwait(false);
+                await WaitForPageLoad(page).ConfigureAwait(false);
                 _logger.ClickedManga();
             }
             catch (TimeoutException) { }
@@ -348,7 +348,7 @@ public sealed partial class KinokuniyaUSA : IWebsite
         while (true)
         {
             HtmlDocument doc = HtmlFactory.CreateDocument();
-            doc.LoadHtml(await page.ContentAsync());
+            doc.LoadHtml(await page.ContentAsync().ConfigureAwait(false));
             listingPages.Add(doc);
 
             if (maxPageCount == -1)
@@ -362,11 +362,11 @@ public sealed partial class KinokuniyaUSA : IWebsite
             curPageNum++;
             try
             {
-                await page.Locator("p.pagerArrowR").ForceClickAsync();
+                await page.Locator("p.pagerArrowR").ForceClickAsync().ConfigureAwait(false);
             }
             catch (TimeoutException) { break; }
             catch (PlaywrightException) { break; }
-            await WaitForPageLoad(page);
+            await WaitForPageLoad(page).ConfigureAwait(false);
             _logger.PageVisited(curPageNum, page.Url);
         }
 
@@ -514,11 +514,11 @@ public sealed partial class KinokuniyaUSA : IWebsite
                     s.dispatchEvent(new Event('change', { bubbles: true }));
                     return true;
                 }",
-                perPage.ToString());
+                perPage.ToString()).ConfigureAwait(false);
 
             if (dispatched)
             {
-                await WaitForPageLoad(page);
+                await WaitForPageLoad(page).ConfigureAwait(false);
                 _logger.SelectedPerPage(perPage);
             }
         }

@@ -46,6 +46,32 @@
   - OKComics detail-page fan-out bounded by `SemaphoreSlim` (cap 8) — avoids hammering small Shopify shops
 - ⌛ Switched several site title-cleanup pipelines to `string.Create` + `Span<T>` — no per-entry StringBuilder allocation
 - ⌛ `FilterBookTitle` uses `TryFormat` into a hoisted stack span for hex encoding — no per-char string allocation
+- ⌛ **JSON migrated to source generators** — `TranslateAPI` now uses a `JsonSerializerContext` (`AniListJsonContext`) for all serialize/deserialize calls. Removed the `GraphQL.Client` and `GraphQL.Client.Serializer.SystemTextJson` dependencies entirely and replaced them with a hand-rolled `HttpClient` + source-gen request/response records. Flipped `<JsonSerializerIsReflectionEnabledByDefault>` to `false` so reflection-based JSON in the library now fails loudly under trim/AOT instead of silently working
+- 🔥 Fixed long-standing bug in `TranslateAPI.Dispose` — previously disposed the shared static GraphQL client on the first instance dispose, killing every other caller's client for the rest of the process. The new implementation has nothing to dispose on instances; the `IDisposable` surface stays for backward compat but is a true no-op
+- ✅ Added **one-time accuracy disclaimer** logged at `Warning` level on the first `InitializeScrapeAsync` call per process — sets the expectation that results are a best-effort snapshot of live retailer HTML, not an authoritative price feed. `Interlocked.CompareExchange` ensures exactly one disclaimer even under racing first-time scrapes
+- ✅ Migrated `MasterScrape.IsDebugEnabled` from a process-wide `static` property to **per-instance state** with `AsyncLocal<bool>` propagation — two `MasterScrape` instances no longer affect each other's debug mode; sites and helpers read `MasterScrape.IsDebugEnabledForCurrentScrape` with no `IWebsite.GetData` API break
+- ✅ Swept **`.ConfigureAwait(false)` across every `await`** in the library (~160 awaits in 19 files) — prevents sync-over-async deadlocks in legacy ASP.NET / WPF consumers; no-op for modern ASP.NET Core and console hosts
+- ⌛ **ASCII renderer per-row allocations eliminated** — `StockStatus.ToString()`, `BookType.ToString()`, `Region.ToString()` replaced with switches returning interned literals; zero-alloc after JIT
+- ⌛ Dropped wasteful `new HtmlWeb()` allocation in `PlaywrightFactory.ResolveUserAgent` — now reads a `const` UA literal instead of instantiating an HtmlWeb just to peek at its default
+- 🔥 Replaced an unusual `[with(15)]` initializer on `MasterScrape._webTasks` with the explicit `new(15)` capacity hint
+- ✅ Converted `Models.StockStatusFilter` from `readonly struct` to `static class` — it never had instance members; the struct form let callers write misleading `new StockStatusFilter()` / `default(StockStatusFilter)` no-ops
+
+### 🛠 Build & Tooling
+
+- ✅ `Directory.Build.props` now enforces **`<TreatWarningsAsErrors>true</TreatWarningsAsErrors>`** solution-wide — consumers never inherit shipped warnings
+- ✅ `Src/MangaAndLightNovelWebScrape.csproj` declares **`<IsAotCompatible>false</IsAotCompatible>`** explicitly — library still uses reflection-based JSON via GraphQL.Client, so the contract is honest until JSON usage migrates to a source-generated `JsonSerializerContext`
+- ✅ Removed `<ProduceReferenceAssembly>False</ProduceReferenceAssembly>` from the Src csproj — defaults to `True` for libraries, **enabling consumers' incremental builds** (previously every assembly change forced a full rebuild downstream)
+- 🔥 **`Benchmark/Program.cs` cleaned up**
+  - Replaced `Dictionary<string[], Type>` keyed by array *reference* (which forced a linear-scan `.Keys.Any(...)` per lookup) with a flat case-insensitive `Dictionary<string, Type>` registering both full name and short alias
+  - Fixed `GetArtifactsPath` building paths like `Websites/Websites/{website}` — the `??` was dead and `folderName` was being re-prefixed on use
+  - Added `.AddValidator(JitOptimizationsValidator.FailOnError)` to the `ManualConfig` so an accidental Debug-mode benchmark run fails loud instead of publishing misleading numbers
+- ✅ Removed hard-coded `<Configuration>Release</Configuration>` from `Benchmark.csproj` — IDE debug sessions and `dotnet run -c Debug` now work; pass `-c Release` on the command line for benchmark runs
+
+### 🔐 CI/CD
+
+- ✅ Migrated NuGet release publishing to **Trusted Publishing via OIDC** — workflow uses `NuGet/login@v1` to exchange the OIDC token for a short-lived API key, eliminating the long-lived `NUGET_API_KEY` secret; added `id-token: write` permission to the release job
+- ✅ Bumped `actions/checkout` and `actions/setup-dotnet` to `@v5`
+- ✅ Updated workflow's .NET SDK from `9.0.x` to `10.0.x` so it can actually build the `net10.0` target
 
 ### 📜 Site-Specific Fixes & Improvements
 

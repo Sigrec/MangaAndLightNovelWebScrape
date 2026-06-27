@@ -22,13 +22,47 @@ public sealed partial class MasterScrape
     private readonly ConcurrentBag<List<EntryModel>> _masterDataList = [];
     private readonly ConcurrentDictionary<Website, string> _masterLinkDict = [];
     private readonly ConcurrentDictionary<Website, Exception> _errors = [];
-    private readonly List<Task> _webTasks = [with(15)];
+    // Presized for the largest region (America has 9 sites today; 15 leaves headroom for
+    // future additions without resize churn during ScheduleScrapes).
+    private readonly List<Task> _webTasks = new(15);
     private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger _logger;
     private List<EntryModel>? _finalResults;
 
     // Static delegate avoids the per-Sort allocation of a fresh Comparison<T> in the merge loop.
     private static readonly Comparison<List<EntryModel>> ByCount = static (a, b) => a.Count.CompareTo(b.Count);
+
+    // Enum.ToString() allocates per call and uses reflection metadata. For the ASCII renderer
+    // we hit StockStatus once per row, so a switch returning string-literal-pooled values is
+    // both zero-alloc and faster than the metadata path.
+    private static string StatusName(StockStatus s) => s switch
+    {
+        StockStatus.IS  => "IS",
+        StockStatus.OOS => "OOS",
+        StockStatus.PO  => "PO",
+        StockStatus.BO  => "BO",
+        StockStatus.CS  => "CS",
+        StockStatus.NA  => "NA",
+        _ => s.ToString(),
+    };
+
+    private static string BookTypeName(BookType b) => b switch
+    {
+        BookType.Manga      => "Manga",
+        BookType.LightNovel => "LightNovel",
+        _ => b.ToString(),
+    };
+
+    private static string RegionName(Region r) => r switch
+    {
+        Region.America   => "America",
+        Region.Australia => "Australia",
+        Region.Britain   => "Britain",
+        Region.Canada    => "Canada",
+        Region.Europe    => "Europe",
+        Region.Japan     => "Japan",
+        _ => r.ToString(),
+    };
 
     /// <summary>
     /// Geographic region the scrape runs against. Only the sites listed for this region by
@@ -64,9 +98,27 @@ public sealed partial class MasterScrape
     /// </summary>
     public bool SkipUnavailableSites { get; set; }
     /// <summary>
-    /// Determines whether debug mode is enabled (Disabled by default)
+    /// Per-instance debug flag. Off by default. Toggle via
+    /// <see cref="EnableDebugMode"/> / <see cref="DisableDebugMode"/>.
     /// </summary>
-    internal static bool IsDebugEnabled { get; set; } = false;
+    private bool _isDebugEnabled = false;
+
+    // AsyncLocal flows through the scrape's async call chain so site code reading
+    // `MasterScrape.IsDebugEnabledForCurrentScrape` sees this instance's flag — without
+    // forcing the IWebsite.GetData signature to take a debug-flag parameter.
+    private static readonly AsyncLocal<bool> _currentScrapeDebugMode = new();
+
+    // Process-wide guard so the accuracy disclaimer is logged at most once across the
+    // lifetime of the host. Spamming the same Warning on every InitializeScrapeAsync call
+    // would drown out per-site errors that actually matter.
+    private static int _accuracyDisclaimerLogged;
+
+    /// <summary>
+    /// Debug mode for the in-flight scrape on the current async context. Sites and helpers
+    /// read this to decide whether to dump per-site data files. Off outside of a live
+    /// <see cref="InitializeScrapeAsync"/> call.
+    /// </summary>
+    internal static bool IsDebugEnabledForCurrentScrape => _currentScrapeDebugMode.Value;
 
     [GeneratedRegex(@"\d{1,3}(?:\.\d{1})?$")] internal static partial Regex FindVolNumRegex();
     [GeneratedRegex(@"Vol \d{1,3}(?:\.\d{1})?$")] internal static partial Regex FindVolWithNumRegex();
@@ -117,7 +169,7 @@ public sealed partial class MasterScrape
     /// <returns>The current <see cref="MasterScrape"/> instance.</returns>
     public MasterScrape DisableDebugMode()
     {
-        IsDebugEnabled = false;
+        _isDebugEnabled = false;
         return this;
     }
 
@@ -128,7 +180,7 @@ public sealed partial class MasterScrape
     /// <returns>The current <see cref="MasterScrape"/> instance.</returns>
     public MasterScrape EnableDebugMode()
     {
-        IsDebugEnabled = true;
+        _isDebugEnabled = true;
 
         string basePath = AppDomain.CurrentDomain.BaseDirectory;
         string dataPath = Path.Combine(basePath, "Data");
@@ -199,7 +251,7 @@ public sealed partial class MasterScrape
         {
             checks[i] = IsSiteAvailableAsync(siteArray[i], cancellationToken);
         }
-        bool[] results = await Task.WhenAll(checks);
+        bool[] results = await Task.WhenAll(checks).ConfigureAwait(false);
         Dictionary<Website, bool> map = new(siteArray.Length);
         for (int i = 0; i < siteArray.Length; i++)
         {
@@ -297,7 +349,7 @@ public sealed partial class MasterScrape
         for (int i = 0; i < results.Length; i++)
         {
             EntryModel entry = results[i];
-            string statusName = entry.StockStatus.ToString();
+            string statusName = StatusName(entry.StockStatus);
             statusNames[i] = statusName;
             if (entry.Entry.Length > longestTitle) longestTitle = entry.Entry.Length;
             if (entry.Price.Length > longestPrice) longestPrice = entry.Price.Length;
@@ -320,8 +372,8 @@ public sealed partial class MasterScrape
 
         sb.AppendLine()
             .Append("Title: \"").Append(bookTitle).AppendLine("\"")
-            .Append("BookType: ").Append(bookType.ToString()).AppendLine()
-            .Append("Region: ").Append(Region.ToString()).AppendLine();
+            .Append("BookType: ").Append(BookTypeName(bookType)).AppendLine()
+            .Append("Region: ").Append(RegionName(Region)).AppendLine();
 
         ReadOnlyCollection<string> membershipList = GetMembershipsAsString();
         if (membershipList.Count > 0)
@@ -596,6 +648,18 @@ public sealed partial class MasterScrape
             throw new ArgumentException("Title cannot be null or whitespace.", nameof(title));
         }
 
+        // One-time-per-process accuracy disclaimer. Interlocked.CompareExchange guarantees
+        // exactly one consumer-visible Warning even under racing first-time scrapes from
+        // multiple MasterScrape instances.
+        if (Interlocked.CompareExchange(ref _accuracyDisclaimerLogged, 1, 0) == 0)
+        {
+            _logger.LibraryAccuracyDisclaimer();
+        }
+
+        // Publish this instance's debug flag to the AsyncLocal so per-site code reading
+        // MasterScrape.IsDebugEnabledForCurrentScrape during the fan-out sees it.
+        _currentScrapeDebugMode.Value = _isDebugEnabled;
+
         if (!Helpers.IsWebsiteListValid(this.Region, siteList))
         {
             string siteListString = string.Join(", ", siteList);
@@ -612,7 +676,7 @@ public sealed partial class MasterScrape
         // SiteUnavailableException so the caller can still tell what happened.
         if (this.SkipUnavailableSites && siteList.Count > 0)
         {
-            IReadOnlyDictionary<Website, bool> reach = await CheckSitesAvailableAsync(siteList, cancellationToken);
+            IReadOnlyDictionary<Website, bool> reach = await CheckSitesAvailableAsync(siteList, cancellationToken).ConfigureAwait(false);
             HashSet<Website> reachable = [];
             foreach ((Website site, bool isUp) in reach)
             {
@@ -643,7 +707,7 @@ public sealed partial class MasterScrape
         {
             try
             {
-                session = await PlaywrightFactory.SetupPlaywrightBrowserAsync(this.Browser);
+                session = await PlaywrightFactory.SetupPlaywrightBrowserAsync(this.Browser).ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -678,7 +742,7 @@ public sealed partial class MasterScrape
             );
             // .WaitAsync forwards cancellation without leaving the underlying scrape tasks
             // unobserved — they continue running but we stop waiting on them.
-            await Task.WhenAll(_webTasks).WaitAsync(cancellationToken);
+            await Task.WhenAll(_webTasks).WaitAsync(cancellationToken).ConfigureAwait(false);
             _webTasks.Clear();
 
             cancellationToken.ThrowIfCancellationRequested();
@@ -729,7 +793,7 @@ public sealed partial class MasterScrape
                         comparisonTasks.Add(Task.Run(() => PriceComparison(smaller, larger, sortResult: false), cancellationToken));
                     }
 
-                    currentLists.AddRange(await Task.WhenAll(comparisonTasks).WaitAsync(cancellationToken));
+                    currentLists.AddRange(await Task.WhenAll(comparisonTasks).WaitAsync(cancellationToken).ConfigureAwait(false));
                     currentLists.RemoveRange(0, initialMasterDataListCount % 2 == 0 ? initialMasterDataListCount : initialMasterDataListCount - 1);
                     comparisonTasks.Clear();
                 }
@@ -742,7 +806,7 @@ public sealed partial class MasterScrape
             currentLists.Clear();
 
             // 7) Optional debug dump
-            if (IsDebugEnabled)
+            if (_isDebugEnabled)
             {
                 _logger.PrintResults(
                     this,
@@ -760,7 +824,7 @@ public sealed partial class MasterScrape
         }
         finally
         {
-            if (session is not null) await session.DisposeAsync();
+            if (session is not null) await session.DisposeAsync().ConfigureAwait(false);
         }
 
         bool LogAndRethrow(Exception ex)

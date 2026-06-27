@@ -248,7 +248,7 @@ public sealed partial class InStockTrades : IWebsite
             string url = GenerateWebsiteUrl(1, bookTitle);
             links.Add(url);
 
-            HtmlDocument firstPage = await html.LoadFromWebAsync(url);
+            HtmlDocument firstPage = await html.LoadFromWebAsync(url).ConfigureAwait(false);
             firstPage.ConfigurePerf();
 
             uint maxPages = GetMaxPages(firstPage);
@@ -270,7 +270,7 @@ public sealed partial class InStockTrades : IWebsite
                     links.Add(pageUrl);
                     fetches[p - 2] = html.LoadFromWebAsync(pageUrl);
                 }
-                HtmlDocument[] otherPages = await Task.WhenAll(fetches);
+                HtmlDocument[] otherPages = await Task.WhenAll(fetches).ConfigureAwait(false);
                 pages = new HtmlDocument[maxPages];
                 pages[0] = firstPage;
                 Array.Copy(otherPages, 0, pages, 1, otherPages.Length);

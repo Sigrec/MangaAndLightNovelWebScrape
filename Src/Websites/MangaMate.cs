@@ -96,13 +96,13 @@ public sealed partial class MangaMate : IWebsite
                 {
                     State = WaitForSelectorState.Attached,
                     Timeout = 15000
-                });
+                }).ConfigureAwait(false);
         }
         catch (TimeoutException)
         {
             // No products on the page — let the caller's parse return 0 and end the loop.
         }
-        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        await page.WaitForLoadStateAsync(LoadState.NetworkIdle).ConfigureAwait(false);
     }
 
     private async Task<(string Html, uint MaxPageNum)> GetInitialData(IPage page, string url)
@@ -110,22 +110,22 @@ public sealed partial class MangaMate : IWebsite
         await page.GotoAsync(url, new PageGotoOptions
         {
             WaitUntil = WaitUntilState.DOMContentLoaded
-        });
+        }).ConfigureAwait(false);
 
-        await WaitForProductPageLoad(page);
+        await WaitForProductPageLoad(page).ConfigureAwait(false);
 
         // Snapshot the page early so debug dumps survive any subsequent timeout
         // (e.g. a missing currency picker after a site redesign).
-        string earlyHtml = await page.ContentAsync();
+        string earlyHtml = await page.ContentAsync().ConfigureAwait(false);
         DumpDebugHtml(earlyHtml, "after_load");
 
         // Get the max page number (//span[@class='page'][last()])
         uint maxPageNum = 1;
         ILocator pages = page.Locator("//span[@class='page']").Last;
-        int count = await pages.CountAsync();
+        int count = await pages.CountAsync().ConfigureAwait(false);
         if (count > 0)
         {
-            string? lastText = await pages.Nth(count - 1).TextContentAsync();
+            string? lastText = await pages.Nth(count - 1).TextContentAsync().ConfigureAwait(false);
             if (!string.IsNullOrWhiteSpace(lastText) && uint.TryParse(lastText.Trim(), out uint parsed))
             {
                 maxPageNum = parsed;
@@ -138,29 +138,29 @@ public sealed partial class MangaMate : IWebsite
         try
         {
             ILocator currencyBtn = page.Locator("//button[@aria-controls='CurrencyList-toolbar']");
-            if (await currencyBtn.CountAsync() == 0)
+            if (await currencyBtn.CountAsync().ConfigureAwait(false) == 0)
             {
                 _logger.ClickedAudCurrency();
                 return (earlyHtml, maxPageNum);
             }
 
-            await currencyBtn.ClickAsync(new LocatorClickOptions { Timeout = 5000 });
+            await currencyBtn.ClickAsync(new LocatorClickOptions { Timeout = 5000 }).ConfigureAwait(false);
             await page.Locator("button[aria-controls='CurrencyList-toolbar'][aria-expanded='true']")
-                .WaitForAsync(new LocatorWaitForOptions { Timeout = 5000 });
+                .WaitForAsync(new LocatorWaitForOptions { Timeout = 5000 }).ConfigureAwait(false);
 
-            string? menuId = await currencyBtn.GetAttributeAsync("aria-controls");
+            string? menuId = await currencyBtn.GetAttributeAsync("aria-controls").ConfigureAwait(false);
             ILocator menu = page.Locator($"#{menuId}");
             await menu.WaitForAsync(new LocatorWaitForOptions
             {
                 State = WaitForSelectorState.Visible,
                 Timeout = 5000
-            });
+            }).ConfigureAwait(false);
             await menu.Locator("a.disclosure-list__option[data-value='AU']").First
-                .ClickAsync(new LocatorClickOptions { Timeout = 5000 });
+                .ClickAsync(new LocatorClickOptions { Timeout = 5000 }).ConfigureAwait(false);
 
-            await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+            await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded).ConfigureAwait(false);
             _logger.ClickedAudCurrency();
-            await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+            await page.WaitForLoadStateAsync(LoadState.NetworkIdle).ConfigureAwait(false);
         }
         catch (TimeoutException)
         {
@@ -171,7 +171,7 @@ public sealed partial class MangaMate : IWebsite
             // Same: any Playwright-side issue selecting the currency shouldn't crater the scrape.
         }
 
-        return (await page.ContentAsync(), maxPageNum);
+        return (await page.ContentAsync().ConfigureAwait(false), maxPageNum);
     }
 
     public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America, CancellationToken cancellationToken = default)
@@ -188,7 +188,7 @@ public sealed partial class MangaMate : IWebsite
         string url = GenerateWebsiteUrl(bookTitle, bookType, curPageNum);
         links.Add(url);
 
-        (string firstHtml, uint maxPageNum) = await GetInitialData(page!, url);
+        (string firstHtml, uint maxPageNum) = await GetInitialData(page!, url).ConfigureAwait(false);
         doc.LoadHtml(firstHtml);
 
         while (true)
@@ -262,7 +262,7 @@ public sealed partial class MangaMate : IWebsite
                         : href.StartsWith('/') ? $"{BASE_URL}{href}" : $"{BASE_URL}/{href}";
                     fetches[j] = html.LoadFromWebAsync(fullUrl);
                 }
-                HtmlDocument[] docs = await Task.WhenAll(fetches);
+                HtmlDocument[] docs = await Task.WhenAll(fetches).ConfigureAwait(false);
                 for (int j = 0; j < needsType.Count; j++)
                 {
                     typeDocs[needsType[j]] = docs[j];
@@ -313,9 +313,9 @@ public sealed partial class MangaMate : IWebsite
             {
                 url = GenerateWebsiteUrl(bookTitle, bookType, ++curPageNum);
                 links.Add(url);
-                await page!.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
-                await WaitForProductPageLoad(page);
-                doc.LoadHtml(await page.ContentAsync());
+                await page!.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded }).ConfigureAwait(false);
+                await WaitForProductPageLoad(page).ConfigureAwait(false);
+                doc.LoadHtml(await page.ContentAsync().ConfigureAwait(false));
             }
             else
             {

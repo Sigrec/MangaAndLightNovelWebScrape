@@ -167,7 +167,7 @@ public sealed partial class TravellingMan : IWebsite
             string url = GenerateWebsiteUrl(bookTitle, bookType, nextPage);
             links.Add(url);
 
-            HtmlDocument doc = await web.LoadFromWebAsync(url);
+            HtmlDocument doc = await web.LoadFromWebAsync(url).ConfigureAwait(false);
             doc.ConfigurePerf();
             listingPages.Add(doc);
 
@@ -188,9 +188,9 @@ public sealed partial class TravellingMan : IWebsite
                 string fullUrl = href.StartsWith("http", StringComparison.OrdinalIgnoreCase)
                     ? href
                     : href.StartsWith('/') ? $"{BASE_URL}{href}" : $"{BASE_URL}/{href}";
-                HtmlDocument descDoc = await web.LoadFromWebAsync(fullUrl);
+                HtmlDocument descDoc = await web.LoadFromWebAsync(fullUrl).ConfigureAwait(false);
                 return descDoc;
-            });
+            }).ConfigureAwait(false);
 
         InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         return (data, links);
@@ -299,7 +299,7 @@ public sealed partial class TravellingMan : IWebsite
                 {
                     fetches[j] = resolveDescDoc(hrefs[needsDesc[j]]!);
                 }
-                HtmlDocument[] docs = await Task.WhenAll(fetches);
+                HtmlDocument[] docs = await Task.WhenAll(fetches).ConfigureAwait(false);
                 for (int j = 0; j < needsDesc.Count; j++)
                 {
                     descDocs[needsDesc[j]] = docs[j];
