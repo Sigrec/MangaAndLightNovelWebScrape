@@ -1,0 +1,777 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search - InStockTrades</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <meta name="description" content="Trade paperbacks from Marvel, DC, Image, Dark Horse and more! Discounted up to 42% off. No shipping on orders over $50.">
+    <meta name="keywords" content="trade paperbacks,comic books,marvel,dc,image,dark horse,superman,batman,flash,wonder woman,spiderman,fantastic four,the hulk,captain america,thor">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    
+    <link rel="shortcut icon" href="/images/logo.png">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans|Roboto:400,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/content/site.min.css?v=3">
+    <link rel="stylesheet" href="/content/jquery-ui.min.css">
+    <link rel="stylesheet" href="/content/jquery-ui.theme.min.css">
+    <script src="/bundles/modernizr?v=inCVuEFe6J4Q07A0AcRsbJic_UE5MwpRMNGcOtk94TE1"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css">
+    <script src="/scripts/cookieconsent-config.min.js" type="module"></script>
+</head>
+<body>
+    
+<div class="navbar-header">
+    <a href="/"><img class="logo" src="/images/logo.png" alt="Instocktrades.com"></a>
+    <div class="navbar-heading">
+        <span class="giftcertificates"><a href="/giftcertificates" class="highlight">Gift Certificates</a></span>
+        <span class="help"><a href="/home/help">Help</a></span>
+            <span class="greeting"><a href="/account/login">Sign In</a></span>
+    </div>
+    <a href="/cart" class="navbar-cart">
+        <div class="cartcount">0</div>
+    </a>
+    <div class="navbar-search">
+        <form id="sitesearchform" name="sitesearchform" method="get" action="/search">
+            <input type="text" name="term" id="sitesearch" placeholder="Search..." autocomplete="off" required oninvalid="this.setCustomValidity('Please Enter a valid search term')" oninput="setCustomValidity('')">
+            <button type="submit" id="navsearchbutton" class="navsearchbutton" onclick="javascript: return document.getElementById('sitesearch').value.trim() != '';"><img src="/images/search.png" alt="search"></button>
+        </form>
+        <div style="text-align:right;"><a href="/search?ps=true" class="action">Advanced Search</a></div>
+    </div>
+    <div class="navbar-menubar">
+        <div class="navbar-menu trades hoverable">
+            <a href="#trades" class="menu-label responsive">Trades <span class="navarrow"></span></a>
+            <div class="navbar-menuitems responsive">
+                <a href="/newreleases">New Releases</a>
+                
+                <a href="/comingsoon">Coming Soon</a>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#" class="menu-label">Publishers <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                            <a href="/publishers/image">Image</a>
+                            <a href="/publishers/dc-comics">DC Comics</a>
+                            <a href="/publishers/marvel">Marvel</a>
+                            <a href="/publishers/viz-media">Viz Media</a>
+                            <a href="/publishers/dark-horse">Dark Horse</a>
+                            <a href="/publishers/seven-seas">Seven Seas</a>
+                            <a href="/publishers/kodansha">Kodansha</a>
+                            <a href="/publishers/idw">IDW</a>
+                            <a href="/publishers/titan">Titan</a>
+                        <a href="/publishers">View All Publishers</a>
+                    </div>
+                </div>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#sales" class="menu-label">Sales <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                        <a href="/clearance">Clearance</a>
+                        <a href="/damages">Damages</a>
+                            <a href="/specials/630/red-tag-sale">Red Tag Sale</a>
+                            <a href="/specials/632/24-hour-flash-sale!!">24-Hour Flash Sale!!</a>
+                            <a href="/specials/715/best-sellers-dc">Best Sellers: DC</a>
+                            <a href="/specials/716/best-sellers-marvel">Best Sellers: Marvel</a>
+                            <a href="/specials/718/creator-spotlight-inio-asano">Creator Spotlight: Inio Asano</a>
+                            <a href="/specials/719/creator-spotlight-clamp">Creator Spotlight: CLAMP</a>
+                    </div>
+                </div>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#creators" class="menu-label">Featured Creators <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                            <a href="/creator/giantgenerator">Giant Generator by Rick Remender</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="navbar-menu topsellers">
+            <a href="/products/topsellers">Top Sellers</a>
+        </div>
+        <div class="navbar-menu account hoverable">
+            <a href="#account" class="menu-label">Account <span class="navarrow"></span></a>
+            <div class="navbar-menuitems">
+                <a href="/account/wishlist">Wishlist</a>
+                <a href="/account">Account Profile</a>
+                <a href="/account/orderhistory">Order History</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+    
+    <div class="container body-content">
+        
+
+        
+
+
+
+
+<div class="section products">
+    <h2>Search</h2>
+    <div class="section">
+        <div class="message form">
+            <div><h4 style="display:inline-block;">Search Option:</h4>
+                <select name="searchtype" id="searchtype" style="padding:7px;">
+                    <option value="default">Free Text</option>
+                    <option value="power" selected>Advanced Search</option>
+                </select>
+            </div>
+            <div>
+                <div id="defaultsearch" style="display:none;">
+                    <h4>Search results matches ANY words...</h4>
+                    <form method="get" action="/search">
+                        <div class="fieldgroup">
+                            <div class="fieldset">
+                                <div><label>Title, Publisher, Description or Product Code</label></div>
+                                <input name="term" type="text" maxlength="200" style="max-width:400px; display:inline-block;">
+                                <button type="submit" class="btn hotaction">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div id="advancedsearch" style="display:block;">
+                    <h4>Advanced Search. Results match ALL words and conditions...</h4>
+                    <form method="get" action="/search">
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Title</label></div>
+                                <input name="title" placeholder="Title" type="text" maxlength="200" autocomplete="off" value="jujutsu kaisen">
+                            </div>
+                            <div class="fieldset">
+                                <div><label>Publisher</label></div>
+                                <input name="publisher" placeholder="Publisher" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                        </div>
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Writer</label></div>
+                                <input name="writer" placeholder="Writer" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                            <div class="fieldset">
+                                <div><label>Artist</label></div>
+                                <input name="artist" placeholder="Artist" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                        </div>
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Cover Artist</label></div>
+                                <input name="cover" placeholder="Cover Artist" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                            <div class="fieldset">
+                                <div><label></label></div>
+                                
+                            </div>
+                        </div>
+                        <div class="fieldgroup">
+                            <div class="fieldset">
+                                <input type="hidden" name="ps" value="true">
+                                <button type="submit" class="btn hotaction">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <div class="pageoptions">
+        
+            <div class="productsortselection">
+                <span class="productsortlabel">Sort By:</span> <select id="sortselection" name="sortselection"><option selected="selected" value="relevance">Relevance</option>
+<option value="title">Title</option>
+<option value="publisher">Publisher</option>
+<option value="price">Price</option>
+<option value="discount">Discount</option>
+</select>
+            </div>
+                    <div class="viewselection">
+                <span class="viewselectlabel">View: </span>
+                <div id="thumbplusview" class="viewselect selected" data-val="1"><img src="/images/thumbplus.png" alt="thumbnail plus view" title="Thumbnail Plus View"></div>
+                <div id="thumbview" class="viewselect" data-val="0"><img src="/images/thumbs.png" alt="thumbnail only view" title="Thumbnails Only View"></div>
+                <div id="listview" class="viewselect" data-val="2"><img src="/images/thumblist.png" alt="thumbnail list view" title="Thumbnail List View"></div>
+                
+            </div>
+    </div>
+    <div class="row">
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/feb241825/jujutsu-kaisen-the-official-character-guide-sc"><img class="itemimg" src="https://media.instocktrades.com/small/FEB241825.jpg" alt="JUJUTSU KAISEN THE OFFICIAL CHARACTER GUIDE SC"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/feb241825/jujutsu-kaisen-the-official-character-guide-sc">Jujutsu Kaisen the Official Character Guide Sc</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Gege Akutami
+Yuji Itadori is the unwilling host of Ryomen Sakuna, a terrible evil spirit. Yuji joins the Jujutsu Sorcerers in order to rid himself of the corruption, and soon discovers a dangerous supernatural world hidden just out of sight. Jujutsu Kaisen: The Official Character Guide collects the details of Yuji&#39;s spirit-hunting quest, profiles for all the major characters, the secret origin story of Jujutsu Kaisen creator Gege Akutami, and an exclusive interview between Akutami and Tite Kubo, creator of the global Shonen Jump phenomenon Bleach!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$16.99<br>
+                            </div>
+                            <div class="price">
+                                $11.89
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="87437" data-title="Jujutsu Kaisen the Official Character Guide Sc" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="FEB241825" data-title="Jujutsu Kaisen the Official Character Guide Sc" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/feb261205/jujutsu-kaisen-gn-vol-30"><img class="itemimg" src="https://media.instocktrades.com/small/FEB261205.jpg" alt="JUJUTSU KAISEN GN VOL 30"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/feb261205/jujutsu-kaisen-gn-vol-30">Jujutsu Kaisen GN Vol 30</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            To gain the power he needs to save his friend from a cursed spirit, Yuji Itadori swallows a piece of a demon, only to find himself caught in the midst of a horrific war of the supernatural!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="103026" data-title="Jujutsu Kaisen GN Vol 30" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="FEB261205" data-title="Jujutsu Kaisen GN Vol 30" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/feb260406/jujutsu-kaisen-gn-vol-28"><img class="itemimg" src="https://media.instocktrades.com/small/FEB260406.jpg" alt="JUJUTSU KAISEN GN VOL 28"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/feb260406/jujutsu-kaisen-gn-vol-28">Jujutsu Kaisen GN Vol 28</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            To gain the power he needs to save his friend from a cursed spirit, Yuji Itadori swallows a piece of a demon, only to find himself caught in the midst of a horrific war of the supernatural!
+In a world where cursed spirits feed on unsuspecting humans, fragments of the legendary and feared demon Ryomen Sukuna have been lost and scattered about. Should any demon consume Sukuna?s body parts, the power they gain could destroy the world as we know it. Fortunately, there exists a mysterious school of jujutsu sorcerers who exist to protect the precarious existence of the living from the supernatural!
+The plan to confiscate Sukuna?s cursed technique fails. Higuruma finds himself separated from Itadori and the others while confronting Sukuna one-on-one! Can Higuruma take down Sukuna while armed with only his sword? Meanwhile, Okkotsu heads over to the most intense fighting in Shinjuku and opens his domain!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="101937" data-title="Jujutsu Kaisen GN Vol 28" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="FEB260406" data-title="Jujutsu Kaisen GN Vol 28" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jun251593/jujutsu-kaisen-gn-vol-27"><img class="itemimg" src="https://media.instocktrades.com/small/JUN251593.jpg" alt="JUJUTSU KAISEN GN VOL 27"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jun251593/jujutsu-kaisen-gn-vol-27">Jujutsu Kaisen GN Vol 27</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A) Gege Akutami
+To gain the power he needs to save his friend from a cursed spirit, Yuji Itadori swallows a piece of a demon, only to find himself caught in the midst of a horrific war of the supernatural!  In a world where cursed spirits feed on unsuspecting humans, fragments of the legendary and feared demon Ryomen Sukuna have been lost and scattered about. Should any demon consume Sukuna&#39;s body parts, the power they gain could destroy the world as we know it. Fortunately, there exists a mysterious school of jujutsu sorcerers who exist to protect the precarious existence of the living from the supernatural!  Gojo has been defeated! Without time to process this loss, Kashimo takes on Sukuna, but will he stand a chance once the King of Curses completes his transformation? Meanwhile, the entertainer Takaba takes on Kenjaku one-on-one!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="96816" data-title="Jujutsu Kaisen GN Vol 27" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUN251593" data-title="Jujutsu Kaisen GN Vol 27" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jun242133/jujutsu-kaisen-gn-vol-23"><img class="itemimg" src="https://media.instocktrades.com/small/JUN242133.jpg" alt="JUJUTSU KAISEN GN VOL 23"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jun242133/jujutsu-kaisen-gn-vol-23">Jujutsu Kaisen GN Vol 23</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A) Gege Akutami
+Sukuna reveals that he is the Disgraced One whom the Angel wants to kill. While Itadori grapples with that realization, Kenjaku sets in motion plans involving various nations, throwing the culling game into further confusion! To make matters worse, Kenjaku then shows up at the Tombs of the Star Corridor where Master Tengen exists in seclusion!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="89242" data-title="Jujutsu Kaisen GN Vol 23" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUN242133" data-title="Jujutsu Kaisen GN Vol 23" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/apr212107/jujutsu-kaisen-gn-vol-10"><img class="itemimg" src="https://media.instocktrades.com/small/APR212107.jpg" alt="JUJUTSU KAISEN GN VOL 10"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/apr212107/jujutsu-kaisen-gn-vol-10">Jujutsu Kaisen GN Vol 10</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Gege Akutami
+In order to regain use of his crippled body, Kokichi Muta, otherwise known as Mechamaru, has been acting as an informant for the cursed spirits. He&#39;s prepared for the betrayal when he&#39;s thrust into a battle to the death against Mahito, but is knowing his enemy enough against a cursed spirit whose powers keep growing exponentially? For older teen audiences.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$9.99<br>
+                            </div>
+                            <div class="price">
+                                $6.99
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="70097" data-title="Jujutsu Kaisen GN Vol 10" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="APR212107" data-title="Jujutsu Kaisen GN Vol 10" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/dec201879/jujutsu-kaisen-gn-vol-08-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/DEC201879.jpg" alt="JUJUTSU KAISEN GN VOL 08 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/dec201879/jujutsu-kaisen-gn-vol-08-(mr)">Jujutsu Kaisen GN Vol 08 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A) Gege Akutami
+Yuji Itadori and his classmates are fighting two of the three reincarnated Cursed Womb: Death Paintings brothers. Meanwhile, Megumi Fushiguro loses consciousness after finally defeating a special grade curse that possessed a Sukuna finger! Whoever wins the fight between Itadori and the brothers will be the one to secure the prized finger!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$9.99<br>
+                            </div>
+                            <div class="price">
+                                $6.99
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="69074" data-title="Jujutsu Kaisen GN Vol 08 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="DEC201879" data-title="Jujutsu Kaisen GN Vol 08 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct201795/jujutsu-kaisen-gn-vol-07"><img class="itemimg" src="https://media.instocktrades.com/small/OCT201795.jpg" alt="JUJUTSU KAISEN GN VOL 07"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct201795/jujutsu-kaisen-gn-vol-07">Jujutsu Kaisen GN Vol 07</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Gege Akutami
+Despite the injuries and losses they suffer in an attack on the Goodwill Event by Curses and Curse Users, the students of Jujutsu High have little time rest as people start going missing under mysterious circumstances. Could these strange disappearances have anything to do with Sukuna&#39;s lost fingers?  For older teen audiences.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$9.99<br>
+                            </div>
+                            <div class="price">
+                                $6.99
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="68559" data-title="Jujutsu Kaisen GN Vol 07" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT201795" data-title="Jujutsu Kaisen GN Vol 07" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/aug201877/jujutsu-kaisen-gn-vol-06"><img class="itemimg" src="https://media.instocktrades.com/small/AUG201877.jpg" alt="JUJUTSU KAISEN GN VOL 06"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/aug201877/jujutsu-kaisen-gn-vol-06">Jujutsu Kaisen GN Vol 06</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Gege Akutami
+During the Goodwill Event, the Kyoto School&#39;s authorities order their students to assassinate Itadori. However, Mahito and a horde of special grade curses and curse users complicate matters by attacking the students. The teachers move quickly to counterattack but find themselves cut off by a barrier. Can the students survive this demonic onslaught?! For older teen audiences.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$9.99<br>
+                            </div>
+                            <div class="price">
+                                $6.99
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="67982" data-title="Jujutsu Kaisen GN Vol 06" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="AUG201877" data-title="Jujutsu Kaisen GN Vol 06" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jun201576d/jujutsu-kaisen-gn-vol-05"><img class="itemimg" src="https://media.instocktrades.com/small/JUN201576.jpg" alt="JUJUTSU KAISEN GN VOL 05"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jun201576d/jujutsu-kaisen-gn-vol-05">Jujutsu Kaisen GN Vol 05</a>
+                    </div>
+                    <div class="damage">Damaged</div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Gege Akutami
+Everyone&#39;s surprised (and not necessarily in a good way) when they find out Itadori survived, but there&#39;s not time for a heartwarming reunion when Jujutsu High is in the midst of an intense competition with their rivals from Osaka! But good sportsmanship doesn&#39;t seem to be in the cards after the higher-ups plan to eliminate the Sukuna threat once and for all...  For older teen audiences.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$9.99<br>
+                            </div>
+                            <div class="price">
+                                $5.00
+                            </div>
+                            <div class="discount">
+50%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="103273" data-title="Jujutsu Kaisen GN Vol 05" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUN201576D" data-title="Jujutsu Kaisen GN Vol 05" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jun201576/jujutsu-kaisen-gn-vol-05"><img class="itemimg" src="https://media.instocktrades.com/small/JUN201576.jpg" alt="JUJUTSU KAISEN GN VOL 05"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jun201576/jujutsu-kaisen-gn-vol-05">Jujutsu Kaisen GN Vol 05</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Gege Akutami
+Everyone&#39;s surprised (and not necessarily in a good way) when they find out Itadori survived, but there&#39;s not time for a heartwarming reunion when Jujutsu High is in the midst of an intense competition with their rivals from Osaka! But good sportsmanship doesn&#39;t seem to be in the cards after the higher-ups plan to eliminate the Sukuna threat once and for all...  For older teen audiences.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$9.99<br>
+                            </div>
+                            <div class="price">
+                                $6.99
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="67410" data-title="Jujutsu Kaisen GN Vol 05" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUN201576" data-title="Jujutsu Kaisen GN Vol 05" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/apr202343/jujutsu-kaisen-gn-vol-04-(c-1-0-1)"><img class="itemimg" src="https://media.instocktrades.com/small/APR202343.jpg" alt="JUJUTSU KAISEN GN VOL 04 (C: 1-0-1)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/apr202343/jujutsu-kaisen-gn-vol-04-(c-1-0-1)">Jujutsu Kaisen GN Vol 04 (C: 1-0-1)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Gege Akutami
+While investigating a strange set of mysterious deaths, Itadori meets Junpei, a troubled kid who is often bullied at school, and they immediately hit it off. However, Junpei is also befriended by the culprit behind the bloody incidents-Mahito, a mischievous cursed spirit!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$9.99<br>
+                            </div>
+                            <div class="price">
+                                $6.99
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="67061" data-title="Jujutsu Kaisen GN Vol 04 (C: 1-0-1)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="APR202343" data-title="Jujutsu Kaisen GN Vol 04 (C: 1-0-1)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/dec192091/jujutsu-kaisen-gn-vol-02"><img class="itemimg" src="https://media.instocktrades.com/small/DEC192091.jpg" alt="JUJUTSU KAISEN GN VOL 02"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/dec192091/jujutsu-kaisen-gn-vol-02">Jujutsu Kaisen GN Vol 02</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Gege Akutami
+When a cursed womb appears at a detention facility, Jujutsu High dispatches Itadori and the other first-years to handle the situation. However, the Curse they encounter is far stronger than they ever expect! Itadori and friends now have two options: run and maybe live, or fight and die. While they are distracted, powerful Curses with mysterious designs on Jujutsu High and Satoru Gojo are gathering...
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$9.99<br>
+                            </div>
+                            <div class="price">
+                                $6.99
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="65218" data-title="Jujutsu Kaisen GN Vol 02" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="DEC192091" data-title="Jujutsu Kaisen GN Vol 02" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+    </div>
+
+    <div>
+                    </div>
+    <div>Results 1 - 13 of 13</div>
+
+
+
+</div>
+
+
+
+
+    </div>
+    <footer>
+        <div class="section" style="overflow:hidden;">
+            <ul>
+                <li class="heading">Main Menu</li>
+                <li><a href="/">Home</a></li>
+                <li><a href="/newreleases">New Releases</a></li>
+                <li><a href="/comingsoon">Coming Soon</a></li>
+                <li><a href="/clearance">Clearance</a></li>
+                <li><a href="/damages">Damages</a></li>
+                <li class="condensed"><a href="/publishers">Publishers</a></li>
+                <li class="condensed"><a href="/writers">Writers</a></li>
+                <li class="condensed"><a href="/artists">Artists</a></li>
+                <li><a href="/giftcertificates">Gift Certificates</a></li>
+                <li><a href="/home/help">Help</a></li>
+                <li><a href="/home/privacy">Privacy and Security</a></li>
+                <li><a href="/wishlists">Find a Wishlist</a></li>
+                <li><a href="/home/contact">Contact Us</a></li>
+            </ul>
+            <ul class="expanded">
+                <li class="heading">Publishers</li>
+                    <li><a href="/publishers/image">Image</a></li>
+                    <li><a href="/publishers/dc-comics">DC Comics</a></li>
+                    <li><a href="/publishers/marvel">Marvel</a></li>
+                    <li><a href="/publishers/viz-media">Viz Media</a></li>
+                    <li><a href="/publishers/dark-horse">Dark Horse</a></li>
+                    <li><a href="/publishers/seven-seas">Seven Seas</a></li>
+                    <li><a href="/publishers/kodansha">Kodansha</a></li>
+                    <li><a href="/publishers/idw">IDW</a></li>
+                    <li><a href="/publishers/titan">Titan</a></li>
+                <li><a href="/publishers">View All Publishers</a></li>
+            </ul>
+            <ul class="expanded">
+                <li class="heading">Genres</li>
+                    <li><a href="/genres/action-adventure">Action/Adventure</a></li>
+                    <li><a href="/genres/crime">Crime</a></li>
+                    <li><a href="/genres/fantasy">Fantasy</a></li>
+                    <li><a href="/genres/horror">Horror</a></li>
+                    <li><a href="/genres/humor-comedy">Humor/Comedy</a></li>
+                    <li><a href="/genres/reference-art-books-how-to">Reference/Art Books/How To</a></li>
+                    <li><a href="/genres/romance">Romance</a></li>
+                    <li><a href="/genres/science-fiction">Science Fiction</a></li>
+                    <li><a href="/genres/sports">Sports</a></li>
+                    <li><a href="/genres/super-hero">Super-hero</a></li>
+            </ul>
+                <ul class="expanded">
+                    <li class="heading">Writers</li>
+                        <li><a href="/writers/robert-kirkman">Robert Kirkman</a></li>
+                        <li><a href="/writers/jeff-lemire">Jeff Lemire</a></li>
+                        <li><a href="/writers/kentaro-miura">Kentaro Miura</a></li>
+                        <li><a href="/writers/rick-remender">Rick Remender</a></li>
+                        <li><a href="/writers/brian-k-vaughan">Brian K. Vaughan</a></li>
+                        <li><a href="/writers/ed-brubaker">Ed Brubaker</a></li>
+                        <li><a href="/writers/tom-king">Tom King</a></li>
+                        <li><a href="/writers/jonathan-hickman">Jonathan Hickman</a></li>
+                        <li><a href="/writers/geoff-johns">Geoff Johns</a></li>
+                        <li><a href="/writers/mark-waid">Mark Waid</a></li>
+                    <li><a href="/writers">View All Writers</a></li>
+                </ul>
+                            <ul class="expanded">
+                    <li class="heading">Artists</li>
+                        <li><a href="/artists/kentaro-miura">Kentaro Miura</a></li>
+                        <li><a href="/artists/sean-phillips">Sean Phillips</a></li>
+                        <li><a href="/artists/fiona-staples">Fiona Staples</a></li>
+                        <li><a href="/artists/ryan-ottley">Ryan Ottley</a></li>
+                        <li><a href="/artists/cliff-chiang">Cliff Chiang</a></li>
+                        <li><a href="/artists/dustin-nguyen">Dustin Nguyen</a></li>
+                        <li><a href="/artists/charlie-adlard">Charlie Adlard</a></li>
+                        <li><a href="/artists/hiroaki-samura">Hiroaki Samura</a></li>
+                        <li><a href="/artists/andrea-sorrentino">Andrea Sorrentino</a></li>
+                        <li><a href="/artists/michael-lark">Michael Lark</a></li>
+                    <li><a href="/artists">View All Artists</a></li>
+                </ul>
+            <ul class="footerpromos">
+                <li><img src="/images/ist42.jpg" alt="Instocktrades.com 42% off!" width="227" height="87"></li>
+                <li><a href="https://www.dcbservice.com" target="_blank"><img src="/images/dcbs40.jpg" width="227" height="87" alt="Discount Comic Book Service"></a></li>
+            </ul>
+            <div class="copyright">
+                &copy; 2026 Discount Comic Book Service (DCBS). All images &copy; respective owners and used with permission.
+            </div>
+        </div>
+    </footer>
+
+    <div id="confirmmsg">
+
+    </div>
+    <script type="text/javascript" src="/scripts/js.cookie.min.js"></script>
+    <script src="/bundles/jquery?v=2u0aRenDpYxArEyILB59ETSCA2cfQkSMlxb6jbMBqf81"></script>
+
+    <script type="text/javascript" src="/scripts/jquery-ui.min.js"></script>
+    
+    <script type="text/javascript" src="/scripts/jquery.hoverIntent.min.js"></script>
+    <script type="text/javascript" src="/scripts/app.min.js?v=3"></script>
+    
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#searchtype').on('change', function () {
+                var isDefault = $(this).val() == "default";
+                $('#defaultsearch').css('display', (isDefault ? "block" : "none"));
+                $('#advancedsearch').css('display', (isDefault ? "none" : "block"));
+            });
+        });
+    </script>
+
+    <script id="free_accessibility_plugin_script" src="https://accessibility.f-static.com/site/free-accessibility-plugin/accessibility.min.js?lan=en&place=bottom-right&distance=20" crossorigin="anonymous" type="text/plain" data-category="functionality"></script>
+</body>
+</html>

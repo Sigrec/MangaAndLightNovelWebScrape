@@ -6,7 +6,12 @@ namespace MangaAndLightNovelWebScrape.Websites;
 
 public sealed partial class AmazonUSA : IWebsite
 {
-    private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+    private readonly ILogger _logger;
+
+    public AmazonUSA(ILogger<AmazonUSA>? logger = null)
+    {
+        _logger = logger ?? NullLogger<AmazonUSA>.Instance;
+    }
     public const string WEBSITE_LINK = "https://www.amazon.com/Manga-Comics-Graphic-Novels-Books/b?ie=UTF8&node=4367";
 
     /// <inheritdoc />
@@ -54,16 +59,13 @@ public sealed partial class AmazonUSA : IWebsite
     [GeneratedRegex(@"\((.*)\)|:(.*)", RegexOptions.IgnoreCase)] private static partial Regex ExtractTextRegex();
     [GeneratedRegex(@"(\d{1,3}) Special Edition.*", RegexOptions.IgnoreCase)] private static partial Regex SpecialEditionRegex();
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships = default)
-    {
-        return Task.Run(async () =>
-        {
-            IPage page = await PlaywrightFactory.GetPageAsync(browser!);
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page);
-            masterDataList.Add(Data);
-            masterLinkList.TryAdd(Website.AmazonUSA, Links[0]);
-        });
-    }
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, ConcurrentDictionary<Website, Exception> errors, IBrowser? browser, Region curRegion, Membership memberships = Membership.None, CancellationToken cancellationToken = default)
+        => InternalHelpers.RunPlaywrightScrapeAsync(
+            this, Website.AmazonUSA, bookTitle, bookType, masterDataList, masterLinkList, errors, browser!, curRegion, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+        => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
 
     private string GenerateWebsiteUrl(BookType bookType, uint curPage, string bookTitle)
     {
@@ -79,11 +81,11 @@ public sealed partial class AmazonUSA : IWebsite
             url = $"{BASE_URL}/s?k={bookTitle.Replace(" ", "+")}+%28light+novel%29&i=stripbooks&rh=n%3A283155%2Cp_n_feature_twenty-five_browse-bin%3A3291437011&dc&ds=v1%3AFRPeeHRJgdHaBhqfCUtrUe8N2WmARxSv1FZdQ%2FAbsIc&crid=21DLI0M90JJLE&qid=1737329715&rnid=3291435011&sprefix={bookTitle.Replace(" ", "+")}+light+novel+%2Cstripbooks%2C153&ref=sr_nr_p_n_feature_twenty-five_browse-bin_1";
         }
 
-        LOGGER.Info(url);
+        _logger.UrlGenerated(url);
         return url;
     }
 
-    private static string CleanAndParseTitle(string entryTitle, BookType bookType, string bookTitle)
+    internal static string CleanAndParseTitle(string entryTitle, BookType bookType, string bookTitle)
     {
         string insertString = string.Empty;
         if (OmnibusFixRegex().IsMatch(entryTitle))
@@ -154,14 +156,16 @@ public sealed partial class AmazonUSA : IWebsite
 
         if (bookType == BookType.LightNovel)
         {
-            if (entryTitle.Contains("Vol") && parsedTitle.ToString().EndsWith("Novel"))
+            string snapshot = parsedTitle.ToString();
+            if (entryTitle.Contains("Vol") && snapshot.EndsWith("Novel"))
             {
                 parsedTitle.Remove(parsedTitle.Length - 6, 6);
+                snapshot = parsedTitle.ToString();
             }
 
-            if (!parsedTitle.ToString().Contains("novel", StringComparison.OrdinalIgnoreCase))
+            if (!snapshot.Contains("novel", StringComparison.OrdinalIgnoreCase))
             {
-                Match match = MasterScrape.FindVolWithNumRegex().Match(parsedTitle.ToString());
+                Match match = MasterScrape.FindVolWithNumRegex().Match(snapshot);
                 if (match.Success)
                 {
                     int index = match.Index;
@@ -209,7 +213,7 @@ public sealed partial class AmazonUSA : IWebsite
     }
 
     // TODO - Need to finish checking tests and cleaning
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America, CancellationToken cancellationToken = default)
     {
         List<EntryModel> data = [];
         List<string> links = [];
@@ -225,6 +229,7 @@ public sealed partial class AmazonUSA : IWebsite
             HtmlNodeCollection pageNums = doc.DocumentNode.SelectNodes(PageCheckXPath);
             uint maxPage = pageNums != null ? Convert.ToUInt32(pageNums.Last().InnerText.Trim()) : 0;
             bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle, _titleRemovalStrings);
+            string normalizedBookTitle = InternalHelpers.NormalizeForTitleMatch(bookTitle);
 
             while (true)
             {
@@ -237,16 +242,16 @@ public sealed partial class AmazonUSA : IWebsite
 
                 HtmlNode pageCheck = doc.DocumentNode.SelectSingleNode(PageCheckXPath);
 
-                LOGGER.Debug("{} | {}", titleData != null ? titleData.Count : "null", entryInfoData != null ? entryInfoData.Count : "null");
+                _logger.NodeCounts(titleData != null ? titleData.Count.ToString() : "null", entryInfoData != null ? entryInfoData.Count.ToString() : "null");
 
                 int entryCount = Math.Min(titleData!.Count, entryInfoData!.Count);
                 for (int x = 0; x < entryCount; x++)
                 {
                     string entryTitle = titleData[x].InnerText.Trim();
                     string entryInfo = entryInfoData[x].InnerText.Trim();
-                    LOGGER.Debug("BEFORE ({}) = {} | {}", x, entryTitle, entryInfo);
+                    _logger.BeforeEntry(x, entryTitle, entryInfo);
 
-                    if (InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
+                    if (InternalHelpers.EntryTitleContainsNormalizedBookTitle(normalizedBookTitle, entryTitle)
                         && (!InternalHelpers.ShouldRemoveEntry(entryTitle, _titleRemovalStrings) || BookTitleRemovalCheck)
                         && !EntryTitleCheckRegex().IsMatch(entryTitle)
                         && entryInfo.ContainsAny(_validPriceStrings)
@@ -277,14 +282,14 @@ public sealed partial class AmazonUSA : IWebsite
                         }
                         else
                         {
-                            LOGGER.Error("No Valid Price, Entry Info for {} = {}", entryTitle, entryInfo);
+                            _logger.NoValidPrice(entryTitle, entryInfo);
                             continue;
                         }
 
                         if (entryInfo.Contains("Save $", StringComparison.OrdinalIgnoreCase))
                         {
                             decimal coupon = Convert.ToDecimal(GetCouponRegex().Match(entryInfo).Groups[1].Value.TrimStart('$'));
-                            LOGGER.Info("Applying Coupon {} to {} for {}", coupon, entryTitle, price.TrimStart('$'));
+                            _logger.ApplyingCoupon(coupon, entryTitle, price.TrimStart('$'));
                             price = $"${InternalHelpers.ApplyCoupon(Convert.ToDecimal(price.TrimStart('$')), coupon)}";
                         }
 
@@ -307,12 +312,12 @@ public sealed partial class AmazonUSA : IWebsite
                         }
                         else
                         {
-                            LOGGER.Debug("Removed (2) {}", entryTitle);
+                            _logger.EntryRemovedDebug(2, entryTitle);
                         }
                     }
                     else
                     {
-                        LOGGER.Debug("Removed (1) {}", entryTitle);
+                        _logger.EntryRemovedDebug(1, entryTitle);
                     }
                 }
 
@@ -332,20 +337,20 @@ public sealed partial class AmazonUSA : IWebsite
         }
         catch (Exception ex)
         {
-            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
+            _logger.ScrapeError(ex, bookTitle, bookType, TITLE);
         }
         finally
         {
             data.TrimExcess();
             links.TrimExcess();
-            data.Sort(EntryModel.VolumeSort);
-            data.RemoveDuplicates(LOGGER);
+            data.SortByVolume();
+            data.RemoveDuplicates(_logger);
 
             if (bookType == BookType.Manga && data.Any(entry => entry.Entry.ContainsAny(["Vol", "Box Set"])))
             {
                 data.RemoveAll(entry => entry.Entry.Equals(bookTitle, StringComparison.OrdinalIgnoreCase));
             }
-            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
+            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
         }
 
         return (data, links);

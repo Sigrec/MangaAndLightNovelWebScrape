@@ -1,19 +1,19 @@
 using System.Buffers;
-using System.Collections.Frozen;
+using System.Runtime.InteropServices;
+using MangaAndLightNovelWebScrape.Services;
 using Microsoft.Playwright;
 
 namespace MangaAndLightNovelWebScrape;
 
 internal static partial class InternalHelpers
 {
-    private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrape");
     [GeneratedRegex(@"[^\w+]")] internal static partial Regex RemoveNonWordsRegex();
     [GeneratedRegex(@"Vol\s\d{1,3}", RegexOptions.IgnoreCase)] private static partial Regex VolRegex();
 
     private const int StackallocThreshold = 512;
 
-    private static readonly FrozenSet<string> _entryRemovalTerms = new[]
-    {
+    private static readonly string[] _entryRemovalTermArray =
+    [
         "Bluray", "Blu-ray", "Choose Path", "Encyclopedia", "Anthology", "Official", "Character", "Guide",
         "Illustration", "Anime Profiles", "Choose Your Path", "Compendium",
         "Artbook", "Art Book", "Error", "Advertising", "(Osi)", "Ani-manga",
@@ -22,8 +22,13 @@ internal static partial class InternalHelpers
         "Retrospective", "Notebook", "Journal", "Art of", "the Anime",
         "Calendar", "Adventure Book", "Coloring Book", "Sketchbook", "PLUSH",
         "Pirate Recipes", "Exclusive", "Hobby", "Model Kit", "Funko POP", "Creator of the", "the Movie", "UniVersus"
-    }
-    .ToFrozenSet(StringComparer.OrdinalIgnoreCase);
+    ];
+
+    // Vectorized multi-substring search over the removal-term set. Replaces ~50 sequential
+    // case-insensitive `string.Contains` calls per entry with one SIMD-friendly scan. The
+    // hot path: every entry on every site flows through `ShouldRemoveEntry(title)`.
+    private static readonly SearchValues<string> _entryRemovalTermSearch
+        = SearchValues.Create(_entryRemovalTermArray, StringComparison.OrdinalIgnoreCase);
 
     internal static bool NeedPlaywright(HashSet<Website> siteList)
     {
@@ -52,19 +57,18 @@ internal static partial class InternalHelpers
             return false;
         }
 
-        // Combine built‑in and additional terms
-        IEnumerable<string> combinedTerms;
-        if (additionalTerms != null)
+        // Fast path: single vectorized multi-substring scan over the built-in terms.
+        if (title.AsSpan().IndexOfAny(_entryRemovalTermSearch) >= 0)
         {
-            combinedTerms = _entryRemovalTerms.Concat(additionalTerms);
-        }
-        else
-        {
-            combinedTerms = _entryRemovalTerms;
+            return true;
         }
 
-        // Full substring scan (case‐insensitive)
-        foreach (string term in combinedTerms)
+        if (additionalTerms is null)
+        {
+            return false;
+        }
+
+        foreach (string term in additionalTerms)
         {
             if (title.Contains(term, StringComparison.OrdinalIgnoreCase))
             {
@@ -98,69 +102,153 @@ internal static partial class InternalHelpers
         BookType bookType,
         ConcurrentBag<List<EntryModel>> masterBag,
         ConcurrentDictionary<Website, string> masterDict,
+        ConcurrentDictionary<Website, Exception> errors,
         IBrowser? browser,
         Region curRegion,
-        (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships)
+        ILoggerFactory loggerFactory,
+        Membership memberships,
+        CancellationToken cancellationToken)
     {
         foreach (Website site in sites)
         {
-            IWebsite scraper = CreateScraper(site);
+            IWebsite scraper = CreateScraper(site, loggerFactory);
 
             Task task = scraper.CreateTask(
                 bookTitle,
                 bookType,
                 masterBag,
                 masterDict,
+                errors,
                 browser,
                 curRegion,
-                memberships
+                memberships,
+                cancellationToken
             );
 
             webTasks.Add(task);
         }
     }
 
-    internal static IWebsite CreateScraper(Website site)
+    /// <summary>
+    /// Rents a fresh Playwright <see cref="IPage"/>, runs <paramref name="scraper"/>'s
+    /// <c>GetData</c>, registers results, and disposes the page + its owning context in
+    /// a finally block. This is the shared lifecycle for every Playwright-backed site —
+    /// each <c>CreateTask</c> reduces to a one-line delegation.
+    ///
+    /// Per-site failures are caught here, wrapped as <see cref="SiteScrapeException"/>, and
+    /// stored in <paramref name="errors"/>. A site failure never aborts the surrounding
+    /// orchestration — siblings keep running.
+    /// </summary>
+    /// <param name="useLastLink">
+    /// If <c>true</c>, registers <c>Links.Last()</c> instead of <c>Links[0]</c>. Set for sites
+    /// where the final scraped URL (not the first) is the canonical landing page.
+    /// </param>
+    internal static async Task RunPlaywrightScrapeAsync(
+        IWebsite scraper,
+        Website site,
+        string bookTitle,
+        BookType bookType,
+        ConcurrentBag<List<EntryModel>> masterDataList,
+        ConcurrentDictionary<Website, string> masterLinkList,
+        ConcurrentDictionary<Website, Exception> errors,
+        IBrowser browser,
+        Region curRegion,
+        CancellationToken cancellationToken,
+        bool isMember = false,
+        bool needsUserAgent = false,
+        bool useLastLink = false)
+    {
+        IPage page = await PlaywrightFactory.GetPageAsync(browser, needsUserAgent);
+        try
+        {
+            (List<EntryModel> Data, List<string> Links) = await scraper.GetData(bookTitle, bookType, page, isMember, curRegion, cancellationToken);
+            masterDataList.Add(Data);
+            if (Links.Count > 0)
+            {
+                masterLinkList.TryAdd(site, useLastLink ? Links[^1] : Links[0]);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            errors[site] = new SiteScrapeException(site, ex);
+        }
+        finally
+        {
+            await page.DisposeContextAsync();
+        }
+    }
+
+    /// <summary>
+    /// HtmlWeb-only version of <see cref="RunPlaywrightScrapeAsync"/>. Skips browser rental —
+    /// the site's <c>GetData</c> handles the network directly via <c>HtmlWeb</c>. Same
+    /// per-site failure handling: caught, wrapped, stored in <paramref name="errors"/>.
+    /// </summary>
+    internal static async Task RunHtmlScrapeAsync(
+        IWebsite scraper,
+        Website site,
+        string bookTitle,
+        BookType bookType,
+        ConcurrentBag<List<EntryModel>> masterDataList,
+        ConcurrentDictionary<Website, string> masterLinkList,
+        ConcurrentDictionary<Website, Exception> errors,
+        Region curRegion,
+        CancellationToken cancellationToken,
+        bool useLastLink = false)
+    {
+        try
+        {
+            (List<EntryModel> Data, List<string> Links) = await scraper.GetData(bookTitle, bookType, null, false, curRegion, cancellationToken);
+            masterDataList.Add(Data);
+            if (Links.Count > 0)
+            {
+                masterLinkList.TryAdd(site, useLastLink ? Links[^1] : Links[0]);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            errors[site] = new SiteScrapeException(site, ex);
+        }
+    }
+
+    internal static IWebsite CreateScraper(Website site, ILoggerFactory loggerFactory)
     {
         return site switch
         {
             // America
-            Website.AmazonUSA => new AmazonUSA(),
-            Website.BooksAMillion => new BooksAMillion(),
-            Website.Crunchyroll => new Crunchyroll(),
-            Website.InStockTrades => new InStockTrades(),
-            Website.KinokuniyaUSA => new KinokuniyaUSA(),
-            Website.MangaMart => new MangaMart(),
-            Website.MerryManga => new MerryManga(),
-            Website.RobertsAnimeCornerStore => new RobertsAnimeCornerStore(),
+            Website.AmazonUSA => new AmazonUSA(loggerFactory.CreateLogger<AmazonUSA>()),
+            Website.BooksAMillion => new BooksAMillion(loggerFactory.CreateLogger<BooksAMillion>()),
+            Website.Crunchyroll => new Crunchyroll(loggerFactory.CreateLogger<Crunchyroll>()),
+            Website.InStockTrades => new InStockTrades(loggerFactory.CreateLogger<InStockTrades>()),
+            Website.KinokuniyaUSA => new KinokuniyaUSA(loggerFactory.CreateLogger<KinokuniyaUSA>()),
+            Website.MangaMart => new MangaMart(loggerFactory.CreateLogger<MangaMart>()),
+            Website.MerryManga => new MerryManga(loggerFactory.CreateLogger<MerryManga>()),
+            Website.RobertsAnimeCornerStore => new RobertsAnimeCornerStore(loggerFactory.CreateLogger<RobertsAnimeCornerStore>()),
 
             // Britain
-            Website.ForbiddenPlanet => new ForbiddenPlanet(),
-            Website.TravellingMan => new TravellingMan(),
+            Website.ForbiddenPlanet => new ForbiddenPlanet(loggerFactory.CreateLogger<ForbiddenPlanet>()),
+            Website.OKComics => new OKComics(loggerFactory.CreateLogger<OKComics>()),
+            Website.TravellingMan => new TravellingMan(loggerFactory.CreateLogger<TravellingMan>()),
 
             // Canada
-            
+
 
             // Australia
-            Website.MangaMate => new MangaMate(),
+            Website.AllStarComics => new AllStarComics(loggerFactory.CreateLogger<AllStarComics>()),
+            Website.KingsComics => new KingsComics(loggerFactory.CreateLogger<KingsComics>()),
+            Website.MangaMate => new MangaMate(loggerFactory.CreateLogger<MangaMate>()),
 
             // Multi
-            Website.SciFier => new SciFier(),
+            Website.SciFier => new SciFier(loggerFactory.CreateLogger<SciFier>()),
             _ => throw new ArgumentOutOfRangeException(nameof(site), site, "No scraper registered for this site")
         };
-    }
-
-    internal static List<EntryModel> RemoveDuplicateEntries(List<EntryModel> entries)
-    {
-        List<EntryModel> output = [];
-        foreach (EntryModel entry in entries)
-        {
-            if (!output.Contains(entry))
-            {
-                output.Add(entry);
-            }
-        }
-        return output;
     }
 
     internal static void AddVolToString(this StringBuilder title)
@@ -224,14 +312,29 @@ internal static partial class InternalHelpers
     }
 
     /// <summary>
-    /// Determines if the book title inputted by the user is contained within the current title scraped from the website
+    /// Strips non-word characters (keeping <c>\w</c> + literal <c>+</c>) so cross-site title
+    /// comparisons ignore whitespace, punctuation, and casing artifacts. Cache the result
+    /// once per scrape (the input <c>bookTitle</c> doesn't change per entry) and reuse via
+    /// <see cref="EntryTitleContainsNormalizedBookTitle"/> in the inner loop.
     /// </summary>
-    /// <param name="bookTitle">The title inputed by the user to initialize the scrape</param>
-    /// <param name="curTitle">The current title scraped from the website</param>
+    internal static string NormalizeForTitleMatch(string title)
+        => RemoveNonWordsRegex().Replace(title, string.Empty);
+
+    /// <summary>
+    /// Determines if the book title inputted by the user is contained within the current
+    /// title scraped from the website. Re-normalizes <paramref name="bookTitle"/> on every
+    /// call — prefer <see cref="EntryTitleContainsNormalizedBookTitle"/> in hot loops.
+    /// </summary>
     internal static bool EntryTitleContainsBookTitle(string bookTitle, string curTitle)
-    {
-        return RemoveNonWordsRegex().Replace(curTitle, string.Empty).Contains(RemoveNonWordsRegex().Replace(bookTitle, string.Empty), StringComparison.OrdinalIgnoreCase);
-    }
+        => EntryTitleContainsNormalizedBookTitle(NormalizeForTitleMatch(bookTitle), curTitle);
+
+    /// <summary>
+    /// Hot-path variant: caller pre-normalizes <paramref name="normalizedBookTitle"/> once
+    /// via <see cref="NormalizeForTitleMatch"/> and reuses it across every entry.
+    /// </summary>
+    internal static bool EntryTitleContainsNormalizedBookTitle(string normalizedBookTitle, string curTitle)
+        => RemoveNonWordsRegex().Replace(curTitle, string.Empty)
+            .Contains(normalizedBookTitle, StringComparison.OrdinalIgnoreCase);
 
     /// <summary>
     /// Determines whether this entry should be removed if it contains a certain text that is also not contained in the book title
@@ -246,9 +349,15 @@ internal static partial class InternalHelpers
     }
 
     internal static bool TitleStartsWithCheck(string bookTitle, string curTitle)
-    {
-        return RemoveNonWordsRegex().Replace(curTitle, string.Empty).StartsWith(RemoveNonWordsRegex().Replace(bookTitle, string.Empty), StringComparison.OrdinalIgnoreCase);
-    }
+        => TitleStartsWithNormalizedBookTitle(NormalizeForTitleMatch(bookTitle), curTitle);
+
+    /// <summary>
+    /// Hot-path variant of <see cref="TitleStartsWithCheck"/>: caller pre-normalizes
+    /// <paramref name="normalizedBookTitle"/> via <see cref="NormalizeForTitleMatch"/>.
+    /// </summary>
+    internal static bool TitleStartsWithNormalizedBookTitle(string normalizedBookTitle, string curTitle)
+        => RemoveNonWordsRegex().Replace(curTitle, string.Empty)
+            .StartsWith(normalizedBookTitle, StringComparison.OrdinalIgnoreCase);
 
     internal static void ReplaceMultipleTextInEntryTitle(ref StringBuilder curTitle, string bookTitle, IEnumerable<string> containsText, string replaceText)
     {
@@ -280,36 +389,32 @@ internal static partial class InternalHelpers
 
     internal static void RemoveCharacterFromTitle(ref StringBuilder curTitle, string bookTitle, char charToRemove)
     {
-        // Check if charToRemove exists in bookTitle
-        if (!bookTitle.Contains(charToRemove) && curTitle.ToString().Contains(charToRemove))
+        if (bookTitle.Contains(charToRemove))
         {
-            for (int i = 0; i < curTitle.Length; i++)
+            return;
+        }
+
+        for (int i = curTitle.Length - 1; i >= 0; i--)
+        {
+            if (curTitle[i] == charToRemove)
             {
-                if (curTitle[i] == charToRemove)
-                {
-                    curTitle.Remove(i, 1);
-                    i--; // Adjust the index to re-check the current position after removal
-                }
+                curTitle.Remove(i, 1);
             }
         }
     }
 
     internal static void RemoveCharacterFromTitle(ref StringBuilder curTitle, string bookTitle, char charToRemove, string textToCheck)
     {
-        string title = curTitle.ToString();
-        if (!bookTitle.Contains(charToRemove) && !title.Contains(textToCheck))
+        if (bookTitle.Contains(charToRemove) || curTitle.ContainsOrdinal(textToCheck))
         {
-            int index = 0;
-            while (index < curTitle.Length)
+            return;
+        }
+
+        for (int i = curTitle.Length - 1; i >= 0; i--)
+        {
+            if (curTitle[i] == charToRemove)
             {
-                if (curTitle[index] == charToRemove)
-                {
-                    curTitle.Remove(index, 1); // Remove character at index
-                }
-                else
-                {
-                    index++; // Only increment if no removal occurred
-                }
+                curTitle.Remove(i, 1);
             }
         }
     }
@@ -362,6 +467,9 @@ internal static partial class InternalHelpers
         // Estimate: most characters stay 1→1, escaped ones become 3 chars ("%HH")
         StringBuilder sb = new(bookTitle.Length * 2);
 
+        // Hoisted outside the loop — CA2014 (stackalloc must not run per iteration).
+        Span<char> hex = stackalloc char[2];
+
         foreach (char c in bookTitle)
         {
             // Unreserved per RFC3986: A–Z a–z 0–9 - . _ ~
@@ -377,8 +485,9 @@ internal static partial class InternalHelpers
             }
             else
             {
-                sb.Append('%');
-                sb.Append(((int)c).ToString("X2"));
+                // TryFormat writes directly into the stack span — no string allocation per char.
+                ((int)c).TryFormat(hex, out _, "X2");
+                sb.Append('%').Append(hex);
             }
         }
 
@@ -386,13 +495,13 @@ internal static partial class InternalHelpers
     }
 
     /// <summary>
-    /// Trims the end of the StingBuilder Content. On Default only the white space char is truncated.
+    /// Trims trailing whitespace from the <see cref="StringBuilder"/>, plus any additional
+    /// characters in <paramref name="pTrimChars"/>. Pass <c>[':']</c> etc. as a collection
+    /// expression — it compiles to an inline span, no heap allocation.
     /// </summary>
-    /// <param name="pTrimChars">Array of additional chars to be truncated. A little bit more efficient than using char[]</param>
-    /// <returns></returns>
-    internal static StringBuilder TrimEnd(this StringBuilder pStringBuilder, HashSet<char>? pTrimChars = null)
+    internal static StringBuilder TrimEnd(this StringBuilder pStringBuilder, ReadOnlySpan<char> pTrimChars = default)
     {
-        if (pStringBuilder == null || pStringBuilder.Length == 0)
+        if (pStringBuilder is null || pStringBuilder.Length == 0)
         {
             return pStringBuilder!;
         }
@@ -401,23 +510,23 @@ internal static partial class InternalHelpers
 
         for (; i >= 0; i--)
         {
-            var lChar = pStringBuilder[i];
+            char lChar = pStringBuilder[i];
 
-            if (pTrimChars == null)
+            if (char.IsWhiteSpace(lChar))
             {
-                if (char.IsWhiteSpace(lChar) == false)
-                {
-                    break;
-                }
+                continue;
             }
-            else if ((char.IsWhiteSpace(lChar) == false) && (pTrimChars.Contains(lChar) == false))
+
+            if (pTrimChars.IsEmpty || pTrimChars.IndexOf(lChar) < 0)
             {
                 break;
             }
         }
 
         if (i < pStringBuilder.Length - 1)
+        {
             pStringBuilder.Length = i + 1;
+        }
 
         return pStringBuilder;
     }
@@ -474,28 +583,29 @@ internal static partial class InternalHelpers
     internal static bool ContainsIgnoreCase(this StringBuilder sb, ReadOnlySpan<char> value)
         => sb.IndexOfIgnoreCase(value) >= 0;
 
-    internal static void PrintWebsiteData(string website, string bookTitle, BookType bookType, IEnumerable<EntryModel> dataList, Logger LOGGER)
+    internal static void PrintWebsiteData(string website, string bookTitle, BookType bookType, IEnumerable<EntryModel> dataList, ILogger logger)
     {
         if (MasterScrape.IsDebugEnabled)
         {
             // Clean up website string once before using it for file path.
-            string filePath = $@"Data\{website.Replace(" ", string.Empty)}Data.txt";
+            string dataDir = Path.Combine(Directory.GetCurrentDirectory(), "Data");
+            Directory.CreateDirectory(dataDir);
+            string filePath = Path.Combine(dataDir, $"{website.Replace(" ", string.Empty)}Data.txt");
 
             using StreamWriter outputFile = new(filePath);
             if (dataList.Any())
             {
-                // If we have data, write it to both the logger and the output file.
                 foreach (EntryModel data in dataList)
                 {
-                    LOGGER.Debug(data);  // Log the data entry
-                    outputFile.WriteLine(data);  // Write to the file
+                    logger.WebsiteDataEntry(data);
+                    outputFile.WriteLine(data);
                 }
             }
             else
             {
                 string message = $"{bookTitle} ({bookType}) Does Not Exist @ {website}";
-                LOGGER.Error(message);  // Log the error message
-                outputFile.WriteLine(message);  // Write the error to the file
+                logger.WebsiteDataMissing(bookTitle, bookType, website);
+                outputFile.WriteLine(message);
             }
         }
     }
@@ -517,27 +627,176 @@ internal static partial class InternalHelpers
         return false;
     }
 
-    internal static void RemoveDuplicates(this List<EntryModel> input, Logger LOGGER)
+    /// <summary>
+    /// Sorts <paramref name="data"/> in place using the same logic as
+    /// <see cref="EntryModel.VolumeSort"/>, but with per-entry sort keys precomputed once.
+    /// <para>
+    /// The naive <c>data.Sort(EntryModel.VolumeSort)</c> path runs 2–4 regex Replaces + 2
+    /// <see cref="EntryModel.GetCurrentVolumeNum"/> calls per <c>Compare</c> — and <c>Compare</c>
+    /// fires <c>N log N</c> times. This helper does the regex work once per entry (linear) and
+    /// the in-sort comparisons become array reads against the precomputed key tables.
+    /// </para>
+    /// </summary>
+    internal static void SortByVolume(this List<EntryModel> data)
     {
-        for (int x = input.Count - 1; x > 0; x--)
+        int count = data.Count;
+        if (count < 2) return;
+
+        Span<EntryModel> span = CollectionsMarshal.AsSpan(data);
+
+        // Per-entry sort keys, computed once.
+        string[] filteredTexts = new string[count];   // fallback: ordinal compare on filtered title
+        string[] filteredNames = new string[count];   // name with " Vol N" / " Box Set N" suffix stripped
+        double[] volNums = new double[count];          // parsed vol number, -1 if absent / box set
+        byte[] entryTypes = new byte[count];           // 0 = neither, 1 = Vol, 2 = Box Set
+
+        for (int i = 0; i < count; i++)
         {
-            if (input[x].Entry.Equals(input[x - 1].Entry, StringComparison.OrdinalIgnoreCase))
+            string entry = span[i].Entry;
+
+            // Box Set takes precedence — its vol always returns -1 via GetCurrentVolumeNum,
+            // so we treat the two types as disjoint categories for the type-match check.
+            bool isBoxSet = entry.Contains("Box Set");
+            bool isVol = !isBoxSet && entry.Contains("Vol");
+            entryTypes[i] = (byte)(isVol ? 1 : (isBoxSet ? 2 : 0));
+
+            string filteredText = VolumeSort.FilterNameRegex().Replace(entry, " ");
+            filteredTexts[i] = filteredText;
+            filteredNames[i] = VolumeSort.ExtractNameRegex().Replace(filteredText, string.Empty);
+            volNums[i] = EntryModel.GetCurrentVolumeNum(entry);
+        }
+
+        // Sort an index array against the precomputed keys, then materialize the result back
+        // into `data`. Use a struct comparer instead of a closure-capturing lambda so we don't
+        // allocate a delegate + display class per sort.
+        int[] indices = new int[count];
+        for (int i = 0; i < count; i++) indices[i] = i;
+
+        Array.Sort(indices, new VolumeIndexComparer(entryTypes, volNums, filteredNames, filteredTexts));
+
+        // Apply the permutation. Two-pass with a temporary buffer is the simplest correct
+        // approach; cycle-following would save the buffer but tangles the code.
+        EntryModel[] reordered = new EntryModel[count];
+        for (int i = 0; i < count; i++) reordered[i] = span[indices[i]];
+        for (int i = 0; i < count; i++) span[i] = reordered[i];
+    }
+
+    private readonly struct VolumeIndexComparer(
+        byte[] entryTypes,
+        double[] volNums,
+        string[] filteredNames,
+        string[] filteredTexts) : IComparer<int>
+    {
+        public int Compare(int a, int b)
+        {
+            if (entryTypes[a] != 0 && entryTypes[a] == entryTypes[b]
+                && volNums[a] != -1 && volNums[b] != -1)
             {
-                LOGGER.Debug("INPUT 1 {}", input[x]);
-                LOGGER.Debug("INPUT 2 {}", input[x - 1]);
-                if (input[x].ParsePrice() >= input[x - 1].ParsePrice())
+                if (string.Equals(filteredNames[a], filteredNames[b], StringComparison.OrdinalIgnoreCase) ||
+                    Similar(filteredNames[a], filteredNames[b],
+                        Math.Min(filteredNames[a].Length, filteredNames[b].Length) / 6) != -1)
                 {
-                    LOGGER.Info($"Removed Duplicate {input[x]}");
-                    input.RemoveAt(x);  // Remove the current entry
+                    return volNums[a].CompareTo(volNums[b]);
+                }
+            }
+            return string.Compare(filteredTexts[a], filteredTexts[b], StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    /// <summary>
+    /// Removes duplicate <see cref="EntryModel"/> rows in place. When the same
+    /// <c>Entry</c> appears more than once, the survivor is picked by:
+    /// <list type="number">
+    ///   <item><description>Availability rank: <c>IS &gt; PO &gt; BO &gt; CS &gt; OOS &gt; NA</c>.</description></item>
+    ///   <item><description>Tie-break: lower <see cref="EntryModel.ParsePrice"/>.</description></item>
+    /// </list>
+    /// Order-independent — does not require a pre-sort. Single pass, O(N), with parsed
+    /// prices cached so each entry's <see cref="EntryModel.ParsePrice"/> runs at most once.
+    /// </summary>
+    /// <remarks>
+    /// Stock-awareness handles the reprint/original-print case: All Star Comics (and other
+    /// Diamond-distribution retailers) sometimes list an OOS original-print SKU cheaper than
+    /// the in-stock reprint. Without the availability rank the cheaper-but-unbuyable copy
+    /// would win and the user would see a "deal" they can't actually claim.
+    /// </remarks>
+    internal static void RemoveDuplicates(this List<EntryModel> input, ILogger logger)
+    {
+        int count = input.Count;
+        if (count < 2) return;
+
+        Span<EntryModel> span = CollectionsMarshal.AsSpan(input);
+
+        // Cache parsed prices and availability ranks once per row.
+        decimal[] prices = new decimal[count];
+        int[] availRanks = new int[count];
+        for (int i = 0; i < count; i++)
+        {
+            prices[i] = span[i].ParsePrice();
+            availRanks[i] = AvailabilityRank(span[i].StockStatus);
+        }
+
+        // Map Entry → index of the current best survivor.
+        Dictionary<string, int> bestSeen = new(count, StringComparer.OrdinalIgnoreCase);
+        bool[] toRemove = new bool[count];
+
+        for (int i = 0; i < count; i++)
+        {
+            string key = span[i].Entry;
+            if (bestSeen.TryGetValue(key, out int existing))
+            {
+                logger.DuplicateInputPair(span[i], span[existing]);
+
+                // Lower rank wins (IS=0, OOS=4). If ranks tie, lower price wins.
+                bool iIsBetter =
+                    availRanks[i] < availRanks[existing]
+                    || (availRanks[i] == availRanks[existing] && prices[i] < prices[existing]);
+
+                if (iIsBetter)
+                {
+                    logger.RemovedDuplicate(span[existing]);
+                    toRemove[existing] = true;
+                    bestSeen[key] = i;
                 }
                 else
                 {
-                    LOGGER.Info($"Removed Duplicate {input[x - 1]}");
-                    input.RemoveAt(x - 1);  // Remove the previous entry
+                    logger.RemovedDuplicate(span[i]);
+                    toRemove[i] = true;
                 }
             }
+            else
+            {
+                bestSeen[key] = i;
+            }
         }
+
+        // Compact in place — one pass, zero mid-list shifts.
+        int write = 0;
+        for (int read = 0; read < count; read++)
+        {
+            if (!toRemove[read])
+            {
+                if (write != read) input[write] = input[read];
+                write++;
+            }
+        }
+        input.RemoveRange(write, count - write);
     }
+
+    /// <summary>
+    /// Lower rank = more buyable. Used by <see cref="RemoveDuplicates"/> to break ties in
+    /// favor of stock the user can actually purchase right now. Unknown values map to a
+    /// rank worse than every defined status.
+    /// </summary>
+    private static int AvailabilityRank(StockStatus status) => status switch
+    {
+        StockStatus.IS => 0,   // In Stock — directly purchasable
+        StockStatus.PO => 1,   // Pre-Order — committed, will ship at release
+        StockStatus.BO => 2,   // Backorder — will fulfill when restocked
+        StockStatus.CS => 3,   // Coming Soon — announced, no pre-order yet
+        StockStatus.OOS => 4,  // Out of Stock — currently unavailable
+        StockStatus.NA => 5,   // Not Available — no signal at all
+        _ => 6,
+    };
 
     /// <summary>
     /// Applies a coupon to the price by substracting the coupon amount
@@ -588,42 +847,62 @@ internal static partial class InternalHelpers
         Span<int> previousRow = stackalloc int[tLen + 1];
         Span<int> currentRow = stackalloc int[tLen + 1];
 
-        for (int j = 0; j <= tLen; j++)
-        {
-            previousRow[j] = j;
-        }
+        // Lower-case both strings once up-front so the inner-loop comparison is a
+        // single char==char rather than an N*M cascade of casing-table lookups.
+        char[]? rentedSLower = null;
+        char[]? rentedTLower = null;
+        Span<char> sLower = sLen <= StackallocThreshold
+            ? stackalloc char[sLen]
+            : (rentedSLower = ArrayPool<char>.Shared.Rent(sLen)).AsSpan(0, sLen);
+        Span<char> tLower = tLen <= StackallocThreshold
+            ? stackalloc char[tLen]
+            : (rentedTLower = ArrayPool<char>.Shared.Rent(tLen)).AsSpan(0, tLen);
 
-        for (int i = 1; i <= sLen; i++)
+        try
         {
-            currentRow[0] = i;
-            int bestThisRow = currentRow[0];
+            sSpan.ToLowerInvariant(sLower);
+            tSpan.ToLowerInvariant(tLower);
 
-            char sChar = char.ToLowerInvariant(sSpan[i - 1]);
-            for (int j = 1; j <= tLen; j++)
+            for (int j = 0; j <= tLen; j++)
             {
-                char tChar = char.ToLowerInvariant(tSpan[j - 1]);
-
-                int cost = sChar == tChar ? 0 : 1;
-                int insert = currentRow[j - 1] + 1;
-                int delete = previousRow[j] + 1;
-                int replace = previousRow[j - 1] + cost;
-
-                currentRow[j] = Math.Min(Math.Min(insert, delete), replace);
-
-                bestThisRow = Math.Min(bestThisRow, currentRow[j]);
+                previousRow[j] = j;
             }
 
-            if (bestThisRow > maxDistance)
+            for (int i = 1; i <= sLen; i++)
             {
-                return -1;
+                currentRow[0] = i;
+                int bestThisRow = currentRow[0];
+
+                char sChar = sLower[i - 1];
+                for (int j = 1; j <= tLen; j++)
+                {
+                    int cost = sChar == tLower[j - 1] ? 0 : 1;
+                    int insert = currentRow[j - 1] + 1;
+                    int delete = previousRow[j] + 1;
+                    int replace = previousRow[j - 1] + cost;
+
+                    currentRow[j] = Math.Min(Math.Min(insert, delete), replace);
+
+                    bestThisRow = Math.Min(bestThisRow, currentRow[j]);
+                }
+
+                if (bestThisRow > maxDistance)
+                {
+                    return -1;
+                }
+
+                Span<int> temp = previousRow;
+                previousRow = currentRow;
+                currentRow = temp;
             }
 
-            Span<int> temp = previousRow;
-            previousRow = currentRow;
-            currentRow = temp;
+            int result = previousRow[tLen];
+            return result <= maxDistance ? result : -1;
         }
-
-        int result = previousRow[tLen];
-        return result <= maxDistance ? result : -1;
+        finally
+        {
+            if (rentedSLower is not null) ArrayPool<char>.Shared.Return(rentedSLower);
+            if (rentedTLower is not null) ArrayPool<char>.Shared.Return(rentedTLower);
+        }
     }
 }

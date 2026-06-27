@@ -1,0 +1,299 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search - InStockTrades</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <meta name="description" content="Trade paperbacks from Marvel, DC, Image, Dark Horse and more! Discounted up to 42% off. No shipping on orders over $50.">
+    <meta name="keywords" content="trade paperbacks,comic books,marvel,dc,image,dark horse,superman,batman,flash,wonder woman,spiderman,fantastic four,the hulk,captain america,thor">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    
+    <link rel="shortcut icon" href="/images/logo.png">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans|Roboto:400,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/content/site.min.css?v=3">
+    <link rel="stylesheet" href="/content/jquery-ui.min.css">
+    <link rel="stylesheet" href="/content/jquery-ui.theme.min.css">
+    <script src="/bundles/modernizr?v=inCVuEFe6J4Q07A0AcRsbJic_UE5MwpRMNGcOtk94TE1"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css">
+    <script src="/scripts/cookieconsent-config.min.js" type="module"></script>
+</head>
+<body>
+    
+<div class="navbar-header">
+    <a href="/"><img class="logo" src="/images/logo.png" alt="Instocktrades.com"></a>
+    <div class="navbar-heading">
+        <span class="giftcertificates"><a href="/giftcertificates" class="highlight">Gift Certificates</a></span>
+        <span class="help"><a href="/home/help">Help</a></span>
+            <span class="greeting"><a href="/account/login">Sign In</a></span>
+    </div>
+    <a href="/cart" class="navbar-cart">
+        <div class="cartcount">0</div>
+    </a>
+    <div class="navbar-search">
+        <form id="sitesearchform" name="sitesearchform" method="get" action="/search">
+            <input type="text" name="term" id="sitesearch" placeholder="Search..." autocomplete="off" required oninvalid="this.setCustomValidity('Please Enter a valid search term')" oninput="setCustomValidity('')">
+            <button type="submit" id="navsearchbutton" class="navsearchbutton" onclick="javascript: return document.getElementById('sitesearch').value.trim() != '';"><img src="/images/search.png" alt="search"></button>
+        </form>
+        <div style="text-align:right;"><a href="/search?ps=true" class="action">Advanced Search</a></div>
+    </div>
+    <div class="navbar-menubar">
+        <div class="navbar-menu trades hoverable">
+            <a href="#trades" class="menu-label responsive">Trades <span class="navarrow"></span></a>
+            <div class="navbar-menuitems responsive">
+                <a href="/newreleases">New Releases</a>
+                
+                <a href="/comingsoon">Coming Soon</a>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#" class="menu-label">Publishers <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                            <a href="/publishers/image">Image</a>
+                            <a href="/publishers/dc-comics">DC Comics</a>
+                            <a href="/publishers/marvel">Marvel</a>
+                            <a href="/publishers/viz-media">Viz Media</a>
+                            <a href="/publishers/dark-horse">Dark Horse</a>
+                            <a href="/publishers/seven-seas">Seven Seas</a>
+                            <a href="/publishers/kodansha">Kodansha</a>
+                            <a href="/publishers/idw">IDW</a>
+                            <a href="/publishers/titan">Titan</a>
+                        <a href="/publishers">View All Publishers</a>
+                    </div>
+                </div>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#sales" class="menu-label">Sales <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                        <a href="/clearance">Clearance</a>
+                        <a href="/damages">Damages</a>
+                            <a href="/specials/630/red-tag-sale">Red Tag Sale</a>
+                            <a href="/specials/632/24-hour-flash-sale!!">24-Hour Flash Sale!!</a>
+                            <a href="/specials/715/best-sellers-dc">Best Sellers: DC</a>
+                            <a href="/specials/716/best-sellers-marvel">Best Sellers: Marvel</a>
+                            <a href="/specials/718/creator-spotlight-inio-asano">Creator Spotlight: Inio Asano</a>
+                            <a href="/specials/719/creator-spotlight-clamp">Creator Spotlight: CLAMP</a>
+                    </div>
+                </div>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#creators" class="menu-label">Featured Creators <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                            <a href="/creator/giantgenerator">Giant Generator by Rick Remender</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="navbar-menu topsellers">
+            <a href="/products/topsellers">Top Sellers</a>
+        </div>
+        <div class="navbar-menu account hoverable">
+            <a href="#account" class="menu-label">Account <span class="navarrow"></span></a>
+            <div class="navbar-menuitems">
+                <a href="/account/wishlist">Wishlist</a>
+                <a href="/account">Account Profile</a>
+                <a href="/account/orderhistory">Order History</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+    
+    <div class="container body-content">
+        
+
+        
+
+
+
+
+<div class="section products">
+    <h2>Search</h2>
+    <div class="section">
+        <div class="message form">
+            <div><h4 style="display:inline-block;">Search Option:</h4>
+                <select name="searchtype" id="searchtype" style="padding:7px;">
+                    <option value="default">Free Text</option>
+                    <option value="power" selected>Advanced Search</option>
+                </select>
+            </div>
+            <div>
+                <div id="defaultsearch" style="display:none;">
+                    <h4>Search results matches ANY words...</h4>
+                    <form method="get" action="/search">
+                        <div class="fieldgroup">
+                            <div class="fieldset">
+                                <div><label>Title, Publisher, Description or Product Code</label></div>
+                                <input name="term" type="text" maxlength="200" style="max-width:400px; display:inline-block;">
+                                <button type="submit" class="btn hotaction">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div id="advancedsearch" style="display:block;">
+                    <h4>Advanced Search. Results match ALL words and conditions...</h4>
+                    <form method="get" action="/search">
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Title</label></div>
+                                <input name="title" placeholder="Title" type="text" maxlength="200" autocomplete="off" value="classroom of elite">
+                            </div>
+                            <div class="fieldset">
+                                <div><label>Publisher</label></div>
+                                <input name="publisher" placeholder="Publisher" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                        </div>
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Writer</label></div>
+                                <input name="writer" placeholder="Writer" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                            <div class="fieldset">
+                                <div><label>Artist</label></div>
+                                <input name="artist" placeholder="Artist" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                        </div>
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Cover Artist</label></div>
+                                <input name="cover" placeholder="Cover Artist" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                            <div class="fieldset">
+                                <div><label></label></div>
+                                
+                            </div>
+                        </div>
+                        <div class="fieldgroup">
+                            <div class="fieldset">
+                                <input type="hidden" name="ps" value="true">
+                                <button type="submit" class="btn hotaction">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <div class="section products" style="clear:both;">No products found.</div>
+
+
+
+
+</div>
+
+
+
+
+    </div>
+    <footer>
+        <div class="section" style="overflow:hidden;">
+            <ul>
+                <li class="heading">Main Menu</li>
+                <li><a href="/">Home</a></li>
+                <li><a href="/newreleases">New Releases</a></li>
+                <li><a href="/comingsoon">Coming Soon</a></li>
+                <li><a href="/clearance">Clearance</a></li>
+                <li><a href="/damages">Damages</a></li>
+                <li class="condensed"><a href="/publishers">Publishers</a></li>
+                <li class="condensed"><a href="/writers">Writers</a></li>
+                <li class="condensed"><a href="/artists">Artists</a></li>
+                <li><a href="/giftcertificates">Gift Certificates</a></li>
+                <li><a href="/home/help">Help</a></li>
+                <li><a href="/home/privacy">Privacy and Security</a></li>
+                <li><a href="/wishlists">Find a Wishlist</a></li>
+                <li><a href="/home/contact">Contact Us</a></li>
+            </ul>
+            <ul class="expanded">
+                <li class="heading">Publishers</li>
+                    <li><a href="/publishers/image">Image</a></li>
+                    <li><a href="/publishers/dc-comics">DC Comics</a></li>
+                    <li><a href="/publishers/marvel">Marvel</a></li>
+                    <li><a href="/publishers/viz-media">Viz Media</a></li>
+                    <li><a href="/publishers/dark-horse">Dark Horse</a></li>
+                    <li><a href="/publishers/seven-seas">Seven Seas</a></li>
+                    <li><a href="/publishers/kodansha">Kodansha</a></li>
+                    <li><a href="/publishers/idw">IDW</a></li>
+                    <li><a href="/publishers/titan">Titan</a></li>
+                <li><a href="/publishers">View All Publishers</a></li>
+            </ul>
+            <ul class="expanded">
+                <li class="heading">Genres</li>
+                    <li><a href="/genres/action-adventure">Action/Adventure</a></li>
+                    <li><a href="/genres/crime">Crime</a></li>
+                    <li><a href="/genres/fantasy">Fantasy</a></li>
+                    <li><a href="/genres/horror">Horror</a></li>
+                    <li><a href="/genres/humor-comedy">Humor/Comedy</a></li>
+                    <li><a href="/genres/reference-art-books-how-to">Reference/Art Books/How To</a></li>
+                    <li><a href="/genres/romance">Romance</a></li>
+                    <li><a href="/genres/science-fiction">Science Fiction</a></li>
+                    <li><a href="/genres/sports">Sports</a></li>
+                    <li><a href="/genres/super-hero">Super-hero</a></li>
+            </ul>
+                <ul class="expanded">
+                    <li class="heading">Writers</li>
+                        <li><a href="/writers/robert-kirkman">Robert Kirkman</a></li>
+                        <li><a href="/writers/jeff-lemire">Jeff Lemire</a></li>
+                        <li><a href="/writers/kentaro-miura">Kentaro Miura</a></li>
+                        <li><a href="/writers/rick-remender">Rick Remender</a></li>
+                        <li><a href="/writers/brian-k-vaughan">Brian K. Vaughan</a></li>
+                        <li><a href="/writers/ed-brubaker">Ed Brubaker</a></li>
+                        <li><a href="/writers/tom-king">Tom King</a></li>
+                        <li><a href="/writers/jonathan-hickman">Jonathan Hickman</a></li>
+                        <li><a href="/writers/geoff-johns">Geoff Johns</a></li>
+                        <li><a href="/writers/mark-waid">Mark Waid</a></li>
+                    <li><a href="/writers">View All Writers</a></li>
+                </ul>
+                            <ul class="expanded">
+                    <li class="heading">Artists</li>
+                        <li><a href="/artists/kentaro-miura">Kentaro Miura</a></li>
+                        <li><a href="/artists/sean-phillips">Sean Phillips</a></li>
+                        <li><a href="/artists/fiona-staples">Fiona Staples</a></li>
+                        <li><a href="/artists/ryan-ottley">Ryan Ottley</a></li>
+                        <li><a href="/artists/cliff-chiang">Cliff Chiang</a></li>
+                        <li><a href="/artists/dustin-nguyen">Dustin Nguyen</a></li>
+                        <li><a href="/artists/charlie-adlard">Charlie Adlard</a></li>
+                        <li><a href="/artists/hiroaki-samura">Hiroaki Samura</a></li>
+                        <li><a href="/artists/andrea-sorrentino">Andrea Sorrentino</a></li>
+                        <li><a href="/artists/michael-lark">Michael Lark</a></li>
+                    <li><a href="/artists">View All Artists</a></li>
+                </ul>
+            <ul class="footerpromos">
+                <li><img src="/images/ist42.jpg" alt="Instocktrades.com 42% off!" width="227" height="87"></li>
+                <li><a href="https://www.dcbservice.com" target="_blank"><img src="/images/dcbs40.jpg" width="227" height="87" alt="Discount Comic Book Service"></a></li>
+            </ul>
+            <div class="copyright">
+                &copy; 2026 Discount Comic Book Service (DCBS). All images &copy; respective owners and used with permission.
+            </div>
+        </div>
+    </footer>
+
+    <div id="confirmmsg">
+
+    </div>
+    <script type="text/javascript" src="/scripts/js.cookie.min.js"></script>
+    <script src="/bundles/jquery?v=2u0aRenDpYxArEyILB59ETSCA2cfQkSMlxb6jbMBqf81"></script>
+
+    <script type="text/javascript" src="/scripts/jquery-ui.min.js"></script>
+    
+    <script type="text/javascript" src="/scripts/jquery.hoverIntent.min.js"></script>
+    <script type="text/javascript" src="/scripts/app.min.js?v=3"></script>
+    
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#searchtype').on('change', function () {
+                var isDefault = $(this).val() == "default";
+                $('#defaultsearch').css('display', (isDefault ? "block" : "none"));
+                $('#advancedsearch').css('display', (isDefault ? "none" : "block"));
+            });
+        });
+    </script>
+
+    <script id="free_accessibility_plugin_script" src="https://accessibility.f-static.com/site/free-accessibility-plugin/accessibility.min.js?lan=en&place=bottom-right&distance=20" crossorigin="anonymous" type="text/plain" data-category="functionality"></script>
+</body>
+</html>

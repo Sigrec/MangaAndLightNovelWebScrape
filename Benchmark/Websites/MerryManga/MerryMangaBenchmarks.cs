@@ -1,35 +1,38 @@
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Diagnosers;
-using MangaAndLightNovelWebScrape;
 using MangaAndLightNovelWebScrape.Enums;
-using OpenQA.Selenium;
+using MangaAndLightNovelWebScrape.Services;
+using Microsoft.Playwright;
 
 namespace Benchmark.Websites.MerryManga;
 
 [MemoryDiagnoser]
 public class MerryMangaBenchmarks
 {
-    private MangaAndLightNovelWebScrape.Websites.MerryManga? _instance;
-    private WebDriver? _driver;
+    private MangaAndLightNovelWebScrape.Websites.MerryManga _site = null!;
+    private readonly PlaywrightFixture _fixture = new();
 
     [GlobalSetup]
-    public void Setup()
+    public async Task Setup()
     {
-        _instance = new MangaAndLightNovelWebScrape.Websites.MerryManga();
-        _driver = MasterScrape.SetupBrowserDriver(Browser.FireFox, true);
+        _site = new MangaAndLightNovelWebScrape.Websites.MerryManga();
+        await _fixture.InitializeAsync();
     }
 
     [GlobalCleanup]
-    public void Cleanup()
-    {
-        _driver?.Quit();
-        _instance = null;
-    }
+    public async Task Cleanup() => await _fixture.DisposeAsync();
 
     [Benchmark]
     [WarmupCount(5)]
     public async Task GetMangaBenchmark()
     {
-        await _instance!.GetData("one piece", BookType.Manga, _driver!);
+        IPage page = await PlaywrightFactory.GetPageAsync(_fixture.Browser);
+        try
+        {
+            await _site.GetData("one piece", BookType.Manga, page);
+        }
+        finally
+        {
+            await page.DisposeContextAsync();
+        }
     }
 }

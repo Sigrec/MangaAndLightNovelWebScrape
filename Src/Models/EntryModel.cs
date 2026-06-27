@@ -1,25 +1,32 @@
-using NLog.Common;
-
 namespace MangaAndLightNovelWebScrape
 {
+    /// <summary>
+    /// One row in a scrape result — a single volume/box-set listing from a single retailer.
+    /// Equality is by <see cref="Entry"/>, <see cref="Price"/>, and <see cref="Website"/>;
+    /// dedup across sites uses just <see cref="Entry"/>.
+    /// </summary>
     public partial struct EntryModel : IEquatable<EntryModel>
     {
+        /// <summary>Cleaned title text, e.g. <c>"Jujutsu Kaisen Vol 12"</c>.</summary>
         public string Entry { get; set; }
+        /// <summary>Display price with currency symbol, e.g. <c>"$9.99"</c> or <c>"£6.38"</c>.</summary>
         public string Price { get; set; }
+        /// <summary>Availability state on the source site at scrape time.</summary>
         public StockStatus StockStatus { get; set; }
+        /// <summary>Source retailer title (e.g. <c>"Crunchyroll"</c>) — the site's <c>TITLE</c> constant.</summary>
         public string  Website { get; set; }
-        private static readonly Logger LOGGER = LogManager.GetLogger("MasterScrape");
         internal static VolumeSort VolumeSort = new();
         // [GeneratedRegex(@"[Vol|Box Set].*?(\d+).*")]  private static partial Regex VolumeNumRegex();
         [GeneratedRegex(@"(?:.*(?<int> \d{1,3})|.*(?<double> \d{1,3}\.\d{1,3}))(?:\s+Novel$|$)|(?:.*(?<int> \d{1,3})-\d{1,3})")] private static partial Regex ExtractDoubleRegex();
 
         /// <summary>
-        /// Model for a series's book entry
+        /// Builds an <see cref="EntryModel"/> for a single scraped row. Per-site scrapers
+        /// construct this once per qualifying listing they parse.
         /// </summary>
-        /// <param name="entry">The title and vol # of a series entry</param>
-        /// <param name="price">The price of the entry</param>
-        /// <param name="stockStatus">The stockstatus of an entry, either IS, PO, OOS, OOP</param>
-        /// <param name="website">The website in which the entry is found at</param>
+        /// <param name="Entry">Cleaned title including the volume / box-set marker.</param>
+        /// <param name="Price">Display-form price string with currency symbol.</param>
+        /// <param name="StockStatus">Availability state read off the listing.</param>
+        /// <param name="Website">Source retailer title — usually the site's <c>TITLE</c> const.</param>
         public EntryModel (string Entry, string Price, StockStatus StockStatus, string Website)
         {
             this.Entry = Entry;
@@ -39,54 +46,76 @@ namespace MangaAndLightNovelWebScrape
             return decimal.Subtract(initialPrice, decimal.Multiply(initialPrice, discount)).ToString("0.00");
         }
 
+        /// <summary>
+        /// Returns a compact display string in the form
+        /// <c>[Entry, Price, StockStatus, Website]</c>. Used by
+        /// <see cref="MasterScrapeExtensions.PrintResultsToConsole"/> and friends when
+        /// <c>isAsciiTable</c> is <c>false</c>.
+        /// </summary>
         public override string ToString()
         {
             return $"[{this.Entry}, {this.Price}, {this.StockStatus}, {this.Website}]";
         }
 
         /// <summary>
-        /// Parses and returns the price as a decimal value
+        /// Parses and returns the price as a decimal value. Uses span-based parsing so no
+        /// intermediate substring is allocated — important because this is called per
+        /// dedup pair and per merge probe.
         /// </summary>
+        /// <remarks>
+        /// Returns <c>0m</c> for empty / whitespace-only / unparseable prices. Sites should
+        /// be filtering merchandise entries before they reach the data list, but the
+        /// safety net here means one bad row can't crash the whole dedup pass.
+        /// </remarks>
         public decimal ParsePrice()
         {
-            if (!char.IsDigit(this.Price[0])) // Currency places the symbol at the front like USD
-            {
-                return decimal.Parse(this.Price[1..]);
-            }
-            return decimal.Parse(this.Price[..^1]); // Currency places the symbol at the end like with Japanese Yen
+            ReadOnlySpan<char> price = this.Price.AsSpan().Trim();
+            if (price.IsEmpty) return 0m;
+
+            // Currency at front (USD, GBP, etc.): "$10.99" → slice off symbol.
+            // Currency at end (JPY ¥, etc.): "1099¥" → slice off symbol.
+            // If the only non-digit char is in the middle (malformed), TryParse below
+            // catches it and returns 0 — better than throwing inside dedup.
+            ReadOnlySpan<char> span = char.IsDigit(price[0])
+                ? char.IsDigit(price[^1]) ? price : price[..^1]
+                : price.Length > 1 ? price[1..] : default;
+
+            return decimal.TryParse(span, System.Globalization.CultureInfo.InvariantCulture, out decimal value)
+                ? value
+                : 0m;
         }
 
         /// <summary>
-        /// Gets the current volume num for a series unit entry givin its type (box set, omnibux, single, etc)
+        /// Gets the current volume num for a series unit entry given its type (box set, omnibus,
+        /// single, etc). Returns <c>-1</c> for Box Sets and unparseable titles.
         /// </summary>
-        /// <param name="title">The full title of the entry to get the volume number</param>
-        /// <returns></returns>
         internal static double GetCurrentVolumeNum(string title)
         {
-            // Early return if "Box Set" is found
             if (title.Contains("Box Set"))
             {
                 return -1;
             }
 
             Match match = ExtractDoubleRegex().Match(title);
-            // Check for integer match first
-            if (match.Groups["int"].Success)
+
+            // Group.ValueSpan + double.Parse(span) avoids materializing the captured substring
+            // and the boxing/conversion path through Convert.ToDouble(string).
+            Group intGroup = match.Groups["int"];
+            if (intGroup.Success)
             {
-                return Convert.ToDouble(match.Groups["int"].Value);
+                return double.Parse(intGroup.ValueSpan, System.Globalization.CultureInfo.InvariantCulture);
             }
 
-            // Check for double match
-            if (match.Groups["double"].Success)
+            Group doubleGroup = match.Groups["double"];
+            if (doubleGroup.Success)
             {
-                return Convert.ToDouble(match.Groups["double"].Value);
+                return double.Parse(doubleGroup.ValueSpan, System.Globalization.CultureInfo.InvariantCulture);
             }
 
-            // Log failure if no match found
-            LOGGER.Error($"Failed to Extract Entry # from \"{title}\"");
             return -1;
         }
 
+        /// <inheritdoc/>
         public override bool Equals(object? obj)
         {
             // only true if the boxed obj is an EntryModel
@@ -98,6 +127,12 @@ namespace MangaAndLightNovelWebScrape
             return false;
         }
 
+        /// <summary>
+        /// Two entries are equal when <see cref="Entry"/>, <see cref="Price"/>, and
+        /// <see cref="Website"/> match. <see cref="StockStatus"/> is intentionally
+        /// excluded so the same listing at the same price counts as equal even if its
+        /// availability state changed between snapshots.
+        /// </summary>
         public bool Equals(EntryModel other)
         {
             // compare all fields you care about
@@ -106,37 +141,42 @@ namespace MangaAndLightNovelWebScrape
                 && Website     == other.Website;
         }
 
+        /// <inheritdoc/>
         public override int GetHashCode()
         {
             return HashCode.Combine(Entry, Price, StockStatus, Website);
         }
 
+        /// <summary>Value-equality comparison; see <see cref="Equals(EntryModel)"/>.</summary>
         public static bool operator ==(EntryModel left, EntryModel right)
         {
             return EqualityComparer<EntryModel>.Default.Equals(left, right);
         }
 
+        /// <summary>Inverse of <c>operator ==</c>.</summary>
         public static bool operator !=(EntryModel left, EntryModel right)
         {
             return !(left == right);
         }
     }
     /// <summary>
-    /// Compares EntryModel's by entry title
+    /// Sorts <see cref="EntryModel"/> rows by series name then ascending volume number.
+    /// Used by <c>List&lt;EntryModel&gt;.SortByVolume()</c> on per-site results and on the
+    /// final merged list. Entries whose names don't match (or aren't close enough by
+    /// Damerau-Levenshtein distance) fall back to ordinal title ordering.
     /// </summary>
     public partial class VolumeSort : IComparer<EntryModel>
     {
-        [GeneratedRegex(@" (?:Vol|Box Set) \d{1,3}(?:\.\d{1,2})?$")] private static partial Regex ExtractNameRegex();
-        [GeneratedRegex(@"[^\p{L}\p{N}\s\.]")] private static partial Regex FilterNameRegex();
-        private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+        [GeneratedRegex(@" (?:Vol|Box Set) \d{1,3}(?:\.\d{1,2})?$")] internal static partial Regex ExtractNameRegex();
+        [GeneratedRegex(@"[^\p{L}\p{N}\s\.]")] internal static partial Regex FilterNameRegex();
 
         /// <summary>
-        /// Extracts the entry's volume number and checks to see if they are equal or similar enough
-        /// then compares there volumes numbers to sort in ascending order.
+        /// Returns a value &lt; 0 if <paramref name="entry1"/> sorts before
+        /// <paramref name="entry2"/>, 0 if equal, &gt; 0 if after. Two entries from the
+        /// same series sort by volume number; otherwise by ordinal title.
         /// </summary>
-        /// <param name="entry1">THe first EntryModel in the VolumeSort comparison</param>
-        /// <param name="entry2">The second EntryModel in the VolumeSort comparison</param>
-        /// <returns></returns>
+        /// <param name="entry1">The left-hand entry.</param>
+        /// <param name="entry2">The right-hand entry.</param>
         public int Compare(EntryModel entry1, EntryModel entry2)
         {
             string entry1Text = FilterNameRegex().Replace(entry1.Entry, " ");

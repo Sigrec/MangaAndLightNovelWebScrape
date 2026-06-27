@@ -1,0 +1,816 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search - InStockTrades</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <meta name="description" content="Trade paperbacks from Marvel, DC, Image, Dark Horse and more! Discounted up to 42% off. No shipping on orders over $50.">
+    <meta name="keywords" content="trade paperbacks,comic books,marvel,dc,image,dark horse,superman,batman,flash,wonder woman,spiderman,fantastic four,the hulk,captain america,thor">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    
+    <link rel="shortcut icon" href="/images/logo.png">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans|Roboto:400,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/content/site.min.css?v=3">
+    <link rel="stylesheet" href="/content/jquery-ui.min.css">
+    <link rel="stylesheet" href="/content/jquery-ui.theme.min.css">
+    <script src="/bundles/modernizr?v=inCVuEFe6J4Q07A0AcRsbJic_UE5MwpRMNGcOtk94TE1"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css">
+    <script src="/scripts/cookieconsent-config.min.js" type="module"></script>
+</head>
+<body>
+    
+<div class="navbar-header">
+    <a href="/"><img class="logo" src="/images/logo.png" alt="Instocktrades.com"></a>
+    <div class="navbar-heading">
+        <span class="giftcertificates"><a href="/giftcertificates" class="highlight">Gift Certificates</a></span>
+        <span class="help"><a href="/home/help">Help</a></span>
+            <span class="greeting"><a href="/account/login">Sign In</a></span>
+    </div>
+    <a href="/cart" class="navbar-cart">
+        <div class="cartcount">0</div>
+    </a>
+    <div class="navbar-search">
+        <form id="sitesearchform" name="sitesearchform" method="get" action="/search">
+            <input type="text" name="term" id="sitesearch" placeholder="Search..." autocomplete="off" required oninvalid="this.setCustomValidity('Please Enter a valid search term')" oninput="setCustomValidity('')">
+            <button type="submit" id="navsearchbutton" class="navsearchbutton" onclick="javascript: return document.getElementById('sitesearch').value.trim() != '';"><img src="/images/search.png" alt="search"></button>
+        </form>
+        <div style="text-align:right;"><a href="/search?ps=true" class="action">Advanced Search</a></div>
+    </div>
+    <div class="navbar-menubar">
+        <div class="navbar-menu trades hoverable">
+            <a href="#trades" class="menu-label responsive">Trades <span class="navarrow"></span></a>
+            <div class="navbar-menuitems responsive">
+                <a href="/newreleases">New Releases</a>
+                
+                <a href="/comingsoon">Coming Soon</a>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#" class="menu-label">Publishers <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                            <a href="/publishers/image">Image</a>
+                            <a href="/publishers/dc-comics">DC Comics</a>
+                            <a href="/publishers/marvel">Marvel</a>
+                            <a href="/publishers/viz-media">Viz Media</a>
+                            <a href="/publishers/dark-horse">Dark Horse</a>
+                            <a href="/publishers/seven-seas">Seven Seas</a>
+                            <a href="/publishers/kodansha">Kodansha</a>
+                            <a href="/publishers/idw">IDW</a>
+                            <a href="/publishers/titan">Titan</a>
+                        <a href="/publishers">View All Publishers</a>
+                    </div>
+                </div>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#sales" class="menu-label">Sales <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                        <a href="/clearance">Clearance</a>
+                        <a href="/damages">Damages</a>
+                            <a href="/specials/630/red-tag-sale">Red Tag Sale</a>
+                            <a href="/specials/632/24-hour-flash-sale!!">24-Hour Flash Sale!!</a>
+                            <a href="/specials/715/best-sellers-dc">Best Sellers: DC</a>
+                            <a href="/specials/716/best-sellers-marvel">Best Sellers: Marvel</a>
+                            <a href="/specials/718/creator-spotlight-inio-asano">Creator Spotlight: Inio Asano</a>
+                            <a href="/specials/719/creator-spotlight-clamp">Creator Spotlight: CLAMP</a>
+                    </div>
+                </div>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#creators" class="menu-label">Featured Creators <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                            <a href="/creator/giantgenerator">Giant Generator by Rick Remender</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="navbar-menu topsellers">
+            <a href="/products/topsellers">Top Sellers</a>
+        </div>
+        <div class="navbar-menu account hoverable">
+            <a href="#account" class="menu-label">Account <span class="navarrow"></span></a>
+            <div class="navbar-menuitems">
+                <a href="/account/wishlist">Wishlist</a>
+                <a href="/account">Account Profile</a>
+                <a href="/account/orderhistory">Order History</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+    
+    <div class="container body-content">
+        
+
+        
+
+
+
+
+<div class="section products">
+    <h2>Search</h2>
+    <div class="section">
+        <div class="message form">
+            <div><h4 style="display:inline-block;">Search Option:</h4>
+                <select name="searchtype" id="searchtype" style="padding:7px;">
+                    <option value="default">Free Text</option>
+                    <option value="power" selected>Advanced Search</option>
+                </select>
+            </div>
+            <div>
+                <div id="defaultsearch" style="display:none;">
+                    <h4>Search results matches ANY words...</h4>
+                    <form method="get" action="/search">
+                        <div class="fieldgroup">
+                            <div class="fieldset">
+                                <div><label>Title, Publisher, Description or Product Code</label></div>
+                                <input name="term" type="text" maxlength="200" style="max-width:400px; display:inline-block;">
+                                <button type="submit" class="btn hotaction">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div id="advancedsearch" style="display:block;">
+                    <h4>Advanced Search. Results match ALL words and conditions...</h4>
+                    <form method="get" action="/search">
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Title</label></div>
+                                <input name="title" placeholder="Title" type="text" maxlength="200" autocomplete="off" value="Akane-Banashi">
+                            </div>
+                            <div class="fieldset">
+                                <div><label>Publisher</label></div>
+                                <input name="publisher" placeholder="Publisher" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                        </div>
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Writer</label></div>
+                                <input name="writer" placeholder="Writer" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                            <div class="fieldset">
+                                <div><label>Artist</label></div>
+                                <input name="artist" placeholder="Artist" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                        </div>
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Cover Artist</label></div>
+                                <input name="cover" placeholder="Cover Artist" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                            <div class="fieldset">
+                                <div><label></label></div>
+                                
+                            </div>
+                        </div>
+                        <div class="fieldgroup">
+                            <div class="fieldset">
+                                <input type="hidden" name="ps" value="true">
+                                <button type="submit" class="btn hotaction">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <div class="pageoptions">
+        
+            <div class="productsortselection">
+                <span class="productsortlabel">Sort By:</span> <select id="sortselection" name="sortselection"><option selected="selected" value="relevance">Relevance</option>
+<option value="title">Title</option>
+<option value="publisher">Publisher</option>
+<option value="price">Price</option>
+<option value="discount">Discount</option>
+</select>
+            </div>
+                    <div class="viewselection">
+                <span class="viewselectlabel">View: </span>
+                <div id="thumbplusview" class="viewselect selected" data-val="1"><img src="/images/thumbplus.png" alt="thumbnail plus view" title="Thumbnail Plus View"></div>
+                <div id="thumbview" class="viewselect" data-val="0"><img src="/images/thumbs.png" alt="thumbnail only view" title="Thumbnails Only View"></div>
+                <div id="listview" class="viewselect" data-val="2"><img src="/images/thumblist.png" alt="thumbnail list view" title="Thumbnail List View"></div>
+                
+            </div>
+    </div>
+    <div class="row">
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/feb261251/akane-banashi-gn-vol-16"><img class="itemimg" src="https://media.instocktrades.com/small/FEB261251.jpg" alt="AKANE BANASHI GN VOL 16"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/feb261251/akane-banashi-gn-vol-16">Akane Banashi GN Vol 16</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Akane takes on the world of rakugo to avenge her father!
+Shinta Arakawa wants nothing more than to pass his shin?uchi exam?the test that would make him a top-rank headliner and master storyteller in the traditional Japanese art of rakugo. Akane Osaki, his daughter and biggest fan, spies on him while he practices and learns his routines for herself. When rakugo master Issho Arakawa expels everyone after the exam with no explanation, a fire is lit inside Akane. From that day forth, she has had one goal?to avenge her father and prove his art was worthy of the title of shin?uchi.
+As youngsters, Issho and Shiguma are trapped in poverty, doing odd jobs, getting in fights, and behaving utterly unlike the professional rakugoka they will one day become. When the previous Shiguma, Kiroku Kashiwaya, charms them with his art, they join his rakugo school, and he influences them to work hard and better themselves. But one day, everything changes? In recounting this story to Akane, Urara reveals the secret behind the birth of the Arakawa School. Will it change Akane?s perception on becoming Issho
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="102969" data-title="Akane Banashi GN Vol 16" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="FEB261251" data-title="Akane Banashi GN Vol 16" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/dec261043/akane-banashi-gn-vol-15"><img class="itemimg" src="https://media.instocktrades.com/small/DEC261043.jpg" alt="AKANE BANASHI GN VOL 15"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/dec261043/akane-banashi-gn-vol-15">Akane Banashi GN Vol 15</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Akane takes on the world of rakugo to avenge her father!
+Shinta Arakawa wants nothing more than to pass his shin?uchi exam?the test that would make him a top-rank headliner and master storyteller in the traditional Japanese art of rakugo. Akane Osaki, his daughter and biggest fan, spies on him while he practices and learns his routines for herself. When rakugo master Issho Arakawa expels everyone after the exam with no explanation, a fire is lit inside Akane. From that day forth, she has had one goal?to avenge her father and prove his art was worthy of the title of shin?uchi.
+Akane successfully performs the opening act for Master Shiguma?s solo show, but whispers of the story known as ?Shiguma&#39;s Art? leave her yearning to learn more. But suddenly, things take a turn for the worse when Master Shiguma collapses and the Shiguma School is forcefully disbanded by the Arakawa School. And to Akane?s horror, her new master is none other than the man who crushed her father?s dreams?Issho Arakawa. Finally, the story of Issho and Shiguma?s past is brought to light?as is the identity of the or
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="101398" data-title="Akane Banashi GN Vol 15" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="DEC261043" data-title="Akane Banashi GN Vol 15" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/feb260491/akane-banashi-gn-vol-14"><img class="itemimg" src="https://media.instocktrades.com/small/FEB260491.jpg" alt="AKANE BANASHI GN VOL 14"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/feb260491/akane-banashi-gn-vol-14">Akane Banashi GN Vol 14</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Akane takes on the world of rakugo to avenge her father!
+Shinta Arakawa wants nothing more than to pass his shin?uchi exam?the test that would make him a top-rank headliner and master storyteller in the traditional Japanese art of rakugo. Akane Osaki, his daughter and biggest fan, spies on him while he practices and learns his routines for herself. When rakugo master Issho Arakawa expels everyone after the exam with no explanation, a fire is lit inside Akane. From that day forth, she has had one goal?to avenge her father and prove his art was worthy of the title of shin?uchi.
+Akane is busy preparing for her promotion to futatsume, and the process is taking a lot longer than she expected. For Akane?s final performance as a zenza, Shiguma entrusts her to be the opening act for his solo performance. Will Akane be able to prove she?s grown enough to ascend to the next level? Especially with the extra pressure of knowing that Shiguma is one of the Arakawa Arch Four?
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="102044" data-title="Akane Banashi GN Vol 14" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="FEB260491" data-title="Akane Banashi GN Vol 14" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jun251586/akane-banashi-gn-vol-13"><img class="itemimg" src="https://media.instocktrades.com/small/JUN251586.jpg" alt="AKANE BANASHI GN VOL 13"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jun251586/akane-banashi-gn-vol-13">Akane Banashi GN Vol 13</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Yuki Suenaga (A) Takamasa Moue
+Akane takes on the world of rakugo to avenge her father!
+Shinta Arakawa wants nothing more than to pass his shin&#39;uchi exam-the test that would make him a top-rank headliner and master storyteller in the traditional Japanese art of rakugo. Akane Osaki, his daughter and biggest fan, spies on him while he practices and learns his routines for herself. When rakugo master Issho Arakawa expels everyone after the exam with no explanation, a fire is lit inside Akane. From that day forth, she has had one goal-to avenge her father and prove his art was worthy of the title of shin&#39;uchi.
+Maikeru Arakawa is gearing up to be the first futatsume in the Arakawa school to take the shin&#39;uchi exam since the big expulsion scandal that forced Akane&#39;s father out of the rakugo world. That incident weighs heavily on all of Master Shiguma&#39;s apprentices, but it hit Maikeru especially hard due to his close relationship with Shinta Arakawa. And worse, one of the Arakawa Arch Four, Zensho Arakawa, has it out for Maikeru due to their similar performance styles. Will Maikeru be a
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="96613" data-title="Akane Banashi GN Vol 13" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUN251586" data-title="Akane Banashi GN Vol 13" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/apr251765/akane-banashi-gn-vol-12"><img class="itemimg" src="https://media.instocktrades.com/small/APR251765.jpg" alt="AKANE BANASHI GN VOL 12"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/apr251765/akane-banashi-gn-vol-12">Akane Banashi GN Vol 12</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Yuki Suenaga (A) Takamasa Moue
+Even though it&#39;s Asagao&#39;s futatsume promotion, Akane&#39;s own promotion recommendation is on the line with this performance as the zenza opening act. The one judging her is not only a friend of Chocho&#39;s and Taizen, one of the Arakawa Arch Four, but also a longtime friend of her own father. Taizen recognizes Akane&#39;s talent but is threatened to not recommend or promote any of Shiguma&#39;s students by Zensho, another one of the Arch Four. Will Taizen make the right decision, or will he succumb to his peer? Meanwhile, Maikeru Arakawa is gearing up to be the first person in the Arakawa school to take the shin&#39;uchi test since the expulsion scandal.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="99220" data-title="Akane Banashi GN Vol 12" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="APR251765" data-title="Akane Banashi GN Vol 12" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct242012/akane-banashi-gn-vol-09"><img class="itemimg" src="https://media.instocktrades.com/small/OCT242012.jpg" alt="AKANE BANASHI GN VOL 09"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct242012/akane-banashi-gn-vol-09">Akane Banashi GN Vol 09</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Yuki Suenaga (A) Takamasa Moue
+Akane is finally able to show off her father&#39;s rakugo to the world, but in doing so, she discovers there was something lacking?which means there&#39;s a chance for his style and for herself to grow. After the four-person selection event, Kaisei has some harsh words for Akane, but they don&#39;t deter her from continuing on her path alongside Shiguma&#39;s other apprentices toward greater heights. Then, Akane is presented with the chance of a lifetime when a certain master who can help get her promoted to the rank of futatsume comes into the picture.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="91512" data-title="Akane Banashi GN Vol 09" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT242012" data-title="Akane Banashi GN Vol 09" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/aug242358/akane-banashi-gn-vol-08"><img class="itemimg" src="https://media.instocktrades.com/small/AUG242358.jpg" alt="AKANE BANASHI GN VOL 08"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/aug242358/akane-banashi-gn-vol-08">Akane Banashi GN Vol 08</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Yuki Suenaga (A/CA) Takamasa Moue
+Shinta Arakawa wants nothing more than to pass his shin&#39;uchi exam-the test that would make him a top-rank headliner and master storyteller in the traditional Japanese art of rakugo. Akane Osaki, his daughter and biggest fan, spies on him while he practices and learns his routines for herself. When rakugo master Issho Arakawa expels everyone after the exam with no explanation, a fire is lit inside Akane. From that day forth, she has had one goal-to avenge her father and prove his art was worthy of the title of shin&#39;uchi.  After the first contestant of the four-person selection event receives a stern reception, the audience and other contestants begin to realize how high the stakes truly are. Kaichi is second to take the stage, and his style, while not meshing with the judges, has a particularly familiar element to it that can be attributed to only one master in the Arakawa School. Soon to follow is Hikaru, who vows to use all her training and every new skill she&#39;s acquired since their first encounter to get her revenge on Akane! Once all of her r
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="90194" data-title="Akane Banashi GN Vol 08" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="AUG242358" data-title="Akane Banashi GN Vol 08" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jun242147/akane-banashi-gn-vol-07"><img class="itemimg" src="https://media.instocktrades.com/small/JUN242147.jpg" alt="AKANE BANASHI GN VOL 07"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jun242147/akane-banashi-gn-vol-07">Akane Banashi GN Vol 07</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Yuki Suenaga (A) Takamasa Moue
+Akane is set to appear in the zenza Renseikai, hoping to seize a chance to appear in the four-person event featuring a group of talented futatsume said to lead the next generation of the Arakawa School in rakugo. In order to get into the four-person event, she must come in first at the Renseikai. While Akane is considered a favorite to win, a familiar dark horse contestant appears-one driven by a recent bitter defeat at the hands of Akane.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="89063" data-title="Akane Banashi GN Vol 07" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUN242147" data-title="Akane Banashi GN Vol 07" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/apr241918/akane-banashi-gn-vol-06"><img class="itemimg" src="https://media.instocktrades.com/small/APR241918.jpg" alt="AKANE BANASHI GN VOL 06"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/apr241918/akane-banashi-gn-vol-06">Akane Banashi GN Vol 06</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Yuki Suenaga (A) Takamasa Moue
+Akane begins training with rakugo master Urara in preparation for the upcoming Rokumeikai, an event where each participant must perform a newly learned story. If she doesn&#39;t master a new story in the limited time left until the event, she won&#39;t be allowed to perform! What sort of hint will help Akane depict a bewitching courtesan in the tale Urara suggests she tell? Then, Kaisei appears, bearing fascinating news for Akane...
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="88150" data-title="Akane Banashi GN Vol 06" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="APR241918" data-title="Akane Banashi GN Vol 06" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/feb241819/akane-banashi-gn-vol-05"><img class="itemimg" src="https://media.instocktrades.com/small/FEB241819.jpg" alt="AKANE BANASHI GN VOL 05"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/feb241819/akane-banashi-gn-vol-05">Akane Banashi GN Vol 05</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Yuki Suenaga (A) Takamasa Moue
+As a prominent rookie with a target on her back, Akane takes an opening slot with the goal of clapping back against the veteran futatsume, Rien Konjakuan, who insulted her. While her crisp rakugo performance wows the crowd, Karashi finds something about it worrying? Then, a shocking truth is discovered about Akane&#39;s repertoire, leaving her at a huge disadvantage as a zenza. How will Akane overcome this next big hurdle in her training?
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="87166" data-title="Akane Banashi GN Vol 05" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="FEB241819" data-title="Akane Banashi GN Vol 05" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/dec231832/akane-banashi-gn-vol-04"><img class="itemimg" src="https://media.instocktrades.com/small/DEC231832.jpg" alt="AKANE BANASHI GN VOL 04"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/dec231832/akane-banashi-gn-vol-04">Akane Banashi GN Vol 04</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Yuki Suenaga (A) Takamasa Moue
+During the final round of the Karaku Cup, Akane delivers a performance that spellbinds the audience. As the crowd is gripped with emotion, Akane receives a shocking review from her most hated foe, Issho Arakawa. Who will emerge victorious at the competition and have a one-on-one talk with the man who ruined the life of Akane&#39;s father? As the thrilling Karaku Cup comes to a conclusion, a new chapter unfolds? What awaits Akane on the next stage of her journey to become a professional rakugoka?
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="86275" data-title="Akane Banashi GN Vol 04" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="DEC231832" data-title="Akane Banashi GN Vol 04" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct232106/akane-banashi-gn-vol-03"><img class="itemimg" src="https://media.instocktrades.com/small/OCT232106.jpg" alt="AKANE BANASHI GN VOL 03"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct232106/akane-banashi-gn-vol-03">Akane Banashi GN Vol 03</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Yuki Suenaga (A) Takamasa Moue
+The student rakugo competition known as the Karaku Cup is about to begin. Akane immediately draws the attention of the crowd with her connection to the Arakawa school&#39;s rising star Kaisei Arakawa, Issho Arakawa&#39;s apprentice, and her own amazing rakugo skills. With her ani-san Koguma&#39;s advice in her back pocket, she figures out the key to winning the competition with &#39;Jugemu,&#39; a rakugo story famous for its long, repetitive tongue twister. But she&#39;ll have to deal with impressive rivals with unique styles of their own? Will she be able to overcome this battle of wills, wits, and dreams?
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$9.99<br>
+                            </div>
+                            <div class="price">
+                                $6.99
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="85140" data-title="Akane Banashi GN Vol 03" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT232106" data-title="Akane Banashi GN Vol 03" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/aug232384/akane-banashi-gn-vol-02"><img class="itemimg" src="https://media.instocktrades.com/small/AUG232384.jpg" alt="AKANE BANASHI GN VOL 02"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/aug232384/akane-banashi-gn-vol-02">Akane Banashi GN Vol 02</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Yuki Suenaga (A) Takamasa Moue
+Akane accompanies her senior apprentice Kyoji to a retirement home where she&#39;s going to act as his zenza opening act before he performs. Her assignment is to offer rakugo that pleases the audience in front of her. How will Akane meet that goal? Later, she learns about a rakugo competition for students, with the presiding judge being none other than Issho Arakawa-the man who banished her father from the Arakawa school. Desperate to take part in the competition, her rakugo master Shiguma grants her permission under one unique, tongue-twisting condition?&#39;Jugemu.&#39;
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$9.99<br>
+                            </div>
+                            <div class="price">
+                                $6.99
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="83966" data-title="Akane Banashi GN Vol 02" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="AUG232384" data-title="Akane Banashi GN Vol 02" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jun232292/akane-banashi-gn-vol-01"><img class="itemimg" src="https://media.instocktrades.com/small/JUN232292.jpg" alt="AKANE BANASHI GN VOL 01"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jun232292/akane-banashi-gn-vol-01">Akane Banashi GN Vol 01</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Yuki Suenaga (A) Takamasa Moue
+Akane unintentionally stirs up the specter of scandal when she&#39;s discovered taking informal lessons from her father&#39;s former teacher, Shiguma Arakawa. But she&#39;s about to make even bigger waves, because her first step in climbing the ranks of rakugo performer from zenza opening act to shin&#39;uchi headliner is exchanging her secret lessons for formal training. And she&#39;ll still have to finish high school and navigate her relationship with Shiguma&#39;s existing apprentices, all while learning that becoming a stellar rakugo performer takes much more than just being good at performing!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$9.99<br>
+                            </div>
+                            <div class="price">
+                                $6.99
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="82586" data-title="Akane Banashi GN Vol 01" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUN232292" data-title="Akane Banashi GN Vol 01" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+    </div>
+
+    <div>
+                    </div>
+    <div>Results 1 - 14 of 14</div>
+
+
+
+</div>
+
+
+
+
+    </div>
+    <footer>
+        <div class="section" style="overflow:hidden;">
+            <ul>
+                <li class="heading">Main Menu</li>
+                <li><a href="/">Home</a></li>
+                <li><a href="/newreleases">New Releases</a></li>
+                <li><a href="/comingsoon">Coming Soon</a></li>
+                <li><a href="/clearance">Clearance</a></li>
+                <li><a href="/damages">Damages</a></li>
+                <li class="condensed"><a href="/publishers">Publishers</a></li>
+                <li class="condensed"><a href="/writers">Writers</a></li>
+                <li class="condensed"><a href="/artists">Artists</a></li>
+                <li><a href="/giftcertificates">Gift Certificates</a></li>
+                <li><a href="/home/help">Help</a></li>
+                <li><a href="/home/privacy">Privacy and Security</a></li>
+                <li><a href="/wishlists">Find a Wishlist</a></li>
+                <li><a href="/home/contact">Contact Us</a></li>
+            </ul>
+            <ul class="expanded">
+                <li class="heading">Publishers</li>
+                    <li><a href="/publishers/image">Image</a></li>
+                    <li><a href="/publishers/dc-comics">DC Comics</a></li>
+                    <li><a href="/publishers/marvel">Marvel</a></li>
+                    <li><a href="/publishers/viz-media">Viz Media</a></li>
+                    <li><a href="/publishers/dark-horse">Dark Horse</a></li>
+                    <li><a href="/publishers/seven-seas">Seven Seas</a></li>
+                    <li><a href="/publishers/kodansha">Kodansha</a></li>
+                    <li><a href="/publishers/idw">IDW</a></li>
+                    <li><a href="/publishers/titan">Titan</a></li>
+                <li><a href="/publishers">View All Publishers</a></li>
+            </ul>
+            <ul class="expanded">
+                <li class="heading">Genres</li>
+                    <li><a href="/genres/action-adventure">Action/Adventure</a></li>
+                    <li><a href="/genres/crime">Crime</a></li>
+                    <li><a href="/genres/fantasy">Fantasy</a></li>
+                    <li><a href="/genres/horror">Horror</a></li>
+                    <li><a href="/genres/humor-comedy">Humor/Comedy</a></li>
+                    <li><a href="/genres/reference-art-books-how-to">Reference/Art Books/How To</a></li>
+                    <li><a href="/genres/romance">Romance</a></li>
+                    <li><a href="/genres/science-fiction">Science Fiction</a></li>
+                    <li><a href="/genres/sports">Sports</a></li>
+                    <li><a href="/genres/super-hero">Super-hero</a></li>
+            </ul>
+                <ul class="expanded">
+                    <li class="heading">Writers</li>
+                        <li><a href="/writers/robert-kirkman">Robert Kirkman</a></li>
+                        <li><a href="/writers/jeff-lemire">Jeff Lemire</a></li>
+                        <li><a href="/writers/kentaro-miura">Kentaro Miura</a></li>
+                        <li><a href="/writers/rick-remender">Rick Remender</a></li>
+                        <li><a href="/writers/brian-k-vaughan">Brian K. Vaughan</a></li>
+                        <li><a href="/writers/ed-brubaker">Ed Brubaker</a></li>
+                        <li><a href="/writers/tom-king">Tom King</a></li>
+                        <li><a href="/writers/jonathan-hickman">Jonathan Hickman</a></li>
+                        <li><a href="/writers/geoff-johns">Geoff Johns</a></li>
+                        <li><a href="/writers/mark-waid">Mark Waid</a></li>
+                    <li><a href="/writers">View All Writers</a></li>
+                </ul>
+                            <ul class="expanded">
+                    <li class="heading">Artists</li>
+                        <li><a href="/artists/kentaro-miura">Kentaro Miura</a></li>
+                        <li><a href="/artists/sean-phillips">Sean Phillips</a></li>
+                        <li><a href="/artists/fiona-staples">Fiona Staples</a></li>
+                        <li><a href="/artists/ryan-ottley">Ryan Ottley</a></li>
+                        <li><a href="/artists/cliff-chiang">Cliff Chiang</a></li>
+                        <li><a href="/artists/dustin-nguyen">Dustin Nguyen</a></li>
+                        <li><a href="/artists/charlie-adlard">Charlie Adlard</a></li>
+                        <li><a href="/artists/hiroaki-samura">Hiroaki Samura</a></li>
+                        <li><a href="/artists/andrea-sorrentino">Andrea Sorrentino</a></li>
+                        <li><a href="/artists/michael-lark">Michael Lark</a></li>
+                    <li><a href="/artists">View All Artists</a></li>
+                </ul>
+            <ul class="footerpromos">
+                <li><img src="/images/ist42.jpg" alt="Instocktrades.com 42% off!" width="227" height="87"></li>
+                <li><a href="https://www.dcbservice.com" target="_blank"><img src="/images/dcbs40.jpg" width="227" height="87" alt="Discount Comic Book Service"></a></li>
+            </ul>
+            <div class="copyright">
+                &copy; 2026 Discount Comic Book Service (DCBS). All images &copy; respective owners and used with permission.
+            </div>
+        </div>
+    </footer>
+
+    <div id="confirmmsg">
+
+    </div>
+    <script type="text/javascript" src="/scripts/js.cookie.min.js"></script>
+    <script src="/bundles/jquery?v=2u0aRenDpYxArEyILB59ETSCA2cfQkSMlxb6jbMBqf81"></script>
+
+    <script type="text/javascript" src="/scripts/jquery-ui.min.js"></script>
+    
+    <script type="text/javascript" src="/scripts/jquery.hoverIntent.min.js"></script>
+    <script type="text/javascript" src="/scripts/app.min.js?v=3"></script>
+    
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#searchtype').on('change', function () {
+                var isDefault = $(this).val() == "default";
+                $('#defaultsearch').css('display', (isDefault ? "block" : "none"));
+                $('#advancedsearch').css('display', (isDefault ? "none" : "block"));
+            });
+        });
+    </script>
+
+    <script id="free_accessibility_plugin_script" src="https://accessibility.f-static.com/site/free-accessibility-plugin/accessibility.min.js?lan=en&place=bottom-right&distance=20" crossorigin="anonymous" type="text/plain" data-category="functionality"></script>
+</body>
+</html>

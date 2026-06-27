@@ -1,0 +1,1022 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search - InStockTrades</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <meta name="description" content="Trade paperbacks from Marvel, DC, Image, Dark Horse and more! Discounted up to 42% off. No shipping on orders over $50.">
+    <meta name="keywords" content="trade paperbacks,comic books,marvel,dc,image,dark horse,superman,batman,flash,wonder woman,spiderman,fantastic four,the hulk,captain america,thor">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    
+    <link rel="shortcut icon" href="/images/logo.png">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans|Roboto:400,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/content/site.min.css?v=3">
+    <link rel="stylesheet" href="/content/jquery-ui.min.css">
+    <link rel="stylesheet" href="/content/jquery-ui.theme.min.css">
+    <script src="/bundles/modernizr?v=inCVuEFe6J4Q07A0AcRsbJic_UE5MwpRMNGcOtk94TE1"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css">
+    <script src="/scripts/cookieconsent-config.min.js" type="module"></script>
+</head>
+<body>
+    
+<div class="navbar-header">
+    <a href="/"><img class="logo" src="/images/logo.png" alt="Instocktrades.com"></a>
+    <div class="navbar-heading">
+        <span class="giftcertificates"><a href="/giftcertificates" class="highlight">Gift Certificates</a></span>
+        <span class="help"><a href="/home/help">Help</a></span>
+            <span class="greeting"><a href="/account/login">Sign In</a></span>
+    </div>
+    <a href="/cart" class="navbar-cart">
+        <div class="cartcount">0</div>
+    </a>
+    <div class="navbar-search">
+        <form id="sitesearchform" name="sitesearchform" method="get" action="/search">
+            <input type="text" name="term" id="sitesearch" placeholder="Search..." autocomplete="off" required oninvalid="this.setCustomValidity('Please Enter a valid search term')" oninput="setCustomValidity('')">
+            <button type="submit" id="navsearchbutton" class="navsearchbutton" onclick="javascript: return document.getElementById('sitesearch').value.trim() != '';"><img src="/images/search.png" alt="search"></button>
+        </form>
+        <div style="text-align:right;"><a href="/search?ps=true" class="action">Advanced Search</a></div>
+    </div>
+    <div class="navbar-menubar">
+        <div class="navbar-menu trades hoverable">
+            <a href="#trades" class="menu-label responsive">Trades <span class="navarrow"></span></a>
+            <div class="navbar-menuitems responsive">
+                <a href="/newreleases">New Releases</a>
+                
+                <a href="/comingsoon">Coming Soon</a>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#" class="menu-label">Publishers <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                            <a href="/publishers/image">Image</a>
+                            <a href="/publishers/dc-comics">DC Comics</a>
+                            <a href="/publishers/marvel">Marvel</a>
+                            <a href="/publishers/viz-media">Viz Media</a>
+                            <a href="/publishers/dark-horse">Dark Horse</a>
+                            <a href="/publishers/seven-seas">Seven Seas</a>
+                            <a href="/publishers/kodansha">Kodansha</a>
+                            <a href="/publishers/idw">IDW</a>
+                            <a href="/publishers/titan">Titan</a>
+                        <a href="/publishers">View All Publishers</a>
+                    </div>
+                </div>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#sales" class="menu-label">Sales <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                        <a href="/clearance">Clearance</a>
+                        <a href="/damages">Damages</a>
+                            <a href="/specials/630/red-tag-sale">Red Tag Sale</a>
+                            <a href="/specials/632/24-hour-flash-sale!!">24-Hour Flash Sale!!</a>
+                            <a href="/specials/715/best-sellers-dc">Best Sellers: DC</a>
+                            <a href="/specials/716/best-sellers-marvel">Best Sellers: Marvel</a>
+                            <a href="/specials/718/creator-spotlight-inio-asano">Creator Spotlight: Inio Asano</a>
+                            <a href="/specials/719/creator-spotlight-clamp">Creator Spotlight: CLAMP</a>
+                    </div>
+                </div>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#creators" class="menu-label">Featured Creators <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                            <a href="/creator/giantgenerator">Giant Generator by Rick Remender</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="navbar-menu topsellers">
+            <a href="/products/topsellers">Top Sellers</a>
+        </div>
+        <div class="navbar-menu account hoverable">
+            <a href="#account" class="menu-label">Account <span class="navarrow"></span></a>
+            <div class="navbar-menuitems">
+                <a href="/account/wishlist">Wishlist</a>
+                <a href="/account">Account Profile</a>
+                <a href="/account/orderhistory">Order History</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+    
+    <div class="container body-content">
+        
+
+        
+
+
+
+
+<div class="section products">
+    <h2>Search</h2>
+    <div class="section">
+        <div class="message form">
+            <div><h4 style="display:inline-block;">Search Option:</h4>
+                <select name="searchtype" id="searchtype" style="padding:7px;">
+                    <option value="default">Free Text</option>
+                    <option value="power" selected>Advanced Search</option>
+                </select>
+            </div>
+            <div>
+                <div id="defaultsearch" style="display:none;">
+                    <h4>Search results matches ANY words...</h4>
+                    <form method="get" action="/search">
+                        <div class="fieldgroup">
+                            <div class="fieldset">
+                                <div><label>Title, Publisher, Description or Product Code</label></div>
+                                <input name="term" type="text" maxlength="200" style="max-width:400px; display:inline-block;">
+                                <button type="submit" class="btn hotaction">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div id="advancedsearch" style="display:block;">
+                    <h4>Advanced Search. Results match ALL words and conditions...</h4>
+                    <form method="get" action="/search">
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Title</label></div>
+                                <input name="title" placeholder="Title" type="text" maxlength="200" autocomplete="off" value="Berserk">
+                            </div>
+                            <div class="fieldset">
+                                <div><label>Publisher</label></div>
+                                <input name="publisher" placeholder="Publisher" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                        </div>
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Writer</label></div>
+                                <input name="writer" placeholder="Writer" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                            <div class="fieldset">
+                                <div><label>Artist</label></div>
+                                <input name="artist" placeholder="Artist" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                        </div>
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Cover Artist</label></div>
+                                <input name="cover" placeholder="Cover Artist" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                            <div class="fieldset">
+                                <div><label></label></div>
+                                
+                            </div>
+                        </div>
+                        <div class="fieldgroup">
+                            <div class="fieldset">
+                                <input type="hidden" name="ps" value="true">
+                                <button type="submit" class="btn hotaction">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <div class="pageoptions">
+        
+            <div class="productsortselection">
+                <span class="productsortlabel">Sort By:</span> <select id="sortselection" name="sortselection"><option selected="selected" value="relevance">Relevance</option>
+<option value="title">Title</option>
+<option value="publisher">Publisher</option>
+<option value="price">Price</option>
+<option value="discount">Discount</option>
+</select>
+            </div>
+                    <div class="viewselection">
+                <span class="viewselectlabel">View: </span>
+                <div id="thumbplusview" class="viewselect selected" data-val="1"><img src="/images/thumbplus.png" alt="thumbnail plus view" title="Thumbnail Plus View"></div>
+                <div id="thumbview" class="viewselect" data-val="0"><img src="/images/thumbs.png" alt="thumbnail only view" title="Thumbnails Only View"></div>
+                <div id="listview" class="viewselect" data-val="2"><img src="/images/thumblist.png" alt="thumbnail list view" title="Thumbnail List View"></div>
+                
+            </div>
+    </div>
+    <div class="row">
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct201908/berserk-of-gluttony-light-novel-vol-01-(c-0-1-1)"><img class="itemimg" src="https://media.instocktrades.com/small/OCT201908.jpg" alt="BERSERK OF GLUTTONY LIGHT NOVEL VOL 01 (C: 0-1-1)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct201908/berserk-of-gluttony-light-novel-vol-01-(c-0-1-1)">Berserk of Gluttony Light Novel Vol 01 (C: 0-1-1)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Isshiki Ichika (A) fame
+A strikingly illustrated dark fantasy, in which a frail young man&#39;s terrible magic could lead him to ultimate power! Fate Graphite has never tasted real power. Born with the magical skill Gluttony, he has been shunned and looked down upon his entire life, and constantly hungers in a way that can&#39;t be satiated. One day, while working as a gatekeeper for a noble family and fighting a trespassing thief, he discovers Gluttony&#39;s true power: when he kills someone, he devours their skills and feeds his gnawing hunger at last. In that grisly realization, Fate is awakened to his true potential. How many lives will he feed on to satisfy this hunger, and is the world ready for the terrifying warrior he&#39;ll become?
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$13.99<br>
+                            </div>
+                            <div class="price">
+                                $9.09
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="81520" data-title="Berserk of Gluttony Light Novel Vol 01 (C: 0-1-1)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT201908" data-title="Berserk of Gluttony Light Novel Vol 01 (C: 0-1-1)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct254696/berserk-of-gluttony-gn-vol-13"><img class="itemimg" src="https://media.instocktrades.com/small/OCT254696.jpg" alt="BERSERK OF GLUTTONY GN VOL 13"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct254696/berserk-of-gluttony-gn-vol-13">Berserk of Gluttony GN Vol 13</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            BERSERK OF...DESTINY?At long last, the party arrives at Hausen, where Fate and the others are welcomed by Set, a childhood friend, and witness a remarkable recovery! The team thought they could collect information on Myne settings and have a chance to catch their collective breath, but then Libra appears before Snow, the true potential of the Gluttony skill is revealed, and a young boy&amp;rsquo;s destiny is set into motion!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$13.99<br>
+                            </div>
+                            <div class="price">
+                                $9.09
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="99867" data-title="Berserk of Gluttony GN Vol 13" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT254696" data-title="Berserk of Gluttony GN Vol 13" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/mar251852/berserk-of-gluttony-gn-vol-12"><img class="itemimg" src="https://media.instocktrades.com/small/MAR251852.jpg" alt="BERSERK OF GLUTTONY GN VOL 12"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/mar251852/berserk-of-gluttony-gn-vol-12">Berserk of Gluttony GN Vol 12</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Isshiki Ichika (A) Daisuke Takino
+Fate Graphite has never tasted true power. Born into a world with two kinds of people-those with superior skills and those without-he&#39;s been shunned his entire life. Fate&#39;s skill is Gluttony, a curse that leaves him constantly hungry… until he awakens its terrible potential. When he kills someone, he can devour their skills and feed his insatiable appetite. How many lives will it take for Fate&#39;s Gluttony to finally be satisfied?
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$12.99<br>
+                            </div>
+                            <div class="price">
+                                $8.44
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="94877" data-title="Berserk of Gluttony GN Vol 12" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="MAR251852" data-title="Berserk of Gluttony GN Vol 12" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/sep242404/berserk-of-gluttony-gn-vol-11"><img class="itemimg" src="https://media.instocktrades.com/small/SEP242404.jpg" alt="BERSERK OF GLUTTONY GN VOL 11"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/sep242404/berserk-of-gluttony-gn-vol-11">Berserk of Gluttony GN Vol 11</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Isshiki Ichika (A) Daisuke Takino
+In pursuit of Myne, Fate and his friends are on the long road to Hausen! During a stop in Tetra, Fate&#39;s hometown, he finds his father&#39;s grave unearthed-from the inside. This all but confirms that his late father is also the one who kidnapped Laine! But what is the meaning behind the rosary left within the grave? And who is the mystery man who claims to be his father&#39;s former comrade-in-arms?!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$12.99<br>
+                            </div>
+                            <div class="price">
+                                $8.44
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="91126" data-title="Berserk of Gluttony GN Vol 11" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="SEP242404" data-title="Berserk of Gluttony GN Vol 11" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct232230/berserk-of-gluttony-gn-vol-09"><img class="itemimg" src="https://media.instocktrades.com/small/OCT232230.jpg" alt="BERSERK OF GLUTTONY GN VOL 09"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct232230/berserk-of-gluttony-gn-vol-09">Berserk of Gluttony GN Vol 09</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Isshiki Ichika (A) Daisuke Takino
+His connection to the Vlerick family severed, Fate returns to the royal capital hoping for a peaceful time, but he and Roxy are soon lured out to a nearby forest. There, they fall into an ancient monster&#39;s trap that switches Fate and Roxy&#39;s bodies! Sealed in Fate&#39;s body and subject to Gluttony, Roxy faces death by starvation, while Fate is powerless! How will they survive the spell, and if they do, can they withstand the monster?
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$12.99<br>
+                            </div>
+                            <div class="price">
+                                $8.44
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="85425" data-title="Berserk of Gluttony GN Vol 09" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT232230" data-title="Berserk of Gluttony GN Vol 09" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct212058/berserk-of-gluttony-gn-vol-04"><img class="itemimg" src="https://media.instocktrades.com/small/OCT212058.jpg" alt="BERSERK OF GLUTTONY GN VOL 04"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct212058/berserk-of-gluttony-gn-vol-04">Berserk of Gluttony GN Vol 04</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Isshiki Ichika (A) Daisuke Takino
+Fate is headed to Galia, where mighty monsters and a reunion with Roxy await. He&#39;s joined by a mysterious woman who also possesses a deadly skill-Wrath. For the first time in his life, Fate has an ally to fight beside him. But will this be enough to survive against his increasingly formidable foes? Or will Fate&#39;s ever-growing hunger finally consume him?
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$12.99<br>
+                            </div>
+                            <div class="price">
+                                $8.44
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="95317" data-title="Berserk of Gluttony GN Vol 04" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT212058" data-title="Berserk of Gluttony GN Vol 04" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jul231131/berserk-deluxe-edition-hc-vol-14-(mr)-"><img class="itemimg" src="https://media.instocktrades.com/small/JUL231131.jpg" alt="BERSERK DELUXE EDITION HC VOL 14 (MR) "></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jul231131/berserk-deluxe-edition-hc-vol-14-(mr)-">Berserk Deluxe Edition HC Vol 14 (MR) </a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Kentaro Miura
+The death of Berserk creator Kentaro Miura saddened the worlds of manga and anime, but his greatest creation lives on. Berserk Deluxe Edition Volume 14 collects the master&#39;s final chapters of Berserk plus the Berserk Official Guidebook, the ultimate resource to Miura&#39;s manga masterpiece. Deep within the nightmare realm of Casca&#39;s dreams, Schierke and Farnese battle endless horrors to reach the dark secret that has imprisoned Casca&#39;s mind since the shattering events of the Invocation of Doom. But if they are successful and Casca reclaims her sanity, will she be able to face Guts the Black Swordsman and the harrowing memories of her gruesome ideal he is sure to trigger? Collects Berserk Volumes 40, 41, and Berserk Official Guidebook.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$49.99<br>
+                            </div>
+                            <div class="price">
+                                $32.49
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="84741" data-title="Berserk Deluxe Edition HC Vol 14 (MR) " data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUL231131" data-title="Berserk Deluxe Edition HC Vol 14 (MR) " title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/nov220498/berserk-deluxe-edition-hc-vol-13-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/NOV220498.jpg" alt="BERSERK DELUXE EDITION HC VOL 13 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/nov220498/berserk-deluxe-edition-hc-vol-13-(mr)">Berserk Deluxe Edition HC Vol 13 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Kentaro Miura
+Guts the Black Swordsman and company reach the island of Skellig in hopes than Elven magic can heal the afflicted mind of Casca, but first they must face the island&#39;s terrifying magical defenses. If they can pass through and reach Elfhelm, the Flower Storm Monarch of the Elves can perform the ritual that might free Casca, but failure will mean their long, perilous journey will have been for nothing!   Collects Berserk volumes 37-39, including three fold-out color posters.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$49.99<br>
+                            </div>
+                            <div class="price">
+                                $32.49
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="79887" data-title="Berserk Deluxe Edition HC Vol 13 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="NOV220498" data-title="Berserk Deluxe Edition HC Vol 13 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jul220389/berserk-deluxe-edition-hc-vol-12"><img class="itemimg" src="https://media.instocktrades.com/small/JUL220389.jpg" alt="BERSERK DELUXE EDITION HC VOL 12"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jul220389/berserk-deluxe-edition-hc-vol-12">Berserk Deluxe Edition HC Vol 12</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Kentaro Miura
+Griffith&#39;s new Band of the Hawk assume their unholy forms to battle the monstrous Kushan emperor and his horde of demons, leaving the terrified Midland citizenry to wonder if their rescuers are another horrific curse. Meanwhile, Guts and his companions seek refuge on a small island that is not the safe haven they&#39;d hoped for-it&#39;s a sinister place watched over by an ancient, vengeful god whose power is about to be unleashed! Collects Berserk volumes 34-36, including three fold-out color posters.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$49.99<br>
+                            </div>
+                            <div class="price">
+                                $32.49
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="76735" data-title="Berserk Deluxe Edition HC Vol 12" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUL220389" data-title="Berserk Deluxe Edition HC Vol 12" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/mar220391/berserk-deluxe-edition-hc-vol-11"><img class="itemimg" src="https://media.instocktrades.com/small/MAR220391.jpg" alt="BERSERK DELUXE EDITION HC VOL 11"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/mar220391/berserk-deluxe-edition-hc-vol-11">Berserk Deluxe Edition HC Vol 11</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Kentaro Miura
+The adult horror manga against which all other are measured continues in deluxe oversized hardcover editions. Guts the Black Swordsman and company prepare to leave the port of Vritannis, only to have their way blocked by an army of abominations led by a powerful Kushan sorcerer. Even Guts&#39; accursed Berserker armor may not be enough to stem the bestial tide . . . especially when faced by the leviathan astral form of the malefic Kushan Emperor! Collects Berserk volumes 31-33, including three-fold-out color posters.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$49.99<br>
+                            </div>
+                            <div class="price">
+                                $32.49
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="74794" data-title="Berserk Deluxe Edition HC Vol 11" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="MAR220391" data-title="Berserk Deluxe Edition HC Vol 11" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/nov210327/berserk-deluxe-edition-hc-vol-10"><img class="itemimg" src="https://media.instocktrades.com/small/NOV210327.jpg" alt="BERSERK DELUXE EDITION HC VOL 10"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/nov210327/berserk-deluxe-edition-hc-vol-10">Berserk Deluxe Edition HC Vol 10</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Kentaro Miura
+The G.O.A.T. adult horror manga continues in deluxe oversized hardcover editions. Guts and his companions have finally arrived at the sea, but their respite is short-lived as bloodthirsty beasts possessed by malefic Kushan sorcery emerge from the surf. Guts must again don the Berserker Armor to give his troupe any hope of survival, but the accursed shell threatens his very soul . . . and the lives of his comrades!   o Collects Berserk volumes 28-30, including three-fold-out color posters.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$49.99<br>
+                            </div>
+                            <div class="price">
+                                $32.49
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="72333" data-title="Berserk Deluxe Edition HC Vol 10" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="NOV210327" data-title="Berserk Deluxe Edition HC Vol 10" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jul210395/berserk-deluxe-edition-hc-vol-09-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/JUL210395.jpg" alt="BERSERK DELUXE EDITION HC VOL 09 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jul210395/berserk-deluxe-edition-hc-vol-09-(mr)">Berserk Deluxe Edition HC Vol 09 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A) Kentaro Miura
+The acclaimed adult horror manga is now in presented in deluxe hardcover editions in the original oversized serialization format. Though Guts the Black Swordsman lies at death&#39;s door from battling against the giant dragon knight Grunbeld and his legion of demonic Apostles, the witch Schierke has a dangerous card to play to put Guts back in the fight: the unholy Berserker Armor. But the accursed shell that holds Guts together-in a nightmarishly literal sense-unleashes its host&#39;s inner demons, which could tear apart Guts tortured mind and send him into eternal darkness!   Collects Berserk volumes 25-27, plus three, fold-out color posters.   &#39;Berserk is finally given the treatment fans have longed for.&#39; -AiPT!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$49.99<br>
+                            </div>
+                            <div class="price">
+                                $32.49
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="71381" data-title="Berserk Deluxe Edition HC Vol 09 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUL210395" data-title="Berserk Deluxe Edition HC Vol 09 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/mar210314/berserk-deluxe-edition-hc-vol-08"><img class="itemimg" src="https://media.instocktrades.com/small/MAR210314.jpg" alt="BERSERK DELUXE EDITION HC VOL 08"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/mar210314/berserk-deluxe-edition-hc-vol-08">Berserk Deluxe Edition HC Vol 08</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Kentaro Miura
+The Tower of Conviction has fallen, heralding the unexpected return of Guts&#39; former commander, Griffith, transformed from a mutilated husk into a demon lord. Regenerated into health and beauty with his ambitions intact, Griffith has raised a new Band of the Hawk, recruited from darkness to fulfill his deadly destiny. Collects Berserk volumes 22-24 including three-fold-out color posters.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$49.99<br>
+                            </div>
+                            <div class="price">
+                                $32.49
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="70734" data-title="Berserk Deluxe Edition HC Vol 08" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="MAR210314" data-title="Berserk Deluxe Edition HC Vol 08" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/nov200251/berserk-deluxe-edition-hc-vol-07-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/NOV200251.jpg" alt="BERSERK DELUXE EDITION HC VOL 07 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/nov200251/berserk-deluxe-edition-hc-vol-07-(mr)">Berserk Deluxe Edition HC Vol 07 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A) Kentaro Miura
+Kentaro Miura&#39;s legendary adult fantasy/horror manga is now available at its original published size in handsome deluxe hardcover editions, each collecting three volumes of the acclaimed series. Guts the Black Swordsman is on a rampage as Mogus, master inquisitor of the Holy See, readies Guts&#39; beloved Casca to be burned at the stake as a heretic in the forbidding Tower of Conviction. But Casca&#39;s demonic Brand of Sacrifice is drawing hideous dark powers to the Tower, and even if Guts can defeat the mighty Mogus, can he save Casca from the ravenous hordes of Hell? Collects Berserk volumes 19-21.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$49.99<br>
+                            </div>
+                            <div class="price">
+                                $32.49
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="69259" data-title="Berserk Deluxe Edition HC Vol 07 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="NOV200251" data-title="Berserk Deluxe Edition HC Vol 07 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jun200343/berserk-deluxe-edition-hc-vol-06-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/JUN200343.jpg" alt="BERSERK DELUXE EDITION HC VOL 06 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jun200343/berserk-deluxe-edition-hc-vol-06-(mr)">Berserk Deluxe Edition HC Vol 06 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A) Kentaro Miura
+Marked with the unholy Brand of Sacrifice that draws the damned to him, Guts the Black Swordsman battles the minions of Hell that thwart his search for Casca, his former captain and lover. But Casca, too, is marked with the Brand, and Guts must find her before the legions of the abyss do! Collects Berserk volumes 16-18.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$49.99<br>
+                            </div>
+                            <div class="price">
+                                $32.49
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="68143" data-title="Berserk Deluxe Edition HC Vol 06 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUN200343" data-title="Berserk Deluxe Edition HC Vol 06 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jul238584/berserk-deluxe-edition-hc-vol-05-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/JUL238584.jpg" alt="BERSERK DELUXE EDITION HC VOL 05 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jul238584/berserk-deluxe-edition-hc-vol-05-(mr)">Berserk Deluxe Edition HC Vol 05 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A) Kentaro Miura
+The mutilated Griffith offers up his Band of the Hawk as sacrifices to the Godhand&#39;s demon lords in exchange for a rebirth into terrible power. But the Hawks&#39; berserker champion, Guts, will take on perdition itself to save his lover, Casca, from the profane violations that only Hell can offer! Collects Berserk volumes 13-15.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$49.99<br>
+                            </div>
+                            <div class="price">
+                                $32.49
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="67026" data-title="Berserk Deluxe Edition HC Vol 05 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUL238584" data-title="Berserk Deluxe Edition HC Vol 05 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct190398/berserk-deluxe-edition-hc-vol-04-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/OCT190398.jpg" alt="BERSERK DELUXE EDITION HC VOL 04 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct190398/berserk-deluxe-edition-hc-vol-04-(mr)">Berserk Deluxe Edition HC Vol 04 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A) Kentaro Miura
+Guts, the Black Swordsman, has saved the Band of the Hawk from the Midland army, but he must liberate Griffith, the Hawks&#39; leader. Imprisoned and tortured, Griffith is in isolation but is not alone. Horrors dwell within the dungeons, where the living envy the dead! Collects Berserk volumes 10-12.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$49.99<br>
+                            </div>
+                            <div class="price">
+                                $32.49
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="65385" data-title="Berserk Deluxe Edition HC Vol 04 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT190398" data-title="Berserk Deluxe Edition HC Vol 04 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jun190381/berserk-deluxe-edition-hc-vol-03-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/JUN190381.jpg" alt="BERSERK DELUXE EDITION HC VOL 03 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jun190381/berserk-deluxe-edition-hc-vol-03-(mr)">Berserk Deluxe Edition HC Vol 03 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A) Kentaro Miura
+The ultimate adult fantasy manga now in 7&#39; x 10&#39; hardcover editions! The long war between Midland and Tudor nears an end as the Band of the Hawk, led by Griffith and his fearless champion Guts, turn the tide in Midland&#39;s favor. But impending victory ignites a secret war within Midland, as those seeking courtly favor see the ambitious Griffith as an obstacle to power. And nothing is more powerful than an enemy unseen! Collects Berserk volumes 7-9.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$49.99<br>
+                            </div>
+                            <div class="price">
+                                $32.49
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="64030" data-title="Berserk Deluxe Edition HC Vol 03 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUN190381" data-title="Berserk Deluxe Edition HC Vol 03 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/feb190389/berserk-deluxe-edition-hc-vol-02-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/FEB190389.jpg" alt="BERSERK DELUXE EDITION HC VOL 02 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/feb190389/berserk-deluxe-edition-hc-vol-02-(mr)">Berserk Deluxe Edition HC Vol 02 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A) Kentaro Miura
+The ultimate adult fantasy manga, now in 7&#39;x10&#39; hardcover editions! Raised in torment, young Guts is hardened into a fearsome warrior, drawing the attention of the charismatic Griffith, commander of the elite Band of the Hawk. This crossroads will take Guts to fame and glory . . . and damnation! Collects Berserk volumes 4, 5, and 6. o Over 1.5 million copies sold of Dark Horse&#39;s Berserk manga! o Inspired the hit anime TV series and feature films, video games, a trading card game, and more!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$49.99<br>
+                            </div>
+                            <div class="price">
+                                $32.49
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="62365" data-title="Berserk Deluxe Edition HC Vol 02 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="FEB190389" data-title="Berserk Deluxe Edition HC Vol 02 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct180363/berserk-deluxe-edition-hc-vol-01-(current-printing)-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/OCT180363.jpg" alt="BERSERK DELUXE EDITION HC VOL 01 (current printing) (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct180363/berserk-deluxe-edition-hc-vol-01-(current-printing)-(mr)">Berserk Deluxe Edition HC Vol 01 (Current Printing) (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A) Kentaro Miura
+Kentaro Miura&#39;s Berserk has ouraged, horrified, and delighted readers since 1989, and now the badass champion of adult fantasy manga is presented in a deluxe hardcover edition amassing the first three Berserk volumes in 7&#39; x 10&#39; format, with further volumes to come to present the entire series in handsome bookshelf collections. Have you got the Guts? Kentaro Miura&#39;s Berserk has ouraged, horrified, and delighted manga and anime fanatics since 1989, creating an international legion of hardcore devotees and inspiring a plethora of TV series, feature films, and video games. And now the badass champion of adult fantasy manga is presented in an oversized 7&#39; x 10&#39; deluxe hardcover edition, nearly 700 pages amassing the first three Berserk volumes, with following volumes to come to serve up the entire series in handsome bookshelf collections. No Guts, no glory! Collects volumes 1-3.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$49.99<br>
+                            </div>
+                            <div class="price">
+                                $32.49
+                            </div>
+                            <div class="discount">
+35%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="61242" data-title="Berserk Deluxe Edition HC Vol 01 (Current Printing) (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT180363" data-title="Berserk Deluxe Edition HC Vol 01 (Current Printing) (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+    </div>
+
+    <div>
+            <a href="/search?pg=1&amp;ps=true&amp;title=Berserk&amp;publisher=&amp;writer=&amp;artist=&amp;cover=" class="btn hotaction">&#8678;</a>
+                    <span>Page <input type="text" id="currentpage" class="pagenumber" data-max="2" data-sf="" value="2"> of 2</span>
+            </div>
+    <div>Results 41 - 60 of 60</div>
+
+
+
+</div>
+
+
+
+
+    </div>
+    <footer>
+        <div class="section" style="overflow:hidden;">
+            <ul>
+                <li class="heading">Main Menu</li>
+                <li><a href="/">Home</a></li>
+                <li><a href="/newreleases">New Releases</a></li>
+                <li><a href="/comingsoon">Coming Soon</a></li>
+                <li><a href="/clearance">Clearance</a></li>
+                <li><a href="/damages">Damages</a></li>
+                <li class="condensed"><a href="/publishers">Publishers</a></li>
+                <li class="condensed"><a href="/writers">Writers</a></li>
+                <li class="condensed"><a href="/artists">Artists</a></li>
+                <li><a href="/giftcertificates">Gift Certificates</a></li>
+                <li><a href="/home/help">Help</a></li>
+                <li><a href="/home/privacy">Privacy and Security</a></li>
+                <li><a href="/wishlists">Find a Wishlist</a></li>
+                <li><a href="/home/contact">Contact Us</a></li>
+            </ul>
+            <ul class="expanded">
+                <li class="heading">Publishers</li>
+                    <li><a href="/publishers/image">Image</a></li>
+                    <li><a href="/publishers/dc-comics">DC Comics</a></li>
+                    <li><a href="/publishers/marvel">Marvel</a></li>
+                    <li><a href="/publishers/viz-media">Viz Media</a></li>
+                    <li><a href="/publishers/dark-horse">Dark Horse</a></li>
+                    <li><a href="/publishers/seven-seas">Seven Seas</a></li>
+                    <li><a href="/publishers/kodansha">Kodansha</a></li>
+                    <li><a href="/publishers/idw">IDW</a></li>
+                    <li><a href="/publishers/titan">Titan</a></li>
+                <li><a href="/publishers">View All Publishers</a></li>
+            </ul>
+            <ul class="expanded">
+                <li class="heading">Genres</li>
+                    <li><a href="/genres/action-adventure">Action/Adventure</a></li>
+                    <li><a href="/genres/crime">Crime</a></li>
+                    <li><a href="/genres/fantasy">Fantasy</a></li>
+                    <li><a href="/genres/horror">Horror</a></li>
+                    <li><a href="/genres/humor-comedy">Humor/Comedy</a></li>
+                    <li><a href="/genres/reference-art-books-how-to">Reference/Art Books/How To</a></li>
+                    <li><a href="/genres/romance">Romance</a></li>
+                    <li><a href="/genres/science-fiction">Science Fiction</a></li>
+                    <li><a href="/genres/sports">Sports</a></li>
+                    <li><a href="/genres/super-hero">Super-hero</a></li>
+            </ul>
+                <ul class="expanded">
+                    <li class="heading">Writers</li>
+                        <li><a href="/writers/robert-kirkman">Robert Kirkman</a></li>
+                        <li><a href="/writers/jeff-lemire">Jeff Lemire</a></li>
+                        <li><a href="/writers/kentaro-miura">Kentaro Miura</a></li>
+                        <li><a href="/writers/rick-remender">Rick Remender</a></li>
+                        <li><a href="/writers/brian-k-vaughan">Brian K. Vaughan</a></li>
+                        <li><a href="/writers/ed-brubaker">Ed Brubaker</a></li>
+                        <li><a href="/writers/tom-king">Tom King</a></li>
+                        <li><a href="/writers/jonathan-hickman">Jonathan Hickman</a></li>
+                        <li><a href="/writers/geoff-johns">Geoff Johns</a></li>
+                        <li><a href="/writers/mark-waid">Mark Waid</a></li>
+                    <li><a href="/writers">View All Writers</a></li>
+                </ul>
+                            <ul class="expanded">
+                    <li class="heading">Artists</li>
+                        <li><a href="/artists/kentaro-miura">Kentaro Miura</a></li>
+                        <li><a href="/artists/sean-phillips">Sean Phillips</a></li>
+                        <li><a href="/artists/fiona-staples">Fiona Staples</a></li>
+                        <li><a href="/artists/ryan-ottley">Ryan Ottley</a></li>
+                        <li><a href="/artists/cliff-chiang">Cliff Chiang</a></li>
+                        <li><a href="/artists/dustin-nguyen">Dustin Nguyen</a></li>
+                        <li><a href="/artists/charlie-adlard">Charlie Adlard</a></li>
+                        <li><a href="/artists/hiroaki-samura">Hiroaki Samura</a></li>
+                        <li><a href="/artists/andrea-sorrentino">Andrea Sorrentino</a></li>
+                        <li><a href="/artists/michael-lark">Michael Lark</a></li>
+                    <li><a href="/artists">View All Artists</a></li>
+                </ul>
+            <ul class="footerpromos">
+                <li><img src="/images/ist42.jpg" alt="Instocktrades.com 42% off!" width="227" height="87"></li>
+                <li><a href="https://www.dcbservice.com" target="_blank"><img src="/images/dcbs40.jpg" width="227" height="87" alt="Discount Comic Book Service"></a></li>
+            </ul>
+            <div class="copyright">
+                &copy; 2026 Discount Comic Book Service (DCBS). All images &copy; respective owners and used with permission.
+            </div>
+        </div>
+    </footer>
+
+    <div id="confirmmsg">
+
+    </div>
+    <script type="text/javascript" src="/scripts/js.cookie.min.js"></script>
+    <script src="/bundles/jquery?v=2u0aRenDpYxArEyILB59ETSCA2cfQkSMlxb6jbMBqf81"></script>
+
+    <script type="text/javascript" src="/scripts/jquery-ui.min.js"></script>
+    
+    <script type="text/javascript" src="/scripts/jquery.hoverIntent.min.js"></script>
+    <script type="text/javascript" src="/scripts/app.min.js?v=3"></script>
+    
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#searchtype').on('change', function () {
+                var isDefault = $(this).val() == "default";
+                $('#defaultsearch').css('display', (isDefault ? "block" : "none"));
+                $('#advancedsearch').css('display', (isDefault ? "none" : "block"));
+            });
+        });
+    </script>
+
+    <script id="free_accessibility_plugin_script" src="https://accessibility.f-static.com/site/free-accessibility-plugin/accessibility.min.js?lan=en&place=bottom-right&distance=20" crossorigin="anonymous" type="text/plain" data-category="functionality"></script>
+</body>
+</html>

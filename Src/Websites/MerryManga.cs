@@ -1,4 +1,3 @@
-
 using System.Collections.Frozen;
 using MangaAndLightNovelWebScrape.Services;
 using Microsoft.Playwright;
@@ -7,7 +6,12 @@ namespace MangaAndLightNovelWebScrape.Websites;
 
 public sealed partial class MerryManga : IWebsite
 {
-    private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+    private readonly ILogger _logger;
+
+    public MerryManga(ILogger<MerryManga>? logger = null)
+    {
+        _logger = logger ?? NullLogger<MerryManga>.Instance;
+    }
 
     [GeneratedRegex(@"\((?:3-in-1|2-in-1|Omnibus) Edition\)|Omnibus( \d{1,2})(?:, |\s{1})Vol \d{1,3}-\d{1,3}", RegexOptions.IgnoreCase)] private static partial Regex FixOmnibusRegex();
     [GeneratedRegex(@"(?<=Box Set \d{1}).*", RegexOptions.IgnoreCase)] private static partial Regex FixBoxSetRegex();
@@ -32,20 +36,17 @@ public sealed partial class MerryManga : IWebsite
         "available_at_warehouse"
     );
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships = default)
-    {
-        return Task.Run(async () =>
-        {
-            IPage page = await PlaywrightFactory.GetPageAsync(browser!);
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page);
-            masterDataList.Add(Data);
-            masterLinkList.TryAdd(Website.MerryManga, Links[0]);
-        });
-    }
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, ConcurrentDictionary<Website, Exception> errors, IBrowser? browser, Region curRegion, Membership memberships = Membership.None, CancellationToken cancellationToken = default)
+        => InternalHelpers.RunPlaywrightScrapeAsync(
+            this, Website.MerryManga, bookTitle, bookType, masterDataList, masterLinkList, errors, browser!, curRegion, cancellationToken);
+
+    /// <inheritdoc />
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+        => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
 
     // https://www.merrymanga.com/?s=Naruto&post_type=product&_categories=box-sets
     // https://www.merrymanga.com/?s=jujutsu+kaisen&post_type=product&orderby=release_date&_categories=manga
-    private static string GenerateWebsiteUrl(string bookTitle, BookType bookType, bool hasBoxSet)
+    internal string GenerateWebsiteUrl(string bookTitle, BookType bookType, bool hasBoxSet)
     {
         string url;
         if (hasBoxSet && bookType != BookType.LightNovel)
@@ -56,7 +57,7 @@ public sealed partial class MerryManga : IWebsite
         {
             url = $"{BASE_URL}/?s={bookTitle.Replace(" ", "+")}&post_type=product&orderby=release_date&_categories={(bookType == BookType.Manga ? "manga" : "light-novels")}";
         }
-        LOGGER.Info(url);
+        _logger.UrlGenerated(url);
         return url;
     }
 
@@ -80,7 +81,7 @@ public sealed partial class MerryManga : IWebsite
 
         s = FixTitleRegex().Replace(s, string.Empty);
 
-        var sb = new StringBuilder(s);
+        StringBuilder sb = new(s);
 
         if (bookType == BookType.LightNovel && !s.Contains("Novel", StringComparison.Ordinal))
         {
@@ -103,7 +104,7 @@ public sealed partial class MerryManga : IWebsite
         return collapsed;
     }
 
-    private static void ExtractProductData(
+    private void ExtractProductData(
         HtmlDocument doc,
         out List<string> titles,
         out List<string> prices,
@@ -126,7 +127,7 @@ public sealed partial class MerryManga : IWebsite
                 {
                     string text = node.InnerText.Trim();
                     titles.Add(text);
-                    LOGGER.Debug(text);
+                    _logger.ProductTitleSeen(text);
                 }
             }
 
@@ -135,60 +136,67 @@ public sealed partial class MerryManga : IWebsite
             // or b) <span class="price"> → <span class="woocommerce-Price-amount amount"> → <bdi>
             if (nodeName == "bdi")
             {
-            HtmlNode parentNode = node.ParentNode;
-            if (parentNode is not null
-                && parentNode.Name == "span"
-                && parentNode.GetAttributeValue("class", string.Empty)
-                            .Contains("woocommerce-Price-amount amount", StringComparison.OrdinalIgnoreCase))
+                HtmlNode parentNode = node.ParentNode;
+                if (parentNode is not null
+                    && parentNode.Name == "span"
+                    && parentNode.GetAttributeValue("class", string.Empty)
+                        .Contains("woocommerce-Price-amount amount", StringComparison.OrdinalIgnoreCase))
+                {
+                    HtmlNode grandParent = parentNode.ParentNode;
+                    if (grandParent is not null)
                     {
-                        HtmlNode grandParent = parentNode.ParentNode;
-                        if (grandParent is not null)
+                        // case (a): under <ins>
+                        if (grandParent.Name == "ins")
                         {
-                            // case (a): under <ins>
-                            if (grandParent.Name == "ins")
+                            HtmlNode greatGrand = grandParent.ParentNode;
+                            if (greatGrand is not null
+                                && greatGrand.Name == "span"
+                                && greatGrand.GetAttributeValue("class", string.Empty)
+                                    .Equals("price", StringComparison.OrdinalIgnoreCase))
                             {
-                                HtmlNode greatGrand = grandParent.ParentNode;
-                                if (greatGrand is not null
-                                    && greatGrand.Name == "span"
-                                    && greatGrand.GetAttributeValue("class", string.Empty)
-                                                .Equals("price", StringComparison.OrdinalIgnoreCase))
-                                {
-                                    string text = node.InnerText.Trim();
-                                    prices.Add(text);
-                                }
-                            }
-                            // case (b): directly under <span class="price">
-                            else if (grandParent.Name == "span"
-                                    && grandParent.GetAttributeValue("class", string.Empty)
-                                                    .Equals("price", StringComparison.OrdinalIgnoreCase))
-                            {
-                                string text = node.InnerText.Trim();
-                                prices.Add(text);
+                                prices.Add(node.InnerText.Trim());
                             }
                         }
+                        // case (b): directly under <span class="price">
+                        else if (grandParent.Name == "span"
+                            && grandParent.GetAttributeValue("class", string.Empty)
+                                .Equals("price", StringComparison.OrdinalIgnoreCase))
+                        {
+                            prices.Add(node.InnerText.Trim());
+                        }
                     }
-                    continue;
+                }
+                continue;
             }
 
-            // 3) STOCK: //li[contains(@class, 'instock')] | //li[contains(@class, 'outofstock')] | //li[contains(@class, 'onbackorder')] | //li[contains(@class, 'preorder')] | //li[contains(@class, 'available_at_warehouse')]
+            // 3) STOCK: //li[contains(@class, 'instock')] | //li[contains(@class, 'outofstock')] | ...
             if (nodeName == "li")
             {
                 string classAttr = node.GetAttributeValue("class", string.Empty);
-                string[] parts = classAttr.Split(' ');
-                foreach (string part in parts)
+                // Span-based split: no string[] allocation per node. For pages with hundreds of
+                // <li> elements this is the difference between hundreds of short-lived heap
+                // arrays per scrape and zero.
+                foreach (Range partRange in classAttr.AsSpan().Split(' '))
                 {
-                    if (_stockClasses.Contains(part))
+                    ReadOnlySpan<char> part = classAttr.AsSpan(partRange);
+                    if (part.IsEmpty) continue;
+
+                    // _stockClasses lookup needs a string key today. The Length-prefilter below
+                    // short-circuits the lookup for the vast majority of class tokens (which are
+                    // arbitrary lengths like "product_cat-manga").
+                    if (part.Length < 6 || part.Length > 23) continue;
+
+                    string partStr = part.ToString();
+                    if (_stockClasses.Contains(partStr))
                     {
-                        StockStatus stockStatus = part switch
+                        statuses.Add(partStr switch
                         {
                             "instock" or "available_at_warehouse" => StockStatus.IS,
                             "outofstock" => StockStatus.OOS,
                             "preorder" => StockStatus.PO,
                             "onbackorder" => StockStatus.BO,
-                            _ or "Unknown" => StockStatus.NA,
-                        };
-
-                        statuses.Add(stockStatus);
+                            _ => StockStatus.NA,
+                        });
                         break;
                     }
                 }
@@ -196,7 +204,7 @@ public sealed partial class MerryManga : IWebsite
         }
     }
 
-    private static async Task CheckAndProceedIfRated18Async(IPage page)
+    private async Task CheckAndProceedIfRated18Async(IPage page)
     {
         ILocator heading = page.Locator("h2.popup_heading");
 
@@ -208,113 +216,127 @@ public sealed partial class MerryManga : IWebsite
             if (text.Equals("This product is rated 18+", StringComparison.OrdinalIgnoreCase))
             {
                 await page.Locator("button.btn_submit#submit").ClickAsync();
-                LOGGER.Info("Proceeded from 18+ popup");
+                _logger.ProceededFromAgePopup();
             }
         }
     }
 
-    // TODO: Needs perf improvments
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America, CancellationToken cancellationToken = default)
     {
         List<EntryModel> data = [];
         List<string> links = [];
 
-        try
+        string bookTitleLower = bookTitle.ToLower();
+        bool hasBoxSet = true;
+        List<HtmlDocument> listingPages = [];
+
+    Restart:
+        string url = GenerateWebsiteUrl(bookTitleLower, bookType, hasBoxSet);
+        links.Add(url);
+
+        await page!.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
+        await page.WaitForSelectorAsync("div.container.main-content");
+
+        HtmlDocument doc = HtmlFactory.CreateDocument();
+        doc.LoadHtml(await page.ContentAsync());
+
+        if (hasBoxSet && doc.Text.Contains("No products were found matching your selection."))
         {
-            bool hasBoxSet = true;
-        Restart:
-            string url = GenerateWebsiteUrl(bookTitle.ToLower(), bookType, hasBoxSet);
+            _logger.NoBoxSetEntries();
+            hasBoxSet = false;
+            links.Clear();
+            url = GenerateWebsiteUrl(bookTitleLower, bookType, hasBoxSet);
             links.Add(url);
 
-            await page!.GotoAsync(url, new PageGotoOptions
-            {
-                WaitUntil = WaitUntilState.DOMContentLoaded
-            });
+            await page.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
             await page.WaitForSelectorAsync("div.container.main-content");
+        }
 
-            HtmlDocument doc = HtmlFactory.CreateDocument();
-            doc.LoadHtml(await page.ContentAsync());
+        await CheckAndProceedIfRated18Async(page);
+        await ExhaustLoadMoreAsync(page);
 
-            if (hasBoxSet && doc.Text.Contains("No products were found matching your selection."))
+        doc = HtmlFactory.CreateDocument();
+        doc.LoadHtml(await page.ContentAsync());
+        listingPages.Add(doc);
+
+        if (hasBoxSet)
+        {
+            hasBoxSet = false;
+            goto Restart;
+        }
+
+        data = ParsePages(listingPages, bookTitle, bookType);
+        InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
+        return (data, links);
+    }
+
+    /// <summary>
+    /// Clicks the "Load More" facet button until it disappears or the "no products" banner
+    /// shows. Extracted so live runs and the fixture-regenerate task share the exhaust logic.
+    /// </summary>
+    private async Task ExhaustLoadMoreAsync(IPage page)
+    {
+        ILocator visibleBtn = page.Locator("button.facetwp-load-more:not(.facetwp-hidden)");
+        if (await visibleBtn.CountAsync() == 0) return;
+
+        ILocator hiddenBtn = page.Locator("button.facetwp-load-more.facetwp-hidden");
+        ILocator pager = page.Locator("div.facetwp-facet.facetwp-facet-load_more.facetwp-type-pager");
+        ILocator noProducts = page.Locator("div.woocommerce-info");
+
+        while (true)
+        {
+            if (await noProducts.CountAsync() > 0)
             {
-                LOGGER.Info("No box set entries found, Checking Manga Only Link");
-                hasBoxSet = false;
-                url = GenerateWebsiteUrl(bookTitle.ToLower(), bookType, hasBoxSet);
-                links.Clear();
-                links.Add(url);
-
-                await page.GotoAsync(url, new PageGotoOptions
+                string text = (await noProducts.First.InnerTextAsync()).Trim();
+                if (text.Equals("No products were found matching your selection.", StringComparison.OrdinalIgnoreCase))
                 {
-                    WaitUntil = WaitUntilState.DOMContentLoaded
-                });
-                await page.WaitForSelectorAsync("div.container.main-content");
-            }
-
-            await CheckAndProceedIfRated18Async(page);
-
-            // Load all data
-            if (await page.Locator("button.facetwp-load-more:not(.facetwp-hidden)").CountAsync() > 0)
-            {
-                ILocator visibleBtn = page.Locator("button.facetwp-load-more:not(.facetwp-hidden)");
-                ILocator hiddenBtn = page.Locator("button.facetwp-load-more.facetwp-hidden");
-                ILocator pager = page.Locator("div.facetwp-facet.facetwp-facet-load_more.facetwp-type-pager");
-                ILocator noProducts = page.Locator("div.woocommerce-info"); // <-- "No products were found..." banner
-
-                // While the *visible* load-more button exists:
-                while (true)
-                {
-                    if (await noProducts.CountAsync() > 0)
-                    {
-                        string text = (await noProducts.First.InnerTextAsync()).Trim();
-                        if (text.Equals("No products were found matching your selection.", StringComparison.OrdinalIgnoreCase))
-                        {
-                            break;
-                        }
-                    }
-
-                    LOGGER.Info("Loading more entries...");
-                    // no visible button -> done
-                    if (await visibleBtn.CountAsync() == 0) break;
-
-                    // click the visible button (use Force if header still intercepts)
-                    await visibleBtn.First.ClickAsync();
-
-                    // wait until the pager is attached (your requirement)
-                    await pager.First.WaitForAsync(new LocatorWaitForOptions
-                    {
-                        State = WaitForSelectorState.Attached,
-                        Timeout = 5000
-                    });
-
-                    // after the click, wait for EITHER: hidden button appears OR visible button detaches
-                    Task tHidden = hiddenBtn.First.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached, Timeout = 4000 });
-                    Task tGone = visibleBtn.First.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Detached, Timeout = 4000 });
-                    await Task.WhenAny(tHidden, tGone);
-
-                    // small settle so class flip/DOM swap can complete
-                    await page.WaitForTimeoutAsync(50);
-
-                    // break conditions
-                    if (await hiddenBtn.CountAsync() > 0 || await visibleBtn.CountAsync() == 0)
-                    {
-                        break;
-                    }
+                    break;
                 }
-
-                LOGGER.Info("Finished loading more entries");
-                string html = await page.ContentAsync();
-                doc.LoadHtml(html);
             }
 
-            bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+            _logger.MerryMangaLoadingMoreEntries();
+            if (await visibleBtn.CountAsync() == 0) break;
 
+            await visibleBtn.First.ClickAsync();
+            await pager.First.WaitForAsync(new LocatorWaitForOptions
+            {
+                State = WaitForSelectorState.Attached,
+                Timeout = 5000
+            });
+
+            Task tHidden = hiddenBtn.First.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Attached, Timeout = 4000 });
+            Task tGone = visibleBtn.First.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Detached, Timeout = 4000 });
+            await Task.WhenAny(tHidden, tGone);
+            await page.WaitForTimeoutAsync(50);
+
+            if (await hiddenBtn.CountAsync() > 0 || await visibleBtn.CountAsync() == 0)
+            {
+                break;
+            }
+        }
+
+        _logger.FinishedLoadingMoreEntries();
+    }
+
+    /// <summary>
+    /// Parses pre-loaded MerryManga listing docs into <see cref="EntryModel"/>s. Fixture-based
+    /// tests load the saved HTML and call this directly — no Playwright required.
+    /// </summary>
+    internal List<EntryModel> ParsePages(IReadOnlyList<HtmlDocument> listingPages, string bookTitle, BookType bookType)
+    {
+        List<EntryModel> data = [];
+        bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+        string normalizedBookTitle = InternalHelpers.NormalizeForTitleMatch(bookTitle);
+
+        foreach (HtmlDocument doc in listingPages)
+        {
             ExtractProductData(doc, out List<string> titleData, out List<string> priceData, out List<StockStatus> stockStatusData);
 
             for (int x = 0; x < titleData.Count; x++)
             {
                 string entryTitle = titleData[x];
                 if (
-                    InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
+                    InternalHelpers.EntryTitleContainsNormalizedBookTitle(normalizedBookTitle, entryTitle)
                     && (!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck)
                     && !(
                             (
@@ -334,40 +356,24 @@ public sealed partial class MerryManga : IWebsite
                         )
                     )
                 {
-                    data.Add(
-                        new EntryModel
-                        (
-                            ParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol").Trim(), bookTitle, bookType),
-                            priceData[x],
-                            stockStatusData[x],
-                            TITLE
-                        )
-                    );
+                    string price = x < priceData.Count ? priceData[x] : string.Empty;
+                    StockStatus status = x < stockStatusData.Count ? stockStatusData[x] : StockStatus.NA;
+                    data.Add(new EntryModel(
+                        ParseTitle(FixVolumeRegex().Replace(entryTitle, "Vol").Trim(), bookTitle, bookType),
+                        price,
+                        status,
+                        TITLE));
                 }
                 else
                 {
-                    LOGGER.Debug("Removed {}", entryTitle);
+                    _logger.EntryRemovedSimpleDebug(entryTitle);
                 }
-                LOGGER.Debug("CHECK 1");
             }
-
-            if (hasBoxSet)
-            {
-                hasBoxSet = false;
-                goto Restart;
-            }
-
-            data.TrimExcess();
-            links.TrimExcess();
-            data.Sort(EntryModel.VolumeSort);
-            data.RemoveDuplicates(LOGGER);
-            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
-        }
-        catch (Exception ex)
-        {
-            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
         }
 
-        return (data, links);
+        data.TrimExcess();
+        data.SortByVolume();
+        data.RemoveDuplicates(_logger);
+        return data;
     }
 }

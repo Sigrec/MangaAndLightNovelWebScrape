@@ -1,62 +1,47 @@
 namespace MangaAndLightNovelWebScrape.Enums
 {
+    /// <summary>
+    /// Identifier for every retailer the library knows how to scrape. Each value maps to
+    /// a single <see cref="MangaAndLightNovelWebScrape.Websites.IWebsite"/> implementation
+    /// dispatched from <see cref="MasterScrape.InitializeScrapeAsync"/>. The XML doc on
+    /// each member names the <see cref="Region"/>(s) the site serves — pass only sites
+    /// whose region matches the scrape's <see cref="MasterScrape.Region"/>.
+    /// </summary>
     public enum Website
     {
-        /// <summary>
-        /// Japan
-        /// </summary>
+        /// <summary>allstarcomics.com.au — Australia.</summary>
+        AllStarComics,
+        /// <summary>amazon.co.jp — Japan.</summary>
         AmazonJapan,
-        /// <summary>
-        /// America
-        /// </summary>
+        /// <summary>amazon.com — America.</summary>
         AmazonUSA,
-        /// <summary>
-        /// America
-        /// </summary>
+        /// <summary>booksamillion.com — America.</summary>
         BooksAMillion,
-        /// <summary>
-        /// Japan
-        /// </summary>
+        /// <summary>cdjapan.co.jp — Japan. Currently paused.</summary>
         CDJapan,
-        /// <summary>
-        /// America
-        /// </summary>
+        /// <summary>store.crunchyroll.com — America.</summary>
         Crunchyroll,
-        /// <summary>
-        /// Britain
-        /// </summary>
+        /// <summary>forbiddenplanet.com — Britain.</summary>
         ForbiddenPlanet,
-        /// <summary>
-        /// America
-        /// </summary>
+        /// <summary>instocktrades.com — America.</summary>
         InStockTrades,
-        /// <summary>
-        /// America
-        /// </summary>
+        /// <summary>united-states.kinokuniya.com — America.</summary>
         KinokuniyaUSA,
-        /// <summary>
-        /// America
-        /// </summary>
+        /// <summary>kingscomics.com — Australia.</summary>
+        KingsComics,
+        /// <summary>mangamart.com — America.</summary>
         MangaMart,
-        /// <summary>
-        /// Australia
-        /// </summary>
+        /// <summary>mangamate.shop — Australia.</summary>
         MangaMate,
-        /// <summary>
-        /// America
-        /// </summary>
+        /// <summary>merrymanga.com — America.</summary>
         MerryManga,
-        /// <summary>
-        /// America
-        /// </summary>
+        /// <summary>okcomics.co.uk — Britain.</summary>
+        OKComics,
+        /// <summary>animecornerstore.com — America.</summary>
         RobertsAnimeCornerStore,
-        /// <summary>
-        /// America, Australia, Britain, Canada, Europe
-        /// </summary>
+        /// <summary>scifier.com — America, Australia, Britain, Canada, Europe (multi-region).</summary>
         SciFier,
-        /// <summary>
-        /// Britain
-        /// </summary>
+        /// <summary>travellingman.com — Britain.</summary>
         TravellingMan
     }
 }

@@ -1,0 +1,1293 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search - InStockTrades</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <meta name="description" content="Trade paperbacks from Marvel, DC, Image, Dark Horse and more! Discounted up to 42% off. No shipping on orders over $50.">
+    <meta name="keywords" content="trade paperbacks,comic books,marvel,dc,image,dark horse,superman,batman,flash,wonder woman,spiderman,fantastic four,the hulk,captain america,thor">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    
+    <link rel="shortcut icon" href="/images/logo.png">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans|Roboto:400,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/content/site.min.css?v=3">
+    <link rel="stylesheet" href="/content/jquery-ui.min.css">
+    <link rel="stylesheet" href="/content/jquery-ui.theme.min.css">
+    <script src="/bundles/modernizr?v=inCVuEFe6J4Q07A0AcRsbJic_UE5MwpRMNGcOtk94TE1"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css">
+    <script src="/scripts/cookieconsent-config.min.js" type="module"></script>
+</head>
+<body>
+    
+<div class="navbar-header">
+    <a href="/"><img class="logo" src="/images/logo.png" alt="Instocktrades.com"></a>
+    <div class="navbar-heading">
+        <span class="giftcertificates"><a href="/giftcertificates" class="highlight">Gift Certificates</a></span>
+        <span class="help"><a href="/home/help">Help</a></span>
+            <span class="greeting"><a href="/account/login">Sign In</a></span>
+    </div>
+    <a href="/cart" class="navbar-cart">
+        <div class="cartcount">0</div>
+    </a>
+    <div class="navbar-search">
+        <form id="sitesearchform" name="sitesearchform" method="get" action="/search">
+            <input type="text" name="term" id="sitesearch" placeholder="Search..." autocomplete="off" required oninvalid="this.setCustomValidity('Please Enter a valid search term')" oninput="setCustomValidity('')">
+            <button type="submit" id="navsearchbutton" class="navsearchbutton" onclick="javascript: return document.getElementById('sitesearch').value.trim() != '';"><img src="/images/search.png" alt="search"></button>
+        </form>
+        <div style="text-align:right;"><a href="/search?ps=true" class="action">Advanced Search</a></div>
+    </div>
+    <div class="navbar-menubar">
+        <div class="navbar-menu trades hoverable">
+            <a href="#trades" class="menu-label responsive">Trades <span class="navarrow"></span></a>
+            <div class="navbar-menuitems responsive">
+                <a href="/newreleases">New Releases</a>
+                
+                <a href="/comingsoon">Coming Soon</a>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#" class="menu-label">Publishers <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                            <a href="/publishers/image">Image</a>
+                            <a href="/publishers/dc-comics">DC Comics</a>
+                            <a href="/publishers/marvel">Marvel</a>
+                            <a href="/publishers/viz-media">Viz Media</a>
+                            <a href="/publishers/dark-horse">Dark Horse</a>
+                            <a href="/publishers/seven-seas">Seven Seas</a>
+                            <a href="/publishers/kodansha">Kodansha</a>
+                            <a href="/publishers/idw">IDW</a>
+                            <a href="/publishers/titan">Titan</a>
+                        <a href="/publishers">View All Publishers</a>
+                    </div>
+                </div>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#sales" class="menu-label">Sales <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                        <a href="/clearance">Clearance</a>
+                        <a href="/damages">Damages</a>
+                            <a href="/specials/630/red-tag-sale">Red Tag Sale</a>
+                            <a href="/specials/632/24-hour-flash-sale!!">24-Hour Flash Sale!!</a>
+                            <a href="/specials/715/best-sellers-dc">Best Sellers: DC</a>
+                            <a href="/specials/716/best-sellers-marvel">Best Sellers: Marvel</a>
+                            <a href="/specials/718/creator-spotlight-inio-asano">Creator Spotlight: Inio Asano</a>
+                            <a href="/specials/719/creator-spotlight-clamp">Creator Spotlight: CLAMP</a>
+                    </div>
+                </div>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#creators" class="menu-label">Featured Creators <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                            <a href="/creator/giantgenerator">Giant Generator by Rick Remender</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="navbar-menu topsellers">
+            <a href="/products/topsellers">Top Sellers</a>
+        </div>
+        <div class="navbar-menu account hoverable">
+            <a href="#account" class="menu-label">Account <span class="navarrow"></span></a>
+            <div class="navbar-menuitems">
+                <a href="/account/wishlist">Wishlist</a>
+                <a href="/account">Account Profile</a>
+                <a href="/account/orderhistory">Order History</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+    
+    <div class="container body-content">
+        
+
+        
+
+
+
+
+<div class="section products">
+    <h2>Search</h2>
+    <div class="section">
+        <div class="message form">
+            <div><h4 style="display:inline-block;">Search Option:</h4>
+                <select name="searchtype" id="searchtype" style="padding:7px;">
+                    <option value="default">Free Text</option>
+                    <option value="power" selected>Advanced Search</option>
+                </select>
+            </div>
+            <div>
+                <div id="defaultsearch" style="display:none;">
+                    <h4>Search results matches ANY words...</h4>
+                    <form method="get" action="/search">
+                        <div class="fieldgroup">
+                            <div class="fieldset">
+                                <div><label>Title, Publisher, Description or Product Code</label></div>
+                                <input name="term" type="text" maxlength="200" style="max-width:400px; display:inline-block;">
+                                <button type="submit" class="btn hotaction">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div id="advancedsearch" style="display:block;">
+                    <h4>Advanced Search. Results match ALL words and conditions...</h4>
+                    <form method="get" action="/search">
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Title</label></div>
+                                <input name="title" placeholder="Title" type="text" maxlength="200" autocomplete="off" value="Spice and Wolf">
+                            </div>
+                            <div class="fieldset">
+                                <div><label>Publisher</label></div>
+                                <input name="publisher" placeholder="Publisher" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                        </div>
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Writer</label></div>
+                                <input name="writer" placeholder="Writer" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                            <div class="fieldset">
+                                <div><label>Artist</label></div>
+                                <input name="artist" placeholder="Artist" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                        </div>
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Cover Artist</label></div>
+                                <input name="cover" placeholder="Cover Artist" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                            <div class="fieldset">
+                                <div><label></label></div>
+                                
+                            </div>
+                        </div>
+                        <div class="fieldgroup">
+                            <div class="fieldset">
+                                <input type="hidden" name="ps" value="true">
+                                <button type="submit" class="btn hotaction">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <div class="pageoptions">
+        
+            <div class="productsortselection">
+                <span class="productsortlabel">Sort By:</span> <select id="sortselection" name="sortselection"><option selected="selected" value="relevance">Relevance</option>
+<option value="title">Title</option>
+<option value="publisher">Publisher</option>
+<option value="price">Price</option>
+<option value="discount">Discount</option>
+</select>
+            </div>
+                    <div class="viewselection">
+                <span class="viewselectlabel">View: </span>
+                <div id="thumbplusview" class="viewselect selected" data-val="1"><img src="/images/thumbplus.png" alt="thumbnail plus view" title="Thumbnail Plus View"></div>
+                <div id="thumbview" class="viewselect" data-val="0"><img src="/images/thumbs.png" alt="thumbnail only view" title="Thumbnails Only View"></div>
+                <div id="listview" class="viewselect" data-val="2"><img src="/images/thumblist.png" alt="thumbnail list view" title="Thumbnail List View"></div>
+                
+            </div>
+    </div>
+    <div class="row">
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/dec255169/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-11"><img class="itemimg" src="https://media.instocktrades.com/small/DEC255169.jpg" alt="WOLF &amp; PARCHMENT NEW THEORY SPICE &amp; WOLF LIGHT NOVEL SC VOL 11"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/dec255169/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-11">Wolf &amp; Parchment New Theory Spice &amp; Wolf Light Novel Sc Vol 11</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Isuna Hasekura
+Col and Myuri have finally persuaded the Ruvik Alliance and safely brought the astronomer Amaretto back to Duran. Unfortunately, their plans have been completely dashed. Thankfully, Amaretto has given them a single ray of hope: the legend of a bear that brought down the moon to block the old empire&#39;s march north. If they can forge a new path to the very heart of the Church, they can save Duran from disgrace and put a knife to the Pope&#39;s throat in one fell swoop. Will the legend give them what they need as they set off for the boundary that divides the north and the south?
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$16.00<br>
+                            </div>
+                            <div class="price">
+                                $12.00
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="100706" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 11" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="DEC255169" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 11" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jan252108/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-10"><img class="itemimg" src="https://media.instocktrades.com/small/JAN252108.jpg" alt="WOLF &amp; PARCHMENT NEW THEORY SPICE &amp; WOLF LIGHT NOVEL SC VOL 10"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jan252108/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-10">Wolf &amp; Parchment New Theory Spice &amp; Wolf Light Novel Sc Vol 10</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Isuna Hasekura
+In the course of exposing the imposter posing as the Twilight Cardinal in Estadt, Col has finally resolved himself to bear the full weight of his title. And supporting him through every trial and tribulation is none other than Myuri, the proud Saint of the Sun. As they finalize their preparations for the ecumenical council, the two receive troubling news that Irenia, a subordinate of Abe and the incarnation of a sheep, has been imprisoned. And to make matters worse, her prison is in the mountainous city of Uban, a stronghold governed by one of the seven Elector Counts and self-proclaimed Mercenary King.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$16.00<br>
+                            </div>
+                            <div class="price">
+                                $12.00
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="94234" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 10" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JAN252108" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 10" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/feb241892/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-08"><img class="itemimg" src="https://media.instocktrades.com/small/FEB241892.jpg" alt="WOLF &amp; PARCHMENT NEW THEORY SPICE &amp; WOLF LIGHT NOVEL SC VOL 08"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/feb241892/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-08">Wolf &amp; Parchment New Theory Spice &amp; Wolf Light Novel Sc Vol 08</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Isuna Hasekura
+After resolving a major source of tension in the Winfiel Kingdom, Col and Myuri have certainly earned their rest. Their respite doesn&#39;t last for very long though because a messenger has come looking for the Twilight Cardinal with news about a conference eighty years in the making. Their destination will be the city of learning and books where there seems to be an uproar surrounding...another wolf girl?!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.00<br>
+                            </div>
+                            <div class="price">
+                                $10.50
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="87931" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 08" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="FEB241892" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 08" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/aug232451/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-07-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/AUG232451.jpg" alt="WOLF &amp; PARCHMENT NEW THEORY SPICE &amp; WOLF LIGHT NOVEL SC VOL 07 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/aug232451/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-07-(mr)">Wolf &amp; Parchment New Theory Spice &amp; Wolf Light Novel Sc Vol 07 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A) Isuna Hasekura
+ Having unraveled the mystery of the ghost ships that visit Raponel, Col and Myuri head back to Rausbourne. The young hopeful priest redoubles his efforts to avoid war breaking out between the Winfiel Kingdom and the Church while Myuri is busy penning her own tale of gallant knighthood. In hopes of further spreading the vernacular translation of the scriptures, they begin looking into the art of printing, which has been banned by the church. Their search for a skilled craftsman soon leads them to a certain fugitive who agrees to help only if they can offer a tale that will make hearts tremble in exchange!?
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.00<br>
+                            </div>
+                            <div class="price">
+                                $10.50
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="84974" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 07 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="AUG232451" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 07 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jan221829/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-06"><img class="itemimg" src="https://media.instocktrades.com/small/JAN221829.jpg" alt="WOLF &amp; PARCHMENT NEW THEORY SPICE &amp; WOLF LIGHT NOVEL SC VOL 06"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jan221829/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-06">Wolf &amp; Parchment New Theory Spice &amp; Wolf Light Novel Sc Vol 06</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Isuna Hasekura
+After saving the Knights of St. Cruza from the brink of destruction, the Col and Myuri form their very own knightly order. Although Myuri is thrilled to finally hold a title she&#39;s long obsessed over, she realizes that her position as a knight is making it harder for her to fawn over Col. Before she can rack her brain for a solution, however, a request comes in from Hyland for her to investigate Raponel, a region whose prodigious wheat production is rumored to be the product of a deal with a devil. Meanwhile, Col gets asked to discover a new continent to resolve the conflict between the Kingdom and the Church?!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.00<br>
+                            </div>
+                            <div class="price">
+                                $10.50
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="72618" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 06" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JAN221829" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 06" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/feb211767/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-05"><img class="itemimg" src="https://media.instocktrades.com/small/FEB211767.jpg" alt="WOLF &amp; PARCHMENT NEW THEORY SPICE &amp; WOLF LIGHT NOVEL SC VOL 05"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/feb211767/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-05">Wolf &amp; Parchment New Theory Spice &amp; Wolf Light Novel Sc Vol 05</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A) Isuna Hasekura
+After defusing another flashpoint in the ongoing fracas between the Winfiel Kingdom and the Church, Col and Myuri are more than ready to take a breather. Of course, the world has other plans for the infmaous Twilight Cardinal. As the two of them leisurely make their way to a certain monastery, they stumble upon a fallen squire who is up in arms the moment he finds out who they are.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.00<br>
+                            </div>
+                            <div class="price">
+                                $10.50
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="69825" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 05" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="FEB211767" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 05" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/sep192272/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-04"><img class="itemimg" src="https://media.instocktrades.com/small/SEP192272.jpg" alt="WOLF &amp; PARCHMENT NEW THEORY SPICE &amp; WOLF LIGHT NOVEL SC VOL 04"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/sep192272/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-04">Wolf &amp; Parchment New Theory Spice &amp; Wolf Light Novel Sc Vol 04</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Isuna Hasekura
+In Rausbourne, second greatest port city of the Winfield Kingdom, Myuri and Col have run into heavily-armed trouble once again. It seems that Col&#39;s reputation and deeds at the Twilight Cardinal have worsened the hostility surrounding the Winfiel Kingdom and the Church. If nothing is done, there is no doubt that hard fighting will break out. Right when it seems like they&#39;ve run out of options, the one to offer them a chance to turn things around is none other than Lawrence&#39;s old acquaintance, Abe the beautiful trader! But will it be enough to stop the drums of war?  For readers ages 15 and up.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.00<br>
+                            </div>
+                            <div class="price">
+                                $10.50
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="64621" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 04" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="SEP192272" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 04" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/aug182458/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-03"><img class="itemimg" src="https://media.instocktrades.com/small/AUG182458.jpg" alt="WOLF &amp; PARCHMENT NEW THEORY SPICE &amp; WOLF LIGHT NOVEL SC VOL 03"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/aug182458/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-03">Wolf &amp; Parchment New Theory Spice &amp; Wolf Light Novel Sc Vol 03</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Isuna Hasekura
+The companion of the young man who wishes to become a priest, Col, is the daughter of the wisewolf, Myuri, and she urges him to make her his wife. After leaving the pirate islands, the two get caught up in a storm and arrive the port town of Desarev in the Winfiel Kingdom.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.00<br>
+                            </div>
+                            <div class="price">
+                                $10.50
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="59640" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 03" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="AUG182458" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 03" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/feb181982/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-02"><img class="itemimg" src="https://media.instocktrades.com/small/FEB181982.jpg" alt="WOLF &amp; PARCHMENT NEW THEORY SPICE &amp; WOLF LIGHT NOVEL SC VOL 02"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/feb181982/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-02">Wolf &amp; Parchment New Theory Spice &amp; Wolf Light Novel Sc Vol 02</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Isuna Hasekura
+The follow-up story to one of Yen Press&#39;s best-selling novel series! This time parchment meets wolf! The young man Col and the daughter of the Wisewolf, Myuri, survived the scripture riots in the port town of Atiph. Col spends intense days being pined for after Myuri tells him about her love. Meanwhile, Heir Hyland commissions them for another next job. In the coming war with the Church&#39;s forces, control over the strait between the Kingdom of Winfiel and the mainland will play a crucial role. While Myuri is excited for a new adventure, Col cannot hide his unease after hearing about potential heresy among certain pirates for their faith in the &#39;Black-Mother&#39;!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.00<br>
+                            </div>
+                            <div class="price">
+                                $10.50
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="56302" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 02" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="FEB181982" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 02" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/sep172089/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-01"><img class="itemimg" src="https://media.instocktrades.com/small/SEP172089.jpg" alt="WOLF &amp; PARCHMENT NEW THEORY SPICE &amp; WOLF LIGHT NOVEL SC VOL 01"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/sep172089/wolf-parchment-new-theory-spice-wolf-light-novel-sc-vol-01">Wolf &amp; Parchment New Theory Spice &amp; Wolf Light Novel Sc Vol 01</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Isuna Hasekura
+The follow-up story to one of Yen Press&#39;s best-selling novel series! This time parchment meets wolf! The young man Cole dreams of one day joining the holy clergy and departs on a journey from the bathhouse &#39;The Spice and Wolf Inn,&#39; owned by his savior, Lawrence. The Winfiel Kingdom&#39;s prince has invited him to help correct the sins of the church. But as his travels begin, Cole discovers in his luggage a young girl with a wolf&#39;s ears and tail named Myuri who stowed away for the ride!In the past, Cole had accompanied the Wise Wolf Holo and the traveling merchant Lawrence on their own wanderings, eventually growing up alongside their daughter, Myuri as siblings. But as Cole prepared to set off, Myuri opposed his departure and so she secretly ran away from home to join him!This is the story of Wolf and Parchment, and the pair&#39;s travels that will someday change the world!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.00<br>
+                            </div>
+                            <div class="price">
+                                $10.50
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="52661" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 01" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="SEP172089" data-title="Wolf &amp;amp; Parchment New Theory Spice &amp;amp; Wolf Light Novel Sc Vol 01" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/may232363/spice-and-wolf-light-novel-sc-vol-24"><img class="itemimg" src="https://media.instocktrades.com/small/MAY232363.jpg" alt="SPICE AND WOLF LIGHT NOVEL SC VOL 24"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/may232363/spice-and-wolf-light-novel-sc-vol-24">Spice and Wolf Light Novel Sc Vol 24</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Isuna Hasekura
+Chasing after their daughter who set off on the grand adventure of a lifetime, the wisewolf and her ex-merchant husband have embarked on a little journey of their own. They&#39;ve saved a town from the pits of endless debt but a new challenge is on the horizon. This time, a primeval forest is in danger and Lawrence may be the only one who can save it from disappearing forever!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$15.00<br>
+                            </div>
+                            <div class="price">
+                                $11.25
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="82912" data-title="Spice and Wolf Light Novel Sc Vol 24" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="MAY232363" data-title="Spice and Wolf Light Novel Sc Vol 24" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/aug212291/spice-and-wolf-light-novel-sc-vol-22"><img class="itemimg" src="https://media.instocktrades.com/small/AUG212291.jpg" alt="SPICE AND WOLF LIGHT NOVEL SC VOL 22"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/aug212291/spice-and-wolf-light-novel-sc-vol-22">Spice and Wolf Light Novel Sc Vol 22</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A) Isuna Hasekura
+With the bathhouse in Selim&#39;s care, ex-traveling merchant Lawrence and Holo the Wisewolf set off on a journey again. Along the way, at a place called the Vallan Bishopric, where they were going to exchange coins, there is a familiar face was waiting there to reunite with them-Elsa. Now a priestess, Elsa says that she came to the bishopric to manage the church&#39;s assets. As collateral for exchanging their money, she asks Lawrence to investigate a cursed mountain, where people are said to go in, but never come out. Hidden there is the secret of the alchemist and the fallen angel-?!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$15.00<br>
+                            </div>
+                            <div class="price">
+                                $11.25
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="71368" data-title="Spice and Wolf Light Novel Sc Vol 22" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="AUG212291" data-title="Spice and Wolf Light Novel Sc Vol 22" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct192329/spice-and-wolf-light-novel-sc-vol-21"><img class="itemimg" src="https://media.instocktrades.com/small/OCT192329.jpg" alt="SPICE AND WOLF LIGHT NOVEL SC VOL 21"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct192329/spice-and-wolf-light-novel-sc-vol-21">Spice and Wolf Light Novel Sc Vol 21</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Isuna Hasekura
+Overcome with worry over his runaway daughter, Myuri, Lawrence has set off on a journey with his wife Holo for the first time in over a decade! With the wagon heavily laden with supplies and emotion, they plod away from their home, the Spice and Wolf bathhouse...only to immediately find rumors about &#39;Saint Myuri&#39;?!? For readers ages 15 years and up.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.00<br>
+                            </div>
+                            <div class="price">
+                                $10.50
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="64941" data-title="Spice and Wolf Light Novel Sc Vol 21" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT192329" data-title="Spice and Wolf Light Novel Sc Vol 21" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jan182079/spice-and-wolf-light-novel-sc-vol-19"><img class="itemimg" src="https://media.instocktrades.com/small/JAN182079.jpg" alt="SPICE AND WOLF LIGHT NOVEL SC VOL 19"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jan182079/spice-and-wolf-light-novel-sc-vol-19">Spice and Wolf Light Novel Sc Vol 19</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A/CA) Isuna Hasekura
+Merchant meets spicy wolf! A disgruntled goddess and her traveling merchant return for an encore in one of Yen Press&#39;s best-selling novel series.  Blissful days continue for the ex-merchant and the wolf as they pass the days together in their mountain home. Ever since Col and Myuri set off on a journey of their own, the bathhouse has been a little shorthanded so a new hire was brought on. But this newcomer is a wolf, just like Holo and the problems with her joining the staff seem endless...
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$14.00<br>
+                            </div>
+                            <div class="price">
+                                $10.50
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="55469" data-title="Spice and Wolf Light Novel Sc Vol 19" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JAN182079" data-title="Spice and Wolf Light Novel Sc Vol 19" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/feb151752/spice-and-wolf-light-novel-sc-vol-14-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/FEB151752.jpg" alt="SPICE AND WOLF LIGHT NOVEL SC VOL 14 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/feb151752/spice-and-wolf-light-novel-sc-vol-14-(mr)">Spice and Wolf Light Novel Sc Vol 14 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Isuna Hasekura (A/CA) Keito Koume
+Having arranged to receive a map of the northlands from the silversmith, Lawrence&#39;s pleasure at imagining that he&#39;ll be able to travel to Yoitsu with Holo lasts but a moment, for when they revisit the town of Lenos, they immediately become entangled in the schemes that surround a forbidden book. The book is said to contain forbidden arts that might threaten Yoitsu itself, but to get it, Lawrence would have to return to his trading route, leaving insufficient time for him to go with Holo to Yoitsu. Faced with the harsh reality of this decision, what will Lawrence&#39;s solution be?
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$13.00<br>
+                            </div>
+                            <div class="price">
+                                $9.75
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="33125" data-title="Spice and Wolf Light Novel Sc Vol 14 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="FEB151752" data-title="Spice and Wolf Light Novel Sc Vol 14 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct141783/spice-and-wolf-light-novel-sc-vol-13-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/OCT141783.jpg" alt="SPICE AND WOLF LIGHT NOVEL SC VOL 13 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct141783/spice-and-wolf-light-novel-sc-vol-13-(mr)">Spice and Wolf Light Novel Sc Vol 13 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            After smuggling gold into the Church city of Ruvinheigen with Lawrence and Holo, Norah abandoned her life as a shepherdess and set out on a journey with her loyal hound, Enek. In order to make her dream of becoming a seamstress a reality, she heads for the town of Kuskov, which is rumored to be experiencing a labor shortage. After rescuing a priest from attack en route, Norah discovers that his destination is the same as hers. However, the priest speaks not of a simple dearth of laborers-according to him, Kuskov&#39;s population is waning from a plague! Norah&#39;s story continues in &#39;The Shepherd and the Black Knight&#39;! Three more new anecdotes about Lawrence and Holo&#39;s travels round out this third collection of Spice &amp; Wolf shorts!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$13.00<br>
+                            </div>
+                            <div class="price">
+                                $9.75
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="31733" data-title="Spice and Wolf Light Novel Sc Vol 13 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT141783" data-title="Spice and Wolf Light Novel Sc Vol 13 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/apr179232/spice-and-wolf-light-novel-sc-vol-07"><img class="itemimg" src="https://media.instocktrades.com/small/OCT121277.jpg" alt="SPICE AND WOLF LIGHT NOVEL SC VOL 07"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/apr179232/spice-and-wolf-light-novel-sc-vol-07">Spice and Wolf Light Novel Sc Vol 07</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            A collection of short stories featuring the wolf goddess Holo and her merchant traveling companion!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$13.00<br>
+                            </div>
+                            <div class="price">
+                                $9.75
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="22487" data-title="Spice and Wolf Light Novel Sc Vol 07" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="APR179232" data-title="Spice and Wolf Light Novel Sc Vol 07" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/apr111249/spice-and-wolf-light-novel-sc-vol-04"><img class="itemimg" src="https://media.instocktrades.com/small/APR111249.jpg" alt="SPICE AND WOLF LIGHT NOVEL SC VOL 04"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/apr111249/spice-and-wolf-light-novel-sc-vol-04">Spice and Wolf Light Novel Sc Vol 04</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Synopsis: Lawrence the traveling merchant and his companion, Holo the Wisewolf, head north in search of Holo&#39;s home of Yoitsu. Using information obtained in the pagan town of Kumersun, they finally arrive at the small countryside village of Tereo. When the village&#39;s very existence is threatened, will Lawrence and Holo be able to escape with any information about Yoitsu? Or, for that matter, their lives?
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$13.00<br>
+                            </div>
+                            <div class="price">
+                                $9.75
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="56911" data-title="Spice and Wolf Light Novel Sc Vol 04" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="APR111249" data-title="Spice and Wolf Light Novel Sc Vol 04" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/apr101159/spice-and-wolf-light-novel-sc-vol-02"><img class="itemimg" src="https://media.instocktrades.com/small/APR101159.jpg" alt="SPICE AND WOLF LIGHT NOVEL SC VOL 02"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/apr101159/spice-and-wolf-light-novel-sc-vol-02">Spice and Wolf Light Novel Sc Vol 02</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Lawrence Craft has been walking the lonely path of the itinerant merchant for seven years. His life changes forever when he meets Horo, the Wolf-God of the harvest, and the two begin traveling together. Soon they discover a unique opportunity to exploit the depreciating silver currency of the kingdom of Trenni, but their plans go awry when a competing organization captures Horo and threatens to turn her over to the oppressive, monotheistic church.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$13.00<br>
+                            </div>
+                            <div class="price">
+                                $9.75
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="56987" data-title="Spice and Wolf Light Novel Sc Vol 02" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="APR101159" data-title="Spice and Wolf Light Novel Sc Vol 02" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jan182098/spice-and-wolf-gn-vol-15-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/JAN182098.jpg" alt="SPICE AND WOLF GN VOL 15 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jan182098/spice-and-wolf-gn-vol-15-(mr)">Spice and Wolf GN Vol 15 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Isuna Hasekura (A/CA) Keito Koume
+Merchant meets spicy wolf! A disgruntled goddess joins a traveling merchant in this manga adaptation from Yen Press.  The Debau Company is headed to a point of no return. The radicals within the company have made their move and deposed the conservative faction, all the while steering the northlands closer to the brink of open battle. A certain wolf rushes South as fast as her paws can carry her but can Lawrence hold back the flames of war long enough with the help of the Myuri Mercenary Company for a chance at lasting peace?
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$13.00<br>
+                            </div>
+                            <div class="price">
+                                $9.75
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="55468" data-title="Spice and Wolf GN Vol 15 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JAN182098" data-title="Spice and Wolf GN Vol 15 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/aug172202/spice-and-wolf-gn-vol-14-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/AUG172202.jpg" alt="SPICE AND WOLF GN VOL 14 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/aug172202/spice-and-wolf-gn-vol-14-(mr)">Spice and Wolf GN Vol 14 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Isuna Hasekura (A/CA) Keito Koume
+Merchant meets spicy wolf! A disgruntled goddess joins a traveling merchant in this manga adaptation from Yen Press.  Previously, Lawrence and Holo traveled to the town of Svernel in order to meet with the Myuri Mercenary Company and find out more about Holo&#39;s past companions and her home. But now Lawrence has gotten completely caught up in the political strife of the Debau Trading Company. It all surrounds the Debau Company&#39;s desire to issue a new currency, with which they have apparent plans to unite the surrounding northern region. For their aim, the Debau Company needs to acquire raw ore and materials but this has caused their opponents to increase their own efforts to foil this plan. In the middle of all this, Lawrence is trusted with delivering a forbidden text detailing the necessary mining techniques to the trading company&#39;s executive, Hilde Schnau but will it really go so smoothly?!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$13.00<br>
+                            </div>
+                            <div class="price">
+                                $9.75
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="52000" data-title="Spice and Wolf GN Vol 14 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="AUG172202" data-title="Spice and Wolf GN Vol 14 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jan161833/spice-and-wolf-gn-vol-12-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/JAN161833.jpg" alt="SPICE AND WOLF GN VOL 12 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jan161833/spice-and-wolf-gn-vol-12-(mr)">Spice and Wolf GN Vol 12 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Isuna Hasekura (A/CA) Keito Koume
+Lawrence and Holo&#39;s long journey to Yoitsu is finally approaching its conclusion. Having arrived in the town of Lenos, they encounter a jolly bookseller named Le Roi - but is he truly the fool he seems? They&#39;re closer than ever to laying their hands on a forbidden tome whose contents threaten to transform Holo&#39;s homelands, but in the world of merchants, sometimes the only one you can trust is yourself.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$13.00<br>
+                            </div>
+                            <div class="price">
+                                $9.75
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="41192" data-title="Spice and Wolf GN Vol 12 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JAN161833" data-title="Spice and Wolf GN Vol 12 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct141780/spice-and-wolf-gn-vol-10-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/OCT141780.jpg" alt="SPICE AND WOLF GN VOL 10 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct141780/spice-and-wolf-gn-vol-10-(mr)">Spice and Wolf GN Vol 10 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Isuna Hasekura (A/CA) Keito Koume
+The violent struggle for the legendary sea beast is underway, but how will it end? Drawn into the fight over the narwhal in Kerube, Lawrence finds himself in a dangerous position. Despite this, Holo continues to scold him and plead with him, but why?
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$13.00<br>
+                            </div>
+                            <div class="price">
+                                $9.75
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="31732" data-title="Spice and Wolf GN Vol 10 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT141780" data-title="Spice and Wolf GN Vol 10 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/sep121278/spice-and-wolf-gn-vol-07-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/SEP121278.jpg" alt="SPICE AND WOLF GN VOL 07 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/sep121278/spice-and-wolf-gn-vol-07-(mr)">Spice and Wolf GN Vol 07 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            As Lawrence and Holo put the final phase of their plan to extricate themselves from the jaws of financial ruin into motion, they are confronted by an unforeseen obstacle. With the wolves at the door - both figuratively and literally - can the travelers keep their wits about them and come out ahead of the pack?
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$12.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="22252" data-title="Spice and Wolf GN Vol 07 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="SEP121278" data-title="Spice and Wolf GN Vol 07 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jan121318/spice-and-wolf-gn-vol-06-(mr)"><img class="itemimg" src="https://media.instocktrades.com/small/JAN121318.jpg" alt="SPICE AND WOLF GN VOL 06 (MR)"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jan121318/spice-and-wolf-gn-vol-06-(mr)">Spice and Wolf GN Vol 06 (MR)</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            As Lawrence and Holo put the final phase of their plan to extricate themselves from the jaws of financial ruin into motion, they are confronted by an unforeseen obstacle. With the wolves at the door - both figuratively and literally - can the travelers keep their wits about them and come out ahead of the pack?
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$12.99<br>
+                            </div>
+                            <div class="price">
+                                $9.74
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="20268" data-title="Spice and Wolf GN Vol 06 (MR)" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JAN121318" data-title="Spice and Wolf GN Vol 06 (MR)" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/may101203/spice-and-wolf-gn-vol-02"><img class="itemimg" src="https://media.instocktrades.com/small/MAY101203.jpg" alt="SPICE AND WOLF GN VOL 02"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/may101203/spice-and-wolf-gn-vol-02">Spice and Wolf GN Vol 02</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Isuna Hasekura (A) Keito Koume With Holo the Wisewolf at his side, the merchant Kraft Lawrence discovers an opportunity to take advantage of the depreciating currency of the kingdom of Trenni. But just as he begins to show a significant profit, Holo is captured by a competing organization that threatens to turn her over to the oppressive church. Lawrence is sure that Holo will be burned at the stake for being the wolf goddess of a pagan religion, but he cannot let his fear get the best of him if he&#39;s to have any chance at saving her!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$13.00<br>
+                            </div>
+                            <div class="price">
+                                $9.75
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="101526" data-title="Spice and Wolf GN Vol 02" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="MAY101203" data-title="Spice and Wolf GN Vol 02" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct148440/spice-and-wolf-gn-vol-01"><img class="itemimg" src="https://media.instocktrades.com/small/OCT148440.jpg" alt="SPICE AND WOLF GN VOL 01"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct148440/spice-and-wolf-gn-vol-01">Spice and Wolf GN Vol 01</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            With his carthorse as his only companion, the young merchant Kraft Lawrence slowly wends his way through dusty back roads in search of profitable trade. But his monotony screeches to a halr when , one night, he encounters a harvest goddess in the guise of a beautiful young girl... with wolf ears and a tail! Longing for the northern lands of her birth, Holo the Wisewolf joins Lawrence as he follows the ebb and flow of trade through the countryside. And when the two come across a compelling but suspicious opportunity for profit, will Lawrence with his mercantile chops and Holo with her ancient instincts be able to separate the truth from the lies -- and make some coin while they&#39;re at it?! This manga adaptation of Isuna Hasekura&#39;s acclaimed Spice &amp; Wolf novel series, available from Yen On, is an investment that promises the greatest of entertainment returns!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$13.00<br>
+                            </div>
+                            <div class="price">
+                                $9.75
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="43791" data-title="Spice and Wolf GN Vol 01" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT148440" data-title="Spice and Wolf GN Vol 01" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/dec255062/spice-and-wolf-collector-s-edition-gn-vol-02"><img class="itemimg" src="https://media.instocktrades.com/small/DEC255062.jpg" alt="SPICE AND WOLF COLLECTOR&#39;S EDITION GN VOL 02"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/dec255062/spice-and-wolf-collector-s-edition-gn-vol-02">Spice and Wolf Collector&#39;s Edition GN Vol 02</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            Isuna Hasekura
+The story of the travelling merchant and wisewolf continues in this beautifully bound second volume with brand-new cover art!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$22.00<br>
+                            </div>
+                            <div class="price">
+                                $16.50
+                            </div>
+                            <div class="discount">
+25%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="101036" data-title="Spice and Wolf Collector&amp;#39;s Edition GN Vol 02" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="DEC255062" data-title="Spice and Wolf Collector&amp;#39;s Edition GN Vol 02" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+    </div>
+
+    <div>
+                    </div>
+    <div>Results 1 - 28 of 28</div>
+
+
+
+</div>
+
+
+
+
+    </div>
+    <footer>
+        <div class="section" style="overflow:hidden;">
+            <ul>
+                <li class="heading">Main Menu</li>
+                <li><a href="/">Home</a></li>
+                <li><a href="/newreleases">New Releases</a></li>
+                <li><a href="/comingsoon">Coming Soon</a></li>
+                <li><a href="/clearance">Clearance</a></li>
+                <li><a href="/damages">Damages</a></li>
+                <li class="condensed"><a href="/publishers">Publishers</a></li>
+                <li class="condensed"><a href="/writers">Writers</a></li>
+                <li class="condensed"><a href="/artists">Artists</a></li>
+                <li><a href="/giftcertificates">Gift Certificates</a></li>
+                <li><a href="/home/help">Help</a></li>
+                <li><a href="/home/privacy">Privacy and Security</a></li>
+                <li><a href="/wishlists">Find a Wishlist</a></li>
+                <li><a href="/home/contact">Contact Us</a></li>
+            </ul>
+            <ul class="expanded">
+                <li class="heading">Publishers</li>
+                    <li><a href="/publishers/image">Image</a></li>
+                    <li><a href="/publishers/dc-comics">DC Comics</a></li>
+                    <li><a href="/publishers/marvel">Marvel</a></li>
+                    <li><a href="/publishers/viz-media">Viz Media</a></li>
+                    <li><a href="/publishers/dark-horse">Dark Horse</a></li>
+                    <li><a href="/publishers/seven-seas">Seven Seas</a></li>
+                    <li><a href="/publishers/kodansha">Kodansha</a></li>
+                    <li><a href="/publishers/idw">IDW</a></li>
+                    <li><a href="/publishers/titan">Titan</a></li>
+                <li><a href="/publishers">View All Publishers</a></li>
+            </ul>
+            <ul class="expanded">
+                <li class="heading">Genres</li>
+                    <li><a href="/genres/action-adventure">Action/Adventure</a></li>
+                    <li><a href="/genres/crime">Crime</a></li>
+                    <li><a href="/genres/fantasy">Fantasy</a></li>
+                    <li><a href="/genres/horror">Horror</a></li>
+                    <li><a href="/genres/humor-comedy">Humor/Comedy</a></li>
+                    <li><a href="/genres/reference-art-books-how-to">Reference/Art Books/How To</a></li>
+                    <li><a href="/genres/romance">Romance</a></li>
+                    <li><a href="/genres/science-fiction">Science Fiction</a></li>
+                    <li><a href="/genres/sports">Sports</a></li>
+                    <li><a href="/genres/super-hero">Super-hero</a></li>
+            </ul>
+                <ul class="expanded">
+                    <li class="heading">Writers</li>
+                        <li><a href="/writers/robert-kirkman">Robert Kirkman</a></li>
+                        <li><a href="/writers/jeff-lemire">Jeff Lemire</a></li>
+                        <li><a href="/writers/kentaro-miura">Kentaro Miura</a></li>
+                        <li><a href="/writers/rick-remender">Rick Remender</a></li>
+                        <li><a href="/writers/brian-k-vaughan">Brian K. Vaughan</a></li>
+                        <li><a href="/writers/ed-brubaker">Ed Brubaker</a></li>
+                        <li><a href="/writers/tom-king">Tom King</a></li>
+                        <li><a href="/writers/jonathan-hickman">Jonathan Hickman</a></li>
+                        <li><a href="/writers/geoff-johns">Geoff Johns</a></li>
+                        <li><a href="/writers/mark-waid">Mark Waid</a></li>
+                    <li><a href="/writers">View All Writers</a></li>
+                </ul>
+                            <ul class="expanded">
+                    <li class="heading">Artists</li>
+                        <li><a href="/artists/kentaro-miura">Kentaro Miura</a></li>
+                        <li><a href="/artists/sean-phillips">Sean Phillips</a></li>
+                        <li><a href="/artists/fiona-staples">Fiona Staples</a></li>
+                        <li><a href="/artists/ryan-ottley">Ryan Ottley</a></li>
+                        <li><a href="/artists/cliff-chiang">Cliff Chiang</a></li>
+                        <li><a href="/artists/dustin-nguyen">Dustin Nguyen</a></li>
+                        <li><a href="/artists/charlie-adlard">Charlie Adlard</a></li>
+                        <li><a href="/artists/hiroaki-samura">Hiroaki Samura</a></li>
+                        <li><a href="/artists/andrea-sorrentino">Andrea Sorrentino</a></li>
+                        <li><a href="/artists/michael-lark">Michael Lark</a></li>
+                    <li><a href="/artists">View All Artists</a></li>
+                </ul>
+            <ul class="footerpromos">
+                <li><img src="/images/ist42.jpg" alt="Instocktrades.com 42% off!" width="227" height="87"></li>
+                <li><a href="https://www.dcbservice.com" target="_blank"><img src="/images/dcbs40.jpg" width="227" height="87" alt="Discount Comic Book Service"></a></li>
+            </ul>
+            <div class="copyright">
+                &copy; 2026 Discount Comic Book Service (DCBS). All images &copy; respective owners and used with permission.
+            </div>
+        </div>
+    </footer>
+
+    <div id="confirmmsg">
+
+    </div>
+    <script type="text/javascript" src="/scripts/js.cookie.min.js"></script>
+    <script src="/bundles/jquery?v=2u0aRenDpYxArEyILB59ETSCA2cfQkSMlxb6jbMBqf81"></script>
+
+    <script type="text/javascript" src="/scripts/jquery-ui.min.js"></script>
+    
+    <script type="text/javascript" src="/scripts/jquery.hoverIntent.min.js"></script>
+    <script type="text/javascript" src="/scripts/app.min.js?v=3"></script>
+    
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#searchtype').on('change', function () {
+                var isDefault = $(this).val() == "default";
+                $('#defaultsearch').css('display', (isDefault ? "block" : "none"));
+                $('#advancedsearch').css('display', (isDefault ? "none" : "block"));
+            });
+        });
+    </script>
+
+    <script id="free_accessibility_plugin_script" src="https://accessibility.f-static.com/site/free-accessibility-plugin/accessibility.min.js?lan=en&place=bottom-right&distance=20" crossorigin="anonymous" type="text/plain" data-category="functionality"></script>
+</body>
+</html>

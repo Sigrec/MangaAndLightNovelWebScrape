@@ -8,7 +8,11 @@ namespace MangaAndLightNovelWebScrape;
 
 public partial class TranslateAPI : IDisposable
 	{
-    private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+    /// <summary>
+    /// Optional logger used by <see cref="TranslateAPI"/> static methods.
+    /// Defaults to <see cref="Null_logger.Instance"/>; callers can assign their own.
+    /// </summary>
+    public static ILogger _logger { get; set; } = NullLogger.Instance;
 		private static readonly string USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/75.0.3770.66 Safari/537.36";
 		private static GraphQLHttpClient AniListClient = new GraphQLHttpClient("https://graphql.anilist.co", new SystemTextJsonSerializer());
     private bool disposedValue;
@@ -27,7 +31,7 @@ public partial class TranslateAPI : IDisposable
 		/// <param name="title">The title of the series as a string, this can be any title including ones under synonyms</param>
 		/// <param name="format">The format of the series either MANGA or NOVEL</param>
 		/// <returns></returns>
-    public static async Task<string> ToEnglish(string title, string format)
+    public static async Task<string?> ToEnglish(string title, string format)
 		{
 			try
 			{
@@ -60,7 +64,7 @@ public partial class TranslateAPI : IDisposable
             short rateCheck = RateLimitCheck(response.AsGraphQLHttpResponse().ResponseHeaders);
 				if (rateCheck != -1)
             {
-                LOGGER.Info($"Waiting {rateCheck} Seconds for Rate Limit To Reset");
+                _logger.WaitingForRateLimit(rateCheck);
                 await Task.Delay(TimeSpan.FromSeconds(rateCheck));
                 response = await AniListClient.SendQueryAsync<JsonDocument>(queryRequest);
             }
@@ -69,7 +73,7 @@ public partial class TranslateAPI : IDisposable
 			}
 			catch(Exception e)
 			{
-				LOGGER.Error("AniList GetSeriesByTitle w/ {} Request Failed -> {}", title, e.Message);
+				_logger.AniListRequestFailed(title, e.Message);
 			}
 			return null;
 		}
@@ -81,7 +85,7 @@ public partial class TranslateAPI : IDisposable
 		/// <param name="title">The title of the series as a string, this can be any title including ones under synonyms</param>
 		/// <param name="format">The format of the series either MANGA or NOVEL</param>
 		/// <returns></returns>
-    public static async Task<string> ToRomaji(string title, string format)
+    public static async Task<string?> ToRomaji(string title, string format)
 	{
 		try
 		{
@@ -114,7 +118,7 @@ public partial class TranslateAPI : IDisposable
         short rateCheck = RateLimitCheck(response.AsGraphQLHttpResponse().ResponseHeaders);
 			if (rateCheck != -1)
         {
-            LOGGER.Info($"Waiting {rateCheck} Seconds for Rate Limit To Reset");
+            _logger.WaitingForRateLimit(rateCheck);
             await Task.Delay(TimeSpan.FromSeconds(rateCheck));
             response = await AniListClient.SendQueryAsync<JsonDocument>(queryRequest);
         }
@@ -123,7 +127,7 @@ public partial class TranslateAPI : IDisposable
 		}
 		catch(Exception e)
 		{
-			LOGGER.Error("AniList GetSeriesByTitle w/ {} Request Failed -> {}", title, e.Message);
+			_logger.AniListRequestFailed(title, e.Message);
 		}
 		return null;
 	}
@@ -134,7 +138,7 @@ public partial class TranslateAPI : IDisposable
 	/// <param name="title">The title of the series as a string, this can be any title including ones under synonyms</param>
 	/// <param name="format">The format of the series either MANGA or NOVEL</param>
 	/// <returns></returns>
-    public static async Task<string> ToJapanese(string title, string format)
+    public static async Task<string?> ToJapanese(string title, string format)
 	{
 		try
 		{
@@ -167,7 +171,7 @@ public partial class TranslateAPI : IDisposable
         short rateCheck = RateLimitCheck(response.AsGraphQLHttpResponse().ResponseHeaders);
 			if (rateCheck != -1)
         {
-            LOGGER.Info($"Waiting {rateCheck} Seconds for Rate Limit To Reset");
+            _logger.WaitingForRateLimit(rateCheck);
             await Task.Delay(TimeSpan.FromSeconds(rateCheck));
             response = await AniListClient.SendQueryAsync<JsonDocument>(queryRequest);
         }
@@ -177,7 +181,7 @@ public partial class TranslateAPI : IDisposable
 		}
 		catch(Exception e)
 		{
-			LOGGER.Error("AniList GetSeriesByTitle w/ {} Request Failed -> {}", title, e.Message);
+			_logger.AniListRequestFailed(title, e.Message);
 		}
 		return null;
 	}
@@ -186,7 +190,7 @@ public partial class TranslateAPI : IDisposable
     {
         responseHeaders.TryGetValues("X-RateLimit-Remaining", out var rateRemainingValues);
         _ = short.TryParse(rateRemainingValues?.FirstOrDefault(), out var rateRemaining);
-        LOGGER.Info($"AniList Rate Remaining = {rateRemaining}");
+        _logger.RateRemaining(rateRemaining);
         if (rateRemaining > 0)
         {
             return -1;

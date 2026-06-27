@@ -1,0 +1,847 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search - InStockTrades</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+    <meta name="description" content="Trade paperbacks from Marvel, DC, Image, Dark Horse and more! Discounted up to 42% off. No shipping on orders over $50.">
+    <meta name="keywords" content="trade paperbacks,comic books,marvel,dc,image,dark horse,superman,batman,flash,wonder woman,spiderman,fantastic four,the hulk,captain america,thor">
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
+    
+    <link rel="shortcut icon" href="/images/logo.png">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans|Roboto:400,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/content/site.min.css?v=3">
+    <link rel="stylesheet" href="/content/jquery-ui.min.css">
+    <link rel="stylesheet" href="/content/jquery-ui.theme.min.css">
+    <script src="/bundles/modernizr?v=inCVuEFe6J4Q07A0AcRsbJic_UE5MwpRMNGcOtk94TE1"></script>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orestbida/cookieconsent@3.0.1/dist/cookieconsent.css">
+    <script src="/scripts/cookieconsent-config.min.js" type="module"></script>
+</head>
+<body>
+    
+<div class="navbar-header">
+    <a href="/"><img class="logo" src="/images/logo.png" alt="Instocktrades.com"></a>
+    <div class="navbar-heading">
+        <span class="giftcertificates"><a href="/giftcertificates" class="highlight">Gift Certificates</a></span>
+        <span class="help"><a href="/home/help">Help</a></span>
+            <span class="greeting"><a href="/account/login">Sign In</a></span>
+    </div>
+    <a href="/cart" class="navbar-cart">
+        <div class="cartcount">0</div>
+    </a>
+    <div class="navbar-search">
+        <form id="sitesearchform" name="sitesearchform" method="get" action="/search">
+            <input type="text" name="term" id="sitesearch" placeholder="Search..." autocomplete="off" required oninvalid="this.setCustomValidity('Please Enter a valid search term')" oninput="setCustomValidity('')">
+            <button type="submit" id="navsearchbutton" class="navsearchbutton" onclick="javascript: return document.getElementById('sitesearch').value.trim() != '';"><img src="/images/search.png" alt="search"></button>
+        </form>
+        <div style="text-align:right;"><a href="/search?ps=true" class="action">Advanced Search</a></div>
+    </div>
+    <div class="navbar-menubar">
+        <div class="navbar-menu trades hoverable">
+            <a href="#trades" class="menu-label responsive">Trades <span class="navarrow"></span></a>
+            <div class="navbar-menuitems responsive">
+                <a href="/newreleases">New Releases</a>
+                
+                <a href="/comingsoon">Coming Soon</a>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#" class="menu-label">Publishers <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                            <a href="/publishers/image">Image</a>
+                            <a href="/publishers/dc-comics">DC Comics</a>
+                            <a href="/publishers/marvel">Marvel</a>
+                            <a href="/publishers/viz-media">Viz Media</a>
+                            <a href="/publishers/dark-horse">Dark Horse</a>
+                            <a href="/publishers/seven-seas">Seven Seas</a>
+                            <a href="/publishers/kodansha">Kodansha</a>
+                            <a href="/publishers/idw">IDW</a>
+                            <a href="/publishers/titan">Titan</a>
+                        <a href="/publishers">View All Publishers</a>
+                    </div>
+                </div>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#sales" class="menu-label">Sales <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                        <a href="/clearance">Clearance</a>
+                        <a href="/damages">Damages</a>
+                            <a href="/specials/630/red-tag-sale">Red Tag Sale</a>
+                            <a href="/specials/632/24-hour-flash-sale!!">24-Hour Flash Sale!!</a>
+                            <a href="/specials/715/best-sellers-dc">Best Sellers: DC</a>
+                            <a href="/specials/716/best-sellers-marvel">Best Sellers: Marvel</a>
+                            <a href="/specials/718/creator-spotlight-inio-asano">Creator Spotlight: Inio Asano</a>
+                            <a href="/specials/719/creator-spotlight-clamp">Creator Spotlight: CLAMP</a>
+                    </div>
+                </div>
+                <div class="navbar-menu nested hoverable">
+                    <a href="#creators" class="menu-label">Featured Creators <span class="navarrow"></span></a>
+                    <div class="navbar-menuitems">
+                            <a href="/creator/giantgenerator">Giant Generator by Rick Remender</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="navbar-menu topsellers">
+            <a href="/products/topsellers">Top Sellers</a>
+        </div>
+        <div class="navbar-menu account hoverable">
+            <a href="#account" class="menu-label">Account <span class="navarrow"></span></a>
+            <div class="navbar-menuitems">
+                <a href="/account/wishlist">Wishlist</a>
+                <a href="/account">Account Profile</a>
+                <a href="/account/orderhistory">Order History</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+    
+    <div class="container body-content">
+        
+
+        
+
+
+
+
+<div class="section products">
+    <h2>Search</h2>
+    <div class="section">
+        <div class="message form">
+            <div><h4 style="display:inline-block;">Search Option:</h4>
+                <select name="searchtype" id="searchtype" style="padding:7px;">
+                    <option value="default">Free Text</option>
+                    <option value="power" selected>Advanced Search</option>
+                </select>
+            </div>
+            <div>
+                <div id="defaultsearch" style="display:none;">
+                    <h4>Search results matches ANY words...</h4>
+                    <form method="get" action="/search">
+                        <div class="fieldgroup">
+                            <div class="fieldset">
+                                <div><label>Title, Publisher, Description or Product Code</label></div>
+                                <input name="term" type="text" maxlength="200" style="max-width:400px; display:inline-block;">
+                                <button type="submit" class="btn hotaction">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div id="advancedsearch" style="display:block;">
+                    <h4>Advanced Search. Results match ALL words and conditions...</h4>
+                    <form method="get" action="/search">
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Title</label></div>
+                                <input name="title" placeholder="Title" type="text" maxlength="200" autocomplete="off" value="Boruto">
+                            </div>
+                            <div class="fieldset">
+                                <div><label>Publisher</label></div>
+                                <input name="publisher" placeholder="Publisher" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                        </div>
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Writer</label></div>
+                                <input name="writer" placeholder="Writer" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                            <div class="fieldset">
+                                <div><label>Artist</label></div>
+                                <input name="artist" placeholder="Artist" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                        </div>
+                        <div class="fieldgroup two">
+                            <div class="fieldset">
+                                <div><label>Cover Artist</label></div>
+                                <input name="cover" placeholder="Cover Artist" type="text" maxlength="200" autocomplete="off" value="">
+                            </div>
+                            <div class="fieldset">
+                                <div><label></label></div>
+                                
+                            </div>
+                        </div>
+                        <div class="fieldgroup">
+                            <div class="fieldset">
+                                <input type="hidden" name="ps" value="true">
+                                <button type="submit" class="btn hotaction">Search</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+    <div class="pageoptions">
+        
+            <div class="productsortselection">
+                <span class="productsortlabel">Sort By:</span> <select id="sortselection" name="sortselection"><option selected="selected" value="relevance">Relevance</option>
+<option value="title">Title</option>
+<option value="publisher">Publisher</option>
+<option value="price">Price</option>
+<option value="discount">Discount</option>
+</select>
+            </div>
+                    <div class="viewselection">
+                <span class="viewselectlabel">View: </span>
+                <div id="thumbplusview" class="viewselect selected" data-val="1"><img src="/images/thumbplus.png" alt="thumbnail plus view" title="Thumbnail Plus View"></div>
+                <div id="thumbview" class="viewselect" data-val="0"><img src="/images/thumbs.png" alt="thumbnail only view" title="Thumbnails Only View"></div>
+                <div id="listview" class="viewselect" data-val="2"><img src="/images/thumblist.png" alt="thumbnail list view" title="Thumbnail List View"></div>
+                
+            </div>
+    </div>
+    <div class="row">
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/feb260574/boruto-two-blue-vortex-gn-vol-05"><img class="itemimg" src="https://media.instocktrades.com/small/FEB260574.jpg" alt="BORUTO TWO BLUE VORTEX GN VOL 05"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/feb260574/boruto-two-blue-vortex-gn-vol-05">Boruto Two Blue Vortex GN Vol 05</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            The ninja adventures continue in this second series featuring Naruto&#39;s son, Boruto!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="102810" data-title="Boruto Two Blue Vortex GN Vol 05" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="FEB260574" data-title="Boruto Two Blue Vortex GN Vol 05" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/nov250362/boruto-two-blue-vortex-gn-vol-04"><img class="itemimg" src="https://media.instocktrades.com/small/NOV250362.jpg" alt="BORUTO TWO BLUE VORTEX GN VOL 04"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/nov250362/boruto-two-blue-vortex-gn-vol-04">Boruto Two Blue Vortex GN Vol 04</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            The ninja adventures continue in this second series featuring Naruto?s son, Boruto!
+Naruto was a young shinobi with an incorrigible knack for mischief. He achieved his dream to become the greatest ninja in his village, and now his face sits atop the Hokage monument. But this is not his story? The next generation of ninja stands in the swirling vortex of a new ninja age, with Naruto?s own son, Boruto, at the center!
+After being wounded by Jura, Boruto is captured by the ninja of Konoha. Will he crack under Shikamaru?s intense interrogation? Meanwhile, something terrible is happening in Sand Village as Gaara is under attack!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="103320" data-title="Boruto Two Blue Vortex GN Vol 04" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="NOV250362" data-title="Boruto Two Blue Vortex GN Vol 04" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jan261700/boruto-two-blue-vortex-gn-vol-03"><img class="itemimg" src="https://media.instocktrades.com/small/JAN261700.jpg" alt="BORUTO TWO BLUE VORTEX GN VOL 03"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jan261700/boruto-two-blue-vortex-gn-vol-03">Boruto Two Blue Vortex GN Vol 03</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            The ninja adventures continue in this second series featuring Naruto?s son, Boruto!
+Naruto was a young shinobi with an incorrigible knack for mischief. He achieved his dream to become the greatest ninja in his village, and now his face sits atop the Hokage monument. But this is not his story? The next generation of ninja stands in the swirling vortex of a new ninja age, with Naruto?s own son, Boruto, at the center!
+When Jura and Hidari launch an attack against Konoha, they quickly set their sights on Naruto?s daughter, Himawari. As the fighting heats up and Boruto joins the fray, Himawari reveals that she is harboring a surprising power?
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="102049" data-title="Boruto Two Blue Vortex GN Vol 03" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JAN261700" data-title="Boruto Two Blue Vortex GN Vol 03" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/apr251752/boruto-two-blue-vortex-gn-vol-02"><img class="itemimg" src="https://media.instocktrades.com/small/APR251752.jpg" alt="BORUTO TWO BLUE VORTEX GN VOL 02"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/apr251752/boruto-two-blue-vortex-gn-vol-02">Boruto Two Blue Vortex GN Vol 02</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W/A) Mikio Ikemoto
+The ninja adventures continue in this second series featuring Naruto&#39;s son, Boruto! Naruto was a young shinobi with an incorrigible knack for mischief. He achieved his dream to become the greatest ninja in his village, and now his face sits atop the Hokage monument. But this is not his story... The next generation of ninja stands in the swirling vortex of a new ninja age, with Naruto&#39;s own son, Boruto, at the center! It&#39;s been three years since the event that caused Boruto and Kawaki to switch places in the ninja world. As Boruto trains with Sasuke, the Ten-Tails undergoes a terrifying transformation into Divine Tree beings that each have their own consciousness. These new threats against the world must be stopped, but Boruto will first need to survive the ninja of his own village who now see him as the enemy.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="99359" data-title="Boruto Two Blue Vortex GN Vol 02" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="APR251752" data-title="Boruto Two Blue Vortex GN Vol 02" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/dec241940/boruto-two-blue-vortex-gn-vol-01"><img class="itemimg" src="https://media.instocktrades.com/small/DEC241940.jpg" alt="BORUTO TWO BLUE VORTEX GN VOL 01"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/dec241940/boruto-two-blue-vortex-gn-vol-01">Boruto Two Blue Vortex GN Vol 01</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Masashi Kishimoto (A) Mikio Ikemoto
+In a cruel twist of fate, Boruto&#39;s and Kawaki&#39;s lives have been switched due to a powerful jutsu. Now branded a traitor, Boruto is on the run from his village and training with Sasuke. But when Konoha comes under attack, it&#39;s time for a grown-up Boruto to return home and show how powerful he&#39;s become!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="93537" data-title="Boruto Two Blue Vortex GN Vol 01" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="DEC241940" data-title="Boruto Two Blue Vortex GN Vol 01" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jun242138/boruto-gn-vol-20-naruto-next-generations"><img class="itemimg" src="https://media.instocktrades.com/small/JUN242138.jpg" alt="BORUTO GN VOL 20 NARUTO NEXT GENERATIONS"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jun242138/boruto-gn-vol-20-naruto-next-generations">Boruto GN Vol 20 Naruto Next Generations</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Masashi Kishimoto (A) Mikio Ikemoto
+The fateful moment has come for Boruto and Kawaki. When the event Momoshiki warned about finally arrives, Boruto&#39;s life and the entire ninja world will be flipped upside down!
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="88999" data-title="Boruto GN Vol 20 Naruto Next Generations" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUN242138" data-title="Boruto GN Vol 20 Naruto Next Generations" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/feb241818/boruto-gn-vol-19-naruto-next-generations"><img class="itemimg" src="https://media.instocktrades.com/small/FEB241818.jpg" alt="BORUTO GN VOL 19 NARUTO NEXT GENERATIONS"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/feb241818/boruto-gn-vol-19-naruto-next-generations">Boruto GN Vol 19 Naruto Next Generations</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Masashi Kishimoto (A) Mikio Ikemoto
+Chaos reigns as Eida betrays Code and sides with Konoha Village. Eida&#39;s powers make her dangerous even as an ally, so how will Boruto and Team Seven react? Meanwhile, Code makes his own moves using the power of the Ten Tails.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$11.99<br>
+                            </div>
+                            <div class="price">
+                                $8.39
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="87077" data-title="Boruto GN Vol 19 Naruto Next Generations" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="FEB241818" data-title="Boruto GN Vol 19 Naruto Next Generations" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/oct232094/boruto-gn-vol-18-naruto-next-generations"><img class="itemimg" src="https://media.instocktrades.com/small/OCT232094.jpg" alt="BORUTO GN VOL 18 NARUTO NEXT GENERATIONS"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/oct232094/boruto-gn-vol-18-naruto-next-generations">Boruto GN Vol 18 Naruto Next Generations</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Masashi Kishimoto (A) Mikio Ikemoto
+Boruto may have survived his dance with death thanks to some Ohtsutsuki meddling, but the trouble is just beginning. When Code and Eida show up in Konoha Village, even Naruto and Sasuke may be powerless to stop them.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$9.99<br>
+                            </div>
+                            <div class="price">
+                                $6.99
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="85040" data-title="Boruto GN Vol 18 Naruto Next Generations" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="OCT232094" data-title="Boruto GN Vol 18 Naruto Next Generations" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jun232295/boruto-gn-vol-17-naruto-next-generations"><img class="itemimg" src="https://media.instocktrades.com/small/JUN232295.jpg" alt="BORUTO GN VOL 17 NARUTO NEXT GENERATIONS"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jun232295/boruto-gn-vol-17-naruto-next-generations">Boruto GN Vol 17 Naruto Next Generations</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Masashi Kishimoto (A) Mikio Ikemoto
+Boruto prepares to unleash the full power of his Karma against Code, but the stress on his body may be more than he can take. Meanwhile, Naruto heads to the battlefield to rescue his son, but will he make it in time?
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$9.99<br>
+                            </div>
+                            <div class="price">
+                                $6.99
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="82411" data-title="Boruto GN Vol 17 Naruto Next Generations" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUN232295" data-title="Boruto GN Vol 17 Naruto Next Generations" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/dec221846/boruto-gn-vol-16-naruto-next-generations"><img class="itemimg" src="https://media.instocktrades.com/small/DEC221846.jpg" alt="BORUTO GN VOL 16 NARUTO NEXT GENERATIONS"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/dec221846/boruto-gn-vol-16-naruto-next-generations">Boruto GN Vol 16 Naruto Next Generations</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Masashi Kishimoto (A) Mikio Ikemoto
+Now with the mysterious Eida at his side, Code continues his march for revenge against Boruto and Konoha village. Even with Naruto and Sasuke on alert, stopping Code and his warping ability may be impossible. However, Kawaki seems to have some secret plans of his own.  For teen audiences.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$9.99<br>
+                            </div>
+                            <div class="price">
+                                $6.99
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="79457" data-title="Boruto GN Vol 16 Naruto Next Generations" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="DEC221846" data-title="Boruto GN Vol 16 Naruto Next Generations" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/aug222067/boruto-gn-vol-15-naruto-next-generations"><img class="itemimg" src="https://media.instocktrades.com/small/AUG222067.jpg" alt="BORUTO GN VOL 15 NARUTO NEXT GENERATIONS"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/aug222067/boruto-gn-vol-15-naruto-next-generations">Boruto GN Vol 15 Naruto Next Generations</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Masashi Kishimoto, Ukyo Kodachi (A) Mikio Ikemoto
+As the last remaining member of Kara, Code begins his plan for revenge against Boruto, Kawaki, and the others who took down Isshiki. His first move is to awaken an ally with a terrifying ability. Meanwhile, a determined Boruto has some plans of his own.  For teen audiences.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$9.99<br>
+                            </div>
+                            <div class="price">
+                                $6.99
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="75710" data-title="Boruto GN Vol 15 Naruto Next Generations" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="AUG222067" data-title="Boruto GN Vol 15 Naruto Next Generations" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jul212197/boruto-gn-vol-12-naruto-next-generations"><img class="itemimg" src="https://media.instocktrades.com/small/JUL212197.jpg" alt="BORUTO GN VOL 12 NARUTO NEXT GENERATIONS"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jul212197/boruto-gn-vol-12-naruto-next-generations">Boruto GN Vol 12 Naruto Next Generations</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Masashi Kishimoto, Ukyo Kodachi (A/CA) Mikio Ikemoto
+As Naruto recovers from his wounds after being rescued by Boruto and the new Team Seven, nefarious things are happening within Kara. Kashin Koji and Amado seem to have betrayed their leader, Jigen. What is the reason for their sudden turn, and just what is Jigen&#39;s true identity? For teen audiences.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$9.99<br>
+                            </div>
+                            <div class="price">
+                                $6.99
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="70854" data-title="Boruto GN Vol 12 Naruto Next Generations" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JUL212197" data-title="Boruto GN Vol 12 Naruto Next Generations" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/sep192222/boruto-gn-vol-07-naruto-next-generations"><img class="itemimg" src="https://media.instocktrades.com/small/SEP192222.jpg" alt="BORUTO GN VOL 07 NARUTO NEXT GENERATIONS"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/sep192222/boruto-gn-vol-07-naruto-next-generations">Boruto GN Vol 07 Naruto Next Generations</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Ukyo Kodachi, Masashi Kishimoto (A/CA) Mikio Ikemoto
+Boruto meets a mysterious boy named Kawaki who has the same Karma mark. Who is this boy and what is the true nature of the cursed power that Boruto has been given? And when Kara members show up to take back Kawaki, will Boruto and his allies flee or fight?!  For teen audiences.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$9.99<br>
+                            </div>
+                            <div class="price">
+                                $6.99
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="64201" data-title="Boruto GN Vol 07 Naruto Next Generations" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="SEP192222" data-title="Boruto GN Vol 07 Naruto Next Generations" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/jan192273/boruto-gn-vol-05-naruto-next-generations"><img class="itemimg" src="https://media.instocktrades.com/small/JAN192273.jpg" alt="BORUTO GN VOL 05 NARUTO NEXT GENERATIONS"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/jan192273/boruto-gn-vol-05-naruto-next-generations">Boruto GN Vol 05 Naruto Next Generations</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Ukyo Kodachi (A/CA) Mikio Ikemoto
+Boruto and his team begin a new mission that takes them away from the village for the first time. There they will meet some old friends and a terrifying new enemy! For teen audiences.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$9.99<br>
+                            </div>
+                            <div class="price">
+                                $6.99
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="61324" data-title="Boruto GN Vol 05 Naruto Next Generations" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="JAN192273" data-title="Boruto GN Vol 05 Naruto Next Generations" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="item thumbplus">
+
+                <div class="frame">
+                    <a href="/products/feb172092/boruto-gn-vol-01-naruto-next-generations"><img class="itemimg" src="https://media.instocktrades.com/small/FEB172092.jpg" alt="BORUTO GN VOL 01 NARUTO NEXT GENERATIONS"></a>
+                </div>
+                <div class="detail clearfix">
+                    <div class="title">
+                        <a href="/products/feb172092/boruto-gn-vol-01-naruto-next-generations">Boruto GN Vol 01 Naruto Next Generations</a>
+                    </div>
+                                            <div class="shortdesc desc">
+                            (W) Masashi Kishimoto, Ukyo Kodachi (A/CA) Mikio Ikemoto
+Years have passed since Naruto and Sasuke teamed up to defeat Kaguya, the progenitor of chakra and the greatest threat the ninja world has ever faced. Times are now peaceful and the new generation of shinobi have not experienced the same hardships as their parents. Perhaps that is why Boruto would rather play video games than train. However, one passion does burn deep in this ninja boy, and that is to defeat his neglectful father!  For teen audiences.
+                        </div>
+                                    <div class="footing">
+                    <div class="pricing">
+                            <div class="srp">
+$9.99<br>
+                            </div>
+                            <div class="price">
+                                $6.99
+                            </div>
+                            <div class="discount">
+30%<span class="discounttag"> off!</span>
+                            </div>
+                    </div>
+                        <div class="carting">
+                                <button type="button" class="btn addtocart" data-id="47793" data-title="Boruto GN Vol 01 Naruto Next Generations" data-cart-qty="0" title="Add to Cart">
+                                    <img src="/images/cart.png" alt="Add to Cart"> Add to Cart
+                                </button>
+                                                            <button type="button" class="btn addtolist" data-code="FEB172092" data-title="Boruto GN Vol 01 Naruto Next Generations" title="Add to Wishlist"><img src="/images/addtowishlist.png" alt="Add to Wishlist"><span class="wishlistlabel"> Add to Wishlist</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+    </div>
+
+    <div>
+                    </div>
+    <div>Results 1 - 15 of 15</div>
+
+
+
+</div>
+
+
+
+
+    </div>
+    <footer>
+        <div class="section" style="overflow:hidden;">
+            <ul>
+                <li class="heading">Main Menu</li>
+                <li><a href="/">Home</a></li>
+                <li><a href="/newreleases">New Releases</a></li>
+                <li><a href="/comingsoon">Coming Soon</a></li>
+                <li><a href="/clearance">Clearance</a></li>
+                <li><a href="/damages">Damages</a></li>
+                <li class="condensed"><a href="/publishers">Publishers</a></li>
+                <li class="condensed"><a href="/writers">Writers</a></li>
+                <li class="condensed"><a href="/artists">Artists</a></li>
+                <li><a href="/giftcertificates">Gift Certificates</a></li>
+                <li><a href="/home/help">Help</a></li>
+                <li><a href="/home/privacy">Privacy and Security</a></li>
+                <li><a href="/wishlists">Find a Wishlist</a></li>
+                <li><a href="/home/contact">Contact Us</a></li>
+            </ul>
+            <ul class="expanded">
+                <li class="heading">Publishers</li>
+                    <li><a href="/publishers/image">Image</a></li>
+                    <li><a href="/publishers/dc-comics">DC Comics</a></li>
+                    <li><a href="/publishers/marvel">Marvel</a></li>
+                    <li><a href="/publishers/viz-media">Viz Media</a></li>
+                    <li><a href="/publishers/dark-horse">Dark Horse</a></li>
+                    <li><a href="/publishers/seven-seas">Seven Seas</a></li>
+                    <li><a href="/publishers/kodansha">Kodansha</a></li>
+                    <li><a href="/publishers/idw">IDW</a></li>
+                    <li><a href="/publishers/titan">Titan</a></li>
+                <li><a href="/publishers">View All Publishers</a></li>
+            </ul>
+            <ul class="expanded">
+                <li class="heading">Genres</li>
+                    <li><a href="/genres/action-adventure">Action/Adventure</a></li>
+                    <li><a href="/genres/crime">Crime</a></li>
+                    <li><a href="/genres/fantasy">Fantasy</a></li>
+                    <li><a href="/genres/horror">Horror</a></li>
+                    <li><a href="/genres/humor-comedy">Humor/Comedy</a></li>
+                    <li><a href="/genres/reference-art-books-how-to">Reference/Art Books/How To</a></li>
+                    <li><a href="/genres/romance">Romance</a></li>
+                    <li><a href="/genres/science-fiction">Science Fiction</a></li>
+                    <li><a href="/genres/sports">Sports</a></li>
+                    <li><a href="/genres/super-hero">Super-hero</a></li>
+            </ul>
+                <ul class="expanded">
+                    <li class="heading">Writers</li>
+                        <li><a href="/writers/robert-kirkman">Robert Kirkman</a></li>
+                        <li><a href="/writers/jeff-lemire">Jeff Lemire</a></li>
+                        <li><a href="/writers/kentaro-miura">Kentaro Miura</a></li>
+                        <li><a href="/writers/rick-remender">Rick Remender</a></li>
+                        <li><a href="/writers/brian-k-vaughan">Brian K. Vaughan</a></li>
+                        <li><a href="/writers/ed-brubaker">Ed Brubaker</a></li>
+                        <li><a href="/writers/tom-king">Tom King</a></li>
+                        <li><a href="/writers/jonathan-hickman">Jonathan Hickman</a></li>
+                        <li><a href="/writers/geoff-johns">Geoff Johns</a></li>
+                        <li><a href="/writers/mark-waid">Mark Waid</a></li>
+                    <li><a href="/writers">View All Writers</a></li>
+                </ul>
+                            <ul class="expanded">
+                    <li class="heading">Artists</li>
+                        <li><a href="/artists/kentaro-miura">Kentaro Miura</a></li>
+                        <li><a href="/artists/sean-phillips">Sean Phillips</a></li>
+                        <li><a href="/artists/fiona-staples">Fiona Staples</a></li>
+                        <li><a href="/artists/ryan-ottley">Ryan Ottley</a></li>
+                        <li><a href="/artists/cliff-chiang">Cliff Chiang</a></li>
+                        <li><a href="/artists/dustin-nguyen">Dustin Nguyen</a></li>
+                        <li><a href="/artists/charlie-adlard">Charlie Adlard</a></li>
+                        <li><a href="/artists/hiroaki-samura">Hiroaki Samura</a></li>
+                        <li><a href="/artists/andrea-sorrentino">Andrea Sorrentino</a></li>
+                        <li><a href="/artists/michael-lark">Michael Lark</a></li>
+                    <li><a href="/artists">View All Artists</a></li>
+                </ul>
+            <ul class="footerpromos">
+                <li><img src="/images/ist42.jpg" alt="Instocktrades.com 42% off!" width="227" height="87"></li>
+                <li><a href="https://www.dcbservice.com" target="_blank"><img src="/images/dcbs40.jpg" width="227" height="87" alt="Discount Comic Book Service"></a></li>
+            </ul>
+            <div class="copyright">
+                &copy; 2026 Discount Comic Book Service (DCBS). All images &copy; respective owners and used with permission.
+            </div>
+        </div>
+    </footer>
+
+    <div id="confirmmsg">
+
+    </div>
+    <script type="text/javascript" src="/scripts/js.cookie.min.js"></script>
+    <script src="/bundles/jquery?v=2u0aRenDpYxArEyILB59ETSCA2cfQkSMlxb6jbMBqf81"></script>
+
+    <script type="text/javascript" src="/scripts/jquery-ui.min.js"></script>
+    
+    <script type="text/javascript" src="/scripts/jquery.hoverIntent.min.js"></script>
+    <script type="text/javascript" src="/scripts/app.min.js?v=3"></script>
+    
+    <script type="text/javascript">
+        $(document).ready(function () {
+            $('#searchtype').on('change', function () {
+                var isDefault = $(this).val() == "default";
+                $('#defaultsearch').css('display', (isDefault ? "block" : "none"));
+                $('#advancedsearch').css('display', (isDefault ? "none" : "block"));
+            });
+        });
+    </script>
+
+    <script id="free_accessibility_plugin_script" src="https://accessibility.f-static.com/site/free-accessibility-plugin/accessibility.min.js?lan=en&place=bottom-right&distance=20" crossorigin="anonymous" type="text/plain" data-category="functionality"></script>
+</body>
+</html>

@@ -7,14 +7,13 @@ namespace MangaAndLightNovelWebScrape.Websites;
 
 public sealed partial class ForbiddenPlanet : IWebsite
 {
-    private static readonly Logger LOGGER = LogManager.GetCurrentClassLogger();
+    private readonly ILogger _logger;
+
+    public ForbiddenPlanet(ILogger<ForbiddenPlanet>? logger = null)
+    {
+        _logger = logger ?? NullLogger<ForbiddenPlanet>.Instance;
+    }
     
-    private static readonly XPathExpression _titleXPath = XPathExpression.Compile("//div[@class='full']/ul/li/section/header/div[2]/h3/a/text()");
-    private static readonly XPathExpression _priceXPath = XPathExpression.Compile("//span[@class='clr-price']/text()");
-    private static readonly XPathExpression _minorPriceXPath = XPathExpression.Compile("(//div[@class='full']/ul/li/section/header/div[2])/p/span[2]");
-    private static readonly XPathExpression _stockStatusXPath = XPathExpression.Compile("//div[@class='full']/ul/li/section/header/div/ul");
-    private static readonly XPathExpression _bookFormatXPath = XPathExpression.Compile("(//div[@class='full']/ul/li/section/header/div[1])/p[1]");
-    private static readonly XPathExpression _pageCheckXPath = XPathExpression.Compile("(//a[@class='product-list__pagination__next'])[1]");
 
     [GeneratedRegex(@"The Manga|\(Hardcover\)|:(?:.*):|\(.*\)", RegexOptions.IgnoreCase)] internal static partial Regex CleanAndParseTitleRegex();
     [GeneratedRegex(@"\(Hardcover\)|The Manga", RegexOptions.IgnoreCase)] internal static partial Regex ColorCleanAndParseTitleRegex();
@@ -37,26 +36,26 @@ public sealed partial class ForbiddenPlanet : IWebsite
     
     private static readonly FrozenSet<string> DescRemovalStrings = ["novel", "original stories", "collecting issues"];
 
-    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, IBrowser? browser, Region curRegion, (bool IsBooksAMillionMember, bool IsKinokuniyaUSAMember) memberships = default)
-    {
-        return Task.Run(async () =>
-        {            
-            IPage page = await PlaywrightFactory.GetPageAsync(browser!, true);
-            (List<EntryModel> Data, List<string> Links) = await GetData(bookTitle, bookType, page);
-            masterDataList.Add(Data);
-            masterLinkList.TryAdd(Website.ForbiddenPlanet, Links[0]);
-        });
-    }
+    public Task CreateTask(string bookTitle, BookType bookType, ConcurrentBag<List<EntryModel>> masterDataList, ConcurrentDictionary<Website, string> masterLinkList, ConcurrentDictionary<Website, Exception> errors, IBrowser? browser, Region curRegion, Membership memberships = Membership.None, CancellationToken cancellationToken = default)
+        => InternalHelpers.RunPlaywrightScrapeAsync(
+            this, Website.ForbiddenPlanet, bookTitle, bookType, masterDataList, masterLinkList, errors, browser!, curRegion, cancellationToken,
+            needsUserAgent: true);
 
-    private static string GenerateWebsiteUrl(BookType bookType, string entryTitle, bool isSecondCategory)
+    /// <inheritdoc />
+    public Task<bool> IsAvailableAsync(CancellationToken cancellationToken = default)
+        => SiteHealth.IsReachableAsync(BASE_URL, cancellationToken);
+
+    internal string GenerateWebsiteUrl(BookType bookType, string entryTitle, bool isSecondCategory, int pageNum)
     {
-        // https://forbiddenplanet.com/catalog/?q=Naruto&show_out_of_stock=on&sort=release-date-asc&page=1
-        string url = $"{BASE_URL}/catalog/{(!isSecondCategory ? "manga" : "comics-and-graphic-novels")}/?q={(bookType == BookType.Manga ? InternalHelpers.FilterBookTitle(entryTitle) : $"{InternalHelpers.FilterBookTitle(entryTitle)}%20light%20novel")}&show_out_of_stock=on&sort=release-date-asc&page=1";
-        LOGGER.Info($"Url = {url}");
+        // https://forbiddenplanet.com/catalog/manga/?q=Naruto&show_out_of_stock=on&sort=release-date-asc&page=1
+        string url = $"{BASE_URL}/catalog/{(!isSecondCategory ? "manga" : "comics-and-graphic-novels")}/?q={(bookType == BookType.Manga ? InternalHelpers.FilterBookTitle(entryTitle) : $"{InternalHelpers.FilterBookTitle(entryTitle)}%20light%20novel")}&show_out_of_stock=on&sort=release-date-asc&page={pageNum}";
+        _logger.UrlGenerated(url);
         return url;
     }
 
-    private static string CleanAndParseTitle(string bookTitle, string entryTitle, BookType bookType)
+
+
+    private string CleanAndParseTitle(string bookTitle, string entryTitle, BookType bookType)
     {
         entryTitle = FixVolumeRegex().Replace(entryTitle.Trim(), " Vol");
         StringBuilder curTitle;
@@ -68,13 +67,12 @@ public sealed partial class ForbiddenPlanet : IWebsite
 
         if (!entryTitle.Contains("Anniversary") && entryTitle.ContainsAny(["3-In-1", "3 In 1", "Omnibus"]))
         {
-            // LOGGER.Debug("(0) {}", entryTitle);
             entryTitle = OmnibusFixRegex().Replace(entryTitle, $" Omnibus $1$2$3");
             curTitle = new StringBuilder(entryTitle);
 
             if (!entryTitle.Contains("Omnibus"))
             {
-                curTitle.Insert(curTitle.ToString().IndexOf("Vol"), "Omnibus ");
+                curTitle.Insert(curTitle.IndexOfOrdinal("Vol"), "Omnibus ");
             }
 
             if (!entryTitle.Contains("Vol"))
@@ -86,19 +84,16 @@ public sealed partial class ForbiddenPlanet : IWebsite
                 };
             }
             curTitle.TrimEnd();
-            // LOGGER.Debug("(1) {}", curTitle.ToString());
 
-            if (!char.IsDigit(curTitle.ToString()[^1]))
+            if (!char.IsDigit(curTitle[curTitle.Length - 1]))
             {
                 curTitle.Replace("Omnibus", string.Empty);
                 curTitle.TrimEnd();
-                curTitle.Insert(curTitle.ToString().IndexOf("Vol"), "Omnibus ");
+                curTitle.Insert(curTitle.IndexOfOrdinal("Vol"), "Omnibus ");
             }
-            // LOGGER.Debug("(2) {}", curTitle.ToString());
         }
         else if (entryTitle.Contains("Box Set", StringComparison.OrdinalIgnoreCase))
         {
-            // entryTitle = entryTitle.Replace("Part", string.Empty, StringComparison.OrdinalIgnoreCase).Trim();
             if (BoxSetVolFindRegex().IsMatch(entryTitle))
             {
                 curTitle = new StringBuilder(BoxSetVolFindRegex().Replace(BoxSetFixRegex().Replace(entryTitle, " Box Set $1"), string.Empty));
@@ -114,7 +109,7 @@ public sealed partial class ForbiddenPlanet : IWebsite
                 {
                     curTitle.Replace("Box Set", string.Empty);
                     curTitle.TrimEnd();
-                    if (!char.IsDigit(curTitle.ToString()[^1])) curTitle.Append(" 1");
+                    if (!char.IsDigit(curTitle[curTitle.Length - 1])) curTitle.Append(" 1");
                     
                     if (entryTitle.Contains("Part") && !bookTitle.Contains("Part"))
                     {
@@ -172,7 +167,7 @@ public sealed partial class ForbiddenPlanet : IWebsite
         {
             curTitle.Replace(" (Light Novel)", string.Empty).Replace(" (Light Novel Hardcover)", string.Empty);
             string snapshot = curTitle.ToString();
-            LOGGER.Debug("Snapshot = {}", snapshot);
+            _logger.Snapshot(snapshot);
             if (!snapshot.Contains("Novel"))
             {
                 int index = snapshot.AsSpan().IndexOf("Vol");
@@ -204,7 +199,6 @@ public sealed partial class ForbiddenPlanet : IWebsite
         {
             curTitle.Insert(entryTitle.AsSpan().IndexOf("Vol"), "Special Edition ");
         }
-        // LOGGER.Debug("(3) {}", curTitle.ToString());
 
         if (bookTitle.Contains("Noragami", StringComparison.OrdinalIgnoreCase) && !entryTitle.Contains("Omnibus") && !entryTitle.Contains("Stray Stories") && !curTitle.ToString().Contains("Stray God"))
         {
@@ -223,209 +217,346 @@ public sealed partial class ForbiddenPlanet : IWebsite
         return MasterScrape.MultipleWhiteSpaceRegex().Replace(curTitle.ToString(), " ").Trim();
     }
 
-    private static async Task BypassCookiesAsync(IPage page)
-    {
-        try
-        {
-            // Wait for up to 5 seconds for the button to become visible
-            await page.WaitForSelectorAsync("button.button--brand.button--lg.brad.mql.mt", new PageWaitForSelectorOptions { State = WaitForSelectorState.Visible, Timeout = 5000 });
 
-            // Now that we know it's visible, get a locator and click it
-            await page.ClickAsync("button.button--brand.button--lg.brad.mql.mt");
-        }
-        catch (PlaywrightException) { }
-    }
 
-    private static async Task LoadAllEntries(IPage page)
-    {
-        ILocator? loadAllButton = page.Locator("button.load-all.button--brand.brad--sm");
-        while (await loadAllButton.IsVisibleAsync() && await loadAllButton.IsEnabledAsync())
-        {
-            LOGGER.Info("Loading all entries...");
-            await loadAllButton.ClickAsync();
-            await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
-            await page.ScrollToBottomUntilStableAsync(
-                "//li[@class='support-links product-list__list__separator owl-off bg-white phl phr pht pb brdr--top brdr--top--thin brdr--top--dotted']", // <- something that appears for each item
-                maxScrolls: 60,
-                stabilityMs: 900,
-                stepPx: 1400
-            );
-        }
+    // Per-product container. All sub-selectors run relative to one of these <li> nodes
+    // so a single product missing one field (e.g. no stock badge for in-stock items)
+    // never desyncs the columns across products. The price <p> aggregates major and
+    // minor parts as child spans — grab the whole <p> instead of trying to stitch them
+    // back together after the fact.
+    private const string _productListXPath = "//div[@class='full']/ul/li";
+    private const string _titleRel = "./section/header/div[2]/h3/a";
+    private const string _priceRel = "./section/header/div[2]/p";
+    private const string _stockStatusRel = "./section/header/div/ul";
+    private const string _bookFormatRel = "./section/header/div[1]/p[1]";
+    private const string _detailLinkRel = ".//a[@class='block one-whole clearfix dfbx dfbx--fdc link-banner link--black']";
 
-        int clickCount = 0;
-        ILocator? loadMoreButton = page.Locator("button.load-more.button--brand.brad--sm");
-        ILocator? separatorLiLocator = page.Locator("//li[@class='support-links product-list__list__separator owl-off bg-white phl phr pht pb brdr--top brdr--top--thin brdr--top--dotted']");
-        while (await loadMoreButton.IsVisibleAsync() && await loadMoreButton.IsEnabledAsync())
-        {
-            LOGGER.Info("Loading more entries...");
-            await loadMoreButton.ClickAsync();
-            await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
-            clickCount++;
-            await page.ScrollToBottomUntilStableAsync(
-                "//li[@class='support-links product-list__list__separator owl-off bg-white phl phr pht pb brdr--top brdr--top--thin brdr--top--dotted']", // <- something that appears for each item
-                maxScrolls: 60,
-                stabilityMs: 900,
-                stepPx: 1400
-            );
+    [GeneratedRegex(@"\s+")] private static partial Regex CollapseWhitespaceRegex();
 
-            int currentLiCount = await separatorLiLocator.CountAsync();
-            int expectedLiCount = 1 + clickCount;
+    // Matches the leading sale price (optional currency symbol + digits + optional decimals).
+    // Sale items render as e.g. "5.67RRP£7.99" — the trailing RRP block confuses
+    // EntryModel.ParsePrice, so strip it here at capture time.
+    [GeneratedRegex(@"^[£$€]?\d+(?:\.\d{1,2})?")] private static partial Regex LeadingPriceRegex();
 
-            if (currentLiCount != expectedLiCount) break;
-        }
-        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
-    }
-
-    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America)
+    public async Task<(List<EntryModel> Data, List<string> Links)> GetData(string bookTitle, BookType bookType, IPage? page = null, bool isMember = false, Region curRegion = Region.America, CancellationToken cancellationToken = default)
     {
         List<EntryModel> data = [];
         List<string> links = [];
 
-        try
-        {
-            HtmlDocument doc = HtmlFactory.CreateDocument();
-            XPathNavigator nav = doc.DocumentNode.CreateNavigator();
-            HtmlWeb html = HtmlFactory.CreateWeb();
-            bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
-            bool isSecondCategory = false;
+        HtmlWeb html = HtmlFactory.CreateWeb();
+        List<HtmlDocument> listingPages = [];
 
-            string url = GenerateWebsiteUrl(bookType, bookTitle, isSecondCategory);
+        // Two-category sweep: Manga first, then Comics & Graphic Novels.
+        for (int category = 0; category < 2; category++)
+        {
+            bool isSecondCategory = category == 1;
+            if (isSecondCategory) _logger.CheckingComicsCategory();
+
+            string url = GenerateWebsiteUrl(bookType, bookTitle, isSecondCategory, 1);
             links.Add(url);
 
-            await page!.GotoAsync(url, new PageGotoOptions
+            await page!.GotoAsync(url, new PageGotoOptions { WaitUntil = WaitUntilState.DOMContentLoaded });
+
+            try
             {
-                WaitUntil = WaitUntilState.DOMContentLoaded
-            });
-            await BypassCookiesAsync(page);
-            await LoadAllEntries(page);
-            await page.WaitForSelectorAsync("div.full");
-
-        Restart:
-            doc.LoadHtml(await page.ContentAsync());
-            XPathNodeIterator titleData = nav.Select(_titleXPath);
-            XPathNodeIterator priceData = nav.Select(_priceXPath);
-            XPathNodeIterator minorPriceData = nav.Select(_minorPriceXPath);
-            XPathNodeIterator bookFormatData = nav.Select(_bookFormatXPath);
-            XPathNodeIterator stockStatusData = nav.Select(_stockStatusXPath);
-            XPathNavigator? pageCheck = nav.SelectSingleNode(_pageCheckXPath);
-            LOGGER.Debug("{} | {} | {} | {} | {}", titleData.Count, priceData.Count, minorPriceData.Count, bookFormatData.Count, stockStatusData.Count);
-
-            while (titleData.MoveNext())
-            {
-                priceData.MoveNext();
-                minorPriceData.MoveNext();
-                bookFormatData.MoveNext();
-                stockStatusData.MoveNext();
-
-                string? bookFormat = bookFormatData.Current?.Value;
-                string? titleVal = titleData.Current?.Value;
-                string? priceDataVal = priceData.Current?.Value;
-                string? stockStatusDataVal = stockStatusData.Current?.Value;
-                string? minorPriceDataVal = minorPriceData.Current?.Value;
-                if (titleVal is null || bookFormat is null || priceDataVal is null || stockStatusDataVal is null || minorPriceDataVal is null)
+                await page.WaitForSelectorAsync("div.full", new PageWaitForSelectorOptions
                 {
-                    LOGGER.Debug("Some input value is null for {Title} Skipping", titleVal);
+                    State = WaitForSelectorState.Attached,
+                    Timeout = 15000
+                });
+            }
+            catch (TimeoutException)
+            {
+                continue;
+            }
+
+            await LoadAllEntries(page);
+
+            HtmlDocument doc = HtmlFactory.CreateDocument();
+            doc.LoadHtml(await page.ContentAsync());
+            listingPages.Add(doc);
+        }
+
+        data = await ParsePages(
+            listingPages,
+            bookTitle,
+            bookType,
+            async href =>
+            {
+                HtmlDocument descDoc = await html.LoadFromWebAsync($"{BASE_URL}{href}");
+                return descDoc;
+            });
+
+        InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, _logger);
+        return (data, links);
+    }
+
+    /// <summary>
+    /// Parses pre-loaded ForbiddenPlanet listing docs into <see cref="EntryModel"/>s. The
+    /// <paramref name="resolveDescDoc"/> delegate fetches the detail page for entries that
+    /// need a Hardcover / no-vol-marker desc check. Fixture-based tests pass an offline
+    /// dictionary lookup so the run is reproducible.
+    /// </summary>
+    internal async Task<List<EntryModel>> ParsePages(
+        IReadOnlyList<HtmlDocument> listingPages,
+        string bookTitle,
+        BookType bookType,
+        Func<string, Task<HtmlDocument>> resolveDescDoc)
+    {
+        List<EntryModel> data = [];
+        bool BookTitleRemovalCheck = InternalHelpers.ShouldRemoveEntry(bookTitle);
+        string normalizedBookTitle = InternalHelpers.NormalizeForTitleMatch(bookTitle);
+
+        foreach (HtmlDocument doc in listingPages)
+        {
+            int parsed = await ProcessPageWithResolverAsync(doc, bookTitle, normalizedBookTitle, bookType, BookTitleRemovalCheck, resolveDescDoc, data);
+            _logger.NodeCounts(parsed, parsed, parsed, parsed, parsed);
+        }
+
+        data.TrimExcess();
+        data.SortByVolume();
+        data.RemoveDuplicates(_logger);
+        return data;
+    }
+
+    /// <summary>
+    /// Test helper: returns a resolver that looks each href up in <paramref name="hrefToDoc"/>.
+    /// </summary>
+    internal static Func<string, Task<HtmlDocument>> CreateOfflineDescResolver(IReadOnlyDictionary<string, HtmlDocument> hrefToDoc)
+        => href => hrefToDoc.TryGetValue(href, out HtmlDocument? doc)
+            ? Task.FromResult(doc)
+            : throw new KeyNotFoundException(
+                $"Desc fixture missing for href '{href}'. Re-run the Regenerate task to capture it.");
+
+    /// <summary>
+    /// Clicks the page's Load More button until it disappears. After each click, waits
+    /// for the product <c>&lt;li&gt;</c> count to actually grow — that's the only signal
+    /// that matters. Drives off DOM mutation rather than NetworkIdle (which can hang on
+    /// trackers) or a fixed delay (which is either slow or flaky).
+    /// </summary>
+    private async Task LoadAllEntries(IPage page)
+    {
+        ILocator productItems = page.Locator(_productListXPath);
+        ILocator loadMore = page.Locator("button.load-more.button--brand.brad--sm");
+
+        const int MaxClicks = 50;
+        for (int i = 0; i < MaxClicks; i++)
+        {
+            if (!await loadMore.IsVisibleAsync()) break;
+            if (!await loadMore.IsEnabledAsync()) break;
+
+            int before = await productItems.CountAsync();
+            _logger.ForbiddenPlanetLoadingMoreEntries();
+            await loadMore.ClickAsync();
+
+            try
+            {
+                // Wait for the product list to grow. The XHR + DOM append usually lands
+                // within a couple seconds; 15s is a generous ceiling for slow networks.
+                await page.WaitForFunctionAsync(
+                    $"() => document.querySelectorAll('div.full > ul > li').length > {before}",
+                    new PageWaitForFunctionOptions { Timeout = 15000 });
+            }
+            catch (TimeoutException)
+            {
+                // Click didn't add anything within the window — assume we're done.
+                break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Parses one paginated listing page out of <paramref name="doc"/>, runs the desc-fetch
+    /// pre-pass for Manga rows that need it, and appends qualifying rows to
+    /// <paramref name="data"/>. Returns the number of product <c>&lt;li&gt;</c> nodes seen
+    /// — used by the caller to decide whether to stop paginating.
+    /// </summary>
+    private async Task<int> ProcessPageWithResolverAsync(
+        HtmlDocument doc,
+        string bookTitle,
+        string normalizedBookTitle,
+        BookType bookType,
+        bool bookTitleRemovalCheck,
+        Func<string, Task<HtmlDocument>> resolveDescDoc,
+        List<EntryModel> data)
+    {
+        HtmlNodeCollection? products = doc.DocumentNode.SelectNodes(_productListXPath);
+        int entryCount = products?.Count ?? 0;
+        if (entryCount == 0) return 0;
+
+        // Materialize per-product fields with sane defaults for optional pieces. A product
+        // without a title is unscrapeable and gets `hasTitle[i] = false`; the main loop skips it.
+        string[] decodedTitles = new string[entryCount];
+        string[] priceVals = new string[entryCount];
+        string[] bookFormatVals = new string[entryCount];
+        string[] stockStatusVals = new string[entryCount];
+        string?[] detailHrefs = new string?[entryCount];
+        bool[] hasTitle = new bool[entryCount];
+
+        for (int i = 0; i < entryCount; i++)
+        {
+            HtmlNode li = products![i];
+
+            HtmlNode? titleNode = li.SelectSingleNode(_titleRel);
+            if (titleNode is null) continue;
+            hasTitle[i] = true;
+            decodedTitles[i] = WebUtility.HtmlDecode(titleNode.InnerText.Trim());
+
+            // Price <p> contains major and minor as child spans; InnerText concatenates
+            // both. Collapse any whitespace HtmlAgilityPack picked up between the spans,
+            // then extract only the leading sale price so RRP overlays (e.g. "5.67RRP£7.99")
+            // don't trip up EntryModel.ParsePrice downstream.
+            HtmlNode? priceNode = li.SelectSingleNode(_priceRel);
+            if (priceNode is null)
+            {
+                priceVals[i] = string.Empty;
+            }
+            else
+            {
+                string rawPrice = CollapseWhitespaceRegex().Replace(WebUtility.HtmlDecode(priceNode.InnerText), string.Empty);
+                Match m = LeadingPriceRegex().Match(rawPrice);
+                priceVals[i] = m.Success ? m.Value : rawPrice;
+            }
+            bookFormatVals[i] = li.SelectSingleNode(_bookFormatRel)?.InnerText.Trim() ?? string.Empty;
+            stockStatusVals[i] = li.SelectSingleNode(_stockStatusRel)?.InnerText.Trim() ?? string.Empty;
+            detailHrefs[i] = li.SelectSingleNode(_detailLinkRel)?.GetAttributeValue<string?>("href", null);
+        }
+
+        // Desc-fetch pre-pass: any Manga entry that's a Hardcover or doesn't have a
+        // recognized volume marker needs a detail-page fetch to decide whether it's a
+        // novel-in-disguise. Serial awaits in the entry loop were the old bottleneck;
+        // collect indices, batch via Task.WhenAll.
+        HtmlDocument?[] descCache = new HtmlDocument?[entryCount];
+        if (bookType == BookType.Manga)
+        {
+            List<int> needsDesc = [];
+            for (int i = 0; i < entryCount; i++)
+            {
+                if (!hasTitle[i]) continue;
+                if (string.Equals(stockStatusVals[i], "Currently Unavailable", StringComparison.OrdinalIgnoreCase)) continue;
+
+                string entryTitle = decodedTitles[i];
+
+                if (!PassesBroadFilter(bookTitle, normalizedBookTitle, entryTitle, bookFormatVals[i], bookTitleRemovalCheck, bookType))
+                {
                     continue;
                 }
 
-                string entryTitle = WebUtility.HtmlDecode(titleVal);
-                // LOGGER.Debug("(-1) {} | {} | {}", entryTitle, bookFormat, minorPriceData.Current?.Value);
-
-                if (
-                    InternalHelpers.EntryTitleContainsBookTitle(bookTitle, entryTitle)
-                    && (!InternalHelpers.ShouldRemoveEntry(entryTitle) || BookTitleRemovalCheck)
-                    && (
-                            (
-                            bookType == BookType.Manga
-                            && (
-                                    !entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)
-                                    && (bookFormat.Equals("Manga") || bookFormat.Equals("Graphic Novel"))
-                                    && !(
-                                        InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony", "Berserker", "Operation")
-                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear")
-                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto", "Itachi", "Family Day", "Naruto: Shikamaru's Story", "Naruto: Kakashi's Story")
-                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "fullmetal alchemist", entryTitle, "Under The Faraway Sky")
-                                        || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "attack on titan", entryTitle, "FLY")
-                                    )
-                                )
-                            )
-                            || bookType == BookType.LightNovel
-                        )
-                    && !InternalHelpers.RemoveUnintendedVolumes(bookTitle, "overlord", entryTitle, "Unimplemented")
-                    )
+                if (!(entryTitle.Contains("Hardcover") || !entryTitle.ContainsAny(["Vol", "Box Set", "Comic"])))
                 {
-                    bool descIsValid = true;
-                    if (bookType == BookType.Manga && (entryTitle.Contains("Hardcover") || !entryTitle.ContainsAny(["Vol", "Box Set", "Comic"])))
-                    {
-                        string? urlPath = doc.DocumentNode.SelectSingleNode($"(//a[@class='block one-whole clearfix dfbx dfbx--fdc link-banner link--black'])[{titleData.CurrentPosition}]")?.GetAttributeValue("href", string.Empty);
-                        if (string.IsNullOrWhiteSpace(urlPath))
-                        {
-                            LOGGER.Debug("Unable to retrieve url path for entry desc at pos {Pos}", titleData.CurrentPosition);
-                            continue;
-                        }
-
-                        HtmlNodeCollection descData = (await html.LoadFromWebAsync($"https://forbiddenplanet.com{urlPath}")).DocumentNode.SelectNodes("//div[@id='product-description']/p");
-
-                        StringBuilder desc = new();
-                        foreach (HtmlNode node in descData) { desc.AppendLine(node.InnerText); }
-                        LOGGER.Debug("Checking Desc {} => {}", entryTitle, desc.ToString());
-                        descIsValid = !desc.ToString().ContainsAny(DescRemovalStrings);
-                    }
-
-                    if (descIsValid)
-                    {
-                        string finalTitle = CleanAndParseTitle(bookTitle, entryTitle, bookType);
-                        LOGGER.Debug("Final Title = {}", finalTitle);
-                        data.Add(
-                            new EntryModel(
-                                finalTitle,
-                                $"{priceDataVal}{minorPriceDataVal}",
-                                stockStatusDataVal switch
-                                {
-                                    "Pre-Order" => StockStatus.PO,
-                                    "Currently Unavailable" => StockStatus.OOS,
-                                    _ => StockStatus.IS
-                                },
-                                TITLE
-                            )
-                        );
-                    }
-                    else
-                    {
-                        LOGGER.Info("Removed (2) {}", entryTitle);
-                    }
+                    continue;
                 }
-                else
-                {
-                    LOGGER.Info("Removed (1) {}", entryTitle);
-                }
+
+                string? href = detailHrefs[i];
+                if (!string.IsNullOrWhiteSpace(href)) needsDesc.Add(i);
             }
 
-            if (!isSecondCategory)
+            if (needsDesc.Count > 0)
             {
-                isSecondCategory = true;
-                LOGGER.Info("Checking Comics & Graphic Novel Cateogry");
-                url = GenerateWebsiteUrl(bookType, bookTitle, isSecondCategory);
-                links.Add(url);
-
-                await page!.GotoAsync(url, new PageGotoOptions
+                Task<HtmlDocument>[] fetches = new Task<HtmlDocument>[needsDesc.Count];
+                for (int i = 0; i < needsDesc.Count; i++)
                 {
-                    WaitUntil = WaitUntilState.DOMContentLoaded
-                });
-                await LoadAllEntries(page);
-                goto Restart;
+                    fetches[i] = resolveDescDoc(detailHrefs[needsDesc[i]]!);
+                }
+                HtmlDocument[] docs = await Task.WhenAll(fetches);
+                for (int i = 0; i < needsDesc.Count; i++)
+                {
+                    descCache[needsDesc[i]] = docs[i];
+                }
+            }
+        }
+
+        for (int i = 0; i < entryCount; i++)
+        {
+            if (!hasTitle[i]) continue;
+
+            string entryTitle = decodedTitles[i];
+            string bookFormat = bookFormatVals[i];
+
+            // ForbiddenPlanet keeps OOP / unavailable volumes on the listing page even with
+            // "show out of stock=on" — they're never going to ship, and letting them through
+            // would let their (often stale, often £0.00) price knock out the in-stock copy
+            // during cross-site dedup. Skip them entirely.
+            if (string.Equals(stockStatusVals[i], "Currently Unavailable", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.EntryRemoved(1, entryTitle);
+                continue;
             }
 
-            data.TrimExcess();
-            data.Sort(EntryModel.VolumeSort);
-            data.RemoveDuplicates(LOGGER);
-            InternalHelpers.PrintWebsiteData(TITLE, bookTitle, bookType, data, LOGGER);
-        }
-        catch (Exception ex)
-        {
-            LOGGER.Error(ex, "{Title} ({BookType}) Error @ {TITLE}", bookTitle, bookType, TITLE);
+            if (!PassesBroadFilter(bookTitle, normalizedBookTitle, entryTitle, bookFormat, bookTitleRemovalCheck, bookType))
+            {
+                _logger.EntryRemoved(1, entryTitle);
+                continue;
+            }
+
+            bool descIsValid = true;
+            if (bookType == BookType.Manga && (entryTitle.Contains("Hardcover") || !entryTitle.ContainsAny(["Vol", "Box Set", "Comic"])))
+            {
+                HtmlDocument? descDoc = descCache[i];
+                if (descDoc is null)
+                {
+                    _logger.UnableToRetrieveUrlPath(i + 1);
+                    continue;
+                }
+
+                HtmlNodeCollection descData = descDoc.DocumentNode.SelectNodes("//div[@id='product-description']/p");
+                if (descData is not null)
+                {
+                    StringBuilder desc = new();
+                    foreach (HtmlNode node in descData) { desc.AppendLine(node.InnerText); }
+                    string descText = desc.ToString();
+                    _logger.CheckingDesc(entryTitle, descText);
+                    descIsValid = !descText.ContainsAny(DescRemovalStrings);
+                }
+            }
+
+            if (descIsValid)
+            {
+                string finalTitle = CleanAndParseTitle(bookTitle, entryTitle, bookType);
+                _logger.FinalTitle(finalTitle);
+                data.Add(
+                    new EntryModel(
+                        finalTitle,
+                        priceVals[i],
+                        stockStatusVals[i] switch
+                        {
+                            "Pre-Order" => StockStatus.PO,
+                            _ => StockStatus.IS
+                        },
+                        TITLE
+                    )
+                );
+            }
+            else
+            {
+                _logger.EntryRemoved(2, entryTitle);
+            }
         }
 
-        return (data, links);
+        return entryCount;
+    }
+
+    private static bool PassesBroadFilter(string bookTitle, string normalizedBookTitle, string entryTitle, string bookFormat, bool bookTitleRemovalCheck, BookType bookType)
+    {
+        if (!InternalHelpers.EntryTitleContainsNormalizedBookTitle(normalizedBookTitle, entryTitle)) return false;
+        if (InternalHelpers.ShouldRemoveEntry(entryTitle) && !bookTitleRemovalCheck) return false;
+
+        if (bookType == BookType.Manga)
+        {
+            if (entryTitle.Contains("Novel", StringComparison.OrdinalIgnoreCase)) return false;
+            if (!(bookFormat.Equals("Manga") || bookFormat.Equals("Graphic Novel"))) return false;
+            if (InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Berserk", entryTitle, "of Gluttony", "Berserker", "Operation")
+                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Bleach", entryTitle, "Can't Fear")
+                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "Naruto", entryTitle, "Boruto", "Itachi", "Family Day", "Naruto: Shikamaru's Story", "Naruto: Kakashi's Story")
+                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "fullmetal alchemist", entryTitle, "Under The Faraway Sky")
+                || InternalHelpers.RemoveUnintendedVolumes(bookTitle, "attack on titan", entryTitle, "FLY"))
+            {
+                return false;
+            }
+        }
+
+        if (InternalHelpers.RemoveUnintendedVolumes(bookTitle, "overlord", entryTitle, "Unimplemented")) return false;
+
+        return true;
     }
 }
