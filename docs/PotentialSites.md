@@ -24,12 +24,15 @@ remaining new-only retailer with meaningful incremental inventory.
 
 | Site | Renders | Notes |
 |---|---|---|
-| **OK Comics** | HtmlAgilityPack | Leeds-based, ships UK. Pure HTML, paginated. Easy addition. |
-| Magic Pockets | HtmlAgilityPack | UK manga retailer, paginated. |
-| Page 45 | HtmlAgilityPack | Nottingham indie, well-curated stock. |
+| Page 45 | HtmlAgilityPack (CGI Perl) | Nottingham indie, well-curated stock. Alive at `page45.com` but runs on a 1990s-style CGI Perl backend (`cgi-bin/ss000001.pl`). The obvious search URL returns a parameter error — requires reverse-engineering form params (`SEARCH=`, `JOIN=AND`, etc.) before a scraper can be written. Doable but **not a quick add**. |
 
-Currently 3 UK sites. These three roughly double the price-comparison signal for
-UK buyers.
+UK currently has 4 working sites (ForbiddenPlanet, OKComics, SciFier,
+TravellingMan). Page 45 would round out indie coverage but needs CGI
+archaeology work.
+
+### Probed and excluded (2026-06-21)
+
+- ❌ **Magic Pockets** — `magicpockets.co.uk` connection refused (likely shuttered).
 
 ***
 
@@ -37,12 +40,15 @@ UK buyers.
 
 | Site | Renders | Notes |
 |---|---|---|
-| **Kinokuniya Sydney** | Playwright likely | Separate from KinokuniyaUSA — different inventory + AUD pricing. Structurally similar to existing KinokuniyaUSA, so partial code reuse. **Highest AU impact.** |
-| All Star Comics Melbourne | HtmlAgilityPack | Small but well-stocked. |
-| Madman Entertainment Shop | TBD | Official Madman distributor (anime + manga). |
+| Madman Entertainment Shop | TBD | Official Madman distributor (anime + manga). Needs probe. |
 
-Currently 1 AU-specific site (MangaMate, plus SciFier). The AU region is the
-thinnest by far — every addition has high marginal value.
+Currently 4 AU-specific sites: AllStarComics, KingsComics, MangaMate, plus
+SciFier. AU coverage is now reasonable — Madman would round out distributor
+diversity but isn't urgent.
+
+### Probed and excluded (2026-06-21)
+
+- ❌ **Minotaur Entertainment** (`minotaur.com.au`) — connection refused.
 
 ***
 
@@ -50,10 +56,22 @@ thinnest by far — every addition has high marginal value.
 
 | Site | Renders | Notes |
 |---|---|---|
-| **Indigo / Chapters** | Unknown | README marks as ❌ "Not Working" — worth a re-audit; site may have changed. **High-impact if it works.** |
-| Comics N More | HtmlAgilityPack | Canadian indie shop. |
+| Indigo / Chapters | Unknown | Marked ❌ "Not Working" in earlier README revision — worth a re-audit; site may have changed since. **High-impact if it works** (Indigo is the canonical CA mainstream bookseller). |
 
-Only SciFier currently covers Canada. Indigo would be the canonical CA option.
+Only SciFier currently covers Canada. The CA region is the thinnest by far
+after every other lead was probed dead. Indigo is the only remaining viable
+target — recommend probing before any other CA work.
+
+### Probed and excluded (2026-06-21)
+
+- ❌ **Comics N More** (`comicsnmore.com`) — domain parked, redirects to a
+  HugeDomains "for sale" page.
+- ❌ **The Beguiling** (`beguiling.com` → `beguilingbooksandart.com`) — landing
+  page "temporarily unavailable"; webstore at `beguilingbooks.com` returns 404.
+  Effectively offline.
+- ❌ **Strange Adventures** (`strangeadventures.com`) — alive but a WordPress
+  blog-style site; no real product search or e-commerce; their store is
+  hosted on eBay.
 
 ***
 
@@ -76,7 +94,7 @@ work to figure out shipping cost vs catalog price.
 | Amazon Japan | Playwright | Listed as ⌛ Not Started in README. Hard: JP text encoding + region pricing. **High-impact for collectors of original-language volumes.** |
 | CDJapan | TBD | Listed as ⌛ Paused — resume. |
 | Honto | TBD | Mainstream JP manga retailer. |
-| Kinokuniya JP | Playwright likely | Local Kinokuniya catalog (different from KinokuniyaUSA / Sydney). |
+| Kinokuniya JP | Playwright likely | Local Kinokuniya catalog (different from KinokuniyaUSA). |
 
 The Japan region has zero working sites today. Any of these would be the first.
 
@@ -84,11 +102,24 @@ The Japan region has zero working sites today. Any of these would be the first.
 
 ## Recommended Order
 
-1. **OK Comics** (Britain) — easy HtmlAgilityPack add, immediate UK value.
-2. **Kinokuniya Sydney** (Australia) — biggest AU impact, code-reuse from KinokuniyaUSA.
-3. **Indigo / Chapters** (Canada) — re-audit broken integration, only canonical CA site.
-4. **Half-the-rest-of-Britain** (Magic Pockets, Page 45) — round out UK coverage.
-5. **Amazon Japan** — opens the JP region; longest tail.
+1. **Indigo / Chapters** (Canada) — re-audit broken integration. Canada has 1
+   working site; Indigo is the only remaining viable lead.
+2. **Page 45** (Britain) — needs CGI archaeology but adds real UK indie
+   diversity. Defer until lower-effort options run out.
+3. **Amazon Japan** — opens the JP region; longest tail and highest collector
+   value.
+4. **Walmart** (America) — only meaningful America addition left; CF friction.
+
+***
+
+## Recently Added
+
+- **2026-06-21** — Kings Comics (Australia). Clean Shopify, listing-card
+  carries title + price + availability. Same shape as AllStarComics.
+- **2026-06-21** — OK Comics (Britain). Shopify with per-product detail fetch
+  for price.
+- **2026-06-21** — All Star Comics Melbourne (Australia). Shopify, Diamond
+  catalog feed.
 
 ***
 

@@ -99,7 +99,7 @@ public static class Helpers
             ],
             [Region.Australia] =
             [
-                Website.AllStarComics, Website.MangaMate, Website.SciFier
+                Website.AllStarComics, Website.KingsComics, Website.MangaMate, Website.SciFier
             ],
             [Region.Britain] =
             [
@@ -132,6 +132,7 @@ public static class Helpers
             [Crunchyroll.TITLE] = Website.Crunchyroll,
             [InStockTrades.TITLE] = Website.InStockTrades,
             [KinokuniyaUSA.TITLE] = Website.KinokuniyaUSA,
+            [KingsComics.TITLE] = Website.KingsComics,
             [MangaMart.TITLE] = Website.MangaMart,
             [MangaMate.TITLE] = Website.MangaMate,
             [MerryManga.TITLE] = Website.MerryManga,
@@ -228,6 +229,7 @@ public static class Helpers
             Website.ForbiddenPlanet => ForbiddenPlanet.BASE_URL,
             Website.InStockTrades => InStockTrades.BASE_URL,
             Website.KinokuniyaUSA => KinokuniyaUSA.BASE_URL,
+            Website.KingsComics => KingsComics.BASE_URL,
             Website.MangaMart => MangaMart.BASE_URL,
             Website.MangaMate => MangaMate.BASE_URL,
             Website.MerryManga => MerryManga.BASE_URL,

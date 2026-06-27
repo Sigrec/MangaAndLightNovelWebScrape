@@ -242,6 +242,7 @@ internal static partial class InternalHelpers
 
             // Australia
             Website.AllStarComics => new AllStarComics(loggerFactory.CreateLogger<AllStarComics>()),
+            Website.KingsComics => new KingsComics(loggerFactory.CreateLogger<KingsComics>()),
             Website.MangaMate => new MangaMate(loggerFactory.CreateLogger<MangaMate>()),
 
             // Multi

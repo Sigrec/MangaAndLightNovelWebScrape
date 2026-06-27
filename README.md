@@ -2,11 +2,13 @@
 
 ### *(Manga & Light Novel Web Scrape Framework for .NET) - [ChangeLog](https://github.com/Sigrec/MangaAndLightNovelWebScrape/blob/master/ChangeLog.txt)*
 
-.NET library that scrapes various retailers for manga or light-novel pricing,
-compares the results across every site you ask for, and hands back the cheapest
-copy of each volume. Provider-agnostic logging via `Microsoft.Extensions.Logging`,
-per-site failure isolation, cooperative cancellation, and a reachability probe
-so you can short-circuit known-down sites before launching a scrape.
+.NET 10 library that scrapes manga and light-novel retailers, compares the
+results across every site you ask for, and hands back the cheapest copy of each
+volume. Stock-aware dedup keeps purchasable copies over cheaper-but-out-of-stock
+reprints, per-site failures stay isolated from siblings, every scrape supports
+cooperative cancellation, and a reachability probe lets you short-circuit
+known-down sites before launching. Provider-agnostic logging through
+`Microsoft.Extensions.Logging`.
 
 ***
 
@@ -16,80 +18,115 @@ so you can short-circuit known-down sites before launching a scrape.
 dotnet add package MangaAndLightNovelWebScrape
 ```
 
-Sites that require JavaScript rendering (BooksAMillion, KinokuniyaUSA,
-ForbiddenPlanet, MerryManga, MangaMart, MangaMate, AmazonUSA, AmazonJP) drive
-[Playwright](https://playwright.dev/dotnet/) under the hood. The runtime
-downloads browsers on first use; you can also pre-install them via the CLI:
+Targets `net10.0`. Sites that require JavaScript rendering drive
+[Playwright](https://playwright.dev/dotnet/) under the hood — currently
+**AmazonUSA, AmazonJP, BooksAMillion, ForbiddenPlanet, KinokuniyaUSA,
+MangaMart, MangaMate, MerryManga**. The runtime downloads browsers on first
+use; you can also pre-install them via the CLI:
 
 ```sh
 pwsh bin/Debug/net10.0/playwright.ps1 install msedge
 ```
 
-HTML-only sites (SciFier, InStockTrades, Crunchyroll, MangaMart, RobertsAnimeCornerStore,
-TravellingMan) skip Playwright entirely.
+HTML-only sites — **AllStarComics, Crunchyroll, InStockTrades, KingsComics,
+OKComics, RobertsAnimeCornerStore, SciFier, TravellingMan** — skip Playwright
+entirely, so a scrape that only includes them never launches a browser.
+
+***
+
+### Quick Start
+
+```cs
+using MangaAndLightNovelWebScrape;
+using MangaAndLightNovelWebScrape.Enums;
+
+MasterScrape scrape = new(StockStatusFilter.EXCLUDE_OOS_AND_PO_FILTER)
+{
+    Region = Region.America,
+};
+
+await scrape.InitializeScrapeAsync(
+    title: "jujutsu kaisen",
+    bookType: BookType.Manga,
+    siteList: [Website.InStockTrades, Website.RobertsAnimeCornerStore]);
+
+scrape.PrintResultsToConsole(isAsciiTable: true,
+    title: "jujutsu kaisen", bookType: BookType.Manga);
+```
+
+The same `MasterScrape` instance can be reused for any number of subsequent
+calls — see [Creating Master Scrape](#creating-master-scrape) below.
 
 ***
 
 ### Website Completion List
 
-If you want a website or region to be added, file an [issue request](https://github.com/Sigrec/MangaAndLightNovelWebScrape/issues/new/choose).
+Status legend: **✅ Working** · **⌛ Planned / Paused** · **❌ Retired or
+non-working**. Render column tells you whether a scrape that only includes
+that site needs Playwright. Manga / Light Novel columns reflect what the site
+itself stocks — sites that don't stock LightNovel silently return zero
+entries for `BookType.LightNovel` (see [Manga-only sites](#manga-only-sites)).
+
+If you want a website or region to be added, file an
+[issue request](https://github.com/Sigrec/MangaAndLightNovelWebScrape/issues/new/choose).
 
 #### America
 
-```txt
-✅ AmazonUSA
-❌ Barnes & Noble (No longer supported — robots.txt change)
-✅ Books-A-Million
-✅ Crunchyroll
-✅ InStockTrades
-✅ Kinokuniya USA (Manga entries occasionally drop when the on-page Manga facet excludes them)
-✅ MangaMart
-✅ MerryManga
-✅ RobertsAnimeCornerStore
-✅ SciFier
-```
+| Site | Status | Render | Manga | Light Novel | Notes |
+|---|---|---|---|---|---|
+| `AmazonUSA` | ✅ | Playwright | ✅ | ✅ | |
+| `BooksAMillion` | ✅ | Playwright | ✅ | ✅ | Membership: `Membership.BooksAMillion` |
+| `Crunchyroll` | ✅ | HTML | ✅ | ✅ | |
+| `InStockTrades` | ✅ | HTML | ✅ | ✅ | |
+| `KinokuniyaUSA` | ✅ | Playwright | ✅ | ✅ | Membership: `Membership.KinokuniyaUSA`. Manga entries occasionally drop when the on-page Manga facet excludes them. |
+| `MangaMart` | ✅ | Playwright | ✅ | ✅ | |
+| `MerryManga` | ✅ | Playwright | ✅ | ✅ | |
+| `RobertsAnimeCornerStore` | ✅ | HTML | ✅ | ✅ | |
+| `SciFier` | ✅ | HTML | ✅ | ✅ | Multi-region — same site backs Australia, Britain, Canada, Europe too. |
+| Barnes & Noble | ❌ | — | — | — | Retired — robots.txt change. |
 
 #### Australia
 
-```txt
-✅ All Star Comics
-⌛ AmazonAU (Not Started)
-✅ MangaMate
-✅ SciFier
-```
+| Site | Status | Render | Manga | Light Novel | Notes |
+|---|---|---|---|---|---|
+| `AllStarComics` | ✅ | HTML | ✅ | ❌ | Manga-only — silently skips LightNovel scrapes. |
+| `KingsComics` | ✅ | HTML | ✅ | ❌ | Manga-only — silently skips LightNovel scrapes. |
+| `MangaMate` | ✅ | Playwright | ✅ | ✅ | |
+| `SciFier` | ✅ | HTML | ✅ | ✅ | |
+| AmazonAU | ⌛ | — | — | — | Not started. |
 
 #### Britain
 
-```txt
-⌛ AmazonUK (Not Started)
-✅ ForbiddenPlanet
-✅ OK Comics
-✅ SciFier
-❌ SpeedyHen (No longer supported — Cloudflare CAPTCHA)
-✅ TravellingMan
-❌ Waterstones (No longer supported — Cloudflare CAPTCHA)
-```
+| Site | Status | Render | Manga | Light Novel | Notes |
+|---|---|---|---|---|---|
+| `ForbiddenPlanet` | ✅ | Playwright | ✅ | ✅ | |
+| `OKComics` | ✅ | HTML | ✅ | ❌ | Manga-only — silently skips LightNovel scrapes. |
+| `SciFier` | ✅ | HTML | ✅ | ✅ | |
+| `TravellingMan` | ✅ | HTML | ✅ | ✅ | |
+| AmazonUK | ⌛ | — | — | — | Not started. |
+| SpeedyHen | ❌ | — | — | — | Retired — Cloudflare CAPTCHA. |
+| Waterstones | ❌ | — | — | — | Retired — Cloudflare CAPTCHA. |
 
 #### Canada
 
-```txt
-⌛ AmazonCanada (Not Started)
-❌ Indigo (Not Working)
-✅ SciFier
-```
+| Site | Status | Render | Manga | Light Novel | Notes |
+|---|---|---|---|---|---|
+| `SciFier` | ✅ | HTML | ✅ | ✅ | |
+| AmazonCanada | ⌛ | — | — | — | Not started. |
+| Indigo | ❌ | — | — | — | Not working — pending re-audit. |
 
 #### Europe
 
-```txt
-✅ SciFier
-```
+| Site | Status | Render | Manga | Light Novel | Notes |
+|---|---|---|---|---|---|
+| `SciFier` | ✅ | HTML | ✅ | ✅ | |
 
 #### Japan
 
-```txt
-⌛ AmazonJP (Not Started)
-⌛ CDJapan (Paused)
-```
+| Site | Status | Render | Manga | Light Novel | Notes |
+|---|---|---|---|---|---|
+| AmazonJP | ⌛ | — | — | — | Not started. |
+| CDJapan | ⌛ | — | — | — | Paused — partial implementation, not registered. |
 
 ***
 
@@ -111,7 +148,7 @@ MasterScrape scrape = new(StockStatusFilter.EXCLUDE_NONE_FILTER);
 
 // You can also mutate the properties after construction.
 scrape.Region = Region.Canada;
-scrape.Browser = Browser.Firefox;
+scrape.Browser = Browser.FireFox;
 scrape.Filter = StockStatusFilter.EXCLUDE_OOS_AND_PO_FILTER;
 // Memberships is a [Flags] enum — combine sites with `|`.
 scrape.Memberships = Membership.BooksAMillion | Membership.KinokuniyaUSA;
@@ -175,47 +212,100 @@ await scrape.InitializeScrapeAsync(
     cancellationToken: cts.Token);
 ```
 
+#### Manga-only sites
+
+Some retailers don't stock prose light novels — **AllStarComics, KingsComics,
+OKComics**. Passing `BookType.LightNovel` to a scrape that includes them is
+allowed; those sites log a `"site does not stock LightNovel — skipping"`
+message and return zero entries, while the rest of the sites in the same call
+run normally. Nothing lands in `Errors` — the skip is intentional, not a
+failure.
+
 ***
 
 ### Getting Results
+
+`GetResults()` returns the consolidated, deduped, sorted entries.
+`GetResultUrls()` returns the per-site landing URL used so callers can
+deep-link back into the source.
 
 ```cs
 IReadOnlyList<EntryModel> results = scrape.GetResults();
 IReadOnlyDictionary<Website, string> urls = scrape.GetResultUrls();
 ```
 
-Three convenience renderers ship with the library:
+#### `EntryModel`
+
+Each row is a `public struct` with four public fields:
+
+| Field | Type | Example |
+|---|---|---|
+| `Entry` | `string` | `"Jujutsu Kaisen Vol 12"` |
+| `Price` | `string` | `"$9.99"` (display form with currency symbol) |
+| `StockStatus` | `StockStatus` | `IS`, `PO`, `BO`, `CS`, `OOS`, `NA` |
+| `Website` | `string` | `"Crunchyroll"` (the source site's `TITLE` constant) |
+
+Plus a `ParsePrice()` method that returns a `decimal` (handles currency
+prefixes/suffixes and returns `0m` for unparseable rows).
+
+```cs
+foreach (EntryModel row in scrape.GetResults())
+{
+    if (row.StockStatus == StockStatus.IS && row.ParsePrice() < 10m)
+    {
+        Console.WriteLine($"{row.Entry} — {row.Price} at {row.Website}");
+    }
+}
+```
+
+#### Built-in renderers
+
+Three convenience renderers ship with the library — all three take the same
+`isAsciiTable`, `title`, `bookType`, `includeLinks` parameters.
 
 ```cs
 // To console
-scrape.PrintResultsToConsole(isAsciiTable: true, title: "world trigger", bookType: BookType.Manga);
+scrape.PrintResultsToConsole(isAsciiTable: true,
+    title: "jujutsu kaisen", bookType: BookType.Manga);
 
 // To a logger at a chosen level
 logger.PrintResults(scrape, LogLevel.Information, isAsciiTable: true,
-    title: "world trigger", bookType: BookType.Manga);
+    title: "jujutsu kaisen", bookType: BookType.Manga);
 
 // To a file
 scrape.PrintResultsToFile("FinalData.txt", isAsciiTable: true,
-    title: "world trigger", bookType: BookType.Manga);
+    title: "jujutsu kaisen", bookType: BookType.Manga);
 ```
 
-ASCII-table output:
+`isAsciiTable: true` → table view, useful for human review:
 
 ```txt
-Title: "world trigger"
+Title: "jujutsu kaisen"
 BookType: Manga
 Region: America
-┏━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
-┃ Title                ┃ Price ┃ Status ┃ Website                 ┃
-┣━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━╋━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━━━━━┫
-┃ World Trigger Vol 20 ┃ $8.98 ┃ IS     ┃ RobertsAnimeCornerStore ┃
-┃ World Trigger Vol 21 ┃ $8.98 ┃ IS     ┃ RobertsAnimeCornerStore ┃
-┃ World Trigger Vol 22 ┃ $8.98 ┃ IS     ┃ RobertsAnimeCornerStore ┃
-┃ World Trigger Vol 23 ┃ $8.98 ┃ IS     ┃ RobertsAnimeCornerStore ┃
-┃ World Trigger Vol 24 ┃ $8.98 ┃ IS     ┃ RobertsAnimeCornerStore ┃
-┗━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━┻━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━┛
+┏━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━┳━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃ Title                 ┃ Price ┃ Status ┃ Website                 ┃
+┣━━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━╋━━━━━━━━╋━━━━━━━━━━━━━━━━━━━━━━━━━┫
+┃ Jujutsu Kaisen Vol 1  ┃ $7.49 ┃ IS     ┃ InStockTrades           ┃
+┃ Jujutsu Kaisen Vol 2  ┃ $7.49 ┃ IS     ┃ InStockTrades           ┃
+┃ Jujutsu Kaisen Vol 3  ┃ $8.98 ┃ IS     ┃ RobertsAnimeCornerStore ┃
+┃ Jujutsu Kaisen Vol 4  ┃ $7.49 ┃ IS     ┃ InStockTrades           ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━┻━━━━━━━━┻━━━━━━━━━━━━━━━━━━━━━━━━━┛
 Links:
-RobertsAnimeCornerStore => https://www.animecornerstore.com/wotrbgrno.html
+InStockTrades => https://www.instocktrades.com/search?title=jujutsu+kaisen
+RobertsAnimeCornerStore => https://www.animecornerstore.com/jjkmgrno.html
+```
+
+`isAsciiTable: false` (the default) → one bracketed line per row, suitable
+for piping into log aggregators or diff tooling:
+
+```txt
+[Jujutsu Kaisen Vol 1, $7.49, IS, InStockTrades]
+[Jujutsu Kaisen Vol 2, $7.49, IS, InStockTrades]
+[Jujutsu Kaisen Vol 3, $8.98, IS, RobertsAnimeCornerStore]
+[Jujutsu Kaisen Vol 4, $7.49, IS, InStockTrades]
+[InStockTrades,https://www.instocktrades.com/search?title=jujutsu+kaisen]
+[RobertsAnimeCornerStore,https://www.animecornerstore.com/jjkmgrno.html]
 ```
 
 ***
@@ -314,3 +404,88 @@ foreach ((Website site, Exception ex) in scrape.Errors)
     }
 }
 ```
+
+***
+
+### Enum Reference
+
+The enums you'll touch most often. Full XML docs ship with the package so IDE
+tooltips have the same details.
+
+**`BookType`** — what to search for. Picked per scrape call.
+
+| Value | Meaning |
+|---|---|
+| `Manga` | Graphic-novel format. |
+| `LightNovel` | Prose light-novel format. Manga-only sites silently skip — see [Manga-only sites](#manga-only-sites). |
+
+**`Region`** — `[Flags]` enum but one region per scrape (combining throws).
+
+| Value | Notes |
+|---|---|
+| `America` | Default. |
+| `Australia` | |
+| `Britain` | |
+| `Canada` | Currently SciFier only. |
+| `Europe` | Currently SciFier only. |
+| `Japan` | No working sites yet. |
+
+**`StockStatus`** — appears on every `EntryModel`.
+
+| Value | Meaning |
+|---|---|
+| `IS` | In stock — purchasable and shippable now. |
+| `PO` | Pre-order — committed, ships at release. |
+| `BO` | Backorder — site will fulfill when restocked. |
+| `CS` | Coming soon — announced, no pre-order yet. |
+| `OOS` | Out of stock — listed but currently unavailable. |
+| `NA` | Status not exposed by the site. |
+
+**`StockStatusFilter`** — passed to the `MasterScrape` constructor. Each one
+is a static `StockStatus[]` of statuses to drop from results.
+
+| Value | Drops |
+|---|---|
+| `EXCLUDE_NONE_FILTER` | Nothing — keeps every entry. |
+| `EXCLUDE_PO_FILTER` | `PO` |
+| `EXCLUDE_OOS_FILTER` | `OOS` |
+| `EXCLUDE_BO_FILTER` | `BO` |
+| `EXCLUDE_OOS_AND_PO_FILTER` | `OOS`, `PO` |
+| `EXCLUDE_OOS_AND_BO_FILTER` | `OOS`, `BO` |
+| `EXCLUDE_PO_AND_BO_FILTER` | `PO`, `BO` |
+| `EXCLUDE_ALL_FILTER` | `PO`, `OOS`, `BO` |
+
+**`Browser`** — Playwright channel for JS-rendered sites. Ignored when the
+scrape includes only HTML-only sites.
+
+| Value | Channel |
+|---|---|
+| `Chrome` | `chrome` |
+| `Edge` | `msedge` (default) |
+| `FireFox` | `firefox` |
+
+**`Membership`** — `[Flags]`, combine with `\|`. Tag sites where the user holds
+a membership account; the scraper picks the discounted price column for those
+sites only.
+
+| Value | Site |
+|---|---|
+| `None` | Default — public price columns only. |
+| `BooksAMillion` | Millionaire's Club pricing. |
+| `KinokuniyaUSA` | Bookweb pricing. |
+
+***
+
+### Stock-Aware Deduplication
+
+The same volume often appears multiple times within a single site's results
+(reprints, new-printing variants, edition markers) and again across sites.
+The merge pass picks survivors by **availability first, then price**:
+
+1. Lowest availability rank wins: `IS` > `PO` > `BO` > `CS` > `OOS` > `NA`.
+2. Ties break by lowest `EntryModel.ParsePrice()`.
+
+This deliberately drops a cheaper-but-out-of-stock listing in favor of a more
+expensive listing the user can actually buy, which is the common shape for
+Diamond-distributed manga where old printings linger as OOS rows after a
+reprint replaces them.

@@ -27,6 +27,8 @@ namespace MangaAndLightNovelWebScrape.Enums
         InStockTrades,
         /// <summary>united-states.kinokuniya.com — America.</summary>
         KinokuniyaUSA,
+        /// <summary>kingscomics.com — Australia.</summary>
+        KingsComics,
         /// <summary>mangamart.com — America.</summary>
         MangaMart,
         /// <summary>mangamate.shop — Australia.</summary>
